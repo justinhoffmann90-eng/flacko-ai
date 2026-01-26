@@ -296,15 +296,15 @@ export default function LandingPageV2() {
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-1">During the Day: Get Pinged</h3>
+                <h3 className="font-semibold text-lg mb-1">Intraday: Receive Updates</h3>
                 <p className="text-zinc-400 mb-3">
-                  Go live your life. When price hits a key level or something changes, 
-                  you get a Discord notification. No chart-watching required.
+                  Go live your life while we curate what matters. Key level triggered? Headline worth knowing? 
+                  Options flow shift? You'll get notified. No more staring at charts all day.
                 </p>
                 <ul className="text-sm text-zinc-500 space-y-1">
                   <li>• Price alerts when levels are hit — with what to do and how to size</li>
-                  <li>• Mode shift notifications</li>
-                  <li>• HIRO flow updates throughout the day</li>
+                  <li>• HIRO options flow updates throughout the day</li>
+                  <li>• Curated market-moving headlines — batched, not spammed</li>
                 </ul>
               </div>
             </div>
@@ -317,15 +317,15 @@ export default function LandingPageV2() {
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-1">Weekly: Go Deeper</h3>
+                <h3 className="font-semibold text-lg mb-1">Weekly: Zooming Out</h3>
                 <p className="text-zinc-400 mb-3">
-                  Every week, we step back and look at the bigger picture. Live call to 
-                  walk through the week together, plus research drops on the thesis.
+                  Step back from the noise. Reflect on how the system performed, 
+                  calibrate for what's ahead, and stay connected to the bigger picture.
                 </p>
                 <ul className="text-sm text-zinc-500 space-y-1">
-                  <li>• Live strategy call — ask questions, get answers</li>
-                  <li>• State of Tesla research — FSD, Robotaxi, Optimus</li>
-                  <li>• Catalyst calendar review — what's coming</li>
+                  <li>• Weekly strategy calls — share ideas, reflect on the operating system</li>
+                  <li>• Tesla catalyst calendar — continuously updated, including macro events</li>
+                  <li>• Thesis Snapshot — FSD/autonomy, Robotaxi, Optimus, latest developments</li>
                 </ul>
               </div>
             </div>
