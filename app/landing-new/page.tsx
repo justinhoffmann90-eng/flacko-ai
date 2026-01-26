@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Check, X, Shield, TrendingDown, Brain, Zap } from "lucide-react";
 
 export default function LandingPageNew() {
-  const [email, setEmail] = useState("");
 
   return (
     <main className="bg-black text-zinc-100 min-h-screen">
@@ -29,34 +26,15 @@ export default function LandingPageNew() {
             Built for TSLA swing traders who want conviction without babysitting charts.
           </p>
           
-          {/* Email Capture */}
-          <div className="max-w-md mx-auto mb-6">
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-              />
-              <Button className="bg-white text-black hover:bg-zinc-200 whitespace-nowrap">
-                Send me the sample
-              </Button>
-            </div>
-            <p className="text-xs text-zinc-600 mt-2">
-              Sample + occasional updates. Unsubscribe anytime.
-            </p>
-          </div>
-          
-          {/* Secondary CTA */}
-          <div className="flex justify-center mb-6">
+          {/* Main CTA */}
+          <div className="flex justify-center mb-4">
             <Link href="/signup">
-              <Button variant="outline" size="lg" className="border-zinc-700 hover:bg-zinc-900">
+              <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
                 Join our group
               </Button>
             </Link>
           </div>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-zinc-500">
             Private Discord + alerts + weekly live strategy call
           </p>
           
