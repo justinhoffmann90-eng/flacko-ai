@@ -2,8 +2,27 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, X, Shield, TrendingDown, Brain, Zap } from "lucide-react";
+import { Check, X, Shield, TrendingDown, Brain, Zap, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
+
+// FAQ Accordion Item
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="border-b border-zinc-800 py-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <span className="font-medium text-zinc-200">{question}</span>
+        <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <p className="mt-3 text-sm text-zinc-400 leading-relaxed">{answer}</p>
+      )}
+    </div>
+  );
+}
 
 export default function LandingPageNew() {
   const [showSticky, setShowSticky] = useState(false);
@@ -23,7 +42,7 @@ export default function LandingPageNew() {
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
           <span className="font-semibold text-zinc-200">Flacko AI</span>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-400 hidden sm:block">500+ TSLA traders</span>
+            <span className="text-sm text-zinc-400 hidden sm:block">500+ members</span>
             <Link href="/signup">
               <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
                 Get Access
@@ -36,7 +55,7 @@ export default function LandingPageNew() {
       {/* Hero */}
       <section className="pt-24 pb-16 px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-sm text-zinc-500 mb-4">Join 500+ TSLA swing traders</p>
+          <p className="text-sm text-zinc-500 mb-4">Join 500+ members</p>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
             Our TSLA Trading
             <br />
@@ -773,7 +792,7 @@ export default function LandingPageNew() {
               <ul className="space-y-3 text-sm text-zinc-400">
                 <li>Chat with serious TSLA swing traders</li>
                 <li>Share setups, ask questions, think out loud</li>
-                <li>No spam, no noise — keeps us all organized</li>
+                <li>Signal, not noise</li>
               </ul>
             </div>
           </div>
@@ -826,37 +845,26 @@ export default function LandingPageNew() {
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">
-            Questions
+            FAQ
           </h2>
           
-          <div className="space-y-6">
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-2 text-zinc-200">Is this financial advice?</h3>
-              <p className="text-sm text-zinc-400">
-                No. Flacko AI provides trading intelligence and a decision framework — not financial advice. Always do your own research and consult with a qualified financial advisor.
-              </p>
-            </div>
-            
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-2 text-zinc-200">What's the time commitment?</h3>
-              <p className="text-sm text-zinc-400">
-                About 2-5 minutes a day. Read the daily report, check your alerts, and you're set. The system tells you when to pay attention.
-              </p>
-            </div>
-            
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-2 text-zinc-200">When are reports published?</h3>
-              <p className="text-sm text-zinc-400">
-                Daily reports go out after market close. Weekly reports drop on weekends. You'll get pinged in Discord when they're ready.
-              </p>
-            </div>
-            
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-2 text-zinc-200">Can I cancel anytime?</h3>
-              <p className="text-sm text-zinc-400">
-                Yes. One click, no questions asked. Your access continues until the end of your billing period.
-              </p>
-            </div>
+          <div>
+            <FAQItem
+              question="How is the report created?"
+              answer="The system combines a trained framework built on years of TSLA-specific trading philosophy with real-time data feeds costing over $700/month. Each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from SpotGamma. The AI synthesizes all of this into a single daily read on regime, levels, and positioning. It's not a gut call. It's a systematic process that runs the same way every day."
+            />
+            <FAQItem
+              question="How is risk management factored in?"
+              answer="Risk management is the foundation, not an afterthought. We've developed a 1,500+ line rulebook that governs everything: position sizing based on mode, maximum daily deployment caps, level-based entries and exits, and a Master Eject protocol for when conditions break down. The entire system is designed around one principle: don't participate in corrections. By tracking early warning signs across multiple timeframes, the framework shifts you defensive before the damage compounds. You're not reacting to drawdowns. You're anticipating them."
+            />
+            <FAQItem
+              question="What kind of automated signals do I receive?"
+              answer="The system pulls key levels directly from each daily report and automatically creates Discord alerts for you. When price hits a level, you get pinged. No staring at charts all day waiting for something to happen. Let the trades come to you. Each alert includes pre-determined sizing guidance based on current conditions, so you know whether to size in aggressively or scale down. Everything is set up for you. All you have to do is react."
+            />
+            <FAQItem
+              question="Is this only for TSLA?"
+              answer="For now, yes. The daily reports and levels are TSLA-specific. That said, we're building the infrastructure to add additional tickers in the future. We also monitor the major indexes closely and apply the same regime principles, since TSLA doesn't move in a vacuum. Broader market context is always part of the read."
+            />
           </div>
         </div>
       </section>
@@ -885,7 +893,7 @@ export default function LandingPageNew() {
           </Link>
           
           <p className="mt-6 text-zinc-500 text-sm">
-            Join 500+ traders who wake up with a plan.
+            Join 500+ members who wake up with a plan.
           </p>
         </div>
       </section>
