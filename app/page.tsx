@@ -343,7 +343,7 @@ export default function LandingPageNew() {
               <p className="text-sm text-zinc-400 mb-3">Warning signs present</p>
               <ul className="space-y-1 text-sm text-zinc-300">
                 <li>• Reducing daily cap to 10-15%</li>
-                <li>• Slowing accumulation pace</li>
+                <li>• Ratcheting down leverage</li>
                 <li>• Shifting to watch and see</li>
               </ul>
             </div>
@@ -366,7 +366,7 @@ export default function LandingPageNew() {
               <p className="text-sm text-zinc-400 mb-3">Structure broken or at risk</p>
               <ul className="space-y-1 text-sm text-zinc-300">
                 <li>• Dropping daily cap to 0-10%</li>
-                <li>• Waiting for stabilization</li>
+                <li>• Respecting Master Eject level</li>
                 <li>• Requiring evidence of bottom</li>
               </ul>
             </div>
