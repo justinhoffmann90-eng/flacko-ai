@@ -484,7 +484,7 @@ export default function LandingPageNew() {
 
           <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800 text-center">
             <p className="text-zinc-400 text-sm">
-              <strong className="text-zinc-200">The result:</strong> You wake up, read the map, set your alerts, and go live your life. The system tells you when to pay attention.
+              <strong className="text-zinc-200">The result:</strong> You wake up, read the map, and go live your life. Alerts are set for you — the system tells you when to pay attention.
             </p>
           </div>
           
