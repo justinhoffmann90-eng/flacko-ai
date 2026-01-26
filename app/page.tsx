@@ -490,6 +490,57 @@ export default function LandingPageNew() {
           
         </div>
       </section>
+
+      {/* The Framework */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            The Framework
+          </h2>
+          <p className="text-center text-zinc-500 mb-10">
+            Built to prevent buying dips that keep dipping — and enable conviction when conditions support it.
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                🎯 Mode System
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Green/Yellow/Red posture from indicator confluence</li>
+                <li>• Daily caps adjust with conditions</li>
+                <li>• Clear rules for each regime — no guessing</li>
+              </ul>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                🛡️ Risk Controls
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Master Eject: pre-defined, non-negotiable exit</li>
+                <li>• Position limits: never overexposed</li>
+                <li>• Hysteresis: prevents whipsawing</li>
+              </ul>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                📊 Indicator Stack
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Technicals: structure, momentum, trend</li>
+                <li>• Flow: HIRO, gamma walls, dealer positioning</li>
+                <li>• Timeframes: weekly → daily → intraday</li>
+              </ul>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-zinc-500">
+            Sleep at night knowing you have a plan for every scenario.
+          </p>
+        </div>
+      </section>
       
       {/* Alerts Preview - Side by Side */}
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
@@ -614,57 +665,6 @@ export default function LandingPageNew() {
           
           <p className="text-center text-zinc-500 text-sm mt-8">
             Daily keeps you executing cleanly; weekly keeps the thesis honest.
-          </p>
-        </div>
-      </section>
-
-      {/* The Framework */}
-      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-2 text-center">
-            The Framework
-          </h2>
-          <p className="text-center text-zinc-500 mb-10">
-            Built to prevent buying dips that keep dipping — and enable conviction when conditions support it.
-          </p>
-          
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                🎯 Mode System
-              </h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• Green/Yellow/Red posture from indicator confluence</li>
-                <li>• Daily caps adjust with conditions</li>
-                <li>• Clear rules for each regime — no guessing</li>
-              </ul>
-            </div>
-            
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                🛡️ Risk Controls
-              </h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• Master Eject: pre-defined, non-negotiable exit</li>
-                <li>• Position limits: never overexposed</li>
-                <li>• Hysteresis: prevents whipsawing</li>
-              </ul>
-            </div>
-            
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                📊 Indicator Stack
-              </h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• Technicals: structure, momentum, trend</li>
-                <li>• Flow: HIRO, gamma walls, dealer positioning</li>
-                <li>• Timeframes: weekly → daily → intraday</li>
-              </ul>
-            </div>
-          </div>
-
-          <p className="text-center text-sm text-zinc-500">
-            Sleep at night knowing you have a plan for every scenario.
           </p>
         </div>
       </section>
