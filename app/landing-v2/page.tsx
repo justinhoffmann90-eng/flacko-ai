@@ -84,7 +84,7 @@ export default function LandingPageV2() {
             </Link>
           </div>
           <p className="text-sm text-zinc-500">
-            Cancel anytime.
+            Daily Report + Alerts + VIP Discord + Weekly Calls
           </p>
         </div>
       </section>
