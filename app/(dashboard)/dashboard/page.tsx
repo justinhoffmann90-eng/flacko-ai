@@ -146,6 +146,7 @@ export default async function DashboardPage() {
   const tierColors: Record<string, string> = {
     green: "bg-green-500",
     yellow: "bg-yellow-500",
+    orange: "bg-orange-500",
     red: "bg-red-500",
   };
 
@@ -160,7 +161,7 @@ export default async function DashboardPage() {
             <div className="flex items-start justify-between">
               <div>
                 <Badge
-                  variant={mode as "green" | "yellow" | "red"}
+                  variant={mode as "green" | "yellow" | "orange" | "red"}
                   className={`text-lg px-4 py-1.5 font-bold glow-${mode}`}
                 >
                   {mode.toUpperCase()} MODE

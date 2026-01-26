@@ -244,6 +244,7 @@ function parseTierValue(value: string | undefined): TierSignal {
   if (!value) return 'yellow';
   const v = value.toLowerCase().trim();
   if (v === '🟢' || v === 'green') return 'green';
+  if (v === '🟠' || v === 'orange') return 'orange';
   if (v === '🔴' || v === 'red') return 'red';
   return 'yellow';
 }
@@ -253,7 +254,7 @@ function parseMode(modeStr: string | undefined): { base: TrafficLightMode; subty
   if (!modeStr) return { base: 'yellow', subtype: '' };
 
   // Check for subtype in parentheses: "Yellow (Improving)"
-  const match = modeStr.match(/^(green|yellow|red)\s*(?:\(([^)]+)\))?$/i);
+  const match = modeStr.match(/^(green|yellow|orange|red)\s*(?:\(([^)]+)\))?$/i);
   if (match) {
     return {
       base: match[1].toLowerCase() as TrafficLightMode,
@@ -264,6 +265,7 @@ function parseMode(modeStr: string | undefined): { base: TrafficLightMode; subty
   // Simple mode without subtype
   const lower = modeStr.toLowerCase();
   if (lower.includes('green')) return { base: 'green', subtype: '' };
+  if (lower.includes('orange')) return { base: 'orange', subtype: '' };
   if (lower.includes('red')) return { base: 'red', subtype: '' };
   return { base: 'yellow', subtype: '' };
 }
@@ -459,8 +461,8 @@ function extractMode(
   parsed: ParsedReportData,
   warnings: string[]
 ): ExtractedReportData["mode"] {
-  // v3.0 Pattern: ## 🚦 Mode: 🟢 GREEN or ## 🚦 Mode: [🟢/🟡/🔴] [GREEN/YELLOW/RED]
-  const v3Pattern = /##\s*🚦?\s*Mode:\s*([🔴🟡🟢])\s*(GREEN|YELLOW|RED)(?:\s*\(([^)]+)\))?/i;
+  // v3.0 Pattern: ## 🚦 Mode: 🟢 GREEN or ## 🚦 Mode: [🟢/🟡/🟠/🔴] [GREEN/YELLOW/ORANGE/RED]
+  const v3Pattern = /##\s*🚦?\s*Mode:\s*([🔴🟠🟡🟢])\s*(GREEN|YELLOW|ORANGE|RED)(?:\s*\(([^)]+)\))?/i;
   const v3Match = markdown.match(v3Pattern);
 
   if (v3Match) {
@@ -482,7 +484,7 @@ function extractMode(
   // Pattern 1: Table format with emoji
   // | **Mode** | 🟡 **Yellow (Improving)** — Early recovery...
   // | **Mode** | 🔴 **RED — Defensive mode...
-  const tablePattern = /\*\*Mode\*\*\s*\|\s*([🔴🟡🟢])\s*\*\*(Red|Yellow|Green)(?:\s*\([^)]*\))?\*\*\s*[—-]\s*([^|]+)/i;
+  const tablePattern = /\*\*Mode\*\*\s*\|\s*([🔴🟠🟡🟢])\s*\*\*(Red|Orange|Yellow|Green)(?:\s*\([^)]*\))?\*\*\s*[—-]\s*([^|]+)/i;
   const tableMatch = markdown.match(tablePattern);
 
   if (tableMatch) {
@@ -497,7 +499,7 @@ function extractMode(
 
   // Pattern 2: Simpler table format
   // | **Mode** | 🔴 **RED** |
-  const simpleTablePattern = /\*\*Mode\*\*\s*\|\s*([🔴🟡🟢])\s*\*\*(Red|Yellow|Green)/i;
+  const simpleTablePattern = /\*\*Mode\*\*\s*\|\s*([🔴🟠🟡🟢])\s*\*\*(Red|Orange|Yellow|Green)/i;
   const simpleMatch = markdown.match(simpleTablePattern);
 
   if (simpleMatch) {
@@ -510,7 +512,7 @@ function extractMode(
   }
 
   // Pattern 3: Look for emoji + mode word anywhere
-  const emojiModePattern = /([🔴🟡🟢])\s*\*?\*?(Red|Yellow|Green)/i;
+  const emojiModePattern = /([🔴🟠🟡🟢])\s*\*?\*?(Red|Orange|Yellow|Green)/i;
   const emojiMatch = markdown.match(emojiModePattern);
 
   if (emojiMatch) {
@@ -523,7 +525,7 @@ function extractMode(
   }
 
   // Fallback: general pattern
-  const modePattern = /(green|yellow|red)\s*mode/i;
+  const modePattern = /(green|yellow|orange|red)\s*mode/i;
   const match = markdown.match(modePattern);
 
   if (!match) {

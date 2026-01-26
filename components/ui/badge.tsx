@@ -16,6 +16,7 @@ const badgeVariants = cva(
         outline: "text-foreground",
         green: "border-green-500 bg-green-500/10 text-green-500",
         yellow: "border-yellow-500 bg-yellow-500/10 text-yellow-500",
+        orange: "border-orange-500 bg-orange-500/10 text-orange-500",
         red: "border-red-500 bg-red-500/10 text-red-500",
         upside: "border-green-500 bg-green-500/10 text-green-500",
         downside: "border-red-500 bg-red-500/10 text-red-500",

@@ -87,6 +87,10 @@
   @apply bg-yellow-500/10 border-yellow-500 text-yellow-500;
 }
 
+.mode-orange {
+  @apply bg-orange-500/10 border-orange-500 text-orange-500;
+}
+
 .mode-red {
   @apply bg-red-500/10 border-red-500 text-red-500;
 }
@@ -210,6 +214,12 @@
   box-shadow: 0 0 20px 0 rgba(234, 179, 8, 0.4);
 }
 
+.glow-orange {
+  animation: pulse-glow 2s ease-in-out infinite;
+  color: #f97316;
+  box-shadow: 0 0 20px 0 rgba(249, 115, 22, 0.4);
+}
+
 .glow-red {
   animation: pulse-glow 2s ease-in-out infinite;
   color: #ef4444;
@@ -257,6 +267,16 @@
     rgba(234, 179, 8, 0.15) 0%,
     rgba(234, 179, 8, 0.05) 50%,
     rgba(234, 179, 8, 0.2) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animated-gradient-orange {
+  background: linear-gradient(135deg,
+    rgba(249, 115, 22, 0.15) 0%,
+    rgba(249, 115, 22, 0.05) 50%,
+    rgba(249, 115, 22, 0.2) 100%
   );
   background-size: 200% 200%;
   animation: gradient-shift 8s ease infinite;

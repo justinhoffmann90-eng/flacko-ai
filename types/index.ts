@@ -60,7 +60,7 @@ export interface UserSettings {
 }
 
 // Report Types
-export type TrafficLightMode = 'green' | 'yellow' | 'red';
+export type TrafficLightMode = 'green' | 'yellow' | 'orange' | 'red';
 export type AlertType = 'upside' | 'downside';
 export type ForecastResult = 'correct' | 'incorrect' | 'partial';
 
@@ -104,7 +104,7 @@ export interface PositionGuidance {
 }
 
 // v3.0 Report Types
-export type TierSignal = 'green' | 'yellow' | 'red';
+export type TierSignal = 'green' | 'yellow' | 'orange' | 'red';
 
 export interface TierSignals {
   regime: TierSignal;
