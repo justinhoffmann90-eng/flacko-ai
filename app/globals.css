@@ -1,0 +1,303 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground));
+}
+
+/* Traffic light mode colors */
+.mode-green {
+  @apply bg-green-500/10 border-green-500 text-green-500;
+}
+
+.mode-yellow {
+  @apply bg-yellow-500/10 border-yellow-500 text-yellow-500;
+}
+
+.mode-red {
+  @apply bg-red-500/10 border-red-500 text-red-500;
+}
+
+/* Markdown content styling */
+.markdown-content {
+  @apply text-foreground;
+}
+
+.markdown-content table {
+  @apply w-full text-sm;
+}
+
+.markdown-content th {
+  @apply text-left font-semibold;
+}
+
+.markdown-content td,
+.markdown-content th {
+  @apply py-2 px-3;
+}
+
+.markdown-content tr {
+  @apply border-b border-border;
+}
+
+.markdown-content tr:last-child {
+  @apply border-b-0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply pl-5 space-y-1;
+}
+
+.markdown-content li {
+  @apply text-foreground/90;
+}
+
+.markdown-content p + p {
+  @apply mt-3;
+}
+
+.markdown-content h2 {
+  @apply text-lg font-semibold mt-8 mb-3 pb-2 border-b border-border;
+}
+
+.markdown-content h3 {
+  @apply text-base font-semibold mt-6 mb-2;
+}
+
+.markdown-content strong {
+  @apply font-semibold text-foreground;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-primary/40 pl-4 py-2 my-4 bg-muted/30 rounded-r;
+}
+
+.markdown-content hr {
+  @apply my-6 border-border;
+}
+
+/* Ordered lists - keep number and content together */
+.markdown-content ol {
+  @apply list-decimal pl-6 space-y-4;
+}
+
+.markdown-content ol > li {
+  @apply pl-1;
+}
+
+/* Nested lists under ordered items */
+.markdown-content ol > li > ul {
+  @apply mt-2 pl-4 space-y-1;
+}
+
+/* Better list styling inside tables */
+.markdown-content td ul,
+.markdown-content td ol {
+  @apply pl-4 my-1 space-y-0.5;
+}
+
+.markdown-content td li {
+  @apply text-sm;
+}
+
+/* ===== Visual Enhancement Animations ===== */
+
+/* Pulsing glow animation for mode badge */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px 0 currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 25px 5px currentColor;
+    opacity: 0.8;
+  }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Mode-specific glow colors */
+.glow-green {
+  animation: pulse-glow 2s ease-in-out infinite;
+  color: #22c55e;
+  box-shadow: 0 0 20px 0 rgba(34, 197, 94, 0.4);
+}
+
+.glow-yellow {
+  animation: pulse-glow 2s ease-in-out infinite;
+  color: #eab308;
+  box-shadow: 0 0 20px 0 rgba(234, 179, 8, 0.4);
+}
+
+.glow-red {
+  animation: pulse-glow 2s ease-in-out infinite;
+  color: #ef4444;
+  box-shadow: 0 0 20px 0 rgba(239, 68, 68, 0.4);
+}
+
+/* Glassmorphism card effect */
+.glass-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Animated gradient background */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient-green {
+  background: linear-gradient(135deg,
+    rgba(34, 197, 94, 0.15) 0%,
+    rgba(34, 197, 94, 0.05) 50%,
+    rgba(34, 197, 94, 0.2) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animated-gradient-yellow {
+  background: linear-gradient(135deg,
+    rgba(234, 179, 8, 0.15) 0%,
+    rgba(234, 179, 8, 0.05) 50%,
+    rgba(234, 179, 8, 0.2) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animated-gradient-red {
+  background: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.15) 0%,
+    rgba(239, 68, 68, 0.05) 50%,
+    rgba(239, 68, 68, 0.2) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* Price level progress bar */
+.level-bar {
+  @apply relative h-1.5 rounded-full overflow-hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .level-bar {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.level-bar-fill {
+  @apply absolute left-0 top-0 h-full rounded-full transition-all duration-500;
+}
+
+/* Eject warning pulse */
+@keyframes warning-pulse {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 15px 0 rgba(239, 68, 68, 0.3);
+  }
+}
+
+.eject-warning {
+  animation: warning-pulse 2s ease-in-out infinite;
+}
