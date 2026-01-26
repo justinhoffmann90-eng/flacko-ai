@@ -60,8 +60,8 @@ export default function SignupPage() {
       }
 
       if (authData.user) {
-        // Redirect to pricing/checkout
-        router.push("/pricing");
+        // Redirect to dashboard (user will have auto-created trial subscription)
+        router.push("/dashboard");
       }
     } catch (err) {
       setError("An unexpected error occurred");

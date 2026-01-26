@@ -41,13 +41,16 @@ export async function POST(request: Request) {
     };
 
     // Get all subscribers who want new report emails
+    // Include active, comped, and valid trial subscriptions
     const { data: subscribers } = await supabase
       .from("subscriptions")
       .select(`
         user_id,
+        status,
+        trial_ends_at,
         users (email)
       `)
-      .in("status", ["active", "comped"]);
+      .or(`status.in.(active,comped),and(status.eq.trial,trial_ends_at.gt.${new Date().toISOString()})`);
 
     if (!subscribers || subscribers.length === 0) {
       return NextResponse.json({ message: "No subscribers to notify" });

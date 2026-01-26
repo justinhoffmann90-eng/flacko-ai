@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
+import { addRoleToMember, removeRoleFromMember } from "@/lib/discord/bot";
 import Stripe from "stripe";
 
 // Lazy-load Stripe for webhook verification
@@ -66,6 +67,17 @@ export async function POST(request: Request) {
           }, {
             onConflict: "user_id",
           });
+
+          // Add Discord subscriber role if user has linked Discord
+          const { data: userData } = await supabase
+            .from("users")
+            .select("discord_user_id")
+            .eq("id", userId)
+            .single();
+
+          if (userData?.discord_user_id) {
+            await addRoleToMember(userData.discord_user_id);
+          }
         }
         break;
       }
@@ -103,6 +115,17 @@ export async function POST(request: Request) {
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
+
+          // Remove Discord subscriber role
+          const { data: userData } = await supabase
+            .from("users")
+            .select("discord_user_id")
+            .eq("id", userId)
+            .single();
+
+          if (userData?.discord_user_id) {
+            await removeRoleFromMember(userData.discord_user_id);
+          }
         }
         break;
       }

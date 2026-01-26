@@ -44,8 +44,9 @@ export default async function CatalystsPage({
       .eq("user_id", user.id)
       .single();
 
-    const sub = subscription as { status?: string } | null;
-    const hasAccess = sub?.status === "active" || sub?.status === "comped";
+    const sub = subscription as { status?: string; trial_ends_at?: string } | null;
+    const { hasSubscriptionAccess } = await import("@/lib/subscription");
+    const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
       redirect("/pricing");

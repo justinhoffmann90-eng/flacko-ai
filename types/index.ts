@@ -10,7 +10,7 @@ export interface User {
 }
 
 // Subscription Types
-export type SubscriptionStatus = 'pending' | 'active' | 'past_due' | 'canceled' | 'comped';
+export type SubscriptionStatus = 'pending' | 'active' | 'past_due' | 'canceled' | 'comped' | 'trial';
 
 export interface Subscription {
   id: string;
@@ -22,9 +22,20 @@ export interface Subscription {
   locked_price_cents: number;
   current_period_start?: string;
   current_period_end?: string;
+  trial_ends_at?: string;
   cancel_at_period_end: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Helper to check if subscription has access
+export function hasSubscriptionAccess(subscription: Subscription | null): boolean {
+  if (!subscription) return false;
+  if (subscription.status === 'active' || subscription.status === 'comped') return true;
+  if (subscription.status === 'trial' && subscription.trial_ends_at) {
+    return new Date(subscription.trial_ends_at) > new Date();
+  }
+  return false;
 }
 
 // User Settings Types

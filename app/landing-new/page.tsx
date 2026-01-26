@@ -151,7 +151,7 @@ export default function LandingPageNew() {
           
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Correction Chart Visual - Simple Mode Transitions */}
-            <div className="relative md:col-span-1 md:min-w-[420px]">
+            <div className="relative md:col-span-1 md:min-w-[380px]">
               <div className="bg-zinc-900/30 rounded-xl p-6 border border-zinc-800/50">
                 {/* Chart area */}
                 <div className="relative h-56">
@@ -199,15 +199,15 @@ export default function LandingPageNew() {
                   </svg>
                   
                   {/* Green Mode - early, still healthy */}
-                  <div className="absolute -top-2 left-[8%] flex flex-col items-center">
+                  <div className="absolute -top-5 left-[8%] flex flex-col items-center">
                     <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Green Mode</span>
                   </div>
                   <div className="absolute top-[13%] left-[9%]">
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
-                  {/* Yellow Mode - at green→yellow transition */}
-                  <div className="absolute -top-2 left-[18%] flex flex-col items-center">
+                  {/* Yellow Mode - at green→yellow transition - staggered lower to avoid overlap */}
+                  <div className="absolute top-1 left-[18%] flex flex-col items-center">
                     <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Yellow Mode</span>
                   </div>
                   <div className="absolute top-[17%] left-[19%]">
@@ -215,15 +215,15 @@ export default function LandingPageNew() {
                   </div>
                   
                   {/* Red Mode - at yellow→red transition */}
-                  <div className="absolute -top-2 left-[38%] flex flex-col items-center">
+                  <div className="absolute -top-5 left-[38%] flex flex-col items-center">
                     <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Red Mode</span>
                   </div>
                   <div className="absolute top-[35%] left-[39%]">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
                   </div>
                   
-                  {/* Master Eject - shortly after red mode */}
-                  <div className="absolute -top-2 left-[50%] flex flex-col items-center">
+                  {/* Master Eject - shortly after red mode - staggered lower */}
+                  <div className="absolute top-1 left-[50%] flex flex-col items-center">
                     <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">Master Eject</span>
                   </div>
                   <div className="absolute top-[50%] left-[51%]">
@@ -231,18 +231,21 @@ export default function LandingPageNew() {
                   </div>
                 </div>
                 
-                {/* X-axis labels - 10 weeks */}
-                <div className="flex justify-between mt-3 text-[9px] text-zinc-500">
-                  <span>Week 1</span>
-                  <span>Week 2</span>
-                  <span>Week 3</span>
-                  <span>Week 4</span>
-                  <span>Week 5</span>
-                  <span>Week 6</span>
-                  <span>Week 7</span>
-                  <span>Week 8</span>
-                  <span>Week 9</span>
-                  <span>Week 10</span>
+                {/* X-axis labels - simplified for mobile */}
+                <div className="flex justify-between mt-3 text-[9px] sm:text-[10px] text-zinc-500">
+                  <span>Wk 1</span>
+                  <span className="hidden sm:inline">Wk 2</span>
+                  <span className="hidden md:inline">Wk 3</span>
+                  <span className="sm:hidden">Wk 3</span>
+                  <span className="hidden sm:inline">Wk 4</span>
+                  <span className="hidden md:inline">Wk 5</span>
+                  <span className="sm:hidden">Wk 5</span>
+                  <span className="hidden md:inline">Wk 6</span>
+                  <span className="hidden sm:inline">Wk 7</span>
+                  <span className="hidden md:inline">Wk 8</span>
+                  <span className="sm:hidden">Wk 8</span>
+                  <span className="hidden sm:inline">Wk 9</span>
+                  <span>Wk 10</span>
                 </div>
                 
                 {/* Caption */}
@@ -283,6 +286,148 @@ export default function LandingPageNew() {
             <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Catalyst Calendar</span>
             <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Weekly Deep-Dive</span>
             <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Weekly Live Call</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Regime Mode */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            Regime Mode
+          </h2>
+          <p className="text-center text-zinc-500 mb-8">
+            Conditions deteriorate in stages. We track the signals so you adjust before it's too late.
+          </p>
+          
+          {/* Spectrum Bar */}
+          <div className="relative mb-8">
+            <div className="h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 mb-4"></div>
+            <div className="flex justify-between text-xs text-zinc-500">
+              <span>Healthy</span>
+              <span>Warning</span>
+              <span>Deteriorating</span>
+            </div>
+          </div>
+
+          {/* Three Phases with Deterioration Flow */}
+          <div className="grid md:grid-cols-3 gap-0 relative">
+            {/* Green Mode */}
+            <div className="bg-green-500/10 border border-green-500/30 rounded-l-lg md:rounded-l-lg md:rounded-r-none p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <h3 className="font-bold text-lg text-green-400">Green</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-3">Trend intact, momentum healthy</p>
+              <ul className="space-y-1 text-sm text-zinc-300">
+                <li>• Full position sizing</li>
+                <li>• Press A+ setups</li>
+                <li>• Run winners</li>
+              </ul>
+            </div>
+            
+            {/* Arrow 1 */}
+            <div className="hidden md:flex absolute left-1/3 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+              <div className="bg-zinc-800 rounded-full p-1 border border-zinc-700">
+                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Yellow Mode */}
+            <div className="bg-yellow-500/10 border-y border-yellow-500/30 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <h3 className="font-bold text-lg text-yellow-400">Yellow</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-3">Warning signs present</p>
+              <ul className="space-y-1 text-sm text-zinc-300">
+                <li>• Reduce size (50-75%)</li>
+                <li>• Daily cap: 10-20%</li>
+                <li>• Controlled accumulation</li>
+              </ul>
+            </div>
+            
+            {/* Arrow 2 */}
+            <div className="hidden md:flex absolute left-2/3 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+              <div className="bg-zinc-800 rounded-full p-1 border border-zinc-700">
+                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Red Mode */}
+            <div className="bg-red-500/10 border border-red-500/30 rounded-r-lg md:rounded-r-lg md:rounded-l-none p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <h3 className="font-bold text-lg text-red-400">Red</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-3">Structure broken or at risk</p>
+              <ul className="space-y-1 text-sm text-zinc-300">
+                <li>• Nibbles only at extremes</li>
+                <li>• Daily cap: 10%</li>
+                <li>• Master Eject active</li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* Deterioration note */}
+          <p className="text-center text-zinc-500 text-sm mt-6">
+            As conditions deteriorate, exposure ratchets down. No averaging into weakness.
+          </p>
+        </div>
+      </section>
+
+      {/* The Methodology */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            How the mode is determined
+          </h2>
+          <p className="text-center text-zinc-500 mb-8">
+            Not vibes. Not gut calls. Indicator confluence across multiple timeframes.
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            {/* Technical Indicators */}
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-blue-400" />
+                Technical Confluence
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• <span className="text-zinc-300">Market Structure</span> — HH/HL or broken</li>
+                <li>• <span className="text-zinc-300">BX Trender</span> — Momentum regime</li>
+                <li>• <span className="text-zinc-300">MA/EMA</span> — Trend position & slope</li>
+                <li>• <span className="text-zinc-300">SMI</span> — Leading momentum indicator</li>
+                <li>• <span className="text-zinc-300">RSI</span> — Divergences & extremes</li>
+                <li>• <span className="text-zinc-300">Fib Levels</span> — Smart money zones</li>
+              </ul>
+            </div>
+            
+            {/* Options Flow */}
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                Dealer Positioning
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• <span className="text-zinc-300">SpotGamma Levels</span> — Put Wall, Call Wall, Hedge Wall</li>
+                <li>• <span className="text-zinc-300">HIRO</span> — Real-time institutional flow</li>
+                <li>• <span className="text-zinc-300">FlowPatrol</span> — Daily options flow report</li>
+                <li>• <span className="text-zinc-300">Gamma Regime</span> — Positive vs negative gamma</li>
+                <li>• <span className="text-zinc-300">Key Gamma Strike</span> — Regime pivot point</li>
+              </ul>
+              <p className="text-xs text-zinc-500 mt-3">Powered by $700+/mo in institutional data feeds</p>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900/30 rounded-lg p-4 border border-zinc-800">
+            <p className="text-sm text-zinc-400 text-center">
+              <strong className="text-zinc-300">Timeframe Alignment:</strong> Weekly sets the regime. Daily provides early warning. 1H and 4H confirm entries. When all three align, conviction is high.
+            </p>
           </div>
         </div>
       </section>
@@ -429,148 +574,6 @@ export default function LandingPageNew() {
                 </li>
               </ul>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Regime Mode */}
-      <section className="py-16 px-6 border-t border-zinc-900">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-2 text-center">
-            Regime Mode
-          </h2>
-          <p className="text-center text-zinc-500 mb-8">
-            Conditions deteriorate in stages. We track the signals so you adjust before it's too late.
-          </p>
-          
-          {/* Spectrum Bar */}
-          <div className="relative mb-8">
-            <div className="h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 mb-4"></div>
-            <div className="flex justify-between text-xs text-zinc-500">
-              <span>Healthy</span>
-              <span>Warning</span>
-              <span>Deteriorating</span>
-            </div>
-          </div>
-
-          {/* Three Phases with Deterioration Flow */}
-          <div className="grid md:grid-cols-3 gap-0 relative">
-            {/* Green Mode */}
-            <div className="bg-green-500/10 border border-green-500/30 rounded-l-lg md:rounded-l-lg md:rounded-r-none p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <h3 className="font-bold text-lg text-green-400">Green</h3>
-              </div>
-              <p className="text-sm text-zinc-400 mb-3">Trend intact, momentum healthy</p>
-              <ul className="space-y-1 text-sm text-zinc-300">
-                <li>• Full position sizing</li>
-                <li>• Press A+ setups</li>
-                <li>• Run winners</li>
-              </ul>
-            </div>
-            
-            {/* Arrow 1 */}
-            <div className="hidden md:flex absolute left-1/3 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
-              <div className="bg-zinc-800 rounded-full p-1 border border-zinc-700">
-                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Yellow Mode */}
-            <div className="bg-yellow-500/10 border-y border-yellow-500/30 p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <h3 className="font-bold text-lg text-yellow-400">Yellow</h3>
-              </div>
-              <p className="text-sm text-zinc-400 mb-3">Warning signs present</p>
-              <ul className="space-y-1 text-sm text-zinc-300">
-                <li>• Reduce size (50-75%)</li>
-                <li>• Daily cap: 10-20%</li>
-                <li>• Controlled accumulation</li>
-              </ul>
-            </div>
-            
-            {/* Arrow 2 */}
-            <div className="hidden md:flex absolute left-2/3 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
-              <div className="bg-zinc-800 rounded-full p-1 border border-zinc-700">
-                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Red Mode */}
-            <div className="bg-red-500/10 border border-red-500/30 rounded-r-lg md:rounded-r-lg md:rounded-l-none p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <h3 className="font-bold text-lg text-red-400">Red</h3>
-              </div>
-              <p className="text-sm text-zinc-400 mb-3">Structure broken or at risk</p>
-              <ul className="space-y-1 text-sm text-zinc-300">
-                <li>• Nibbles only at extremes</li>
-                <li>• Daily cap: 10%</li>
-                <li>• Master Eject active</li>
-              </ul>
-            </div>
-          </div>
-          
-          {/* Deterioration note */}
-          <p className="text-center text-zinc-500 text-sm mt-6">
-            As conditions deteriorate, exposure ratchets down. No averaging into weakness.
-          </p>
-        </div>
-      </section>
-
-      {/* The Methodology */}
-      <section className="py-16 px-6 border-t border-zinc-900">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-2 text-center">
-            How the mode is determined
-          </h2>
-          <p className="text-center text-zinc-500 mb-8">
-            Not vibes. Not gut calls. Indicator confluence across multiple timeframes.
-          </p>
-          
-          <div className="grid md:grid-cols-2 gap-4 mb-8">
-            {/* Technical Indicators */}
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Brain className="w-4 h-4 text-blue-400" />
-                Technical Confluence
-              </h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• <span className="text-zinc-300">Market Structure</span> — HH/HL or broken</li>
-                <li>• <span className="text-zinc-300">BX Trender</span> — Momentum regime</li>
-                <li>• <span className="text-zinc-300">MA/EMA</span> — Trend position & slope</li>
-                <li>• <span className="text-zinc-300">SMI</span> — Leading momentum indicator</li>
-                <li>• <span className="text-zinc-300">RSI</span> — Divergences & extremes</li>
-                <li>• <span className="text-zinc-300">Fib Levels</span> — Smart money zones</li>
-              </ul>
-            </div>
-            
-            {/* Options Flow */}
-            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                Dealer Positioning
-              </h3>
-              <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• <span className="text-zinc-300">SpotGamma Levels</span> — Put Wall, Call Wall, Hedge Wall</li>
-                <li>• <span className="text-zinc-300">HIRO</span> — Real-time institutional flow</li>
-                <li>• <span className="text-zinc-300">FlowPatrol</span> — Daily options flow report</li>
-                <li>• <span className="text-zinc-300">Gamma Regime</span> — Positive vs negative gamma</li>
-                <li>• <span className="text-zinc-300">Key Gamma Strike</span> — Regime pivot point</li>
-              </ul>
-              <p className="text-xs text-zinc-500 mt-3">Powered by $700+/mo in institutional data feeds</p>
-            </div>
-          </div>
-
-          <div className="bg-zinc-900/30 rounded-lg p-4 border border-zinc-800">
-            <p className="text-sm text-zinc-400 text-center">
-              <strong className="text-zinc-300">Timeframe Alignment:</strong> Weekly sets the regime. Daily provides early warning. 1H and 4H confirm entries. When all three align, conviction is high.
-            </p>
           </div>
         </div>
       </section>

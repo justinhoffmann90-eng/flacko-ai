@@ -26,6 +26,7 @@ interface ChatMessage {
 
 interface SubscriptionStatus {
   status: string;
+  trial_ends_at?: string;
 }
 
 interface ChatUsage {
@@ -49,12 +50,13 @@ export async function POST(request: Request) {
       // Check subscription status
       const { data: subscriptionData } = await supabase
         .from("subscriptions")
-        .select("status")
+        .select("status, trial_ends_at")
         .eq("user_id", user.id)
         .single();
 
       const subscription = subscriptionData as SubscriptionStatus | null;
-      if (!subscription || !["active", "comped"].includes(subscription.status)) {
+      const { hasSubscriptionAccess } = await import("@/lib/subscription");
+      if (!hasSubscriptionAccess(subscription)) {
         return NextResponse.json({ error: "Active subscription required" }, { status: 403 });
       }
 
