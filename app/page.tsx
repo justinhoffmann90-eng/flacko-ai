@@ -12,18 +12,15 @@ export default function LandingPageNew() {
       <section className="pt-24 pb-16 px-6">
         <div className="max-w-2xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-            The TSLA Trading
+            Our TSLA Trading
             <br />
             <span className="text-zinc-400">Operating System.</span>
           </h1>
-          <p className="text-xl text-zinc-300 mb-4">
-            Battle map + alerts + context — delivered to you.
+          <p className="text-xl text-zinc-300 mb-6">
+            Battle map. Alerts. Context. Delivered daily.
           </p>
-          <p className="text-zinc-400 mb-8">
-            Flacko turns price action, macro + catalysts, and options dealer positioning into a daily TSLA battle map: key levels, if/then scenarios, and posture — then auto-sets alerts so you only engage when your plan activates.
-          </p>
-          <p className="text-zinc-500 mb-10">
-            Built for TSLA swing traders who want conviction without babysitting charts.
+          <p className="text-zinc-400 mb-10">
+            We turn technicals, flow, and catalysts into a daily playbook — so you wake up knowing exactly what to do.
           </p>
           
           {/* Main CTA */}
@@ -35,12 +32,7 @@ export default function LandingPageNew() {
             </Link>
           </div>
           <p className="text-sm text-zinc-500">
-            Private Discord + alerts + weekly live strategy call
-          </p>
-          
-          {/* OS Promise */}
-          <p className="text-sm text-zinc-500 mt-8 max-w-md mx-auto">
-            Everything is organized into channels and triggers so <strong className="text-zinc-300">information flows to you</strong> — not the other way around.
+            Daily Report + Alerts + VIP Discord + Weekly Calls
           </p>
         </div>
         
