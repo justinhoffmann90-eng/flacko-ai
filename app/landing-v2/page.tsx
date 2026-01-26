@@ -68,7 +68,7 @@ export default function LandingPageV2() {
           </p>
           <p className="text-zinc-400 mb-4">
             We turn technicals, flow and catalysts into a daily playbook — 
-            so you wake up knowing exactly what to do.
+            so you wake up with a plan — every scenario already mapped before it happens.
           </p>
           <p className="text-zinc-500 mb-8 text-sm">
             Corrections unfold in stages — our mode system catches them early so you're 
