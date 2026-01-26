@@ -3,24 +3,47 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Check, X, Shield, TrendingDown, Brain, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function LandingPageNew() {
+  const [showSticky, setShowSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowSticky(window.scrollY > 500);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <main className="bg-black text-zinc-100 min-h-screen">
+      {/* Sticky Header */}
+      <div className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800 transition-all duration-300 ${showSticky ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
+          <span className="font-semibold text-zinc-200">Flacko AI</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-zinc-400 hidden sm:block">500+ TSLA traders</span>
+            <Link href="/signup">
+              <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
+                Get Access
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Hero */}
       <section className="pt-24 pb-16 px-6">
         <div className="max-w-2xl mx-auto text-center">
+          <p className="text-sm text-zinc-500 mb-4">Join 500+ TSLA swing traders</p>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
             Our TSLA Trading
             <br />
             <span className="text-zinc-400">Operating System.</span>
           </h1>
-          <p className="text-xl text-zinc-300 mb-2">
-            Battle map. Alerts. Context.
-          </p>
-          <p className="text-lg text-zinc-400 mb-6">
-            Delivered daily.
+          <p className="text-xl text-zinc-300 mb-6">
+            One system. Every scenario covered.
           </p>
           <p className="text-zinc-400 mb-4">
             We turn technicals, flow, and catalysts into a daily playbook — so you wake up knowing exactly what to do.
@@ -33,7 +56,7 @@ export default function LandingPageNew() {
           <div className="flex justify-center mb-4">
             <Link href="/signup">
               <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-                Join our group
+                Get Access
               </Button>
             </Link>
           </div>
@@ -278,7 +301,7 @@ export default function LandingPageNew() {
         <div className="max-w-3xl mx-auto">
           <p className="text-center text-sm text-zinc-500 mb-4">What the OS includes</p>
           <div className="flex flex-wrap justify-center gap-3 text-sm">
-            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Daily Map</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Battle Map</span>
             <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Auto Alerts</span>
             <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Morning Brief</span>
             <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Dealer Flow Pulse</span>
@@ -628,47 +651,6 @@ export default function LandingPageNew() {
         </div>
       </section>
 
-      {/* Daily / Weekly */}
-      <section className="py-16 px-6 border-t border-zinc-900">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold mb-8 text-center">
-            Daily execution. Weekly recalibration.
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Daily */}
-            <div className="bg-zinc-900/50 rounded-lg p-6 border border-zinc-800">
-              <h3 className="font-semibold text-lg mb-1 text-zinc-200">Daily Report</h3>
-              <p className="text-xs text-zinc-500 mb-4">2-minute read</p>
-              <ul className="space-y-2 text-zinc-400 text-sm">
-                <li>• Mode (offense / neutral / defense)</li>
-                <li>• Key levels + what happens at each</li>
-                <li>• Dealer positioning (HIRO, gamma)</li>
-                <li>• If/Then scenarios — pre-written reactions</li>
-                <li>• Action items — your rules for the day</li>
-              </ul>
-            </div>
-            
-            {/* Weekly */}
-            <div className="bg-zinc-900/50 rounded-lg p-6 border border-zinc-800">
-              <h3 className="font-semibold text-lg mb-1 text-zinc-200">Weekly Report</h3>
-              <p className="text-xs text-zinc-500 mb-4">deep dive</p>
-              <ul className="space-y-2 text-zinc-400 text-sm">
-                <li>• Accountability — how did the calls perform?</li>
-                <li>• Regime check — is the trend holding?</li>
-                <li>• Technical + flow structure review</li>
-                <li>• Correction risk assessment</li>
-                <li>• Week ahead setup + scenarios</li>
-              </ul>
-            </div>
-          </div>
-          
-          <p className="text-center text-zinc-500 text-sm mt-8">
-            Daily keeps you executing cleanly; weekly keeps the thesis honest.
-          </p>
-        </div>
-      </section>
-
       {/* Catalyst Calendar - Side by Side */}
       <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-4xl mx-auto">
@@ -776,10 +758,10 @@ export default function LandingPageNew() {
                 📆 Weekly
               </h3>
               <ul className="space-y-3 text-sm text-zinc-400">
-                <li><strong className="text-zinc-300">Weekly report</strong> — thesis review, level recalibration, what worked/what didn't</li>
-                <li><strong className="text-zinc-300">Catalyst calendar</strong> — Tesla-critical timelines (product unveils, earnings) + macro events (FOMC, CPI, jobs)</li>
-                <li><strong className="text-zinc-300">Live strategy call</strong> — walk through the week and reinforce risk management principles</li>
-                <li><strong className="text-zinc-300">State of Tesla</strong> — FSD milestones, Robotaxi progress, Optimus updates, Elon statements, analyst moves</li>
+                <li><strong className="text-zinc-300">Weekly report</strong> — accountability, regime check, correction risk assessment, week ahead setup</li>
+                <li><strong className="text-zinc-300">Catalyst calendar</strong> — TSLA timelines + macro events (FOMC, CPI, jobs, earnings)</li>
+                <li><strong className="text-zinc-300">Live strategy call</strong> — walk through the week together</li>
+                <li><strong className="text-zinc-300">State of Tesla</strong> — FSD, Robotaxi, Optimus, analyst moves</li>
               </ul>
             </div>
             
@@ -796,8 +778,8 @@ export default function LandingPageNew() {
             </div>
           </div>
           
-          <p className="text-center text-zinc-500 text-sm italic">
-            Your Discord becomes a cockpit — with a crew.
+          <p className="text-center text-zinc-500 text-sm">
+            Daily keeps you executing. Weekly keeps the thesis honest.
           </p>
         </div>
       </section>
@@ -840,12 +822,55 @@ export default function LandingPageNew() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">
+            Questions
+          </h2>
+          
+          <div className="space-y-6">
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-2 text-zinc-200">Is this financial advice?</h3>
+              <p className="text-sm text-zinc-400">
+                No. Flacko AI provides trading intelligence and a decision framework — not financial advice. Always do your own research and consult with a qualified financial advisor.
+              </p>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-2 text-zinc-200">What's the time commitment?</h3>
+              <p className="text-sm text-zinc-400">
+                About 2-5 minutes a day. Read the daily report, check your alerts, and you're set. The system tells you when to pay attention.
+              </p>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-2 text-zinc-200">When are reports published?</h3>
+              <p className="text-sm text-zinc-400">
+                Daily reports go out after market close. Weekly reports drop on weekends. You'll get pinged in Discord when they're ready.
+              </p>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-2 text-zinc-200">Can I cancel anytime?</h3>
+              <p className="text-sm text-zinc-400">
+                Yes. One click, no questions asked. Your access continues until the end of your billing period.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing */}
       <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-4">
-            Install the system.
+            Get the system.
           </h2>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <span className="text-2xl text-zinc-500 line-through">$39.99</span>
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">25% OFF</span>
+          </div>
           <div className="text-4xl font-bold text-white mb-2">
             $29.99<span className="text-xl text-zinc-500">/month</span>
           </div>
@@ -855,12 +880,12 @@ export default function LandingPageNew() {
           
           <Link href="/signup">
             <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-              Join our group
+              Get Access
             </Button>
           </Link>
           
           <p className="mt-6 text-zinc-500 text-sm">
-            Try it for a week. If you're not more organized and confident, cancel with one click.
+            Join 500+ traders who wake up with a plan.
           </p>
         </div>
       </section>
