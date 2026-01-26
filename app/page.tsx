@@ -16,8 +16,11 @@ export default function LandingPageNew() {
             <br />
             <span className="text-zinc-400">Operating System.</span>
           </h1>
-          <p className="text-xl text-zinc-300 mb-6">
-            Battle map. Alerts. Context. Delivered daily.
+          <p className="text-xl text-zinc-300 mb-2">
+            Battle map. Alerts. Context.
+          </p>
+          <p className="text-lg text-zinc-400 mb-6">
+            Delivered daily.
           </p>
           <p className="text-zinc-400 mb-4">
             We turn technicals, flow, and catalysts into a daily playbook — so you wake up knowing exactly what to do.
@@ -57,6 +60,10 @@ export default function LandingPageNew() {
                 <li className="flex items-start gap-2">
                   <span className="text-yellow-500 mt-0.5">•</span>
                   <span><strong className="text-zinc-300">Posture mode</strong> — offense, neutral, or defense</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-yellow-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Daily cap</strong> — pacing tied to mode, so you don't overcommit</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-yellow-500 mt-0.5">•</span>
@@ -312,9 +319,9 @@ export default function LandingPageNew() {
               </div>
               <p className="text-sm text-zinc-400 mb-3">Trend intact, momentum healthy</p>
               <ul className="space-y-1 text-sm text-zinc-300">
-                <li>• Full position sizing</li>
-                <li>• Press A+ setups</li>
-                <li>• Run winners</li>
+                <li>• Good to buy dips</li>
+                <li>• Hold positions with conviction</li>
+                <li>• Don't sell too fast</li>
               </ul>
             </div>
             
@@ -335,9 +342,9 @@ export default function LandingPageNew() {
               </div>
               <p className="text-sm text-zinc-400 mb-3">Warning signs present</p>
               <ul className="space-y-1 text-sm text-zinc-300">
-                <li>• Reduce size (50-75%)</li>
-                <li>• Daily cap: 10-20%</li>
+                <li>• Daily cap: 10-15%</li>
                 <li>• Controlled accumulation</li>
+                <li>• Watch and see mode</li>
               </ul>
             </div>
             
@@ -358,9 +365,9 @@ export default function LandingPageNew() {
               </div>
               <p className="text-sm text-zinc-400 mb-3">Structure broken or at risk</p>
               <ul className="space-y-1 text-sm text-zinc-300">
-                <li>• Nibbles only at extremes</li>
-                <li>• Daily cap: 10%</li>
-                <li>• Master Eject active</li>
+                <li>• Daily cap: 0-10%</li>
+                <li>• Watching for stabilization</li>
+                <li>• Evidence of bottom required</li>
               </ul>
             </div>
           </div>

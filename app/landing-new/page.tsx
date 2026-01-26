@@ -16,8 +16,11 @@ export default function LandingPageNew() {
             <br />
             <span className="text-zinc-400">Operating System.</span>
           </h1>
-          <p className="text-xl text-zinc-300 mb-6">
-            Battle map. Alerts. Context. Delivered daily.
+          <p className="text-xl text-zinc-300 mb-2">
+            Battle map. Alerts. Context.
+          </p>
+          <p className="text-lg text-zinc-400 mb-6">
+            Delivered daily.
           </p>
           <p className="text-zinc-400 mb-4">
             We turn technicals, flow, and catalysts into a daily playbook — so you wake up knowing exactly what to do.
