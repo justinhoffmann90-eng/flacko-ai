@@ -1,7 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { parseReport, PARSER_VERSION, validateReport } from "@/lib/parser";
-import { sendDiscordMessage } from "@/lib/discord/client";
+import { sendReportNotification } from "@/lib/discord/client";
 import { getNewReportDiscordMessage } from "@/lib/discord/templates";
 import { logReportGeneration, logApiError } from "@/lib/api-logger";
 
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       tiers: extracted_data.tiers,
       masterEject: extracted_data.master_eject?.price,
     });
-    await sendDiscordMessage(discordMessage);
+    await sendReportNotification(discordMessage);
 
     return NextResponse.json({ success: true, report });
   } catch (error) {

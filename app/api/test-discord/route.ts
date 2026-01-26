@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendDiscordMessage } from "@/lib/discord/client";
+import { sendDiscordMessage, sendReportNotification } from "@/lib/discord/client";
 import { getAlertDiscordMessage, getNewReportDiscordMessage } from "@/lib/discord/templates";
 
 // Test endpoint - remove in production
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       ],
     });
 
-    const sent = await sendDiscordMessage(message);
+    const sent = await sendReportNotification(message);
     return NextResponse.json({ success: sent, type: "report" });
   }
 

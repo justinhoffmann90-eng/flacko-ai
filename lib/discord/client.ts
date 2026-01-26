@@ -2,6 +2,7 @@
 // No dependencies needed - uses native fetch
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const DISCORD_REPORTS_WEBHOOK_URL = process.env.DISCORD_REPORTS_WEBHOOK_URL;
 
 export interface DiscordEmbed {
   title?: string;
@@ -46,6 +47,36 @@ export async function sendDiscordMessage(message: DiscordMessage): Promise<boole
     return true;
   } catch (error) {
     console.error("Error sending Discord message:", error);
+    return false;
+  }
+}
+
+// Send report notification to #reports channel
+export async function sendReportNotification(message: DiscordMessage): Promise<boolean> {
+  const webhookUrl = DISCORD_REPORTS_WEBHOOK_URL || DISCORD_WEBHOOK_URL;
+  
+  if (!webhookUrl) {
+    console.error("No Discord webhook URL configured for reports");
+    return false;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+
+    if (!response.ok) {
+      console.error(`Discord reports webhook error: ${response.status}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error sending Discord report notification:", error);
     return false;
   }
 }
