@@ -790,7 +790,7 @@ export default function LandingPageNew() {
                 👥 Community
               </h3>
               <ul className="space-y-3 text-sm text-zinc-400">
-                <li>Chat with serious TSLA swing traders</li>
+                <li>Chat with serious TSLA investors</li>
                 <li>Share setups, ask questions, think out loud</li>
                 <li>Signal, not noise</li>
               </ul>
