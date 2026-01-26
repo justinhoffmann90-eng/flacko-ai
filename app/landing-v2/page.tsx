@@ -724,11 +724,11 @@ export default function LandingPageV2() {
           
           <div>
             <FAQItem
-              question="Do I need to check the website every day?"
-              answer="No. The daily report drops to Discord every morning before market open. You can read it there or on the web dashboard — whichever you prefer. Alerts come through Discord too, so you don't need to watch anything. Just read the morning report (5 min) and let the alerts tell you when to pay attention."
+              question="How is the report created?"
+              answer="The system combines a trained framework built on years of TSLA-specific trading philosophy with real-time data feeds costing over $700/month. Each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from SpotGamma. The AI synthesizes all of this into a single daily read on regime, levels, and positioning. It's not a gut call. It's a systematic process that runs the same way every day."
             />
             <FAQItem
-              question="How is the mode determined?"
+              question="How is the Regime mode determined?"
               answer="The mode is determined by confluence of multiple indicators: market structure (higher highs/lows), BX Trender momentum, Weekly EMA hierarchy (9/13/21), dealer positioning from SpotGamma, and real-time HIRO flow data. No single indicator controls the decision — we're looking for alignment across technicals and flow. The system runs the same way every day, systematically."
             />
             <FAQItem
