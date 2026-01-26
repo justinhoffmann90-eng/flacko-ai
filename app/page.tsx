@@ -386,7 +386,7 @@ export default function LandingPageNew() {
             How the mode is determined
           </h2>
           <p className="text-center text-zinc-500 mb-8">
-            Not vibes. Not gut calls. Indicator confluence across multiple timeframes.
+            Systematic clarity when you need it most.
           </p>
           
           <div className="grid md:grid-cols-2 gap-4 mb-8">
