@@ -740,36 +740,56 @@ export default function LandingPageNew() {
 
       {/* Control Center (Discord) */}
       <section className="py-16 px-6 border-t border-zinc-900">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            The Control Center
+            Your Trading Command Center
           </h2>
-          <p className="text-center text-zinc-500 mb-8">
-            (your group)
-          </p>
-          <p className="text-center text-zinc-400 mb-8">
-            Your group is the OS dashboard:
+          <p className="text-center text-zinc-400 mb-10">
+            Information flows to you — not the other way around.
           </p>
           
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div>
-              <ul className="space-y-3 text-zinc-300">
-                <li>• Filtered market + TSLA news feed (bots)</li>
-                <li>• HIRO / SpotGamma intraday pulse</li>
-                <li>• Morning brief (what matters today)</li>
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Daily */}
+            <div className="bg-zinc-900/30 rounded-lg p-5 border border-zinc-800/50">
+              <h3 className="font-semibold mb-4 text-zinc-200 flex items-center gap-2">
+                📅 Daily
+              </h3>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li><strong className="text-zinc-300">Daily report</strong> — mode, levels, if/then playbook</li>
+                <li>Price alerts ping you when levels hit</li>
+                <li>Intraday flow updates: HIRO + SpotGamma pulse</li>
+                <li>Curated market headlines — only what moves TSLA or the indexes</li>
               </ul>
             </div>
-            <div>
-              <ul className="space-y-3 text-zinc-300">
-                <li>• Weekly deep-dive (posted + discussed)</li>
-                <li>• Weekly live strategy call</li>
-                <li>• Recalibrate posture + levels together</li>
+            
+            {/* Weekly */}
+            <div className="bg-zinc-900/30 rounded-lg p-5 border border-zinc-800/50">
+              <h3 className="font-semibold mb-4 text-zinc-200 flex items-center gap-2">
+                📆 Weekly
+              </h3>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li><strong className="text-zinc-300">Weekly report</strong> — thesis review, level recalibration, what worked/what didn't</li>
+                <li><strong className="text-zinc-300">Catalyst calendar</strong> — Tesla-critical timelines (product unveils, earnings) + macro events (FOMC, CPI, jobs)</li>
+                <li><strong className="text-zinc-300">Live strategy call</strong> — walk through the week and reinforce risk management principles</li>
+                <li><strong className="text-zinc-300">State of Tesla</strong> — FSD milestones, Robotaxi progress, Optimus updates, Elon statements, analyst moves</li>
+              </ul>
+            </div>
+            
+            {/* Community */}
+            <div className="bg-zinc-900/30 rounded-lg p-5 border border-zinc-800/50">
+              <h3 className="font-semibold mb-4 text-zinc-200 flex items-center gap-2">
+                👥 Community
+              </h3>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li>Chat with serious TSLA swing traders</li>
+                <li>Share setups, ask questions, think out loud</li>
+                <li>No spam, no noise — keeps us all organized</li>
               </ul>
             </div>
           </div>
           
-          <p className="text-center text-zinc-500 text-sm">
-            Everything is separated into channels so you get signal, not noise.
+          <p className="text-center text-zinc-500 text-sm italic">
+            Your Discord becomes a cockpit — with a crew.
           </p>
         </div>
       </section>
@@ -787,12 +807,12 @@ export default function LandingPageNew() {
               <h3 className="font-semibold text-lg mb-4 text-green-400 flex items-center gap-2">
                 <Check className="w-5 h-5" /> This is for you if…
               </h3>
-              <ul className="space-y-2 text-zinc-300">
-                <li>You swing trade TSLA (or want to)</li>
-                <li>You're tired of second-guessing entries and exits</li>
-                <li>You want a system, not a signal service</li>
-                <li>You value preparation over prediction</li>
-                <li>You want to avoid the next 30-40% correction</li>
+              <ul className="space-y-3 text-zinc-300">
+                <li>You want to <strong>sidestep the next 30-40% correction</strong> before it happens</li>
+                <li>You're tired of <strong>buying the dip that keeps dipping</strong></li>
+                <li>You want to <strong>wake up knowing exactly what to do</strong> if price hits X</li>
+                <li>You'd rather <strong>spend 10 minutes a day</strong> than 4 hours glued to charts</li>
+                <li>You want <strong>conviction</strong> — not second-guessing every entry</li>
               </ul>
             </div>
             
@@ -801,11 +821,11 @@ export default function LandingPageNew() {
               <h3 className="font-semibold text-lg mb-4 text-red-400 flex items-center gap-2">
                 <X className="w-5 h-5" /> This is NOT for you if…
               </h3>
-              <ul className="space-y-2 text-zinc-300">
-                <li>You want someone to tell you exactly when to buy/sell</li>
-                <li>You're looking for 0DTE scalping alerts</li>
-                <li>You can't handle a few red days without panicking</li>
-                <li>You want predictions, not a framework</li>
+              <ul className="space-y-3 text-zinc-300">
+                <li>You want someone to say "buy now" and "sell now"</li>
+                <li>You're chasing 0DTE lottery tickets</li>
+                <li>You panic-sell on any red day</li>
+                <li>You think preparation is "too much work"</li>
               </ul>
             </div>
           </div>
