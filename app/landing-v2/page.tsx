@@ -590,17 +590,93 @@ export default function LandingPageV2() {
             <p className="text-xs text-zinc-500 mt-4 text-center">
               Powered by $700+/mo in institutional data feeds. You get the synthesis, not the complexity.
             </p>
-            <p className="text-xs text-zinc-600 mt-2 text-center">
-              Timeframe Alignment: Weekly sets the regime. Daily provides early warning. 1H and 4H confirm entries. When all three align, conviction is high.
-            </p>
           </div>
         </div>
       </section>
 
       {/* ============================================
-          SECTION 6: WHO IT'S FOR
+          SECTION 6: CATALYST CALENDAR
           ============================================ */}
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Text content */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">
+                Catalyst Calendar
+              </h2>
+              <p className="text-zinc-400 mb-6">
+                We track TSLA + macro events that change regime risk, so you're not surprised by volatility windows.
+              </p>
+              
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Risk windows</strong> — Fed, CPI, jobs, earnings</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">TSLA timelines</strong> — thesis-critical dates</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Weekly recap</strong> — news → thesis impact</span>
+                </li>
+              </ul>
+            </div>
+            
+            {/* Catalyst Mockup */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-transparent to-transparent blur-3xl -z-10"></div>
+              
+              <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 shadow-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                  <span className="text-sm font-medium text-zinc-300">Upcoming Catalysts</span>
+                  <span className="text-xs text-zinc-600">This week</span>
+                </div>
+                
+                <div className="divide-y divide-zinc-800/50">
+                  <div className="px-4 py-3 flex items-center gap-4">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-xs text-zinc-500">JAN</div>
+                      <div className="text-lg font-bold text-zinc-300">29</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-zinc-300">FOMC Decision</div>
+                      <div className="text-xs text-red-400">High volatility risk</div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 flex items-center gap-4">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-xs text-zinc-500">JAN</div>
+                      <div className="text-lg font-bold text-zinc-300">30</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-zinc-300">TSLA Earnings</div>
+                      <div className="text-xs text-yellow-400">After hours</div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 flex items-center gap-4">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-xs text-zinc-500">FEB</div>
+                      <div className="text-lg font-bold text-zinc-300">7</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-zinc-300">Jobs Report</div>
+                      <div className="text-xs text-zinc-500">Pre-market</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          SECTION 7: WHO IT'S FOR
+          ============================================ */}
+      <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">
             Is This For You?
