@@ -59,16 +59,20 @@ export default function LandingPageV2() {
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-sm text-zinc-500 mb-4">Join 500+ TSLA investors</p>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-            Your TSLA Trading
+            Our TSLA Trading
             <br />
             <span className="text-zinc-400">Operating System.</span>
           </h1>
           <p className="text-xl text-zinc-300 mb-4">
-            Wake up knowing exactly what to do.
+            One system. Every scenario covered.
           </p>
-          <p className="text-zinc-400 mb-8">
-            Daily reports, automated alerts, and a community of serious TSLA investors — 
-            so you can trade with conviction instead of guessing.
+          <p className="text-zinc-400 mb-4">
+            We turn technicals, flow, and catalysts into a daily playbook — 
+            so you wake up knowing exactly what to do.
+          </p>
+          <p className="text-zinc-500 mb-8 text-sm">
+            Corrections unfold in stages — our mode system catches them early so you're 
+            reducing on Week 3, not panic-selling on Week 10.
           </p>
           
           {/* Main CTA */}
@@ -91,10 +95,10 @@ export default function LandingPageV2() {
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            What You Get
+            Your Daily Battle Map
           </h2>
           <p className="text-center text-zinc-500 mb-10">
-            Everything you need to trade TSLA with confidence.
+            Wake up to a complete game plan. Mode, key levels, if/then scenarios — everything you need to trade with conviction.
           </p>
           
           <div className="grid md:grid-cols-2 gap-6">
@@ -106,12 +110,13 @@ export default function LandingPageV2() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Daily Report</h3>
-                  <p className="text-sm text-zinc-500">Web dashboard + Discord</p>
+                  <p className="text-sm text-zinc-500">Your morning game plan</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Your morning game plan: current mode (Green/Yellow/Orange/Red), key levels, 
-                if/then scenarios, and exactly how to position. Read it in 5 minutes.
+                Mode (Green/Yellow/Orange/Red), key levels with if/then reactions, 
+                daily cap tied to conditions, and dealer positioning context. 
+                Read it in 5 minutes, know exactly what to do.
               </p>
             </div>
 
@@ -123,12 +128,12 @@ export default function LandingPageV2() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Automated Alerts</h3>
-                  <p className="text-sm text-zinc-500">Discord notifications</p>
+                  <p className="text-sm text-zinc-500">Levels come to you</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Price hits a key level? You get pinged. Mode shifts? You know immediately. 
-                No chart-watching required — the levels come to you.
+                Price hits a level → you get pinged. Mode shifts → you know immediately. 
+                Pre-written reactions ready. Set it and forget it — no chart-watching required.
               </p>
             </div>
 
@@ -139,13 +144,13 @@ export default function LandingPageV2() {
                   <span className="text-xl">💬</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">VIP Discord</h3>
-                  <p className="text-sm text-zinc-500">Community + live updates</p>
+                  <h3 className="font-semibold text-lg">Context Feed</h3>
+                  <p className="text-sm text-zinc-500">Stay current without hunting</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Morning briefs, intraday HIRO flow updates, market pulse throughout the day, 
-                and a community of serious TSLA investors. Signal, not noise.
+                Morning brief: what matters today. Intraday flow: HIRO + SpotGamma updates. 
+                Market headlines: batched and synthesized. Information flows to you — not the other way around.
               </p>
             </div>
 
@@ -157,12 +162,12 @@ export default function LandingPageV2() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Weekly Live Call</h3>
-                  <p className="text-sm text-zinc-500">Strategy session</p>
+                  <p className="text-sm text-zinc-500">Walk through the week together</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Walk through the week together. Review what happened, assess the current regime, 
-                and plan for the week ahead. Ask questions, get answers.
+                Accountability, regime check, correction risk assessment, week ahead setup. 
+                Ask questions, get answers. Weekly keeps the thesis honest.
               </p>
             </div>
 
@@ -174,12 +179,12 @@ export default function LandingPageV2() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Catalyst Calendar</h3>
-                  <p className="text-sm text-zinc-500">Never miss a risk window</p>
+                  <p className="text-sm text-zinc-500">Never surprised by volatility</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                TSLA events, earnings, FOMC, CPI, jobs — all tracked. Know when volatility 
-                windows are coming so you're never surprised.
+                Risk windows tracked: Fed, CPI, jobs, earnings. TSLA timelines: thesis-critical dates. 
+                Weekly recap: news → thesis impact. Don't get caught off guard.
               </p>
             </div>
 
@@ -190,13 +195,13 @@ export default function LandingPageV2() {
                   <span className="text-xl">🔬</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Weekly Research</h3>
-                  <p className="text-sm text-zinc-500">State of Tesla deep-dive</p>
+                  <h3 className="font-semibold text-lg">State of Tesla</h3>
+                  <p className="text-sm text-zinc-500">Weekly thesis deep-dive</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                FSD progress, Robotaxi updates, Energy business, Optimus — everything 
-                that matters for the thesis, synthesized weekly.
+                FSD progress, Robotaxi updates, Energy business, Optimus, analyst moves — 
+                everything that matters for the thesis, synthesized so you don't have to hunt.
               </p>
             </div>
           </div>
@@ -283,10 +288,10 @@ export default function LandingPageV2() {
           {/* Summary Box */}
           <div className="mt-10 bg-zinc-900/50 rounded-xl p-6 border border-zinc-800 text-center">
             <p className="text-zinc-300 font-medium">
-              Read the report. Set alerts. Live your life.
+              Read the report, go live your life. The system tells you when to pay attention.
             </p>
             <p className="text-sm text-zinc-500 mt-2">
-              The system tells you when to pay attention.
+              Daily keeps you executing. Weekly keeps the thesis honest.
             </p>
           </div>
         </div>
@@ -413,10 +418,10 @@ export default function LandingPageV2() {
                 The problem isn't finding dips to buy — it's knowing <strong className="text-white">which dips NOT to buy</strong>. Corrections unfold over weeks, with warning signs the whole way down.
               </p>
               <p>
-                Our mode system is designed to <strong className="text-white">catch the warning signs early</strong>. You'll be reducing exposure on Week 3, not panic-selling on Week 10.
+                This system is designed to <strong className="text-white">catch the warning signs early</strong>. You'll know on Week 3, not Week 10. As conditions deteriorate, exposure ratchets down. No averaging into weakness.
               </p>
               <p className="text-zinc-500 text-sm pt-2">
-                And we monitor & discuss it together as a team.
+                And we'll monitor & discuss together as a team.
               </p>
             </div>
           </div>
@@ -429,10 +434,10 @@ export default function LandingPageV2() {
       <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            The System
+            Regime Mode
           </h2>
           <p className="text-center text-zinc-500 mb-10">
-            A traffic light that tells you what to do — determined before emotions take over.
+            Conditions deteriorate in stages. We track the signals so you adjust before it's too late.
           </p>
           
           {/* Mode Spectrum */}
@@ -454,11 +459,11 @@ export default function LandingPageV2() {
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
                 <h3 className="font-bold text-green-400">Green</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Trend intact</p>
+              <p className="text-xs text-zinc-400 mb-2">Trend intact, momentum healthy</p>
               <ul className="space-y-1 text-xs text-zinc-300">
-                <li>• Buy dips normally</li>
-                <li>• Daily cap: 25-35%</li>
-                <li>• Full conviction</li>
+                <li>• Good to buy dips</li>
+                <li>• Hold with conviction</li>
+                <li>• Don't sell too fast</li>
               </ul>
             </div>
             
@@ -468,11 +473,11 @@ export default function LandingPageV2() {
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <h3 className="font-bold text-yellow-400">Yellow</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Warning signs</p>
+              <p className="text-xs text-zinc-400 mb-2">Warning signs present</p>
               <ul className="space-y-1 text-xs text-zinc-300">
-                <li>• Controlled adds</li>
-                <li>• Daily cap: 15-20%</li>
-                <li>• Require better prices</li>
+                <li>• Reducing daily cap to 15-20%</li>
+                <li>• Ratcheting down leverage</li>
+                <li>• Shifting to watch and see</li>
               </ul>
             </div>
             
@@ -484,9 +489,9 @@ export default function LandingPageV2() {
               </div>
               <p className="text-xs text-zinc-400 mb-2">Structure weakening</p>
               <ul className="space-y-1 text-xs text-zinc-300">
+                <li>• Dropping daily cap to 10%</li>
                 <li>• Small nibbles only</li>
-                <li>• Daily cap: 10%</li>
-                <li>• Prepare for exit</li>
+                <li>• Preparing for potential exit</li>
               </ul>
             </div>
             
@@ -496,40 +501,46 @@ export default function LandingPageV2() {
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <h3 className="font-bold text-red-400">Red</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Trend broken</p>
+              <p className="text-xs text-zinc-400 mb-2">Structure broken or at risk</p>
               <ul className="space-y-1 text-xs text-zinc-300">
-                <li>• Extreme support only</li>
-                <li>• Daily cap: 5%</li>
-                <li>• Master Eject active</li>
+                <li>• Dropping daily cap to 0-5%</li>
+                <li>• Respecting Master Eject level</li>
+                <li>• Requiring evidence of bottom</li>
               </ul>
             </div>
           </div>
 
           {/* What Determines Mode */}
           <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
-            <h3 className="font-semibold mb-4 text-center">What Determines the Mode?</h3>
+            <h3 className="font-semibold mb-4 text-center">How the Mode is Determined</h3>
+            <p className="text-center text-zinc-500 text-sm mb-6">Systematic clarity when you need it most.</p>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h4 className="text-sm font-medium text-zinc-300 mb-2">Technical Confluence</h4>
                 <ul className="space-y-1 text-sm text-zinc-400">
-                  <li>• Market structure (HH/HL patterns)</li>
-                  <li>• BX Trender momentum</li>
-                  <li>• Weekly 9/13/21 EMA hierarchy</li>
-                  <li>• SMI, RSI, MACD confirmation</li>
+                  <li>• Market Structure — HH/HL or broken</li>
+                  <li>• BX Trender — Momentum regime</li>
+                  <li>• MA/EMA — Trend position & slope</li>
+                  <li>• SMI — Leading momentum indicator</li>
+                  <li>• RSI — Divergences & extremes</li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-zinc-300 mb-2">Dealer Positioning</h4>
                 <ul className="space-y-1 text-sm text-zinc-400">
-                  <li>• SpotGamma levels (Put/Call/Hedge walls)</li>
-                  <li>• HIRO real-time institutional flow</li>
-                  <li>• Gamma regime (positive vs negative)</li>
-                  <li>• FlowPatrol daily options flow</li>
+                  <li>• SpotGamma Levels — Put Wall, Call Wall, Hedge Wall</li>
+                  <li>• HIRO — Real-time institutional flow</li>
+                  <li>• FlowPatrol — Daily options flow report</li>
+                  <li>• Gamma Regime — Positive vs negative gamma</li>
+                  <li>• Key Gamma Strike — Regime pivot point</li>
                 </ul>
               </div>
             </div>
             <p className="text-xs text-zinc-500 mt-4 text-center">
               Powered by $700+/mo in institutional data feeds. You get the synthesis, not the complexity.
+            </p>
+            <p className="text-xs text-zinc-600 mt-2 text-center">
+              Timeframe Alignment: Weekly sets the regime. Daily provides early warning. 1H and 4H confirm entries. When all three align, conviction is high.
             </p>
           </div>
         </div>
@@ -553,9 +564,9 @@ export default function LandingPageV2() {
               <ul className="space-y-3 text-zinc-300">
                 <li>You want to <strong>sidestep the next 30-40% correction</strong> before it happens</li>
                 <li>You're tired of <strong>buying the dip that keeps dipping</strong></li>
-                <li>You want to <strong>wake up knowing exactly what to do</strong></li>
-                <li>You'd rather <strong>spend 10 minutes a day</strong> than 4 hours on charts</li>
-                <li>You want <strong>conviction</strong> — not second-guessing</li>
+                <li>You want to <strong>wake up knowing exactly what to do</strong> if price hits X</li>
+                <li>You'd rather <strong>spend 10 minutes a day</strong> than 4 hours glued to charts</li>
+                <li>You want <strong>conviction</strong> — not second-guessing every entry</li>
               </ul>
             </div>
             
@@ -610,9 +621,12 @@ export default function LandingPageV2() {
           ============================================ */}
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4">
-            Ready to trade with conviction?
+          <h2 className="text-2xl font-bold mb-2">
+            Get the system.
           </h2>
+          <p className="text-zinc-500 mb-6">
+            Sleep at night knowing you have a plan for every scenario.
+          </p>
           <div className="flex items-center justify-center gap-3 mb-2">
             <span className="text-2xl text-zinc-500 line-through">$39.99</span>
             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">25% OFF</span>
@@ -621,7 +635,7 @@ export default function LandingPageV2() {
             $29.99<span className="text-xl text-zinc-500">/month</span>
           </div>
           <p className="text-zinc-500 mb-8">
-            7-day free trial. Cancel anytime.
+            Cancel anytime.
           </p>
           
           <Link href="/signup">
@@ -631,7 +645,7 @@ export default function LandingPageV2() {
           </Link>
           
           <p className="mt-6 text-zinc-500 text-sm">
-            Join 500+ TSLA investors who wake up with a plan.
+            Join 500+ members who wake up with a plan.
           </p>
         </div>
       </section>
