@@ -188,7 +188,7 @@ export function LivePriceLadder({
                 <span className="text-xs font-medium">
                   {isMarketOpen ? "Live Price" : "Last Close"}
                 </span>
-                {priceData?.changePercent !== undefined && (
+                {priceData?.changePercent != null && (
                   <span className={`text-[10px] font-medium ${priceData.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {priceData.changePercent >= 0 ? '+' : ''}{priceData.changePercent.toFixed(2)}%
                   </span>
@@ -243,7 +243,7 @@ export function LivePriceLadder({
             <div className="flex-1 flex items-center justify-between bg-red-500/10 rounded-lg px-3 py-2 border border-red-500/30">
               <span className="text-xs font-semibold text-red-500">EJECT</span>
               <div className="flex items-center gap-2">
-                {currentPrice > 0 && (
+                {currentPrice && currentPrice > 0 && (
                   <span className="text-xs text-red-500 font-medium">
                     {((masterEject - currentPrice) / currentPrice * 100).toFixed(1)}%
                   </span>

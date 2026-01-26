@@ -53,6 +53,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Cron jobs have their own auth (Bearer token)
+  if (request.nextUrl.pathname.startsWith("/api/cron")) {
+    return supabaseResponse;
+  }
+
   // Command center API should be accessible (data is not sensitive)
   if (request.nextUrl.pathname.startsWith("/api/command-center")) {
     return supabaseResponse;

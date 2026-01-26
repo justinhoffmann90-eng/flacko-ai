@@ -68,7 +68,15 @@ export default function SignupPage() {
 
         if (!response.ok) {
           const data = await response.json();
-          setError(data.error || "Failed to create checkout session");
+          // Friendly error messages for common issues
+          if (response.status === 500 || data.error?.includes("STRIPE")) {
+            setError("Payment system temporarily unavailable. Your account was created — please try subscribing again in a few minutes.");
+          } else if (data.error === "Already subscribed") {
+            setError("You already have an active subscription. Redirecting to dashboard...");
+            setTimeout(() => router.push("/dashboard"), 2000);
+          } else {
+            setError(data.error || "Failed to create checkout session. Please try again.");
+          }
           setLoading(false);
           return;
         }
