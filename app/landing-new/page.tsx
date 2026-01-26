@@ -213,25 +213,35 @@ export default function LandingPageNew() {
                       strokeLinecap="round"
                     />
                     
-                    {/* Connector line from Yellow Mode dot to label above */}
-                    <line 
-                      x1="150" y1="55" 
-                      x2="150" y2="10" 
-                      stroke="#eab308" 
-                      strokeWidth="1.5" 
-                      strokeDasharray="3,3"
-                    />
+                    {/* Connector lines from each dot to label above */}
+                    <line x1="50" y1="27" x2="50" y2="8" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="150" y1="55" x2="150" y2="8" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="260" y1="100" x2="260" y2="8" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
                   </svg>
                   
-                  {/* Mode label positioned above chart with connector */}
-                  <div className="absolute -top-2 left-[28%] flex flex-col items-center">
-                    <span className="text-[11px] text-yellow-400 font-bold bg-zinc-900/80 px-2 py-0.5 rounded">Green/Yellow/Red Mode</span>
-                    <span className="text-[9px] text-zinc-500">warns here</span>
+                  {/* Green Mode - early, still healthy */}
+                  <div className="absolute -top-2 left-[8%] flex flex-col items-center">
+                    <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Green Mode</span>
+                  </div>
+                  <div className="absolute top-[13%] left-[9%]">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
-                  {/* Dot on the chart line */}
+                  {/* Yellow Mode - warning, we get out here */}
+                  <div className="absolute -top-2 left-[27%] flex flex-col items-center">
+                    <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Yellow Mode</span>
+                    <span className="text-[8px] text-zinc-400">⚠️ warns here</span>
+                  </div>
                   <div className="absolute top-[27%] left-[29%]">
-                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
+                  </div>
+                  
+                  {/* Red Mode - too late, already in correction */}
+                  <div className="absolute -top-2 left-[49%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Red Mode</span>
+                  </div>
+                  <div className="absolute top-[50%] left-[51%]">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
                   </div>
                 </div>
                 
