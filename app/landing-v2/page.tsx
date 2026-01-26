@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, X, ChevronDown } from "lucide-react";
+import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb } from "lucide-react";
 import { useState, useEffect } from "react";
 
 // FAQ Accordion Item
@@ -152,7 +152,7 @@ export default function LandingPageV2() {
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <span className="text-xl">📊</span>
+                  <FileText className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Daily Report</h3>
@@ -169,7 +169,7 @@ export default function LandingPageV2() {
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                  <span className="text-xl">🔔</span>
+                  <Bell className="w-5 h-5 text-yellow-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Price Alerts</h3>
@@ -186,7 +186,7 @@ export default function LandingPageV2() {
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <span className="text-xl">📡</span>
+                  <Radio className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Intraday Updates</h3>
@@ -203,7 +203,7 @@ export default function LandingPageV2() {
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                  <span className="text-xl">🎙️</span>
+                  <Users className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Weekly Strategy Calls</h3>
@@ -220,7 +220,7 @@ export default function LandingPageV2() {
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-                  <span className="text-xl">📅</span>
+                  <Calendar className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Catalyst Calendar</h3>
@@ -237,7 +237,7 @@ export default function LandingPageV2() {
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                  <span className="text-xl">🔬</span>
+                  <Lightbulb className="w-5 h-5 text-cyan-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Thesis Snapshot</h3>
