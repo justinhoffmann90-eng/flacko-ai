@@ -283,7 +283,7 @@ export default function LandingPageNew() {
                 The problem isn't finding dips to buy — it's knowing <strong className="text-white">which dips NOT to buy</strong>. Corrections unfold over weeks, with warning signs the whole way down.
               </p>
               <p>
-                This system is designed to <strong className="text-white">catch the warning signs early</strong>. You'll know on Day 3, not Day 30.
+                This system is designed to <strong className="text-white">catch the warning signs early</strong>. You'll know on Week 3, not Week 10.
               </p>
               <p className="text-zinc-500 text-sm pt-2">
                 And we'll monitor & discuss together as a team.
