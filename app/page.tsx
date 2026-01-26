@@ -618,44 +618,53 @@ export default function LandingPageNew() {
         </div>
       </section>
 
-      {/* The Rulebook */}
+      {/* The Framework */}
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            The Rulebook
+            The Framework
           </h2>
-          <p className="text-center text-zinc-500 mb-8">
-            1,500+ lines of tested, documented framework
+          <p className="text-center text-zinc-500 mb-10">
+            Built to prevent buying dips that keep dipping — and enable conviction when conditions support it.
           </p>
           
-          <div className="grid md:grid-cols-2 gap-4 mb-8">
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
             <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-green-400" />
-                Risk Management
+                🎯 Mode System
               </h3>
               <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• <span className="text-zinc-300">Daily caps</span> — 10-20%/day in Yellow, 10%/day in Red</li>
-                <li>• <span className="text-zinc-300">Master Eject</span> — Pre-defined, non-negotiable exit</li>
-                <li>• <span className="text-zinc-300">Hysteresis</span> — Prevents whipsawing between modes</li>
+                <li>• Green/Yellow/Red posture from indicator confluence</li>
+                <li>• Daily caps adjust with conditions</li>
+                <li>• Clear rules for each regime — no guessing</li>
               </ul>
             </div>
             
             <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-blue-400" />
-                Graduated Response
+                🛡️ Risk Controls
               </h3>
               <ul className="space-y-2 text-sm text-zinc-400">
-                <li>• <span className="text-zinc-300">Action spectrum</span> — +5 (aggressive) to -5 (exit)</li>
-                <li>• <span className="text-zinc-300">Scaled entries</span> — Not all-or-nothing decisions</li>
-                <li>• <span className="text-zinc-300">Fast-track re-entry</span> — Capture V-bottoms when confirmed</li>
+                <li>• Master Eject: pre-defined, non-negotiable exit</li>
+                <li>• Position limits: never overexposed</li>
+                <li>• Hysteresis: prevents whipsawing</li>
+              </ul>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                📊 Indicator Stack
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Technicals: structure, momentum, trend</li>
+                <li>• Flow: HIRO, gamma walls, dealer positioning</li>
+                <li>• Timeframes: weekly → daily → intraday</li>
               </ul>
             </div>
           </div>
 
           <p className="text-center text-sm text-zinc-500">
-            Tested, documented, and refined through real market conditions.
+            Sleep at night knowing you have a plan for every scenario.
           </p>
         </div>
       </section>
