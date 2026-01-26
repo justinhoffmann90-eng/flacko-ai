@@ -171,9 +171,9 @@ export default function LandingPageNew() {
             The problem this solves
           </h2>
           
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Correction Chart Visual - Simple Mode Transitions */}
-            <div className="relative">
+            <div className="relative md:col-span-1 md:min-w-[420px]">
               <div className="bg-zinc-900/30 rounded-xl p-6 border border-zinc-800/50">
                 {/* Chart area */}
                 <div className="relative h-56">
@@ -217,6 +217,7 @@ export default function LandingPageNew() {
                     <line x1="50" y1="27" x2="50" y2="8" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
                     <line x1="150" y1="55" x2="150" y2="8" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
                     <line x1="260" y1="100" x2="260" y2="8" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="340" y1="140" x2="340" y2="8" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
                   </svg>
                   
                   {/* Green Mode - early, still healthy */}
@@ -227,21 +228,28 @@ export default function LandingPageNew() {
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
-                  {/* Yellow Mode - warning, we get out here */}
+                  {/* Yellow Mode - warning */}
                   <div className="absolute -top-2 left-[27%] flex flex-col items-center">
                     <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Yellow Mode</span>
-                    <span className="text-[8px] text-zinc-400">⚠️ warns here</span>
                   </div>
                   <div className="absolute top-[27%] left-[29%]">
                     <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
                   </div>
                   
-                  {/* Red Mode - too late, already in correction */}
+                  {/* Red Mode - correction underway */}
                   <div className="absolute -top-2 left-[49%] flex flex-col items-center">
                     <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Red Mode</span>
                   </div>
                   <div className="absolute top-[50%] left-[51%]">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
+                  </div>
+                  
+                  {/* Master Eject - final exit */}
+                  <div className="absolute -top-2 left-[65%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">Master Eject</span>
+                  </div>
+                  <div className="absolute top-[70%] left-[67%]">
+                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50"></div>
                   </div>
                 </div>
                 
@@ -250,7 +258,7 @@ export default function LandingPageNew() {
                   <span>Week 1</span>
                   <span>Week 2</span>
                   <span>Week 3</span>
-                  <span></span>
+                  <span>Week 4</span>
                   <span>Week 5</span>
                   <span>Week 6</span>
                   <span>Week 7</span>
