@@ -579,7 +579,7 @@ export default function LandingPageV2() {
               </div>
             </div>
             <p className="text-xs text-zinc-500 mt-4 text-center">
-              Powered by $700+/mo in institutional data feeds. You get the synthesis, not the complexity.
+              Powered by $500+/mo in data feed subscriptions. You get the synthesis, not the complexity.
             </p>
           </div>
         </div>
@@ -716,7 +716,7 @@ export default function LandingPageV2() {
           <div>
             <FAQItem
               question="How is the report created?"
-              answer="The system combines a trained framework built on years of TSLA-specific trading philosophy with real-time data feeds costing over $700/month. Each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from SpotGamma. The AI synthesizes all of this into a single daily read on regime, levels, and positioning. It's not a gut call. It's a systematic process that runs the same way every day."
+              answer="The system combines a trained framework built on years of TSLA-specific trading philosophy with real-time data feeds costing over $500/month. Each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from SpotGamma. The AI synthesizes all of this into a single daily read on regime, levels, and positioning. It's not a gut call. It's a systematic process that runs the same way every day."
             />
             <FAQItem
               question="How is the Regime mode determined?"
