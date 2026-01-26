@@ -475,6 +475,7 @@ export default function LandingPageNew() {
                 <ul className="text-sm text-zinc-400 space-y-1">
                   <li>• Morning brief: what matters today</li>
                   <li>• Intraday flow: HIRO + SpotGamma updates</li>
+                  <li>• Market headlines: batched and synthesized</li>
                   <li>• Catalyst calendar: don't miss risk windows</li>
                 </ul>
               </div>
