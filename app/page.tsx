@@ -435,48 +435,47 @@ export default function LandingPageNew() {
       <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">
-            How the Operating System works
+            How the OS Works
           </h2>
           <p className="text-center text-zinc-500 mb-10">
-            Map → Triggers → Feed. Your daily workflow in 3 steps.
+            Daily Report. Alerts. Context. Three steps, every day.
           </p>
           
           <div className="space-y-8 mb-8">
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-sm font-bold text-blue-400">1</div>
               <div>
-                <h3 className="font-semibold text-lg">The Map <span className="text-zinc-500 font-normal">(Your daily battle plan)</span></h3>
-                <p className="text-zinc-400 mb-2">Every morning, you know exactly what matters:</p>
-                <ul className="text-sm text-zinc-500 space-y-1">
-                  <li>• <span className="text-zinc-300">Key levels</span> — where the real reactions happen</li>
-                  <li>• <span className="text-zinc-300">If/then scenarios</span> — "if $430 holds, do X; if it breaks, do Y"</li>
-                  <li>• <span className="text-zinc-300">Posture mode</span> — offense, neutral, or defense</li>
-                  <li>• <span className="text-zinc-300">Dealer positioning</span> — where gamma pins or accelerates</li>
+                <h3 className="font-semibold text-lg">Daily Report</h3>
+                <p className="text-zinc-500 text-sm mb-2">Your morning game plan</p>
+                <ul className="text-sm text-zinc-400 space-y-1">
+                  <li>• Mode: Green, Yellow, or Red</li>
+                  <li>• Key levels with if/then reactions</li>
+                  <li>• Daily cap tied to conditions</li>
+                  <li>• Dealer positioning context</li>
                 </ul>
               </div>
             </div>
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-sm font-bold text-yellow-400">2</div>
               <div>
-                <h3 className="font-semibold text-lg">The Triggers <span className="text-zinc-500 font-normal">(Alerts that fire for you)</span></h3>
-                <p className="text-zinc-400 mb-2">Let the levels come to you:</p>
-                <ul className="text-sm text-zinc-500 space-y-1">
-                  <li>• <span className="text-zinc-300">Auto-alerts</span> — price hits your level, you get pinged</li>
-                  <li>• <span className="text-zinc-300">Pre-written reactions</span> — you already know what to do</li>
-                  <li>• <span className="text-zinc-300">Posture shift alerts</span> — when the mode changes, you know first</li>
+                <h3 className="font-semibold text-lg">Alerts</h3>
+                <p className="text-zinc-500 text-sm mb-2">Levels come to you</p>
+                <ul className="text-sm text-zinc-400 space-y-1">
+                  <li>• Price hits a level → you get pinged</li>
+                  <li>• Mode shifts → you know immediately</li>
+                  <li>• Pre-written reactions ready</li>
                 </ul>
               </div>
             </div>
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-sm font-bold text-green-400">3</div>
               <div>
-                <h3 className="font-semibold text-lg">The Feed <span className="text-zinc-500 font-normal">(Context that keeps you current)</span></h3>
-                <p className="text-zinc-400 mb-2">Stay aligned without hunting for information:</p>
-                <ul className="text-sm text-zinc-500 space-y-1">
-                  <li>• <span className="text-zinc-300">Morning briefs</span> — what matters today in 2 minutes</li>
-                  <li>• <span className="text-zinc-300">Intraday flow</span> — HIRO/SpotGamma updates when they matter</li>
-                  <li>• <span className="text-zinc-300">Catalyst calendar</span> — risk windows you can't afford to miss</li>
-                  <li>• <span className="text-zinc-300">Weekly review</span> — recalibrate thesis, update levels</li>
+                <h3 className="font-semibold text-lg">Context Feed</h3>
+                <p className="text-zinc-500 text-sm mb-2">Stay current without hunting</p>
+                <ul className="text-sm text-zinc-400 space-y-1">
+                  <li>• Morning brief: what matters today</li>
+                  <li>• Intraday flow: HIRO + SpotGamma updates</li>
+                  <li>• Catalyst calendar: don't miss risk windows</li>
                 </ul>
               </div>
             </div>
@@ -484,7 +483,7 @@ export default function LandingPageNew() {
 
           <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800 text-center">
             <p className="text-zinc-400 text-sm">
-              <strong className="text-zinc-200">The result:</strong> You wake up, read the map, and go live your life. Alerts are set for you — the system tells you when to pay attention.
+              Read the report, go live your life. The system tells you when to pay attention.
             </p>
           </div>
           
