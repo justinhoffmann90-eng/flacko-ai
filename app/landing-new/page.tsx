@@ -176,77 +176,82 @@ export default function LandingPageNew() {
             <div className="relative">
               <div className="bg-zinc-900/30 rounded-xl p-6 border border-zinc-800/50">
                 {/* Chart area */}
-                <div className="relative h-48">
+                <div className="relative h-56">
                   {/* Grid lines */}
                   <div className="absolute inset-0 flex flex-col justify-between opacity-30">
                     <div className="border-b border-zinc-700"></div>
                     <div className="border-b border-zinc-700"></div>
                     <div className="border-b border-zinc-700"></div>
                     <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
                   </div>
                   
-                  {/* Declining line - SVG with clear color segments */}
-                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
+                  {/* Declining line - SVG with clear color segments - 10 weeks, steeper after week 6 */}
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
                     {/* Green segment - Weeks 1-2 */}
                     <path 
-                      d="M 0 20 Q 25 15, 50 22 T 100 30" 
+                      d="M 0 25 Q 25 20, 50 27 T 100 35" 
                       fill="none" 
                       stroke="#22c55e" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Yellow segment - Week 3 */}
+                    {/* Yellow segment - Weeks 3-4 */}
                     <path 
-                      d="M 100 30 Q 125 40, 150 55 T 200 75" 
+                      d="M 100 35 Q 125 45, 150 55 T 200 70" 
                       fill="none" 
                       stroke="#eab308" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Red segment - Week 4+ */}
+                    {/* Red segment - Weeks 5-10, steeper decline after week 6 */}
                     <path 
-                      d="M 200 75 Q 250 100, 300 125 T 400 150" 
+                      d="M 200 70 Q 230 85, 260 100 T 320 130 Q 380 160, 440 180 T 500 195" 
                       fill="none" 
                       stroke="#ef4444" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
+                    
+                    {/* Connector line from Yellow Mode dot to label above */}
+                    <line 
+                      x1="150" y1="55" 
+                      x2="150" y2="10" 
+                      stroke="#eab308" 
+                      strokeWidth="1.5" 
+                      strokeDasharray="3,3"
+                    />
                   </svg>
                   
-                  {/* Simple dot markers */}
-                  <div className="absolute top-[5%] left-[5%] flex flex-col items-start">
-                    <div className="w-2 h-2 rounded-full bg-green-500 mb-1"></div>
-                    <span className="text-[10px] text-green-400 font-medium">Green Mode</span>
+                  {/* Mode label positioned above chart with connector */}
+                  <div className="absolute -top-2 left-[28%] flex flex-col items-center">
+                    <span className="text-[11px] text-yellow-400 font-bold bg-zinc-900/80 px-2 py-0.5 rounded">Green/Yellow/Red Mode</span>
+                    <span className="text-[9px] text-zinc-500">warns here</span>
                   </div>
                   
-                  <div className="absolute top-[22%] left-[25%] flex flex-col items-start">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500 mb-1"></div>
-                    <span className="text-[10px] text-yellow-400 font-medium">Yellow Mode</span>
-                    <span className="text-[9px] text-zinc-500">Week 3</span>
-                  </div>
-                  
-                  <div className="absolute top-[50%] left-[50%] flex flex-col items-start">
-                    <div className="w-2 h-2 rounded-full bg-red-500 mb-1"></div>
-                    <span className="text-[10px] text-red-400 font-medium">Red Mode</span>
-                    <span className="text-[9px] text-zinc-500">Week 4</span>
+                  {/* Dot on the chart line */}
+                  <div className="absolute top-[27%] left-[29%]">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50"></div>
                   </div>
                 </div>
                 
-                {/* X-axis labels */}
-                <div className="flex justify-between mt-3 text-[10px] text-zinc-500">
+                {/* X-axis labels - 10 weeks */}
+                <div className="flex justify-between mt-3 text-[9px] text-zinc-500">
                   <span>Week 1</span>
                   <span>Week 2</span>
                   <span>Week 3</span>
-                  <span>Week 4</span>
+                  <span></span>
                   <span>Week 5</span>
                   <span>Week 6</span>
                   <span>Week 7</span>
                   <span>Week 8</span>
+                  <span>Week 9</span>
+                  <span>Week 10</span>
                 </div>
                 
                 {/* Caption */}
                 <div className="mt-4 text-center">
-                  <span className="text-xs text-zinc-400">Our system warns you early — not at the bottom</span>
+                  <span className="text-xs text-zinc-400">Our system is designed to warn us <strong className="text-yellow-400 font-bold">early</strong> — not when it's too late</span>
                 </div>
               </div>
             </div>
