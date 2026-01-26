@@ -161,59 +161,58 @@ export default function LandingPageV2() {
               </div>
               <p className="text-sm text-zinc-400">
                 Mode (Green/Yellow/Orange/Red), key levels with if/then reactions, 
-                daily cap tied to conditions, and dealer positioning context. 
-                Read it in 5 minutes, know exactly what to do.
+                daily cap tied to conditions. Read it in 5 minutes, wake up with a plan.
               </p>
             </div>
 
-            {/* Automated Alerts */}
+            {/* Price Alerts */}
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                   <span className="text-xl">🔔</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Automated Alerts</h3>
+                  <h3 className="font-semibold text-lg">Price Alerts</h3>
                   <p className="text-sm text-zinc-500">Levels come to you</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Price hits a level → you get pinged. Mode shifts → you know immediately. 
-                Pre-written reactions ready. Set it and forget it — no chart-watching required.
+                Price hits a key level → you get pinged with what to do and how to size. 
+                No chart-watching required. Go live your life.
               </p>
             </div>
 
-            {/* VIP Discord */}
+            {/* Intraday Updates */}
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <span className="text-xl">💬</span>
+                  <span className="text-xl">📡</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Context Feed</h3>
-                  <p className="text-sm text-zinc-500">Stay current without hunting</p>
+                  <h3 className="font-semibold text-lg">Intraday Updates</h3>
+                  <p className="text-sm text-zinc-500">We curate, you receive</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Morning brief: what matters today. Intraday flow: HIRO + SpotGamma updates. 
-                Market headlines: batched and synthesized. Information flows to you — not the other way around.
+                HIRO options flow throughout the day. Curated market-moving headlines — batched, not spammed. 
+                Stay informed without hunting for information.
               </p>
             </div>
 
-            {/* Weekly Call */}
+            {/* Weekly Calls */}
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
                   <span className="text-xl">🎙️</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Weekly Live Call</h3>
-                  <p className="text-sm text-zinc-500">Walk through the week together</p>
+                  <h3 className="font-semibold text-lg">Weekly Strategy Calls</h3>
+                  <p className="text-sm text-zinc-500">Zoom out together</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Accountability, regime check, correction risk assessment, week ahead setup. 
-                Ask questions, get answers. Weekly keeps the thesis honest.
+                Share ideas, reflect on how the system performed, calibrate for the week ahead. 
+                Step back from the noise and see the bigger picture.
               </p>
             </div>
 
@@ -225,29 +224,29 @@ export default function LandingPageV2() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Catalyst Calendar</h3>
-                  <p className="text-sm text-zinc-500">Never surprised by volatility</p>
+                  <p className="text-sm text-zinc-500">Continuously updated</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                Risk windows tracked: Fed, CPI, jobs, earnings. TSLA timelines: thesis-critical dates. 
-                Weekly recap: news → thesis impact. Don't get caught off guard.
+                TSLA timelines and macro events — FOMC, CPI, jobs, earnings. 
+                Always know what's coming so you're never caught off guard.
               </p>
             </div>
 
-            {/* Weekly Research */}
+            {/* Thesis Snapshot */}
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
                   <span className="text-xl">🔬</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">State of Tesla</h3>
-                  <p className="text-sm text-zinc-500">Weekly thesis deep-dive</p>
+                  <h3 className="font-semibold text-lg">Thesis Snapshot</h3>
+                  <p className="text-sm text-zinc-500">Stay connected to the story</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                FSD progress, Robotaxi updates, Energy business, Optimus, analyst moves — 
-                everything that matters for the thesis, synthesized so you don't have to hunt.
+                FSD/autonomy progress, Robotaxi updates, Optimus developments — 
+                the latest on everything that matters for the long-term thesis.
               </p>
             </div>
           </div>
