@@ -336,9 +336,6 @@ export default function LandingPageV2() {
             <p className="text-zinc-300 font-medium">
               Read the report, go live your life. The system tells you when to pay attention.
             </p>
-            <p className="text-sm text-zinc-500 mt-2">
-              Daily keeps you executing. Weekly keeps the thesis honest.
-            </p>
           </div>
         </div>
       </section>
