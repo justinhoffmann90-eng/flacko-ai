@@ -630,21 +630,21 @@ export default function LandingPageV2() {
                   <div className="px-4 py-3 flex items-center gap-4">
                     <div className="text-center min-w-[40px]">
                       <div className="text-xs text-zinc-500">JAN</div>
-                      <div className="text-lg font-bold text-zinc-300">29</div>
+                      <div className="text-lg font-bold text-zinc-300">28</div>
                     </div>
                     <div>
-                      <div className="text-sm text-zinc-300">FOMC Decision</div>
-                      <div className="text-xs text-red-400">High volatility risk</div>
+                      <div className="text-sm text-zinc-300">TSLA Earnings</div>
+                      <div className="text-xs text-yellow-400">After hours</div>
                     </div>
                   </div>
                   <div className="px-4 py-3 flex items-center gap-4">
                     <div className="text-center min-w-[40px]">
                       <div className="text-xs text-zinc-500">JAN</div>
-                      <div className="text-lg font-bold text-zinc-300">30</div>
+                      <div className="text-lg font-bold text-zinc-300">29</div>
                     </div>
                     <div>
-                      <div className="text-sm text-zinc-300">TSLA Earnings</div>
-                      <div className="text-xs text-yellow-400">After hours</div>
+                      <div className="text-sm text-zinc-300">FOMC Decision</div>
+                      <div className="text-xs text-red-400">High volatility risk</div>
                     </div>
                   </div>
                   <div className="px-4 py-3 flex items-center gap-4">
