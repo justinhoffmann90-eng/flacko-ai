@@ -19,9 +19,9 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceClient();
 
-    // Generate recovery link - direct to reset-password (tokens in URL hash, client picks up)
+    // Generate invite link for new user - direct to reset-password
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: "recovery",
+      type: "invite",
       email,
       options: {
         redirectTo: "https://flacko.ai/reset-password",
