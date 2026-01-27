@@ -4,6 +4,10 @@ import { createCheckoutSession, getCurrentTier, getPriceForTier } from "@/lib/st
 
 export async function POST(request: Request) {
   try {
+    // Debug: check if Stripe key exists
+    const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
+    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
+    
     const { email } = await request.json();
     
     if (!email || typeof email !== "string") {
@@ -91,6 +95,11 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Signup checkout error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: `Server error: ${message}` }, { status: 500 });
+    const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
+    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
+    return NextResponse.json({ 
+      error: `Server error: ${message}`,
+      debug: { hasStripeKey, keyPrefix }
+    }, { status: 500 });
   }
 }
