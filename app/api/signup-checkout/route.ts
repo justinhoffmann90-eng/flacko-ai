@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       email,
       priceInCents,
       tier,
-      successUrl: `${appUrl}/dashboard?success=true`,
+      successUrl: `${appUrl}/welcome?email=${encodeURIComponent(email)}`,
       cancelUrl: `${appUrl}/signup?canceled=true`,
     });
 

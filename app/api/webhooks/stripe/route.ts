@@ -66,6 +66,23 @@ export async function POST(request: Request) {
             onConflict: "user_id",
           });
 
+          // Send password reset email so user can set their password
+          const customerEmail = session.customer_email;
+          if (customerEmail) {
+            try {
+              await supabase.auth.admin.generateLink({
+                type: "recovery",
+                email: customerEmail,
+                options: {
+                  redirectTo: "https://flacko.ai/dashboard",
+                },
+              });
+              // Note: generateLink sends the email automatically via Supabase
+            } catch (e) {
+              console.error("Failed to send password reset email:", e);
+            }
+          }
+
           // Add Discord subscriber role if user has linked Discord
           const { data: userData } = await supabase
             .from("users")
