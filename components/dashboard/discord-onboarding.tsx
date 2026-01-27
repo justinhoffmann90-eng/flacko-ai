@@ -102,12 +102,14 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
         </div>
       </div>
       
-      <button
-        onClick={handleDismiss}
-        className="text-xs text-muted-foreground hover:text-foreground mt-3 block"
-      >
-        Remind me later →
-      </button>
+      <div className="flex justify-end mt-2">
+        <button
+          onClick={handleDismiss}
+          className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+        >
+          Remind me later
+        </button>
+      </div>
     </Card>
   );
 }
