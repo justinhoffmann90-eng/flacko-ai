@@ -102,6 +102,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/settings?discord_linked=true`);
   } catch (error) {
     console.error("Discord callback error:", error);
-    return NextResponse.redirect(`${url.origin}/settings?discord_error=unknown`);
+    // Fallback to env var for error case since url may not be parsed yet
+    const fallbackUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.flacko.ai";
+    return NextResponse.redirect(`${fallbackUrl}/settings?discord_error=unknown`);
   }
 }
