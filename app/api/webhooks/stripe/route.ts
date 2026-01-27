@@ -67,7 +67,9 @@ export async function POST(request: Request) {
           });
 
           // Send password setup email so user can set their password
-          const customerEmail = session.customer_email;
+          // customer_email may be null after checkout; use customer_details.email as fallback
+          const customerEmail = session.customer_email || session.customer_details?.email;
+          console.log("Checkout completed for user:", userId, "email:", customerEmail);
           if (customerEmail) {
             try {
               // Generate the magic link
@@ -80,8 +82,9 @@ export async function POST(request: Request) {
               });
               
               if (linkError) {
-                console.error("Failed to generate password link:", linkError);
+                console.error("Failed to generate password link:", linkError, "for email:", customerEmail);
               } else if (linkData?.properties?.action_link) {
+                console.log("Generated password link for:", customerEmail);
                 // Send email via Resend
                 const { resend, EMAIL_FROM } = await import("@/lib/resend/client");
                 await resend.emails.send({
