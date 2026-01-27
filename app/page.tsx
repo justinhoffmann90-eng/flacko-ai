@@ -37,8 +37,8 @@ export default function LandingPageV2() {
 
   return (
     <main className="bg-black text-zinc-100 min-h-screen">
-      {/* Sticky Header */}
-      <div className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800 transition-all duration-300 ${showSticky ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      {/* Header - Always Visible */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800">
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
           <span className="font-semibold text-zinc-200">Flacko AI</span>
           <div className="flex items-center gap-4">
@@ -53,16 +53,6 @@ export default function LandingPageV2() {
           </div>
         </div>
       </div>
-
-      {/* Top Nav - Always Visible */}
-      <nav className="fixed top-0 left-0 right-0 z-40 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <span className="font-semibold text-zinc-200">Flacko AI</span>
-          <Link href="/login" className="text-sm text-zinc-400 hover:text-zinc-200">
-            Sign in
-          </Link>
-        </div>
-      </nav>
 
       {/* ============================================
           SECTION 1: HERO - What It Is
