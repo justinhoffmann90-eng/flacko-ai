@@ -150,6 +150,17 @@ export async function POST(request: Request) {
             })
             .eq("user_id", sub.user_id);
 
+          // Remove Discord role until payment is fixed
+          const { data: userData } = await supabase
+            .from("users")
+            .select("discord_user_id")
+            .eq("id", sub.user_id)
+            .single();
+
+          if (userData?.discord_user_id) {
+            await removeRoleFromMember(userData.discord_user_id);
+          }
+
           // Create notification
           await supabase.from("notifications").insert({
             user_id: sub.user_id,
@@ -157,6 +168,43 @@ export async function POST(request: Request) {
             title: "Payment Failed",
             body: "Your payment failed. Please update your payment method to continue access.",
           });
+        }
+        break;
+      }
+
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+
+        // Find subscription by customer ID
+        const { data: sub } = await supabase
+          .from("subscriptions")
+          .select("user_id, status")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (sub) {
+          // If recovering from past_due, reactivate
+          if (sub.status === "past_due") {
+            await supabase
+              .from("subscriptions")
+              .update({
+                status: "active",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", sub.user_id);
+
+            // Re-add Discord role
+            const { data: userData } = await supabase
+              .from("users")
+              .select("discord_user_id")
+              .eq("id", sub.user_id)
+              .single();
+
+            if (userData?.discord_user_id) {
+              await addRoleToMember(userData.discord_user_id);
+            }
+          }
         }
         break;
       }
