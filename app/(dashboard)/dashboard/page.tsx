@@ -10,6 +10,7 @@ import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio } from "
 import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { PositioningCard } from "@/components/dashboard/positioning-card";
+import { hasSubscriptionAccess } from "@/lib/subscription";
 
 interface ExtractedData {
   mode?: { current: string; label: string };
@@ -61,8 +62,6 @@ export default async function DashboardPage() {
 
     const sub = subscription as { status?: string; trial_ends_at?: string } | null;
     
-    // Import dynamically to avoid issues
-    const { hasSubscriptionAccess } = await import("@/lib/subscription");
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
