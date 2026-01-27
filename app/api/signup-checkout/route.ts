@@ -11,43 +11,51 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createServiceClient();
-
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .single();
-
     let userId: string;
 
-    if (existingUser) {
-      // User exists - check if they have active subscription
-      const { data: existingSub } = await supabase
-        .from("subscriptions")
-        .select("status")
-        .eq("user_id", existingUser.id)
-        .single();
+    // Try to create user - if already exists, we'll get an error
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: {},
+    });
 
-      if (existingSub?.status === "active") {
-        return NextResponse.json({ error: "Already subscribed. Please sign in." }, { status: 400 });
+    if (authError) {
+      // User might already exist
+      if (authError.message.includes("already been registered") || authError.message.includes("already exists")) {
+        // Get existing user
+        const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+        
+        if (listError) {
+          console.error("List users error:", listError);
+          return NextResponse.json({ error: "Failed to check existing account" }, { status: 500 });
+        }
+
+        const existingUser = users.users.find(u => u.email === email);
+        if (!existingUser) {
+          return NextResponse.json({ error: "Account error. Please try again." }, { status: 500 });
+        }
+
+        // Check if they have active subscription
+        const { data: existingSub } = await supabase
+          .from("subscriptions")
+          .select("status")
+          .eq("user_id", existingUser.id)
+          .single();
+
+        if (existingSub?.status === "active") {
+          return NextResponse.json({ error: "Already subscribed. Please sign in." }, { status: 400 });
+        }
+
+        userId = existingUser.id;
+      } else {
+        console.error("Auth create error:", authError);
+        return NextResponse.json({ error: `Failed to create account: ${authError.message}` }, { status: 500 });
       }
-      
-      userId = existingUser.id;
-    } else {
-      // Create new user via admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        email_confirm: true, // Auto-confirm so they can log in later
-        user_metadata: {},
-      });
-
-      if (authError || !authData.user) {
-        console.error("Auth error:", authError);
-        return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
-      }
-
+    } else if (authData?.user) {
       userId = authData.user.id;
+    } else {
+      return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
     }
 
     // Calculate tier and price
@@ -82,6 +90,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Signup checkout error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: `Server error: ${message}` }, { status: 500 });
   }
 }
