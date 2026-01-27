@@ -34,6 +34,9 @@ export default function WelcomePage() {
             <p className="text-sm text-muted-foreground">
               We sent a link to {email ? <strong>{email}</strong> : "your email"} to set your password and access your dashboard.
             </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              <strong>Check your spam folder</strong> if you don&apos;t see it within a few minutes.
+            </p>
           </div>
           
           <div className="text-center text-sm text-muted-foreground">
