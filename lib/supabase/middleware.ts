@@ -73,6 +73,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Email test endpoint (temporary)
+  if (request.nextUrl.pathname === "/api/test-email") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
