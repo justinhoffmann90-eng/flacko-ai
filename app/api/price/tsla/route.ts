@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
-import { fetchTSLAPrice, PriceData } from "@/lib/price/fetcher";
+import { fetchTSLAPrice, fetchLastClose, PriceData } from "@/lib/price/fetcher";
 import { isMarketHours } from "@/lib/utils";
-
-interface CachedPrice {
-  price: number;
-  timestamp: string;
-  isMarketOpen: boolean;
-}
 
 // In-memory cache for price (shared across requests in same instance)
 let priceCache: { data: PriceData; timestamp: number } | null = null;
+let closeCache: { price: number; timestamp: number } | null = null;
 const CACHE_TTL = 15000; // 15 seconds
+const CLOSE_CACHE_TTL = 300000; // 5 minutes for close price (doesn't change often)
 
 export async function GET() {
   try {
@@ -47,46 +42,48 @@ export async function GET() {
         });
       } catch (error) {
         console.error("Failed to fetch live price:", error);
-        // Fall through to use stored price
+        // Fall through to return cached or close price
       }
     }
 
-    // Outside market hours or on error, use last known price from system_config
-    const supabase = await createServiceClient();
-    const { data: config } = await supabase
-      .from("system_config")
-      .select("value")
-      .eq("key", "alert_system_status")
-      .single();
-
-    const storedPrice = config?.value as { last_price?: number; last_run?: string } | null;
-
-    if (storedPrice?.last_price) {
+    // Outside market hours: fetch previous close from Yahoo Finance
+    // Check cache first
+    if (closeCache && now - closeCache.timestamp < CLOSE_CACHE_TTL) {
       return NextResponse.json({
-        price: storedPrice.last_price,
-        timestamp: storedPrice.last_run || new Date().toISOString(),
+        price: closeCache.price,
+        timestamp: new Date(closeCache.timestamp).toISOString(),
         isMarketOpen: false,
         cached: true,
       });
     }
 
-    // Last resort: fetch from report's close price
-    const { data: report } = await supabase
-      .from("reports")
-      .select("extracted_data")
-      .order("report_date", { ascending: false })
-      .limit(1)
-      .single();
+    // Fetch fresh close price from Yahoo
+    try {
+      const closePrice = await fetchLastClose();
+      closeCache = { price: closePrice, timestamp: now };
 
-    const closePrice = (report?.extracted_data as { price?: { close?: number } })?.price?.close;
+      return NextResponse.json({
+        price: closePrice,
+        timestamp: new Date().toISOString(),
+        isMarketOpen: false,
+        cached: false,
+      });
+    } catch (error) {
+      console.error("Failed to fetch close price:", error);
 
-    return NextResponse.json({
-      price: closePrice || 0,
-      timestamp: new Date().toISOString(),
-      isMarketOpen: false,
-      cached: true,
-      source: "report",
-    });
+      // If we have any cached data, use it
+      if (closeCache) {
+        return NextResponse.json({
+          price: closeCache.price,
+          timestamp: new Date(closeCache.timestamp).toISOString(),
+          isMarketOpen: false,
+          cached: true,
+          stale: true,
+        });
+      }
+
+      return NextResponse.json({ error: "Failed to fetch price" }, { status: 500 });
+    }
   } catch (error) {
     console.error("Price API error:", error);
     return NextResponse.json({ error: "Failed to fetch price" }, { status: 500 });

@@ -140,3 +140,28 @@ export async function fetchRealtimePrice(): Promise<number> {
   const data = await fetchTSLAPrice();
   return data.price;
 }
+
+// Fetch last close price (for after-hours display)
+// This returns today's close price after market hours
+export async function fetchLastClose(): Promise<number> {
+  const response = await fetch(
+    `https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1d`,
+    {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+      },
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Yahoo Finance API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const meta = data.chart.result[0].meta;
+
+  // After market close, regularMarketPrice is today's closing price
+  // This is what we want to display as "Last Close"
+  return meta.regularMarketPrice;
+}
