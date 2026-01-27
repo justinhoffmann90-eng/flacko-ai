@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +13,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,46 +20,29 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Sign up with email only (passwordless - will set password later via magic link)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password: crypto.randomUUID(), // Temporary password - user will reset via magic link
+      // Combined signup + checkout in one call
+      const response = await fetch("/api/signup-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
 
-      if (authError) {
-        // Handle "user already exists" gracefully
-        if (authError.message.includes("already registered")) {
-          setError("This email is already registered. Please sign in instead.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error?.includes("Already subscribed")) {
+          setError("This email already has an active subscription. Please sign in.");
+        } else if (data.error?.includes("Failed to create")) {
+          setError("Could not create account. Please try again.");
         } else {
-          setError(authError.message);
+          setError(data.error || "Something went wrong. Please try again.");
         }
         setLoading(false);
         return;
       }
 
-      if (authData.user) {
-        // Redirect to Stripe checkout
-        const response = await fetch("/api/checkout", {
-          method: "POST",
-        });
-
-        if (!response.ok) {
-          const data = await response.json();
-          if (response.status === 500 || data.error?.includes("STRIPE")) {
-            setError("Payment system temporarily unavailable. Please try again in a moment.");
-          } else if (data.error === "Already subscribed") {
-            setError("You already have an active subscription!");
-          } else {
-            setError(data.error || "Failed to create checkout. Please try again.");
-          }
-          setLoading(false);
-          return;
-        }
-
-        const { url } = await response.json();
-        if (url) {
-          window.location.href = url;
-        }
+      if (data.url) {
+        window.location.href = data.url;
       }
     } catch {
       setError("Something went wrong. Please try again.");
