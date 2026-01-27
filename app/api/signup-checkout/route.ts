@@ -8,9 +8,9 @@ export async function POST(request: Request) {
     const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
     const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
     
-    const { email, trial, founder } = await request.json();
+    const { email, trial } = await request.json();
     const trialDays = trial ? 30 : 0; // 30-day trial if trial=true
-    const useFounderPricing = founder === true; // Use $29.99 base for founder signups
+    const useFounderPricing = true; // Always use $29.99 base - users apply FOUNDER code for discount
     
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
