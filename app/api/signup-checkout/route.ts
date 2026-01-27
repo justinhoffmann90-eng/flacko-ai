@@ -72,13 +72,14 @@ export async function POST(request: Request) {
     const priceInCents = getPriceForTier(tier);
 
     // Create Stripe checkout session
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://flacko.ai").trim();
     const session = await createCheckoutSession({
       userId,
       email,
       priceInCents,
       tier,
-      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/signup?canceled=true`,
+      successUrl: `${appUrl}/dashboard?success=true`,
+      cancelUrl: `${appUrl}/signup?canceled=true`,
     });
 
     // Create pending subscription record
