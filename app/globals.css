@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix mobile viewport/sticky issues */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -11,6 +11,7 @@ import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { PositioningCard } from "@/components/dashboard/positioning-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
+import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 
 interface ExtractedData {
   mode?: { current: string; label: string };
@@ -33,6 +34,7 @@ interface UserSettings {
 
 interface UserData {
   is_admin: boolean;
+  discord_user_id: string | null;
 }
 
 interface Catalyst {
@@ -92,6 +94,7 @@ export default async function DashboardPage() {
   // Fetch user settings for position sizing
   let userSettings: UserSettings | null = null;
   let isAdmin = false;
+  let isDiscordLinked = false;
   if (!devBypass) {
     const { data } = await supabase.auth.getUser();
     if (data.user) {
@@ -102,16 +105,19 @@ export default async function DashboardPage() {
         .single();
       userSettings = settingsData as UserSettings | null;
 
-      // Check if user is admin
+      // Check if user is admin and Discord status
       const { data: userData } = await supabase
         .from("users")
-        .select("is_admin")
+        .select("is_admin, discord_user_id")
         .eq("id", data.user.id)
         .single();
-      isAdmin = (userData as UserData | null)?.is_admin || false;
+      const userDataTyped = userData as UserData | null;
+      isAdmin = userDataTyped?.is_admin || false;
+      isDiscordLinked = !!userDataTyped?.discord_user_id;
     }
   } else {
     isAdmin = true; // In dev mode, show admin features
+    isDiscordLinked = true; // Hide onboarding in dev mode
   }
 
   // Get cash available from user settings (null in dev mode - will be read from localStorage in client)
@@ -153,6 +159,9 @@ export default async function DashboardPage() {
     <>
       <Header title="Dashboard" />
       <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
+        {/* Discord Onboarding Banner */}
+        <DiscordOnboarding isDiscordLinked={isDiscordLinked} />
+        
         {/* Mode Card - Hero with Glow */}
         <div className={`relative rounded-xl overflow-hidden animated-gradient-${mode}`}>
           {/* Glass overlay */}
