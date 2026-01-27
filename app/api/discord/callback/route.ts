@@ -5,29 +5,31 @@ import { hasSubscriptionAccess } from "@/lib/subscription";
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL}/api/discord/callback`;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://flacko-ai.com";
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
+    
+    // Use the actual request origin to match what the client sent
+    const origin = url.origin;
+    const redirectUri = `${origin}/api/discord/callback`;
 
     // User denied permissions
     if (error) {
-      return NextResponse.redirect(`${APP_URL}/settings?discord_error=denied`);
+      return NextResponse.redirect(`${origin}/settings?discord_error=denied`);
     }
 
     if (!code) {
-      return NextResponse.redirect(`${APP_URL}/settings?discord_error=no_code`);
+      return NextResponse.redirect(`${origin}/settings?discord_error=no_code`);
     }
 
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-      return NextResponse.redirect(`${APP_URL}/settings?discord_error=not_configured`);
+      return NextResponse.redirect(`${origin}/settings?discord_error=not_configured`);
     }
 
-    // Exchange code for token
+    // Exchange code for token - use same redirect_uri that client used
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -36,12 +38,15 @@ export async function GET(request: Request) {
         client_secret: DISCORD_CLIENT_SECRET,
         grant_type: "authorization_code",
         code,
-        redirect_uri: DISCORD_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 
     if (!tokenResponse.ok) {
-      return NextResponse.redirect(`${APP_URL}/settings?discord_error=token_failed`);
+      const errorText = await tokenResponse.text();
+      console.error("Discord token exchange failed:", tokenResponse.status, errorText);
+      console.error("Used redirect_uri:", redirectUri);
+      return NextResponse.redirect(`${origin}/settings?discord_error=token_failed`);
     }
 
     const tokenData = await tokenResponse.json();
@@ -62,7 +67,7 @@ export async function GET(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.redirect(`${APP_URL}/login?next=/settings`);
+      return NextResponse.redirect(`${origin}/login?next=/settings`);
     }
 
     // Update user record with Discord info
@@ -77,7 +82,7 @@ export async function GET(request: Request) {
 
     if (updateError) {
       console.error("Discord update error:", updateError);
-      return NextResponse.redirect(`${APP_URL}/settings?discord_error=update_failed`);
+      return NextResponse.redirect(`${origin}/settings?discord_error=update_failed`);
     }
 
     // If user has active subscription, add Discord role
@@ -94,9 +99,9 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.redirect(`${APP_URL}/settings?discord_linked=true`);
+    return NextResponse.redirect(`${origin}/settings?discord_linked=true`);
   } catch (error) {
     console.error("Discord callback error:", error);
-    return NextResponse.redirect(`${APP_URL}/settings?discord_error=unknown`);
+    return NextResponse.redirect(`${url.origin}/settings?discord_error=unknown`);
   }
 }
