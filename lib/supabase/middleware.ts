@@ -78,6 +78,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Admin send password email (temporary one-time use)
+  if (request.nextUrl.pathname === "/api/admin/send-password-email") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
