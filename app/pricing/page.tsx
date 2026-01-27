@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Gift } from "lucide-react";
+import { AlertCircle, Loader2, Zap } from "lucide-react";
 
-export default function FounderSignupPage() {
+export default function PricingPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function FounderSignupPage() {
       const response = await fetch("/api/signup-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, founder: true }), // $19.99 + 45-day trial
+        body: JSON.stringify({ email, founder: false }), // $29.99/mo, no trial
       });
 
       const data = await response.json();
@@ -46,34 +46,29 @@ export default function FounderSignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md mx-auto space-y-6">
-        {/* Founder Badge */}
+        {/* Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 bg-green-500/20 text-green-500 px-3 py-1 rounded-full text-sm font-medium">
-            <Gift className="w-4 h-4" />
-            Founder Offer
+          <div className="inline-flex items-center gap-2 bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-medium">
+            <Zap className="w-4 h-4" />
+            Pro Access
           </div>
           <h1 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Flacko AI
           </h1>
           <p className="text-2xl font-bold">
-            45 Days Free + Locked Pricing
+            TSLA Trading Intelligence
           </p>
           <p className="text-muted-foreground">
-            Try everything free, then lock in founder pricing forever.
+            Daily reports, alerts, and Discord access.
           </p>
         </div>
 
         {/* Pricing */}
         <div className="text-center space-y-2 py-2">
-          <div className="text-sm text-muted-foreground">After trial:</div>
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-xl text-muted-foreground line-through">$29.99</span>
-            <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">FOUNDER PRICE</span>
-          </div>
           <div className="text-4xl font-bold">
-            $19.99<span className="text-xl text-muted-foreground font-normal">/month</span>
+            $29.99<span className="text-xl text-muted-foreground font-normal">/month</span>
           </div>
-          <p className="text-sm text-muted-foreground">Locked in forever</p>
+          <p className="text-sm text-muted-foreground">Cancel anytime</p>
         </div>
 
         <Card>
@@ -109,7 +104,7 @@ export default function FounderSignupPage() {
                     Redirecting...
                   </>
                 ) : (
-                  "Start 45-Day Free Trial"
+                  "Subscribe Now"
                 )}
               </Button>
               <p className="text-sm text-muted-foreground text-center">

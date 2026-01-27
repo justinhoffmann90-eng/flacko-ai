@@ -1,16 +1,11 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { createCheckoutSession, getCurrentTier, getPriceForTier } from "@/lib/stripe/server";
+import { createCheckoutSession } from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
   try {
-    // Debug: check if Stripe key exists
-    const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
-    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
-    
-    const { email, trial } = await request.json();
-    const trialDays = trial ? 45 : 0; // 45-day trial if trial=true
-    const useFounderPricing = true; // Always use $29.99 base - users apply FOUNDER code for discount
+    const { email, founder } = await request.json();
+    const isFounder = founder === true;
     
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -64,36 +59,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
     }
 
-    // Calculate tier and price
-    const { count } = await supabase
-      .from("subscriptions")
-      .select("*", { count: "exact", head: true })
-      .in("status", ["active", "comped"]);
-
-    // Founder pricing: $29.99 base (users apply FOUNDER code for $19.99)
-    // Regular pricing: tier-based ($35 → $100 over time)
-    const tier = useFounderPricing ? 0 : getCurrentTier(count || 0);
-    const priceInCents = useFounderPricing ? 2999 : getPriceForTier(tier);
-
     // Create Stripe checkout session
+    // Founder: $19.99/mo + 45-day trial
+    // Public: $29.99/mo + no trial
     const appUrl = "https://flacko.ai";
     const session = await createCheckoutSession({
       userId,
       email,
-      priceInCents,
-      tier,
       successUrl: `${appUrl}/welcome?email=${encodeURIComponent(email)}`,
-      cancelUrl: useFounderPricing ? `${appUrl}/founder?canceled=true` : `${appUrl}/signup?canceled=true`,
-      trialDays,
-      isFounder: useFounderPricing,
+      cancelUrl: isFounder ? `${appUrl}/founder?canceled=true` : `${appUrl}/pricing?canceled=true`,
+      isFounder,
     });
 
     // Create pending subscription record
     await supabase.from("subscriptions").upsert({
       user_id: userId,
       status: "pending",
-      price_tier: tier,
-      locked_price_cents: priceInCents,
+      is_founder: isFounder,
     }, {
       onConflict: "user_id",
     });
@@ -102,12 +84,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Signup checkout error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
-    const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
     return NextResponse.json({ 
       error: `Server error: ${message}`,
-      debug: { hasStripeKey, keyPrefix }
     }, { status: 500 });
   }
 }
-

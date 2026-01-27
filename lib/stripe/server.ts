@@ -46,29 +46,31 @@ export function formatPriceForDisplay(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+// Price IDs - update these for live mode
+export const PRICE_IDS = {
+  founder: process.env.STRIPE_PRICE_FOUNDER || "price_1StxnwRNdSDJbZblI7zBHuG1", // $19.99/mo
+  public: process.env.STRIPE_PRICE_PUBLIC || "price_1SuKNSRNdSDJbZblxblHmkcn",   // $29.99/mo
+};
+
 export async function createCheckoutSession({
   userId,
   email,
-  priceInCents,
-  tier,
   successUrl,
   cancelUrl,
-  trialDays = 0,
   isFounder = false,
 }: {
   userId: string;
   email: string;
-  priceInCents: number;
-  tier: number;
   successUrl: string;
   cancelUrl: string;
-  trialDays?: number;
   isFounder?: boolean;
 }) {
   const stripe = getStripe();
   
-  const productName = "Flacko AI Pro";
-  const productDescription = "TSLA Trading Operating System subscription";
+  // Founder: $19.99 + 45-day trial
+  // Public: $29.99 + no trial
+  const priceId = isFounder ? PRICE_IDS.founder : PRICE_IDS.public;
+  const trialDays = isFounder ? 45 : 0;
   
   const session = await stripe.checkout.sessions.create({
     customer_email: email,
@@ -76,35 +78,20 @@ export async function createCheckoutSession({
     payment_method_types: ["card"],
     line_items: [
       {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: productName,
-            description: productDescription,
-          },
-          unit_amount: priceInCents,
-          recurring: {
-            interval: "month",
-          },
-        },
+        price: priceId,
         quantity: 1,
       },
     ],
     metadata: {
       user_id: userId,
-      price_tier: tier.toString(),
-      locked_price_cents: priceInCents.toString(),
       is_founder: isFounder ? "true" : "false",
     },
-    allow_promotion_codes: true,
     success_url: successUrl,
     cancel_url: cancelUrl,
     subscription_data: {
       trial_period_days: trialDays > 0 ? trialDays : undefined,
       metadata: {
         user_id: userId,
-        price_tier: tier.toString(),
-        locked_price_cents: priceInCents.toString(),
         is_founder: isFounder ? "true" : "false",
       },
     },
