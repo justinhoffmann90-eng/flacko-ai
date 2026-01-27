@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -9,14 +10,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
-    const supabase = await createServiceClient();
+    // Use anon client for resetPasswordForEmail (it sends the email)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
     
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: "recovery",
-      email,
-      options: {
-        redirectTo: "https://flacko.ai/dashboard",
-      },
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://flacko.ai/reset-password",
     });
 
     if (error) {
@@ -25,8 +26,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: "Password reset email sent",
-      // Don't expose the actual link in production
+      message: "Password reset email sent via resetPasswordForEmail",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
