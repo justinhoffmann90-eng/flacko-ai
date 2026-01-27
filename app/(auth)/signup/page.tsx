@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 
@@ -71,35 +71,34 @@ export default function SignupPage() {
 
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
-      {/* Hero - matches landing page energy */}
+      {/* Hero */}
       <div className="text-center space-y-3">
-        <h1 className="text-2xl font-bold">
-          Wake up with a plan.
+        <h1 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          Flacko AI
         </h1>
+        <p className="text-2xl font-bold">
+          Wake up with a plan.
+        </p>
         <p className="text-muted-foreground">
           Daily reports, price alerts, and a system that tells you when to pay attention.
         </p>
       </div>
 
-      {/* Pricing */}
-      <div className="text-center space-y-1">
+      {/* Pricing - larger */}
+      <div className="text-center space-y-2 py-2">
         <div className="flex items-center justify-center gap-3">
-          <span className="text-lg text-muted-foreground line-through">$39.99</span>
-          <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-medium">25% OFF</span>
+          <span className="text-xl text-muted-foreground line-through">$39.99</span>
+          <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">25% OFF</span>
         </div>
-        <div className="text-3xl font-bold">
-          $29.99<span className="text-lg text-muted-foreground font-normal">/month</span>
+        <div className="text-4xl font-bold">
+          $29.99<span className="text-xl text-muted-foreground font-normal">/month</span>
         </div>
         <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>
 
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Get Started</CardTitle>
-          <CardDescription>Join 500+ TSLA investors</CardDescription>
-        </CardHeader>
         <form onSubmit={handleSignup} autoComplete="on">
-          <CardContent className="space-y-4 pt-0">
+          <CardContent className="space-y-4 pt-6">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -127,10 +126,10 @@ export default function SignupPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Redirecting to checkout...
+                  Redirecting...
                 </>
               ) : (
-                "Continue to Payment"
+                "Continue to Checkout"
               )}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
