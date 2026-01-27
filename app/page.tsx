@@ -37,20 +37,27 @@ export default function LandingPageV2() {
 
   return (
     <main className="bg-black text-zinc-100 min-h-screen">
-      {/* Header - Always Visible */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800">
+      {/* Sticky Header */}
+      <div className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800 transition-all duration-300 ${showSticky ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
           <span className="font-semibold text-zinc-200">Flacko AI</span>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-zinc-400 hover:text-zinc-200">
-              Sign in
-            </Link>
+            <span className="text-sm text-zinc-400 hidden sm:block">500+ members</span>
             <Link href="/signup">
               <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
                 Join Us
               </Button>
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Top Bar with Sign In */}
+      <div className="fixed top-0 left-0 right-0 z-40 px-6 py-4">
+        <div className="max-w-4xl mx-auto flex justify-end">
+          <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+            Sign in
+          </Link>
         </div>
       </div>
 
