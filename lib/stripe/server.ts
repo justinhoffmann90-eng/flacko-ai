@@ -71,7 +71,7 @@ export async function createCheckoutSession({
     ? "Flacko AI Pro - Founder" 
     : "Flacko AI Subscription";
   const productDescription = isFounder
-    ? "TSLA Trading OS • Use code FOUNDER for $10/mo off forever"
+    ? "TSLA Trading OS • Use code FOUNDER for $10/mo off for 12 months"
     : "TSLA Trading Operating System";
   
   const session = await stripe.checkout.sessions.create({
