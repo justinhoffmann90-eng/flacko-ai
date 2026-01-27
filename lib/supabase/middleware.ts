@@ -68,6 +68,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Stripe test endpoint (temporary debug)
+  if (request.nextUrl.pathname === "/api/stripe-test") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
