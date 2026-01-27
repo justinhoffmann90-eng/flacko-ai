@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb } from "lucide-react";
+import { NeuralBackground } from "@/components/neural-background";
 import { useState, useEffect } from "react";
 
 // FAQ Accordion Item
@@ -62,8 +63,15 @@ export default function LandingPageV2() {
       {/* ============================================
           SECTION 1: HERO - What It Is
           ============================================ */}
-      <section className="pt-24 pb-16 px-6">
-        <div className="max-w-2xl mx-auto text-center">
+      <section className="pt-24 pb-16 px-6 relative overflow-hidden">
+        {/* Neural Network Background */}
+        <div className="absolute inset-0 -top-24">
+          <NeuralBackground />
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black" />
+        </div>
+        
+        <div className="max-w-2xl mx-auto text-center relative z-10">
           <p className="text-sm text-zinc-500 mb-4">Join 500+ TSLA investors</p>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
             Our TSLA Trading
