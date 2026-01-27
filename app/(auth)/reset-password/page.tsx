@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,69 +10,103 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 
+// Use standard Supabase client (not SSR) for handling hash tokens
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [success, setSuccess] = useState(false);
+  const [pageState, setPageState] = useState<"loading" | "form" | "success" | "error">("loading");
+  const [debugInfo, setDebugInfo] = useState<string>("");
   const router = useRouter();
-  const supabase = createClient();
 
-  useEffect(() => {
-    // Handle hash tokens from magiclink (Supabase puts tokens in URL hash)
-    const hash = window.location.hash;
-    
-    if (hash && hash.includes("access_token=")) {
-      // Parse tokens from hash
-      const hashParams = new URLSearchParams(hash.substring(1));
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
+  const initializeAuth = useCallback(async () => {
+    try {
+      const hash = window.location.hash;
       
-      if (accessToken && refreshToken) {
-        // Set session with tokens from hash
-        supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        }).then(({ error }) => {
-          if (error) {
-            console.error("Failed to set session:", error);
-            setError("Failed to verify link. Please try again.");
-          } else {
-            // Clear hash from URL
-            window.history.replaceState(null, "", "/reset-password");
-          }
-          setChecking(false);
-        });
+      // Debug: log what we're working with
+      console.log("Hash present:", !!hash, hash.length);
+      
+      // Check for error in hash first
+      if (hash.includes("error=")) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const errorDesc = hashParams.get("error_description") || "Link is invalid or expired";
+        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+        setDebugInfo("Error in URL hash");
+        setPageState("error");
         return;
       }
-    }
-    
-    // Check for error in hash
-    if (hash && hash.includes("error=")) {
-      const hashParams = new URLSearchParams(hash.substring(1));
-      const errorDesc = hashParams.get("error_description") || "Link is invalid or expired";
-      setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
-      setChecking(false);
-      return;
-    }
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setChecking(false);
-      } else {
-        router.push("/login?error=invalid_recovery_link");
+      // Check for tokens in hash
+      if (hash.includes("access_token=")) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        console.log("Tokens found:", !!accessToken, !!refreshToken);
+
+        if (accessToken && refreshToken) {
+          // Set session with extracted tokens
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (sessionError) {
+            console.error("setSession error:", sessionError);
+            setError(`Failed to verify: ${sessionError.message}`);
+            setDebugInfo(`setSession failed: ${sessionError.message}`);
+            setPageState("error");
+            return;
+          }
+
+          if (data.session) {
+            console.log("Session established for:", data.session.user.email);
+            // Clear the hash from URL for cleaner UX
+            window.history.replaceState(null, "", "/reset-password");
+            setPageState("form");
+            return;
+          }
+        }
       }
-    });
-  }, [supabase, router]);
+
+      // No hash tokens - check for existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        console.log("Existing session found");
+        setPageState("form");
+        return;
+      }
+
+      // No session, no tokens - invalid state
+      setError("No valid session found. Please request a new password link.");
+      setDebugInfo("No hash tokens and no existing session");
+      setPageState("error");
+      
+    } catch (err) {
+      console.error("Init error:", err);
+      setError("Something went wrong. Please try again.");
+      setDebugInfo(`Exception: ${err}`);
+      setPageState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    // Small delay to ensure hash is available
+    const timer = setTimeout(initializeAuth, 100);
+    return () => clearTimeout(timer);
+  }, [initializeAuth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validate passwords
     if (password.length < 8) {
       setError("Password must be at least 8 characters");
       return;
@@ -86,16 +120,16 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error: updateError } = await supabase.auth.updateUser({ password });
 
-      if (error) {
-        setError(error.message);
+      if (updateError) {
+        setError(updateError.message);
         return;
       }
 
-      setSuccess(true);
+      setPageState("success");
       
-      // Redirect to dashboard after 2 seconds
+      // Redirect to dashboard after success
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);
@@ -106,9 +140,10 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (checking) {
+  // Loading state
+  if (pageState === "loading") {
     return (
-      <Card>
+      <Card className="w-full max-w-md mx-auto">
         <CardContent className="py-12">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -119,17 +154,47 @@ export default function ResetPasswordPage() {
     );
   }
 
-  if (success) {
+  // Error state
+  if (pageState === "error") {
     return (
-      <Card>
+      <Card className="w-full max-w-md mx-auto">
         <CardHeader>
-          <CardTitle>You're all set! 🎉</CardTitle>
-          <CardDescription>Your account is ready</CardDescription>
+          <CardTitle>Unable to Verify Link</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          {process.env.NODE_ENV === "development" && debugInfo && (
+            <p className="text-xs text-muted-foreground">Debug: {debugInfo}</p>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => router.push("/login")}
+          >
+            Back to Login
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  // Success state
+  if (pageState === "success") {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>You're All Set! 🎉</CardTitle>
+          <CardDescription>Your password has been created</CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert variant="success">
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert className="border-green-500 bg-green-500/10">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-500">
               Taking you to your dashboard...
             </AlertDescription>
           </Alert>
@@ -138,8 +203,9 @@ export default function ResetPasswordPage() {
     );
   }
 
+  // Form state
   return (
-    <Card>
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle>Welcome to Flacko AI</CardTitle>
         <CardDescription>Create a password to access your trading dashboard</CardDescription>
@@ -164,6 +230,7 @@ export default function ResetPasswordPage() {
               required
               minLength={8}
               autoComplete="new-password"
+              autoFocus
             />
             <p className="text-xs text-muted-foreground">
               Must be at least 8 characters
