@@ -52,15 +52,6 @@ export default function LandingPageV2() {
         </div>
       </div>
 
-      {/* Top Bar with Sign In */}
-      <div className="fixed top-0 left-0 right-0 z-40 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex justify-end">
-          <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
-            Sign in
-          </Link>
-        </div>
-      </div>
-
       {/* ============================================
           SECTION 1: HERO - What It Is
           ============================================ */}
