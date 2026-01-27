@@ -169,18 +169,37 @@ export async function POST(request: Request) {
         const userId = subscription.metadata?.user_id;
 
         if (userId) {
+          const newStatus = subscription.status === "active" ? "active" :
+                           subscription.status === "past_due" ? "past_due" :
+                           subscription.status;
+          
           await supabase
             .from("subscriptions")
             .update({
-              status: subscription.status === "active" ? "active" :
-                      subscription.status === "past_due" ? "past_due" :
-                      subscription.status,
+              status: newStatus,
               current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
               current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
               cancel_at_period_end: subscription.cancel_at_period_end,
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
+
+          // Sync Discord role based on subscription status
+          const { data: userData } = await supabase
+            .from("users")
+            .select("discord_user_id")
+            .eq("id", userId)
+            .single();
+
+          if (userData?.discord_user_id) {
+            if (newStatus === "active") {
+              // Re-add role when subscription becomes active (e.g., payment fixed)
+              await addRoleToMember(userData.discord_user_id);
+            } else if (newStatus === "past_due" || newStatus === "canceled" || newStatus === "unpaid") {
+              // Remove role for non-active statuses
+              await removeRoleFromMember(userData.discord_user_id);
+            }
+          }
         }
         break;
       }
