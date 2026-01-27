@@ -8,7 +8,7 @@ function getStripe(): Stripe {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY.trim());
   }
   return _stripe;
 }
