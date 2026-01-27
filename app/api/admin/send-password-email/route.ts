@@ -19,9 +19,9 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceClient();
 
-    // Generate invite link for new user - direct to reset-password
+    // Generate magic link for user to sign in and set password
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: "invite",
+      type: "magiclink",
       email,
       options: {
         redirectTo: "https://flacko.ai/reset-password",
