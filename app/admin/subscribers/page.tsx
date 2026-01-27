@@ -1,67 +1,88 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
-interface SubscriptionRow {
+interface UserRow {
   id: string;
-  users: { 
-    email: string; 
-    x_handle: string;
-    discord_user_id: string | null;
-    discord_username: string | null;
-  } | null;
-  status: string;
-  price_tier: number;
-  price_amount: number;
-  locked_price_cents: number | null;
+  email: string;
+  x_handle: string;
+  discord_user_id: string | null;
+  discord_username: string | null;
   created_at: string;
-  current_period_end: string | null;
+  subscriptions: {
+    id: string;
+    status: string;
+    stripe_subscription_id: string | null;
+    current_period_end: string | null;
+  }[] | null;
 }
 
 export default async function AdminSubscribersPage() {
   const supabase = await createClient();
 
-  // Fetch all subscribers with their subscription info
-  const { data: subscriptionsData } = await supabase
-    .from("subscriptions")
+  // Fetch all users with their subscription info (if any)
+  const { data: usersData } = await supabase
+    .from("users")
     .select(`
-      *,
-      users (email, x_handle, discord_user_id, discord_username)
+      id,
+      email,
+      x_handle,
+      discord_user_id,
+      discord_username,
+      created_at,
+      subscriptions (id, status, stripe_subscription_id, current_period_end)
     `)
+    .eq("is_admin", false)
     .order("created_at", { ascending: false });
 
-  const subscriptions = (subscriptionsData || []) as SubscriptionRow[];
+  const users = (usersData || []) as UserRow[];
+
+  const getSubscriptionStatus = (subs: UserRow["subscriptions"]) => {
+    if (!subs || subs.length === 0) return { status: "none", label: "No subscription" };
+    const sub = subs[0];
+    return { status: sub.status, label: sub.status };
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "green";
       case "comped":
+        return "green";
+      case "trialing":
         return "green";
       case "past_due":
         return "yellow";
       case "canceled":
+      case "none":
         return "red";
       default:
         return "secondary";
     }
   };
 
+  // Count stats
+  const totalUsers = users.length;
+  const discordLinked = users.filter(u => u.discord_user_id).length;
+  const activeSubscriptions = users.filter(u => {
+    const sub = u.subscriptions?.[0];
+    return sub && ["active", "comped", "trialing"].includes(sub.status);
+  }).length;
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Subscribers</h1>
+          <h1 className="text-3xl font-bold">Users</h1>
           <p className="text-muted-foreground mt-2">
-            {subscriptions.length} total subscribers
+            {totalUsers} total users • {activeSubscriptions} active • {discordLinked} Discord linked
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Subscribers</CardTitle>
+          <CardTitle>Onboarding Health</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -69,53 +90,46 @@ export default async function AdminSubscribersPage() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4">User</th>
-                  <th className="text-left py-3 px-4">Status</th>
+                  <th className="text-left py-3 px-4">Subscription</th>
                   <th className="text-left py-3 px-4">Discord</th>
-                  <th className="text-left py-3 px-4">Tier</th>
-                  <th className="text-left py-3 px-4">Price</th>
-                  <th className="text-left py-3 px-4">Subscribed</th>
-                  <th className="text-left py-3 px-4">Period End</th>
+                  <th className="text-left py-3 px-4">Joined</th>
                 </tr>
               </thead>
               <tbody>
-                {subscriptions.map((sub) => {
-                  const user = sub.users;
+                {users.map((user) => {
+                  const subInfo = getSubscriptionStatus(user.subscriptions);
+                  const hasIssues = !user.discord_user_id || subInfo.status === "none" || subInfo.status === "past_due";
+                  
                   return (
-                    <tr key={sub.id} className="border-b hover:bg-muted/50">
+                    <tr 
+                      key={user.id} 
+                      className={`border-b hover:bg-muted/50 ${hasIssues ? "bg-yellow-500/5" : ""}`}
+                    >
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium">{user?.email || "Unknown"}</p>
+                          <p className="font-medium">{user.email}</p>
                           <p className="text-sm text-muted-foreground">
-                            {user?.x_handle || "No handle"}
+                            {user.x_handle || "No handle"}
                           </p>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge variant={getStatusColor(sub.status) as "green" | "yellow" | "red" | "secondary"}>
-                          {sub.status}
+                        <Badge variant={getStatusColor(subInfo.status) as "green" | "yellow" | "red" | "secondary"}>
+                          {subInfo.label}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
-                        {user?.discord_user_id ? (
+                        {user.discord_user_id ? (
                           <div className="flex items-center gap-2">
                             <span className="text-green-500">✓</span>
                             <span className="text-sm">{user.discord_username || "Linked"}</span>
                           </div>
                         ) : (
-                          <span className="text-yellow-500">Not linked</span>
+                          <span className="text-yellow-500">⚠ Not linked</span>
                         )}
                       </td>
-                      <td className="py-3 px-4">Tier {sub.price_tier}</td>
-                      <td className="py-3 px-4">
-                        {sub.locked_price_cents ? formatCurrency(sub.locked_price_cents) : "-"}
-                      </td>
-                      <td className="py-3 px-4">
-                        {formatDate(sub.created_at)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {sub.current_period_end
-                          ? formatDate(sub.current_period_end)
-                          : "-"}
+                      <td className="py-3 px-4 text-sm text-muted-foreground">
+                        {formatDate(user.created_at)}
                       </td>
                     </tr>
                   );
@@ -123,9 +137,9 @@ export default async function AdminSubscribersPage() {
               </tbody>
             </table>
 
-            {(!subscriptions || subscriptions.length === 0) && (
+            {users.length === 0 && (
               <p className="text-center text-muted-foreground py-8">
-                No subscribers yet
+                No users yet
               </p>
             )}
           </div>
