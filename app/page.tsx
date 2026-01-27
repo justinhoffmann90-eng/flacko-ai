@@ -103,7 +103,7 @@ export default function LandingPageV2() {
       <section className="py-6 px-6 border-t border-zinc-900/50">
         <div className="max-w-4xl mx-auto">
           <p className="text-center text-[10px] text-zinc-600 uppercase tracking-widest mb-4">
-            Powered by Continuous Monitoring
+            AI-Powered Monitoring & Analysis:
           </p>
           <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8">
             {/* Tesla */}
