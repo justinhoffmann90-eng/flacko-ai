@@ -68,11 +68,11 @@ export default function SignupPage() {
       {/* Pricing - larger */}
       <div className="text-center space-y-2 py-2">
         <div className="flex items-center justify-center gap-3">
-          <span className="text-xl text-muted-foreground line-through">$39.99</span>
-          <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">25% OFF</span>
+          <span className="text-xl text-muted-foreground line-through">$34.99</span>
+          <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">LAUNCH</span>
         </div>
         <div className="text-4xl font-bold">
-          $29.99<span className="text-xl text-muted-foreground font-normal">/month</span>
+          $24.99<span className="text-xl text-muted-foreground font-normal">/month</span>
         </div>
         <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>
