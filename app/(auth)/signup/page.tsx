@@ -72,7 +72,7 @@ export default function SignupPage() {
           <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">LAUNCH</span>
         </div>
         <div className="text-4xl font-bold">
-          $24.99<span className="text-xl text-muted-foreground font-normal">/month</span>
+          $29.99<span className="text-xl text-muted-foreground font-normal">/month</span>
         </div>
         <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>

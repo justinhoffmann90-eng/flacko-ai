@@ -89,7 +89,7 @@ export default function LandingPageV2() {
           <div className="flex justify-center mb-4">
             <Link href="/signup">
               <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-                Join Us — $24.99/mo
+                Join Us — $29.99/mo
               </Button>
             </Link>
           </div>
@@ -777,13 +777,13 @@ export default function LandingPageV2() {
             Sleep at night knowing you have a plan for every scenario.
           </p>
           <div className="text-4xl font-bold text-white mb-2">
-            $24.99<span className="text-xl text-zinc-500">/month</span>
+            $29.99<span className="text-xl text-zinc-500">/month</span>
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full font-medium">🔥 Launch Price</span>
           </div>
           <p className="text-zinc-400 text-sm mb-8">
-            Price increases to $34.99/mo next month. Lock in $24.99 forever.
+            Price increases to $34.99/mo next month. Lock in $29.99 forever.
           </p>
           
           <Link href="/signup">
