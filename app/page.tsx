@@ -265,21 +265,21 @@ export default function LandingPageV2() {
             Your daily workflow — simple and effective.
           </p>
           
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             {/* Morning */}
-            <div className="flex gap-6">
+            <div className="flex gap-3 md:gap-6">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500/30 to-orange-500/30 border border-yellow-500/50 flex items-center justify-center">
-                  <span className="text-lg">☀️</span>
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-500/30 to-orange-500/30 border border-yellow-500/50 flex items-center justify-center">
+                  <span className="text-base md:text-lg">☀️</span>
                 </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Morning: Read the Report</h3>
-                <p className="text-zinc-400 mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-base md:text-lg mb-1">Morning: Read the Report</h3>
+                <p className="text-sm md:text-base text-zinc-400 mb-2 md:mb-3">
                   The daily report drops after market close, giving you plenty of time to review 
                   and prepare your plan for the next day. Takes 5 minutes to read. You'll know:
                 </p>
-                <ul className="text-sm text-zinc-500 space-y-1">
+                <ul className="text-xs md:text-sm text-zinc-500 space-y-1">
                   <li>• What mode we're in (Green, Yellow, Orange, or Red)</li>
                   <li>• Key levels to watch and what to do at each one</li>
                   <li>• Your daily cap and position sizing guidance</li>
@@ -288,19 +288,19 @@ export default function LandingPageV2() {
             </div>
 
             {/* During the Day */}
-            <div className="flex gap-6">
+            <div className="flex gap-3 md:gap-6">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#5865F2]/30 to-[#5865F2]/10 border border-[#5865F2]/50 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#5865F2]/30 to-[#5865F2]/10 border border-[#5865F2]/50 flex items-center justify-center">
+                  <svg className="w-5 h-5 md:w-6 md:h-6 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                 </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Intraday: Receive Updates</h3>
-                <p className="text-zinc-400 mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-base md:text-lg mb-1">Intraday: Receive Updates</h3>
+                <p className="text-sm md:text-base text-zinc-400 mb-2 md:mb-3">
                   Go live your life while we curate what matters. Key level triggered? Headline worth knowing? 
                   Options flow shift? You'll get notified. No more staring at charts all day.
                 </p>
-                <ul className="text-sm text-zinc-500 space-y-1">
+                <ul className="text-xs md:text-sm text-zinc-500 space-y-1">
                   <li>• Price alerts when levels are hit — with what to do and how to size</li>
                   <li>• HIRO options flow updates throughout the day</li>
                   <li>• Curated market-moving headlines — batched, not spammed</li>
@@ -309,19 +309,19 @@ export default function LandingPageV2() {
             </div>
 
             {/* Weekly */}
-            <div className="flex gap-6">
+            <div className="flex gap-3 md:gap-6">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/50 flex items-center justify-center">
-                  <span className="text-lg">📆</span>
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 border border-purple-500/50 flex items-center justify-center">
+                  <span className="text-base md:text-lg">📆</span>
                 </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Weekly: Zooming Out</h3>
-                <p className="text-zinc-400 mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-base md:text-lg mb-1">Weekly: Zooming Out</h3>
+                <p className="text-sm md:text-base text-zinc-400 mb-2 md:mb-3">
                   Step back from the noise. Reflect on how the system performed, 
                   calibrate for what's ahead, and stay connected to the bigger picture.
                 </p>
-                <ul className="text-sm text-zinc-500 space-y-1">
+                <ul className="text-xs md:text-sm text-zinc-500 space-y-1">
                   <li>• Weekly strategy calls — share ideas, reflect on the operating system</li>
                   <li>• Tesla catalyst calendar — continuously updated, including macro events</li>
                   <li>• Thesis Snapshot — FSD/autonomy, Robotaxi, Optimus, latest developments</li>
@@ -483,9 +483,9 @@ export default function LandingPageV2() {
           </p>
           
           {/* Mode Spectrum */}
-          <div className="mb-10">
-            <div className="h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 via-orange-500 to-red-500 mb-4"></div>
-            <div className="flex justify-between text-xs text-zinc-500">
+          <div className="mb-8 md:mb-10">
+            <div className="h-2 md:h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 via-orange-500 to-red-500 mb-3 md:mb-4"></div>
+            <div className="flex justify-between text-[10px] md:text-xs text-zinc-500 px-1">
               <span>Healthy</span>
               <span>Warning</span>
               <span>Caution</span>
@@ -494,15 +494,15 @@ export default function LandingPageV2() {
           </div>
 
           {/* Four Modes */}
-          <div className="grid md:grid-cols-4 gap-4 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-10">
             {/* Green */}
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <h3 className="font-bold text-green-400">Green</h3>
+                <h3 className="font-bold text-green-400 text-sm md:text-base">Green</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Trend intact, momentum healthy</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Trend intact, momentum healthy</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
                 <li>• Good to buy dips</li>
                 <li>• Hold with conviction</li>
                 <li>• Don't sell too fast</li>
@@ -510,13 +510,13 @@ export default function LandingPageV2() {
             </div>
             
             {/* Yellow */}
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <h3 className="font-bold text-yellow-400">Yellow</h3>
+                <h3 className="font-bold text-yellow-400 text-sm md:text-base">Yellow</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Warning signs present</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Warning signs present</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
                 <li>• Reducing daily cap to &lt;15%</li>
                 <li>• Ratcheting down leverage</li>
                 <li>• Shifting to watch and see</li>
@@ -524,13 +524,13 @@ export default function LandingPageV2() {
             </div>
             
             {/* Orange */}
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <h3 className="font-bold text-orange-400">Orange</h3>
+                <h3 className="font-bold text-orange-400 text-sm md:text-base">Orange</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Structure weakening</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Structure weakening</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
                 <li>• Dropping daily cap to &lt;10%</li>
                 <li>• Small nibbles only</li>
                 <li>• Preparing for potential exit</li>
@@ -538,13 +538,13 @@ export default function LandingPageV2() {
             </div>
             
             {/* Red */}
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <h3 className="font-bold text-red-400">Red</h3>
+                <h3 className="font-bold text-red-400 text-sm md:text-base">Red</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Structure broken or at risk</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Structure broken or at risk</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
                 <li>• Dropping daily cap to 0-5%</li>
                 <li>• Respecting Master Eject level</li>
                 <li>• Requiring evidence of bottom</li>
@@ -553,13 +553,16 @@ export default function LandingPageV2() {
           </div>
 
           {/* What Determines Mode */}
-          <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
-            <h3 className="font-semibold mb-4 text-center">How the Mode is Determined</h3>
-            <p className="text-center text-zinc-500 text-sm mb-6">Systematic clarity when you need it most.</p>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-sm font-medium text-zinc-300 mb-2">Technical Confluence</h4>
-                <ul className="space-y-1 text-sm text-zinc-400">
+          <div className="bg-zinc-900/50 rounded-xl p-5 md:p-8 border border-zinc-800">
+            <h3 className="font-semibold text-lg md:text-xl mb-2 text-center">How the Mode is Determined</h3>
+            <p className="text-center text-zinc-500 text-sm mb-6 md:mb-8">Systematic clarity when you need it most.</p>
+            <div className="grid md:grid-cols-2 gap-6 md:gap-10 lg:gap-16">
+              <div className="md:pr-4 lg:pr-8">
+                <h4 className="text-sm md:text-base font-medium text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Technical Confluence
+                </h4>
+                <ul className="space-y-2 text-sm text-zinc-400">
                   <li>• Market Structure — HH/HL or broken</li>
                   <li>• BX Trender — Momentum regime</li>
                   <li>• MA/EMA — Trend position & slope</li>
@@ -567,18 +570,21 @@ export default function LandingPageV2() {
                   <li>• RSI — Divergences & extremes</li>
                 </ul>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-zinc-300 mb-2">Dealer Positioning</h4>
-                <ul className="space-y-1 text-sm text-zinc-400">
-                  <li>• SpotGamma Levels — Put Wall, Call Wall, Hedge Wall</li>
+              <div className="md:pl-4 lg:pl-8 md:border-l md:border-zinc-800">
+                <h4 className="text-sm md:text-base font-medium text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Dealer Positioning
+                </h4>
+                <ul className="space-y-2 text-sm text-zinc-400">
+                  <li>• SpotGamma Levels — Put/Call/Hedge Walls</li>
                   <li>• HIRO — Real-time institutional flow</li>
                   <li>• FlowPatrol — Daily options flow report</li>
-                  <li>• Gamma Regime — Positive vs negative gamma</li>
+                  <li>• Gamma Regime — Positive vs negative</li>
                   <li>• Key Gamma Strike — Regime pivot point</li>
                 </ul>
               </div>
             </div>
-            <p className="text-xs text-zinc-500 mt-4 text-center">
+            <p className="text-xs text-zinc-500 mt-6 md:mt-8 text-center border-t border-zinc-800 pt-4">
               Powered by $500+/mo in data feed subscriptions. You get the synthesis, not the complexity.
             </p>
           </div>
