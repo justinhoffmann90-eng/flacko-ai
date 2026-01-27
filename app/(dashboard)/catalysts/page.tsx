@@ -49,7 +49,7 @@ export default async function CatalystsPage({
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
-      redirect("/pricing");
+      redirect("/signup");
     }
   }
 

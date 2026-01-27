@@ -238,8 +238,8 @@ export default function OnboardingPage() {
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={handleComplete} loading={loading}>
-                  Go to Dashboard
+                <Button onClick={handleComplete} disabled={loading}>
+                  {loading ? "Loading..." : "Go to Dashboard"}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               )}

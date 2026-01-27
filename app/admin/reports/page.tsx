@@ -171,8 +171,8 @@ export default function AdminReportsPage() {
           />
 
           <div className="flex space-x-4">
-            <Button onClick={handleParse} loading={parsing} disabled={!markdown.trim()}>
-              Parse Report
+            <Button onClick={handleParse} disabled={parsing || !markdown.trim()}>
+              {parsing ? "Parsing..." : "Parse Report"}
             </Button>
             <Button
               variant="outline"
@@ -265,13 +265,12 @@ export default function AdminReportsPage() {
             {/* Upload Button */}
             <Button
               onClick={handleUpload}
-              loading={uploading}
               className="w-full"
               size="lg"
-              disabled={!parseResult.data?.close || !parseResult.data?.masterEject}
+              disabled={uploading || !parseResult.data?.close || !parseResult.data?.masterEject}
             >
               <Upload className="h-4 w-4 mr-2" />
-              Publish Report
+              {uploading ? "Publishing..." : "Publish Report"}
             </Button>
 
             {(!parseResult.data?.close || !parseResult.data?.masterEject) && (

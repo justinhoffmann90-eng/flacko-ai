@@ -235,8 +235,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Button onClick={handleSave} className="w-full" loading={saving}>
-          Save Settings
+        <Button onClick={handleSave} className="w-full" disabled={saving}>
+          {saving ? "Saving..." : "Save Settings"}
         </Button>
 
         {/* Subscription */}

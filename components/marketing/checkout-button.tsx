@@ -46,8 +46,8 @@ export function CheckoutButton({ children, className, size = "lg" }: CheckoutBut
   };
 
   return (
-    <Button onClick={handleCheckout} loading={loading} size={size} className={className}>
-      {children}
+    <Button onClick={handleCheckout} disabled={loading} size={size} className={className}>
+      {loading ? "Loading..." : children}
     </Button>
   );
 }

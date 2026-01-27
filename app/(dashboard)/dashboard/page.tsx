@@ -66,7 +66,7 @@ export default async function DashboardPage() {
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
-      redirect("/pricing");
+      redirect("/signup");
     }
   }
 
