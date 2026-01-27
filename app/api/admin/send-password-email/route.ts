@@ -19,12 +19,12 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceClient();
 
-    // Generate recovery link - redirect to reset-password page
+    // Generate recovery link - go through auth callback then to reset-password
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "recovery",
       email,
       options: {
-        redirectTo: "https://flacko.ai/reset-password",
+        redirectTo: "https://flacko.ai/api/auth/callback?next=/reset-password",
       },
     });
 
