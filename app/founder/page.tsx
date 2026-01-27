@@ -23,7 +23,7 @@ export default function FounderSignupPage() {
       const response = await fetch("/api/signup-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, trial: true }), // 30-day trial
+        body: JSON.stringify({ email, trial: true, founder: true }), // 30-day trial, founder pricing
       });
 
       const data = await response.json();
@@ -67,13 +67,13 @@ export default function FounderSignupPage() {
         <div className="text-center space-y-2 py-2">
           <div className="text-sm text-muted-foreground">After trial:</div>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-xl text-muted-foreground line-through">$34.99</span>
-            <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">FOUNDER</span>
+            <span className="text-xl text-muted-foreground line-through">$29.99</span>
+            <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">~33% OFF</span>
           </div>
           <div className="text-4xl font-bold">
             $19.99<span className="text-xl text-muted-foreground font-normal">/month</span>
           </div>
-          <p className="text-sm text-muted-foreground">Use code <strong>FOUNDER</strong> at checkout</p>
+          <p className="text-sm text-muted-foreground">Apply code <strong>FOUNDER</strong> at checkout</p>
         </div>
 
         <Card>

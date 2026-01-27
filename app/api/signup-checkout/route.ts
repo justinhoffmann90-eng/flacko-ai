@@ -8,8 +8,9 @@ export async function POST(request: Request) {
     const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
     const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
     
-    const { email, trial } = await request.json();
+    const { email, trial, founder } = await request.json();
     const trialDays = trial ? 30 : 0; // 30-day trial if trial=true
+    const useFounderPricing = founder === true; // Use $29.99 base for founder signups
     
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -69,8 +70,10 @@ export async function POST(request: Request) {
       .select("*", { count: "exact", head: true })
       .in("status", ["active", "comped"]);
 
-    const tier = getCurrentTier(count || 0);
-    const priceInCents = getPriceForTier(tier);
+    // Founder pricing: $29.99 base (users apply FOUNDER code for $19.99)
+    // Regular pricing: tier-based ($35 → $100 over time)
+    const tier = useFounderPricing ? 0 : getCurrentTier(count || 0);
+    const priceInCents = useFounderPricing ? 2999 : getPriceForTier(tier);
 
     // Create Stripe checkout session
     const appUrl = "https://flacko.ai";
@@ -80,8 +83,9 @@ export async function POST(request: Request) {
       priceInCents,
       tier,
       successUrl: `${appUrl}/welcome?email=${encodeURIComponent(email)}`,
-      cancelUrl: `${appUrl}/signup?canceled=true`,
+      cancelUrl: useFounderPricing ? `${appUrl}/founder?canceled=true` : `${appUrl}/signup?canceled=true`,
       trialDays,
+      isFounder: useFounderPricing,
     });
 
     // Create pending subscription record

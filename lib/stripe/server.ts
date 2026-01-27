@@ -54,6 +54,7 @@ export async function createCheckoutSession({
   successUrl,
   cancelUrl,
   trialDays = 0,
+  isFounder = false,
 }: {
   userId: string;
   email: string;
@@ -62,8 +63,17 @@ export async function createCheckoutSession({
   successUrl: string;
   cancelUrl: string;
   trialDays?: number;
+  isFounder?: boolean;
 }) {
   const stripe = getStripe();
+  
+  const productName = isFounder 
+    ? "Flacko AI Pro - Founder" 
+    : "Flacko AI Subscription";
+  const productDescription = isFounder
+    ? "TSLA Trading OS • Use code FOUNDER for $10/mo off forever"
+    : "TSLA Trading Operating System";
+  
   const session = await stripe.checkout.sessions.create({
     customer_email: email,
     mode: "subscription",
@@ -73,8 +83,8 @@ export async function createCheckoutSession({
         price_data: {
           currency: "usd",
           product_data: {
-            name: "Flacko AI Subscription",
-            description: `TSLA Trading Operating System`,
+            name: productName,
+            description: productDescription,
           },
           unit_amount: priceInCents,
           recurring: {
@@ -88,6 +98,7 @@ export async function createCheckoutSession({
       user_id: userId,
       price_tier: tier.toString(),
       locked_price_cents: priceInCents.toString(),
+      is_founder: isFounder ? "true" : "false",
     },
     allow_promotion_codes: true,
     success_url: successUrl,
@@ -98,6 +109,7 @@ export async function createCheckoutSession({
         user_id: userId,
         price_tier: tier.toString(),
         locked_price_cents: priceInCents.toString(),
+        is_founder: isFounder ? "true" : "false",
       },
     },
   });
