@@ -45,64 +45,70 @@ export default function LoginPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>Sign in to your account to continue</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleLogin}>
-        <CardContent className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Forgot password?
-              </Link>
+    <div className="space-y-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">Flacko AI</h1>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome back</CardTitle>
+          <CardDescription>Sign in to your account</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" loading={loading}>
-            Sign in
-          </Button>
-          <p className="text-sm text-muted-foreground text-center">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-foreground hover:underline">
-              Sign up
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full" loading={loading}>
+              Sign in
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="text-foreground hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }
