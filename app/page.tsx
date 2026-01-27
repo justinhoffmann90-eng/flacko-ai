@@ -52,6 +52,13 @@ export default function LandingPageV2() {
         </div>
       </div>
 
+      {/* Sign In Link - Top Right */}
+      <div className="absolute top-4 right-6 z-40">
+        <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-300">
+          Sign in
+        </Link>
+      </div>
+
       {/* ============================================
           SECTION 1: HERO - What It Is
           ============================================ */}

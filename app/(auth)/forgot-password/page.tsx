@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" loading={loading}>
+          <Button type="submit" className="w-full" disabled={loading}>
             Send reset link
           </Button>
           <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
