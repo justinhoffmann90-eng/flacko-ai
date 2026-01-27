@@ -61,25 +61,25 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm">Join Our Discord Community</h3>
+          <h3 className="font-semibold text-sm">Get Access to Private Discord Channels</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Get real-time alerts, discuss trades, and connect with other TSLA traders.
+            Link your Discord to get the <span className="text-[#5865F2] font-medium">Subscriber</span> role with alerts &amp; discussion.
           </p>
           <div className="flex flex-wrap gap-2 mt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              onClick={() => window.open(DISCORD_INVITE_URL, "_blank")}
+            >
+              1. Join Server
+            </Button>
             <Button
               size="sm"
               className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs"
               onClick={handleLinkDiscord}
             >
-              Link Discord
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs text-muted-foreground"
-              onClick={() => window.open(DISCORD_INVITE_URL, "_blank")}
-            >
-              Join Server First
+              2. Link Account →
             </Button>
           </div>
         </div>
