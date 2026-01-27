@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
@@ -19,7 +19,7 @@ interface UserRow {
 }
 
 export default async function AdminSubscribersPage() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   // Fetch all users with their subscription info (if any)
   const { data: usersData } = await supabase
