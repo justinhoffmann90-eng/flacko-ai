@@ -1,0 +1,921 @@
+"use client";
+
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Check, X, Shield, TrendingDown, Brain, Zap, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+
+// FAQ Accordion Item
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="border-b border-zinc-800 py-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <span className="font-medium text-zinc-200">{question}</span>
+        <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <p className="mt-3 text-sm text-zinc-400 leading-relaxed">{answer}</p>
+      )}
+    </div>
+  );
+}
+
+export default function LandingPageNew() {
+  const [showSticky, setShowSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowSticky(window.scrollY > 500);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <main className="bg-black text-zinc-100 min-h-screen">
+      {/* Sticky Header */}
+      <div className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800 transition-all duration-300 ${showSticky ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
+          <span className="font-semibold text-zinc-200">Flacko AI</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-zinc-400 hidden sm:block">500+ members</span>
+            <Link href="/signup">
+              <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
+                Get Access
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero */}
+      <section className="pt-24 pb-16 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-sm text-zinc-500 mb-4">Join 500+ members</p>
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+            Our TSLA Trading
+            <br />
+            <span className="text-zinc-400">Operating System.</span>
+          </h1>
+          <p className="text-xl text-zinc-300 mb-6">
+            One system. Every scenario covered.
+          </p>
+          <p className="text-zinc-400 mb-4">
+            We turn technicals, flow, and catalysts into a daily playbook — so you wake up knowing exactly what to do.
+          </p>
+          <p className="text-zinc-500 mb-10">
+            Corrections unfold in stages — our mode system catches them early so you're reducing on Week 3, not panic-selling on Week 10.
+          </p>
+          
+          {/* Main CTA */}
+          <div className="flex justify-center mb-4">
+            <Link href="/signup">
+              <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
+                Get Access
+              </Button>
+            </Link>
+          </div>
+          <p className="text-sm text-zinc-500">
+            Daily Report + Alerts + VIP Discord + Weekly Calls
+          </p>
+        </div>
+        
+      </section>
+      
+      {/* Dashboard Preview - Side by Side */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Text content */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">
+                Your Daily Battle Map
+              </h2>
+              <p className="text-zinc-400 mb-6">
+                Wake up to a complete game plan. Mode, key levels, if/then scenarios — everything you need to trade with conviction.
+              </p>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li className="flex items-start gap-2">
+                  <span className="text-yellow-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Posture mode</strong> — offense, neutral, or defense</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-yellow-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Daily cap</strong> — pacing tied to mode, so you don't overcommit</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-yellow-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Key levels</strong> — where reactions happen</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-yellow-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">If/then scenarios</strong> — pre-written reactions</span>
+                </li>
+              </ul>
+            </div>
+            
+            {/* Dashboard Mockup */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/20 via-transparent to-transparent blur-3xl -z-10"></div>
+              
+              <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 shadow-2xl shadow-black/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
+                  </div>
+                  <span className="text-xs text-zinc-600 ml-2">Flacko AI — Dashboard</span>
+                </div>
+                
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50"></div>
+                      <span className="text-lg font-bold text-yellow-400">YELLOW MODE</span>
+                    </div>
+                    <span className="text-xs text-zinc-500">Jan 24, 2026</span>
+                  </div>
+                  
+                  <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800/50">
+                    <div className="text-xs text-zinc-500 mb-3">KEY LEVELS</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400">High Vol Point</span>
+                        <span className="text-sm font-mono text-green-400">$475</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400">Call Wall</span>
+                        <span className="text-sm font-mono text-green-400">$450</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400">Daily 9 EMA</span>
+                        <span className="text-sm font-mono text-yellow-400">$444</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400">Daily 21 EMA</span>
+                        <span className="text-sm font-mono text-yellow-400">$441</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400">Put Wall</span>
+                        <span className="text-sm font-mono text-red-400">$435</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400">Eject Level</span>
+                        <span className="text-sm font-mono text-red-500">$420</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800/50">
+                    <div className="text-xs text-zinc-500 mb-2">TODAY'S PLAYBOOK</div>
+                    <div className="text-sm text-zinc-300 space-y-1">
+                      <div><span className="text-green-400">Above $444</span> — controlled longs, let it run</div>
+                      <div><span className="text-yellow-400">$435-444</span> — wait for reclaim, no chase</div>
+                      <div><span className="text-red-400">Below $435</span> — hands off until structure repairs</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* The Problem / Why This Matters */}
+      <section className="py-20 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-12 text-center">
+            The problem this solves
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Correction Chart Visual - Simple Mode Transitions */}
+            <div className="relative md:col-span-1 md:min-w-[420px]">
+              <div className="bg-zinc-900/30 rounded-xl p-6 border border-zinc-800/50">
+                {/* Chart area */}
+                <div className="relative h-56">
+                  {/* Grid lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between opacity-30">
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                  </div>
+                  
+                  {/* Declining line - SVG with clear color segments - 10 weeks, steeper after week 6 */}
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
+                    {/* Green segment - Weeks 1-2 */}
+                    <path 
+                      d="M 0 25 Q 25 20, 50 27 T 100 35" 
+                      fill="none" 
+                      stroke="#22c55e" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    {/* Yellow segment - Weeks 3-4 */}
+                    <path 
+                      d="M 100 35 Q 125 45, 150 55 T 200 70" 
+                      fill="none" 
+                      stroke="#eab308" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    {/* Red segment - Weeks 5-10, steeper decline after week 6 */}
+                    <path 
+                      d="M 200 70 Q 230 85, 260 100 T 320 130 Q 380 160, 440 180 T 500 195" 
+                      fill="none" 
+                      stroke="#ef4444" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    
+                    {/* Connector lines from each dot to label above */}
+                    <line x1="50" y1="27" x2="50" y2="8" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="100" y1="35" x2="100" y2="8" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="200" y1="70" x2="200" y2="8" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="260" y1="100" x2="260" y2="8" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
+                  </svg>
+                  
+                  {/* Green Mode - early, still healthy */}
+                  <div className="absolute -top-5 left-[8%] flex flex-col items-center">
+                    <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Green Mode</span>
+                  </div>
+                  <div className="absolute top-[13%] left-[9%]">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
+                  </div>
+                  
+                  {/* Yellow Mode - at green→yellow transition - staggered lower to avoid overlap */}
+                  <div className="absolute top-1 left-[18%] flex flex-col items-center">
+                    <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Yellow Mode</span>
+                  </div>
+                  <div className="absolute top-[17%] left-[19%]">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
+                  </div>
+                  
+                  {/* Red Mode - at yellow→red transition */}
+                  <div className="absolute -top-5 left-[38%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Red Mode</span>
+                  </div>
+                  <div className="absolute top-[35%] left-[39%]">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
+                  </div>
+                  
+                  {/* Master Eject - shortly after red mode - staggered lower */}
+                  <div className="absolute top-1 left-[50%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">Master Eject</span>
+                  </div>
+                  <div className="absolute top-[50%] left-[51%]">
+                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50"></div>
+                  </div>
+                </div>
+                
+                {/* X-axis labels - 10 weeks */}
+                <div className="flex justify-between mt-3 text-[9px] text-zinc-500">
+                  <span>Week 1</span>
+                  <span>Week 2</span>
+                  <span>Week 3</span>
+                  <span>Week 4</span>
+                  <span>Week 5</span>
+                  <span>Week 6</span>
+                  <span>Week 7</span>
+                  <span>Week 8</span>
+                  <span>Week 9</span>
+                  <span>Week 10</span>
+                </div>
+                
+                {/* Caption */}
+                <div className="mt-4 text-center">
+                  <span className="text-xs text-zinc-400">Our system is designed to warn us <strong className="text-yellow-400 font-bold">early</strong> — not when it's too late</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Text content */}
+            <div className="space-y-4 text-zinc-300">
+              <p>
+                TSLA will have <strong className="text-white">30-40% corrections</strong> on the way to wherever it's going. It always does.
+              </p>
+              <p>
+                The problem isn't finding dips to buy — it's knowing <strong className="text-white">which dips NOT to buy</strong>. Corrections unfold over weeks, with warning signs the whole way down.
+              </p>
+              <p>
+                This system is designed to <strong className="text-white">catch the warning signs early</strong>. You'll know on Week 3, not Week 10.
+              </p>
+              <p className="text-zinc-500 text-sm pt-2">
+                And we'll monitor & discuss together as a team.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* OS Components Strip */}
+      <section className="py-8 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-center text-sm text-zinc-500 mb-4">What the OS includes</p>
+          <div className="flex flex-wrap justify-center gap-3 text-sm">
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Battle Map</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Auto Alerts</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Morning Brief</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Dealer Flow Pulse</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Catalyst Calendar</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Weekly Deep-Dive</span>
+            <span className="px-3 py-1 bg-zinc-900 rounded-full text-zinc-300">Weekly Live Call</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Regime Mode */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            Regime Mode
+          </h2>
+          <p className="text-center text-zinc-500 mb-8">
+            Conditions deteriorate in stages. We track the signals so you adjust before it's too late.
+          </p>
+          
+          {/* Spectrum Bar */}
+          <div className="relative mb-8">
+            <div className="h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 mb-4"></div>
+            <div className="flex justify-between text-xs text-zinc-500">
+              <span>Healthy</span>
+              <span>Warning</span>
+              <span>Deteriorating</span>
+            </div>
+          </div>
+
+          {/* Three Phases with Deterioration Flow */}
+          <div className="grid md:grid-cols-3 gap-0 relative">
+            {/* Green Mode */}
+            <div className="bg-green-500/10 border border-green-500/30 rounded-l-lg md:rounded-l-lg md:rounded-r-none p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <h3 className="font-bold text-lg text-green-400">Green</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-3">Trend intact, momentum healthy</p>
+              <ul className="space-y-1 text-sm text-zinc-300">
+                <li>• Good to buy dips</li>
+                <li>• Hold positions with conviction</li>
+                <li>• Don't sell too fast</li>
+              </ul>
+            </div>
+            
+            {/* Arrow 1 */}
+            <div className="hidden md:flex absolute left-1/3 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+              <div className="bg-zinc-800 rounded-full p-1 border border-zinc-700">
+                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Yellow Mode */}
+            <div className="bg-yellow-500/10 border-y border-yellow-500/30 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <h3 className="font-bold text-lg text-yellow-400">Yellow</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-3">Warning signs present</p>
+              <ul className="space-y-1 text-sm text-zinc-300">
+                <li>• Reducing daily cap to 10-15%</li>
+                <li>• Ratcheting down leverage</li>
+                <li>• Shifting to watch and see</li>
+              </ul>
+            </div>
+            
+            {/* Arrow 2 */}
+            <div className="hidden md:flex absolute left-2/3 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10">
+              <div className="bg-zinc-800 rounded-full p-1 border border-zinc-700">
+                <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Red Mode */}
+            <div className="bg-red-500/10 border border-red-500/30 rounded-r-lg md:rounded-r-lg md:rounded-l-none p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <h3 className="font-bold text-lg text-red-400">Red</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-3">Structure broken or at risk</p>
+              <ul className="space-y-1 text-sm text-zinc-300">
+                <li>• Dropping daily cap to 0-10%</li>
+                <li>• Respecting Master Eject level</li>
+                <li>• Requiring evidence of bottom</li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* Deterioration note */}
+          <p className="text-center text-zinc-500 text-sm mt-6">
+            As conditions deteriorate, exposure ratchets down. No averaging into weakness.
+          </p>
+        </div>
+      </section>
+
+      {/* The Methodology */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            How the mode is determined
+          </h2>
+          <p className="text-center text-zinc-500 mb-8">
+            Systematic clarity when you need it most.
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            {/* Technical Indicators */}
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-blue-400" />
+                Technical Confluence
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• <span className="text-zinc-300">Market Structure</span> — HH/HL or broken</li>
+                <li>• <span className="text-zinc-300">BX Trender</span> — Momentum regime</li>
+                <li>• <span className="text-zinc-300">MA/EMA</span> — Trend position & slope</li>
+                <li>• <span className="text-zinc-300">SMI</span> — Leading momentum indicator</li>
+                <li>• <span className="text-zinc-300">RSI</span> — Divergences & extremes</li>
+                <li>• <span className="text-zinc-300">Fib Levels</span> — Smart money zones</li>
+              </ul>
+            </div>
+            
+            {/* Options Flow */}
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                Dealer Positioning
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• <span className="text-zinc-300">SpotGamma Levels</span> — Put Wall, Call Wall, Hedge Wall</li>
+                <li>• <span className="text-zinc-300">HIRO</span> — Real-time institutional flow</li>
+                <li>• <span className="text-zinc-300">FlowPatrol</span> — Daily options flow report</li>
+                <li>• <span className="text-zinc-300">Gamma Regime</span> — Positive vs negative gamma</li>
+                <li>• <span className="text-zinc-300">Key Gamma Strike</span> — Regime pivot point</li>
+              </ul>
+              <p className="text-xs text-zinc-500 mt-3">Powered by $700+/mo in institutional data feeds</p>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900/30 rounded-lg p-4 border border-zinc-800">
+            <p className="text-sm text-zinc-400 text-center">
+              <strong className="text-zinc-300">Timeframe Alignment:</strong> Weekly sets the regime. Daily provides early warning. 1H and 4H confirm entries. When all three align, conviction is high.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            How the OS Works
+          </h2>
+          <p className="text-center text-zinc-500 mb-10">
+            Daily Report. Alerts. Context. Three steps, every day.
+          </p>
+          
+          <div className="space-y-8 mb-8">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-sm font-bold text-blue-400">1</div>
+              <div>
+                <h3 className="font-semibold text-lg">Daily Report</h3>
+                <p className="text-zinc-500 text-sm mb-2">Your morning game plan</p>
+                <ul className="text-sm text-zinc-400 space-y-1">
+                  <li>• Mode: Green, Yellow, or Red</li>
+                  <li>• Key levels with if/then reactions</li>
+                  <li>• Daily cap tied to conditions</li>
+                  <li>• Dealer positioning context</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-sm font-bold text-yellow-400">2</div>
+              <div>
+                <h3 className="font-semibold text-lg">Alerts</h3>
+                <p className="text-zinc-500 text-sm mb-2">Levels come to you</p>
+                <ul className="text-sm text-zinc-400 space-y-1">
+                  <li>• Price hits a level → you get pinged</li>
+                  <li>• Mode shifts → you know immediately</li>
+                  <li>• Pre-written reactions ready</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-sm font-bold text-green-400">3</div>
+              <div>
+                <h3 className="font-semibold text-lg">Context Feed</h3>
+                <p className="text-zinc-500 text-sm mb-2">Stay current without hunting</p>
+                <ul className="text-sm text-zinc-400 space-y-1">
+                  <li>• Morning brief: what matters today</li>
+                  <li>• Intraday flow: HIRO + SpotGamma updates</li>
+                  <li>• Market headlines: batched and synthesized</li>
+                  <li>• Catalyst calendar: don't miss risk windows</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800 text-center">
+            <p className="text-zinc-400 text-sm">
+              Read the report, go live your life. The system tells you when to pay attention.
+            </p>
+          </div>
+          
+        </div>
+      </section>
+
+      {/* The Framework */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            The Framework
+          </h2>
+          <p className="text-center text-zinc-500 mb-10">
+            Built to prevent buying dips that keep dipping — and enable conviction when conditions support it.
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                🎯 Mode System
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Green/Yellow/Red posture from indicator confluence</li>
+                <li>• Daily caps adjust with conditions</li>
+                <li>• Clear rules for each regime — no guessing</li>
+              </ul>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                🛡️ Risk Controls
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Master Eject: pre-defined, non-negotiable exit</li>
+                <li>• Position limits: never overexposed</li>
+                <li>• Hysteresis: prevents whipsawing</li>
+              </ul>
+            </div>
+            
+            <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                📊 Indicator Stack
+              </h3>
+              <ul className="space-y-2 text-sm text-zinc-400">
+                <li>• Technicals: structure, momentum, trend</li>
+                <li>• Flow: HIRO, gamma walls, dealer positioning</li>
+                <li>• Timeframes: weekly → daily → intraday</li>
+              </ul>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-zinc-500">
+            Sleep at night knowing you have a plan for every scenario.
+          </p>
+        </div>
+      </section>
+      
+      {/* Alerts Preview - Side by Side */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Alerts Mockup */}
+            <div className="relative order-2 md:order-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-transparent to-transparent blur-3xl -z-10"></div>
+              
+              <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 shadow-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                  <span className="text-sm font-medium text-zinc-300">Alert Levels</span>
+                  <span className="text-xs text-zinc-600">4 active</span>
+                </div>
+                
+                <div className="divide-y divide-zinc-800/50">
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      <div>
+                        <div className="text-sm text-zinc-300">Master Eject</div>
+                        <div className="text-xs text-zinc-600">Exit all positions</div>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm text-red-400">$398</span>
+                  </div>
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                      <div>
+                        <div className="text-sm text-zinc-300">Put Wall Support</div>
+                        <div className="text-xs text-zinc-600">Watch for bounce</div>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm text-yellow-400">$415</span>
+                  </div>
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <div>
+                        <div className="text-sm text-zinc-300">Gamma Strike</div>
+                        <div className="text-xs text-zinc-600">Regime pivot</div>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm text-blue-400">$430</span>
+                  </div>
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div>
+                        <div className="text-sm text-zinc-300">Call Wall Target</div>
+                        <div className="text-xs text-zinc-600">Take profit zone</div>
+                      </div>
+                    </div>
+                    <span className="font-mono text-sm text-green-400">$445</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Text content */}
+            <div className="order-1 md:order-2">
+              <h2 className="text-2xl font-bold mb-4">
+                Automated Discord Alerts
+              </h2>
+              <p className="text-zinc-400 mb-6">
+                Let the levels come to you. Set it and forget it — you'll be pinged when price hits your zones.
+              </p>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Auto-alerts</strong> — price hits level, you get pinged</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Pre-written reactions</strong> — you already know what to do</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Mode shift alerts</strong> — know when posture changes</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Catalyst Calendar - Side by Side */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Text content */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">
+                Catalyst Calendar
+              </h2>
+              <p className="text-zinc-400 mb-6">
+                We track TSLA + macro events that change regime risk, so you're not surprised by volatility windows.
+              </p>
+              
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Risk windows</strong> — Fed, CPI, jobs, earnings</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">TSLA timelines</strong> — thesis-critical dates</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong className="text-zinc-300">Weekly recap</strong> — news → thesis impact</span>
+                </li>
+              </ul>
+            </div>
+            
+            {/* Catalyst Mockup */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-transparent to-transparent blur-3xl -z-10"></div>
+              
+              <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 shadow-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                  <span className="text-sm font-medium text-zinc-300">Upcoming Catalysts</span>
+                  <span className="text-xs text-zinc-600">This week</span>
+                </div>
+                
+                <div className="divide-y divide-zinc-800/50">
+                  <div className="px-4 py-3 flex items-center gap-4">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-xs text-zinc-500">JAN</div>
+                      <div className="text-lg font-bold text-zinc-300">29</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-zinc-300">FOMC Decision</div>
+                      <div className="text-xs text-red-400">High volatility risk</div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 flex items-center gap-4">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-xs text-zinc-500">JAN</div>
+                      <div className="text-lg font-bold text-zinc-300">30</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-zinc-300">TSLA Earnings</div>
+                      <div className="text-xs text-yellow-400">After hours</div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 flex items-center gap-4">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-xs text-zinc-500">FEB</div>
+                      <div className="text-lg font-bold text-zinc-300">7</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-zinc-300">Jobs Report</div>
+                      <div className="text-xs text-zinc-500">Pre-market</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Control Center (Discord) */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            Your Trading Command Center
+          </h2>
+          <p className="text-center text-zinc-400 mb-10">
+            Information flows to you — not the other way around.
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Daily */}
+            <div className="bg-zinc-900/30 rounded-lg p-5 border border-zinc-800/50">
+              <h3 className="font-semibold mb-4 text-zinc-200 flex items-center gap-2">
+                📅 Daily
+              </h3>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li><strong className="text-zinc-300">Daily report</strong> — mode, levels, if/then playbook</li>
+                <li>Price alerts ping you when levels hit</li>
+                <li>Intraday flow updates: HIRO + SpotGamma pulse</li>
+                <li>Curated market headlines — only what moves TSLA or the indexes</li>
+              </ul>
+            </div>
+            
+            {/* Weekly */}
+            <div className="bg-zinc-900/30 rounded-lg p-5 border border-zinc-800/50">
+              <h3 className="font-semibold mb-4 text-zinc-200 flex items-center gap-2">
+                📆 Weekly
+              </h3>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li><strong className="text-zinc-300">Weekly report</strong> — accountability, regime check, correction risk assessment, week ahead setup</li>
+                <li><strong className="text-zinc-300">Catalyst calendar</strong> — TSLA timelines + macro events (FOMC, CPI, jobs, earnings)</li>
+                <li><strong className="text-zinc-300">Live strategy call</strong> — walk through the week together</li>
+                <li><strong className="text-zinc-300">State of Tesla</strong> — FSD, Robotaxi, Optimus, analyst moves</li>
+              </ul>
+            </div>
+            
+            {/* Community */}
+            <div className="bg-zinc-900/30 rounded-lg p-5 border border-zinc-800/50">
+              <h3 className="font-semibold mb-4 text-zinc-200 flex items-center gap-2">
+                👥 Community
+              </h3>
+              <ul className="space-y-3 text-sm text-zinc-400">
+                <li>Chat with serious TSLA investors</li>
+                <li>Share setups, ask questions, think out loud</li>
+                <li>Signal, not noise</li>
+              </ul>
+            </div>
+          </div>
+          
+          <p className="text-center text-zinc-500 text-sm">
+            Daily keeps you executing. Weekly keeps the thesis honest.
+          </p>
+        </div>
+      </section>
+
+      {/* Who It's For */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">
+            Is this for you?
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* For you */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-green-400 flex items-center gap-2">
+                <Check className="w-5 h-5" /> This is for you if…
+              </h3>
+              <ul className="space-y-3 text-zinc-300">
+                <li>You want to <strong>sidestep the next 30-40% correction</strong> before it happens</li>
+                <li>You're tired of <strong>buying the dip that keeps dipping</strong></li>
+                <li>You want to <strong>wake up knowing exactly what to do</strong> if price hits X</li>
+                <li>You'd rather <strong>spend 10 minutes a day</strong> than 4 hours glued to charts</li>
+                <li>You want <strong>conviction</strong> — not second-guessing every entry</li>
+              </ul>
+            </div>
+            
+            {/* Not for you */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4 text-red-400 flex items-center gap-2">
+                <X className="w-5 h-5" /> This is NOT for you if…
+              </h3>
+              <ul className="space-y-3 text-zinc-300">
+                <li>You want someone to say "buy now" and "sell now"</li>
+                <li>You're chasing 0DTE lottery tickets</li>
+                <li>You panic-sell on any red day</li>
+                <li>You think preparation is "too much work"</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">
+            FAQ
+          </h2>
+          
+          <div>
+            <FAQItem
+              question="How is the report created?"
+              answer="The system combines a trained framework built on years of TSLA-specific trading philosophy with real-time data feeds costing over $700/month. Each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from SpotGamma. The AI synthesizes all of this into a single daily read on regime, levels, and positioning. It's not a gut call. It's a systematic process that runs the same way every day."
+            />
+            <FAQItem
+              question="How is risk management factored in?"
+              answer="Risk management is the foundation, not an afterthought. We've developed a 1,500+ line rulebook that governs everything: position sizing based on mode, maximum daily deployment caps, level-based entries and exits, and a Master Eject protocol for when conditions break down. The entire system is designed around one principle: don't participate in corrections. By tracking early warning signs across multiple timeframes, the framework shifts you defensive before the damage compounds. You're not reacting to drawdowns. You're anticipating them."
+            />
+            <FAQItem
+              question="What kind of automated signals do I receive?"
+              answer="The system pulls key levels directly from each daily report and automatically creates Discord alerts for you. When price hits a level, you get pinged. No staring at charts all day waiting for something to happen. Let the trades come to you. Each alert includes pre-determined sizing guidance based on current conditions, so you know whether to size in aggressively or scale down. Everything is set up for you. All you have to do is react."
+            />
+            <FAQItem
+              question="Is this only for TSLA?"
+              answer="For now, yes. The daily reports and levels are TSLA-specific. That said, we're building the infrastructure to add additional tickers in the future. We also monitor the major indexes closely and apply the same regime principles, since TSLA doesn't move in a vacuum. Broader market context is always part of the read."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">
+            Get the system.
+          </h2>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <span className="text-2xl text-zinc-500 line-through">$39.99</span>
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">25% OFF</span>
+          </div>
+          <div className="text-4xl font-bold text-white mb-2">
+            $29.99<span className="text-xl text-zinc-500">/month</span>
+          </div>
+          <p className="text-zinc-500 mb-8">
+            Cancel anytime.
+          </p>
+          
+          <Link href="/signup">
+            <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
+              Get Access
+            </Button>
+          </Link>
+          
+          <p className="mt-6 text-zinc-500 text-sm">
+            Join 500+ members who wake up with a plan.
+          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-6 border-t border-zinc-900">
+        <div className="max-w-2xl mx-auto flex justify-between items-center text-sm text-zinc-600">
+          <span>Flacko AI</span>
+          <div className="flex gap-6">
+            <a
+              href="https://twitter.com/flaboratory"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-400"
+            >
+              X
+            </a>
+            <a href="/terms" className="hover:text-zinc-400">Terms</a>
+            <a href="/privacy" className="hover:text-zinc-400">Privacy</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}

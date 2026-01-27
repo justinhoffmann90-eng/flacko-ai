@@ -45,7 +45,7 @@ export default function LandingPageV2() {
             <span className="text-sm text-zinc-400 hidden sm:block">500+ members</span>
             <Link href="/signup">
               <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
-                Get Access
+                Join Us
               </Button>
             </Link>
           </div>
@@ -74,7 +74,7 @@ export default function LandingPageV2() {
           <div className="flex justify-center mb-4">
             <Link href="/signup">
               <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-                Get Access — $29.99/mo
+                Join Us — $29.99/mo
               </Button>
             </Link>
           </div>
@@ -102,33 +102,33 @@ export default function LandingPageV2() {
               <span className="text-xs font-medium hidden sm:inline">X</span>
             </div>
             {/* SpotGamma */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#00D4AA] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+              <img src="/logos/spotgamma.png" alt="SpotGamma" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">SpotGamma</span>
             </div>
             {/* FS Insight */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#FF6B35] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+              <img src="/logos/fsinsight.png" alt="FS Insight" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">FS Insight</span>
             </div>
             {/* CNBC */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#005594] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+              <img src="/logos/cnbc.png" alt="CNBC" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">CNBC</span>
             </div>
             {/* Bloomberg */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#FF6600] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+              <img src="/logos/bloomberg.png" alt="Bloomberg" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">Bloomberg</span>
             </div>
             {/* TradingView */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#2962FF] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17h2v-7H3v7zm4 0h2V7H7v10zm4 0h2V4h-2v13zm4 0h2v-4h-2v4zm4 0h2v-9h-2v9z"/></svg>
+            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+              <img src="/logos/tradingview.png" alt="TradingView" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">TradingView</span>
             </div>
             {/* WSJ */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#0080C6] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2V9h-2V7h4v10z"/></svg>
+            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+              <img src="/logos/wsj.png" alt="WSJ" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">WSJ</span>
             </div>
           </div>
@@ -370,7 +370,7 @@ export default function LandingPageV2() {
                   <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
                     {/* Green segment - Weeks 1-2 */}
                     <path 
-                      d="M 0 25 Q 25 20, 50 27 T 100 35" 
+                      d="M 0 28 C 12 22, 20 20, 30 18 C 42 16, 50 22, 55 28 C 60 34, 68 30, 78 32 C 88 34, 95 33, 100 35" 
                       fill="none" 
                       stroke="#22c55e" 
                       strokeWidth="4"
@@ -378,7 +378,7 @@ export default function LandingPageV2() {
                     />
                     {/* Yellow segment - Weeks 3-4 */}
                     <path 
-                      d="M 100 35 Q 125 45, 150 55 T 200 70" 
+                      d="M 100 35 C 110 40, 118 38, 125 42 C 135 48, 140 44, 148 50 C 158 58, 168 54, 175 52 C 182 50, 188 56, 195 64 C 198 68, 200 70, 200 70" 
                       fill="none" 
                       stroke="#eab308" 
                       strokeWidth="4"
@@ -386,46 +386,46 @@ export default function LandingPageV2() {
                     />
                     {/* Red segment - Weeks 5-10 */}
                     <path 
-                      d="M 200 70 Q 230 85, 260 100 T 320 130 Q 380 160, 440 180 T 500 195" 
+                      d="M 200 70 C 215 78, 225 74, 235 68 C 248 60, 255 72, 265 85 C 280 105, 290 100, 300 95 C 315 88, 325 98, 340 115 C 360 138, 375 132, 390 140 C 410 150, 420 148, 435 160 C 455 175, 470 172, 485 185 C 495 193, 500 195, 500 195" 
                       fill="none" 
                       stroke="#ef4444" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
                     
-                    {/* Connector lines */}
-                    <line x1="50" y1="27" x2="50" y2="8" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="100" y1="35" x2="100" y2="8" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="200" y1="70" x2="200" y2="8" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="260" y1="100" x2="260" y2="8" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
+                    {/* Connector lines - aligned to dot positions */}
+                    <line x1="30" y1="18" x2="30" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="100" y1="35" x2="100" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="200" y1="70" x2="200" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="265" y1="85" x2="265" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
                   </svg>
                   
-                  {/* Mode Labels */}
-                  <div className="absolute -top-5 left-[8%] flex flex-col items-center">
+                  {/* Mode Labels & Dots - positioned to center on line */}
+                  <div className="absolute -top-5 left-[5%] flex flex-col items-center">
                     <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Green Mode</span>
                   </div>
-                  <div className="absolute top-[13%] left-[9%]">
+                  <div className="absolute top-[8%] left-[6%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
                   <div className="absolute top-1 left-[18%] flex flex-col items-center">
                     <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Yellow Mode</span>
                   </div>
-                  <div className="absolute top-[17%] left-[19%]">
+                  <div className="absolute top-[17.5%] left-[20%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
                   </div>
                   
                   <div className="absolute -top-5 left-[38%] flex flex-col items-center">
                     <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">Red Mode</span>
                   </div>
-                  <div className="absolute top-[35%] left-[39%]">
+                  <div className="absolute top-[35%] left-[40%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
                   </div>
                   
-                  <div className="absolute top-1 left-[50%] flex flex-col items-center">
+                  <div className="absolute top-1 left-[51%] flex flex-col items-center">
                     <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">Master Eject</span>
                   </div>
-                  <div className="absolute top-[50%] left-[51%]">
+                  <div className="absolute top-[42.5%] left-[53%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50"></div>
                   </div>
                 </div>
@@ -483,9 +483,9 @@ export default function LandingPageV2() {
           </p>
           
           {/* Mode Spectrum */}
-          <div className="mb-10">
-            <div className="h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 via-orange-500 to-red-500 mb-4"></div>
-            <div className="flex justify-between text-xs text-zinc-500">
+          <div className="mb-8 md:mb-10">
+            <div className="h-2 md:h-3 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 via-orange-500 to-red-500 mb-3 md:mb-4"></div>
+            <div className="flex justify-between text-[10px] md:text-xs text-zinc-500 px-1">
               <span>Healthy</span>
               <span>Warning</span>
               <span>Caution</span>
@@ -494,15 +494,15 @@ export default function LandingPageV2() {
           </div>
 
           {/* Four Modes */}
-          <div className="grid md:grid-cols-4 gap-4 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-10">
             {/* Green */}
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <h3 className="font-bold text-green-400">Green</h3>
+                <h3 className="font-bold text-green-400 text-sm md:text-base">Green</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Trend intact, momentum healthy</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Trend intact, momentum healthy</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
                 <li>• Good to buy dips</li>
                 <li>• Hold with conviction</li>
                 <li>• Don't sell too fast</li>
@@ -510,41 +510,41 @@ export default function LandingPageV2() {
             </div>
             
             {/* Yellow */}
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <h3 className="font-bold text-yellow-400">Yellow</h3>
+                <h3 className="font-bold text-yellow-400 text-sm md:text-base">Yellow</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Warning signs present</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
-                <li>• Reducing daily cap to 15-20%</li>
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Warning signs present</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
+                <li>• Reducing daily cap to &lt;15%</li>
                 <li>• Ratcheting down leverage</li>
                 <li>• Shifting to watch and see</li>
               </ul>
             </div>
             
             {/* Orange */}
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <h3 className="font-bold text-orange-400">Orange</h3>
+                <h3 className="font-bold text-orange-400 text-sm md:text-base">Orange</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Structure weakening</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
-                <li>• Dropping daily cap to 10%</li>
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Structure weakening</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
+                <li>• Dropping daily cap to &lt;10%</li>
                 <li>• Small nibbles only</li>
                 <li>• Preparing for potential exit</li>
               </ul>
             </div>
             
             {/* Red */}
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 md:p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <h3 className="font-bold text-red-400">Red</h3>
+                <h3 className="font-bold text-red-400 text-sm md:text-base">Red</h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-2">Structure broken or at risk</p>
-              <ul className="space-y-1 text-xs text-zinc-300">
+              <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Structure broken or at risk</p>
+              <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
                 <li>• Dropping daily cap to 0-5%</li>
                 <li>• Respecting Master Eject level</li>
                 <li>• Requiring evidence of bottom</li>
