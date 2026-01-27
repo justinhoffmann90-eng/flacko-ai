@@ -55,8 +55,8 @@ export async function POST() {
       email: user.email!,
       priceInCents,
       tier,
-      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/?success=true`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
+      successUrl: `https://flacko.ai/dashboard?success=true`,
+      cancelUrl: `https://flacko.ai/signup?canceled=true`,
     });
 
     // Create pending subscription record if not exists

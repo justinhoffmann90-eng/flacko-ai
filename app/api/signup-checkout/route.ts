@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const priceInCents = getPriceForTier(tier);
 
     // Create Stripe checkout session
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://flacko.ai").trim();
+    const appUrl = "https://flacko.ai";
     const session = await createCheckoutSession({
       userId,
       email,
