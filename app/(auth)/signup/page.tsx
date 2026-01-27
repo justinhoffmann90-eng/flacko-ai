@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Check, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -71,8 +71,18 @@ export default function SignupPage() {
 
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
-      {/* Pricing Display */}
-      <div className="text-center space-y-2">
+      {/* Hero - matches landing page energy */}
+      <div className="text-center space-y-3">
+        <h1 className="text-2xl font-bold">
+          Wake up with a plan.
+        </h1>
+        <p className="text-muted-foreground">
+          Daily reports, price alerts, and a system that tells you when to pay attention.
+        </p>
+      </div>
+
+      {/* Pricing */}
+      <div className="text-center space-y-1">
         <div className="flex items-center justify-center gap-3">
           <span className="text-lg text-muted-foreground line-through">$39.99</span>
           <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-medium">25% OFF</span>
@@ -83,36 +93,13 @@ export default function SignupPage() {
         <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>
 
-      {/* What's Included */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-        <p className="text-sm font-medium text-center mb-3">What you get:</p>
-        <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-500" />
-            <span>Daily Reports</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-500" />
-            <span>Price Alerts</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-500" />
-            <span>VIP Discord</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-500" />
-            <span>Weekly Calls</span>
-          </div>
-        </div>
-      </div>
-
       <Card>
-        <CardHeader>
-          <CardTitle>Get Started</CardTitle>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Get Started</CardTitle>
           <CardDescription>Join 500+ TSLA investors</CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup} autoComplete="on">
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-0">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
