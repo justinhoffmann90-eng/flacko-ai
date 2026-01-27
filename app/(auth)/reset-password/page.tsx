@@ -92,14 +92,14 @@ export default function ResetPasswordPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Password Set!</CardTitle>
-          <CardDescription>Your password has been successfully set</CardDescription>
+          <CardTitle>You're all set! 🎉</CardTitle>
+          <CardDescription>Your account is ready</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert variant="success">
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              Redirecting you to your dashboard...
+              Taking you to your dashboard...
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -110,8 +110,8 @@ export default function ResetPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Set Your Password</CardTitle>
-        <CardDescription>Create a secure password for your account</CardDescription>
+        <CardTitle>Welcome to Flacko AI</CardTitle>
+        <CardDescription>Create a password to access your trading dashboard</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="password">New Password</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -157,10 +157,10 @@ export default function ResetPasswordPage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Setting password...
+                Creating account...
               </>
             ) : (
-              "Set Password"
+              "Create Account"
             )}
           </Button>
         </CardFooter>
