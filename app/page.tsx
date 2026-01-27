@@ -771,7 +771,7 @@ export default function LandingPageV2() {
           
           <Link href="/signup">
             <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-              Start Free Trial
+              Join Now
             </Button>
           </Link>
           
