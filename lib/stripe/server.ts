@@ -62,7 +62,7 @@ export async function createCheckoutSession({
           currency: "usd",
           product_data: {
             name: "Flacko AI Subscription",
-            description: `TSLA Trading Intelligence - Tier ${tier}`,
+            description: `TSLA Trading Operating System`,
           },
           unit_amount: priceInCents,
           recurring: {
