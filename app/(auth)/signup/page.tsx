@@ -80,7 +80,7 @@ export default function SignupPage() {
           Wake up with a plan.
         </p>
         <p className="text-muted-foreground">
-          Daily reports, price alerts, and a system that tells you when to pay attention.
+          Daily reports, price alerts and a system that tells you when to pay attention.
         </p>
       </div>
 
