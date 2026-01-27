@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -10,6 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Get user settings
     const { data: settings, error } = await supabase
       .from("user_settings")
       .select("*")
@@ -21,7 +22,21 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ settings: settings || null });
+    // Get Discord info from users table
+    const serviceSupabase = await createServiceClient();
+    const { data: userData } = await serviceSupabase
+      .from("users")
+      .select("discord_user_id, discord_username")
+      .eq("id", user.id)
+      .single();
+
+    return NextResponse.json({ 
+      settings: settings || null,
+      discord: userData ? {
+        user_id: userData.discord_user_id,
+        username: userData.discord_username,
+      } : null,
+    });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
