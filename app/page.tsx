@@ -81,7 +81,7 @@ export default function LandingPageV2() {
           <div className="flex justify-center mb-4">
             <Link href="/signup">
               <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-                Join Us — $29.99/mo
+                Join Us — $35/mo
               </Button>
             </Link>
           </div>
@@ -758,15 +758,14 @@ export default function LandingPageV2() {
           <p className="text-zinc-500 mb-6">
             Sleep at night knowing you have a plan for every scenario.
           </p>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <span className="text-2xl text-zinc-500 line-through">$39.99</span>
-            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full font-medium">25% OFF</span>
-          </div>
           <div className="text-4xl font-bold text-white mb-2">
-            $29.99<span className="text-xl text-zinc-500">/month</span>
+            $35<span className="text-xl text-zinc-500">/month</span>
           </div>
-          <p className="text-zinc-500 mb-8">
-            Cancel anytime.
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full font-medium">🔥 Launch Price</span>
+          </div>
+          <p className="text-zinc-400 text-sm mb-8">
+            Price increases to $45/mo next month. Lock in $35 forever.
           </p>
           
           <Link href="/signup">
