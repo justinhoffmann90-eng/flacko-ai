@@ -41,6 +41,7 @@ export async function createCheckoutSession({
   tier,
   successUrl,
   cancelUrl,
+  trialDays = 0,
 }: {
   userId: string;
   email: string;
@@ -48,6 +49,7 @@ export async function createCheckoutSession({
   tier: number;
   successUrl: string;
   cancelUrl: string;
+  trialDays?: number;
 }) {
   const stripe = getStripe();
   const session = await stripe.checkout.sessions.create({
@@ -79,6 +81,7 @@ export async function createCheckoutSession({
     success_url: successUrl,
     cancel_url: cancelUrl,
     subscription_data: {
+      trial_period_days: trialDays > 0 ? trialDays : undefined,
       metadata: {
         user_id: userId,
         price_tier: tier.toString(),

@@ -8,7 +8,8 @@ export async function POST(request: Request) {
     const hasStripeKey = !!process.env.STRIPE_SECRET_KEY;
     const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
     
-    const { email } = await request.json();
+    const { email, trial } = await request.json();
+    const trialDays = trial ? 30 : 0; // 30-day trial if trial=true
     
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
       tier,
       successUrl: `${appUrl}/welcome?email=${encodeURIComponent(email)}`,
       cancelUrl: `${appUrl}/signup?canceled=true`,
+      trialDays,
     });
 
     // Create pending subscription record
