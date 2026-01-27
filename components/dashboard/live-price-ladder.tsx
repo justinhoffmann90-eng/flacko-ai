@@ -107,19 +107,16 @@ export function LivePriceLadder({
     return () => clearInterval(interval);
   }, []);
 
-  // Update the "Xs ago" text every second
+  // Countdown to next update (refreshes every 30s)
   useEffect(() => {
     const updateTimer = () => {
       if (!lastUpdate) {
-        setUpdateText("");
+        setUpdateText("30s");
         return;
       }
-      const seconds = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
-      if (seconds < 60) {
-        setUpdateText(`${seconds}s ago`);
-      } else {
-        setUpdateText(`${Math.floor(seconds / 60)}m ago`);
-      }
+      const elapsed = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
+      const remaining = Math.max(0, 30 - elapsed);
+      setUpdateText(`${remaining}s`);
     };
 
     updateTimer(); // Initial
@@ -199,7 +196,7 @@ export function LivePriceLadder({
               </div>
               <div className="flex items-center gap-2">
                 {isMarketOpen && updateText && (
-                  <span className="text-[10px] text-muted-foreground">{updateText}</span>
+                  <span className="text-[10px] text-muted-foreground">↻ {updateText}</span>
                 )}
                 <span className="font-bold">{formatPrice(currentPrice)}</span>
               </div>
