@@ -100,7 +100,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, emailId: emailData?.id });
+    // Debug: log the actual link being sent
+    console.log("Generated action_link:", linkData.properties.action_link);
+    
+    return NextResponse.json({ 
+      success: true, 
+      emailId: emailData?.id,
+      debug_link: linkData.properties.action_link 
+    });
   } catch (error) {
     console.error("Admin email error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
