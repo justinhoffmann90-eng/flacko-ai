@@ -21,6 +21,18 @@ export default function ResetPasswordPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    // Check for error in URL hash (Supabase puts errors there)
+    const hash = window.location.hash;
+    if (hash.includes("error=")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const errorCode = params.get("error_code") || params.get("error");
+      const errorDesc = params.get("error_description") || "Link is invalid or expired";
+      console.log("Supabase error in hash:", errorCode, errorDesc);
+      setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+      setChecking(false);
+      return;
+    }
+
     // Listen for auth state changes - Supabase will process hash tokens and emit event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth event:", event, session?.user?.email);
