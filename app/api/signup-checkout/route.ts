@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 8) || "NOT_SET";
     
     const { email, trial } = await request.json();
-    const trialDays = trial ? 30 : 0; // 30-day trial if trial=true
+    const trialDays = trial ? 45 : 0; // 45-day trial if trial=true
     const useFounderPricing = true; // Always use $29.99 base - users apply FOUNDER code for discount
     
     if (!email || typeof email !== "string") {

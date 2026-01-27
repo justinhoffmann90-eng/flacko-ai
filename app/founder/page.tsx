@@ -23,7 +23,7 @@ export default function FounderSignupPage() {
       const response = await fetch("/api/signup-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, trial: true, founder: true }), // 30-day trial, founder pricing
+        body: JSON.stringify({ email, trial: true, founder: true }), // 45-day trial, founder pricing
       });
 
       const data = await response.json();
@@ -56,7 +56,7 @@ export default function FounderSignupPage() {
             Flacko AI
           </h1>
           <p className="text-2xl font-bold">
-            30 Days Free + Locked Pricing
+            45 Days Free + Locked Pricing
           </p>
           <p className="text-muted-foreground">
             Try everything free, then lock in founder pricing forever.
@@ -109,7 +109,7 @@ export default function FounderSignupPage() {
                     Redirecting...
                   </>
                 ) : (
-                  "Start 30-Day Free Trial"
+                  "Start 45-Day Free Trial"
                 )}
               </Button>
               <p className="text-sm text-muted-foreground text-center">
