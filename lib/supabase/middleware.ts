@@ -63,6 +63,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Signup checkout endpoint (creates user + checkout, no auth needed)
+  if (request.nextUrl.pathname === "/api/signup-checkout") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
