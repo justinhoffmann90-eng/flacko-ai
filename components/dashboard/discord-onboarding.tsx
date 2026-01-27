@@ -68,9 +68,9 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
         <div className="flex-1 min-w-0">
           {!hasJoined ? (
             <>
-              <h3 className="font-semibold text-sm">Join Our Discord Community</h3>
+              <h3 className="font-semibold text-sm">Next Step: Join Our Member-Only Discord</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Get alerts, discuss trades, and connect with other TSLA traders.
+                Take full advantage of our platform &amp; engage with the group.
               </p>
               <Button
                 size="sm"
