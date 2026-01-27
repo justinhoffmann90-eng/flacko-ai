@@ -85,13 +85,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login page only
-  // Note: Don't redirect from /signup - users without subscription need to access it
-  if (user && request.nextUrl.pathname === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
+  // Don't redirect authenticated users away from auth pages
+  // They might have stale sessions or need to re-authenticate
+  // The pages themselves can redirect if appropriate
 
   return supabaseResponse;
 }
