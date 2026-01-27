@@ -553,13 +553,16 @@ export default function LandingPageV2() {
           </div>
 
           {/* What Determines Mode */}
-          <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">
-            <h3 className="font-semibold mb-4 text-center">How the Mode is Determined</h3>
-            <p className="text-center text-zinc-500 text-sm mb-6">Systematic clarity when you need it most.</p>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-sm font-medium text-zinc-300 mb-2">Technical Confluence</h4>
-                <ul className="space-y-1 text-sm text-zinc-400">
+          <div className="bg-zinc-900/50 rounded-xl p-5 md:p-8 border border-zinc-800">
+            <h3 className="font-semibold text-lg md:text-xl mb-2 text-center">How the Mode is Determined</h3>
+            <p className="text-center text-zinc-500 text-sm mb-6 md:mb-8">Systematic clarity when you need it most.</p>
+            <div className="grid md:grid-cols-2 gap-6 md:gap-10 lg:gap-16">
+              <div className="md:pr-4 lg:pr-8">
+                <h4 className="text-sm md:text-base font-medium text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Technical Confluence
+                </h4>
+                <ul className="space-y-2 text-sm text-zinc-400">
                   <li>• Market Structure — HH/HL or broken</li>
                   <li>• BX Trender — Momentum regime</li>
                   <li>• MA/EMA — Trend position & slope</li>
@@ -567,18 +570,21 @@ export default function LandingPageV2() {
                   <li>• RSI — Divergences & extremes</li>
                 </ul>
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-zinc-300 mb-2">Dealer Positioning</h4>
-                <ul className="space-y-1 text-sm text-zinc-400">
-                  <li>• SpotGamma Levels — Put Wall, Call Wall, Hedge Wall</li>
+              <div className="md:pl-4 lg:pl-8 md:border-l md:border-zinc-800">
+                <h4 className="text-sm md:text-base font-medium text-zinc-300 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                  Dealer Positioning
+                </h4>
+                <ul className="space-y-2 text-sm text-zinc-400">
+                  <li>• SpotGamma Levels — Put/Call/Hedge Walls</li>
                   <li>• HIRO — Real-time institutional flow</li>
                   <li>• FlowPatrol — Daily options flow report</li>
-                  <li>• Gamma Regime — Positive vs negative gamma</li>
+                  <li>• Gamma Regime — Positive vs negative</li>
                   <li>• Key Gamma Strike — Regime pivot point</li>
                 </ul>
               </div>
             </div>
-            <p className="text-xs text-zinc-500 mt-4 text-center">
+            <p className="text-xs text-zinc-500 mt-6 md:mt-8 text-center border-t border-zinc-800 pt-4">
               Powered by $500+/mo in data feed subscriptions. You get the synthesis, not the complexity.
             </p>
           </div>
