@@ -3,31 +3,30 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, CheckCircle } from "lucide-react";
 
 const DISCORD_INVITE_URL = "https://discord.gg/rS3wsxjt";
 const DISCORD_CLIENT_ID = "1465761828461216028";
 const STORAGE_KEY = "discord_onboarding_dismissed";
+const JOINED_KEY = "discord_server_joined";
 
 interface DiscordOnboardingProps {
   isDiscordLinked: boolean;
 }
 
 export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
-  const [dismissed, setDismissed] = useState(true); // Start hidden to prevent flash
+  const [dismissed, setDismissed] = useState(true);
+  const [hasJoined, setHasJoined] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Check if user has dismissed the banner
     const isDismissed = localStorage.getItem(STORAGE_KEY) === "true";
+    const joined = localStorage.getItem(JOINED_KEY) === "true";
     setDismissed(isDismissed);
+    setHasJoined(joined);
   }, []);
 
-  // Don't show if:
-  // - Not mounted yet (SSR)
-  // - Discord is already linked
-  // - User dismissed the banner
   if (!mounted || isDiscordLinked || dismissed) {
     return null;
   }
@@ -35,6 +34,12 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
   const handleDismiss = () => {
     localStorage.setItem(STORAGE_KEY, "true");
     setDismissed(true);
+  };
+
+  const handleJoinServer = () => {
+    localStorage.setItem(JOINED_KEY, "true");
+    setHasJoined(true);
+    window.open(DISCORD_INVITE_URL, "_blank");
   };
 
   const handleLinkDiscord = () => {
@@ -61,27 +66,39 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-sm">Get Access to Private Discord Channels</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Link your Discord to get the <span className="text-[#5865F2] font-medium">Subscriber</span> role with alerts &amp; discussion.
-          </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs"
-              onClick={() => window.open(DISCORD_INVITE_URL, "_blank")}
-            >
-              1. Join Server
-            </Button>
-            <Button
-              size="sm"
-              className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs"
-              onClick={handleLinkDiscord}
-            >
-              2. Link Account →
-            </Button>
-          </div>
+          {!hasJoined ? (
+            <>
+              <h3 className="font-semibold text-sm">Join Our Discord Community</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Get alerts, discuss trades, and connect with other TSLA traders.
+              </p>
+              <Button
+                size="sm"
+                className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
+                onClick={handleJoinServer}
+              >
+                Join Discord Server
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-1.5 mb-1">
+                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                <span className="text-xs text-green-500 font-medium">Server joined</span>
+              </div>
+              <h3 className="font-semibold text-sm">Link Your Account</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Connect to get the <span className="text-[#5865F2] font-medium">Subscriber</span> role &amp; private channel access.
+              </p>
+              <Button
+                size="sm"
+                className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
+                onClick={handleLinkDiscord}
+              >
+                Link Discord Account
+              </Button>
+            </>
+          )}
         </div>
       </div>
       
