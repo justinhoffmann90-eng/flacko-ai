@@ -67,7 +67,7 @@ export default function FounderSignupPage() {
         <div className="text-center space-y-2 py-2">
           <div className="text-sm text-muted-foreground">After trial:</div>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-xl text-muted-foreground line-through">$29.99</span>
+            <span className="text-xl text-muted-foreground line-through">$34.99</span>
             <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">FOUNDER</span>
           </div>
           <div className="text-4xl font-bold">
