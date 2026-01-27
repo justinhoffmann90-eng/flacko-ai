@@ -19,12 +19,12 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceClient();
 
-    // Generate magic link - route through auth callback for PKCE flow
+    // Generate magic link - direct to reset-password (client handles hash tokens)
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email,
       options: {
-        redirectTo: "https://flacko.ai/api/auth/callback?next=/reset-password",
+        redirectTo: "https://flacko.ai/reset-password",
       },
     });
 

@@ -21,31 +21,51 @@ export default function ResetPasswordPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    // Check for existing session (should be set by auth callback)
-    const checkSession = async () => {
-      // Check for error in URL params or hash
-      const urlParams = new URLSearchParams(window.location.search);
-      const hash = window.location.hash;
+    // Handle hash tokens from magiclink (Supabase puts tokens in URL hash)
+    const hash = window.location.hash;
+    
+    if (hash && hash.includes("access_token=")) {
+      // Parse tokens from hash
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
       
-      if (urlParams.get("error") || hash.includes("error=")) {
-        const hashParams = new URLSearchParams(hash.substring(1));
-        const errorDesc = urlParams.get("error") || hashParams.get("error_description") || "Link is invalid or expired";
-        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
-        setChecking(false);
+      if (accessToken && refreshToken) {
+        // Set session with tokens from hash
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }).then(({ error }) => {
+          if (error) {
+            console.error("Failed to set session:", error);
+            setError("Failed to verify link. Please try again.");
+          } else {
+            // Clear hash from URL
+            window.history.replaceState(null, "", "/reset-password");
+          }
+          setChecking(false);
+        });
         return;
       }
+    }
+    
+    // Check for error in hash
+    if (hash && hash.includes("error=")) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const errorDesc = hashParams.get("error_description") || "Link is invalid or expired";
+      setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+      setChecking(false);
+      return;
+    }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setChecking(false);
       } else {
-        // No session - redirect to login
         router.push("/login?error=invalid_recovery_link");
       }
-    };
-
-    checkSession();
+    });
   }, [supabase, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
