@@ -97,47 +97,57 @@ export default function LandingPageV2() {
           <p className="text-center text-[10px] text-zinc-600 uppercase tracking-widest mb-4">
             Powered by Continuous Monitoring
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8 opacity-50 hover:opacity-70 transition-opacity">
-            {/* Discord */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-[#5865F2] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-              <span className="text-xs font-medium hidden sm:inline">Discord</span>
-            </div>
-            {/* X */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              <span className="text-xs font-medium hidden sm:inline">X</span>
-            </div>
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8">
+            {/* Tesla */}
+            <a href="https://tesla.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-red-500 transition-all cursor-pointer">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.188.354-4.335 1.792 0 0-2.148-.795-3.229-2.43C5.28 2.431 9.525 2.34 9.525 2.34L12 5.362z"/></svg>
+              <span className="text-xs font-medium hidden sm:inline">Tesla</span>
+            </a>
             {/* SpotGamma */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+            <a href="https://spotgamma.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
               <img src="/logos/spotgamma.png" alt="SpotGamma" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">SpotGamma</span>
-            </div>
-            {/* FS Insight */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
-              <img src="/logos/fsinsight.png" alt="FS Insight" className="w-5 h-5 rounded" />
-              <span className="text-xs font-medium hidden sm:inline">FS Insight</span>
-            </div>
-            {/* CNBC */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
-              <img src="/logos/cnbc.png" alt="CNBC" className="w-5 h-5 rounded" />
-              <span className="text-xs font-medium hidden sm:inline">CNBC</span>
-            </div>
-            {/* Bloomberg */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
-              <img src="/logos/bloomberg.png" alt="Bloomberg" className="w-5 h-5 rounded" />
-              <span className="text-xs font-medium hidden sm:inline">Bloomberg</span>
-            </div>
+            </a>
+            {/* Robotaxi Tracker */}
+            <a href="https://robotaxitracker.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-amber-400 transition-all cursor-pointer">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+              <span className="text-xs font-medium hidden sm:inline">Robotaxi Tracker</span>
+            </a>
             {/* TradingView */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+            <a href="https://tradingview.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
               <img src="/logos/tradingview.png" alt="TradingView" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">TradingView</span>
-            </div>
+            </a>
+            {/* FS Insight */}
+            <a href="https://fsinsight.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
+              <img src="/logos/fsinsight.png" alt="FS Insight" className="w-5 h-5 rounded" />
+              <span className="text-xs font-medium hidden sm:inline">FS Insight</span>
+            </a>
+            {/* CNBC */}
+            <a href="https://cnbc.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
+              <img src="/logos/cnbc.png" alt="CNBC" className="w-5 h-5 rounded" />
+              <span className="text-xs font-medium hidden sm:inline">CNBC</span>
+            </a>
+            {/* Bloomberg */}
+            <a href="https://bloomberg.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
+              <img src="/logos/bloomberg.png" alt="Bloomberg" className="w-5 h-5 rounded" />
+              <span className="text-xs font-medium hidden sm:inline">Bloomberg</span>
+            </a>
             {/* WSJ */}
-            <div className="flex items-center gap-2 text-zinc-500 hover:opacity-100 transition-opacity">
+            <a href="https://wsj.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
               <img src="/logos/wsj.png" alt="WSJ" className="w-5 h-5 rounded" />
               <span className="text-xs font-medium hidden sm:inline">WSJ</span>
-            </div>
+            </a>
+            {/* Discord */}
+            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-[#5865F2] transition-all cursor-pointer">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+              <span className="text-xs font-medium hidden sm:inline">Discord</span>
+            </a>
+            {/* X */}
+            <a href="https://x.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 opacity-50 hover:opacity-100 hover:text-white transition-all cursor-pointer">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <span className="text-xs font-medium hidden sm:inline">X</span>
+            </a>
           </div>
         </div>
       </section>
