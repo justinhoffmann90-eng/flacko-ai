@@ -75,6 +75,7 @@ export function LivePriceLadder({
   const [priceData, setPriceData] = useState<PriceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [updateText, setUpdateText] = useState<string>("");
 
   const currentPrice = priceData?.price || fallbackPrice;
   const isMarketOpen = priceData?.isMarketOpen || false;
@@ -106,13 +107,26 @@ export function LivePriceLadder({
     return () => clearInterval(interval);
   }, []);
 
-  // Format time since last update
-  const getUpdateText = () => {
-    if (!lastUpdate) return "";
-    const seconds = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    return `${Math.floor(seconds / 60)}m ago`;
-  };
+  // Update the "Xs ago" text every second
+  useEffect(() => {
+    const updateTimer = () => {
+      if (!lastUpdate) {
+        setUpdateText("");
+        return;
+      }
+      const seconds = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
+      if (seconds < 60) {
+        setUpdateText(`${seconds}s ago`);
+      } else {
+        setUpdateText(`${Math.floor(seconds / 60)}m ago`);
+      }
+    };
+
+    updateTimer(); // Initial
+    const timerInterval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, [lastUpdate]);
 
   return (
     <Card className="p-4 overflow-hidden">
@@ -120,23 +134,12 @@ export function LivePriceLadder({
         <h3 className="font-semibold">
           Key Levels{reportDate && ` for ${formatReportDateHeader(reportDate)}`}
         </h3>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
-            </span>
-            <span>Alerts: ACTIVE</span>
-          </div>
-          {isMarketOpen && (
-            <div className="flex items-center gap-1 text-[10px] text-green-500">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-              </span>
-              LIVE
-            </div>
-          )}
+        <div className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+          </span>
+          <span>Alerts: LIVE</span>
         </div>
       </div>
 
@@ -195,8 +198,8 @@ export function LivePriceLadder({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {isMarketOpen && lastUpdate && (
-                  <span className="text-[10px] text-muted-foreground">{getUpdateText()}</span>
+                {isMarketOpen && updateText && (
+                  <span className="text-[10px] text-muted-foreground">{updateText}</span>
                 )}
                 <span className="font-bold">{formatPrice(currentPrice)}</span>
               </div>
