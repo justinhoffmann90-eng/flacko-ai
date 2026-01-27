@@ -97,8 +97,8 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" loading={loading}>
-              Sign in
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Don&apos;t have an account?{" "}
