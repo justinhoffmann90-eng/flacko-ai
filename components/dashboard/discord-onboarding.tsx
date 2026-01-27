@@ -68,7 +68,8 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
         <div className="flex-1 min-w-0">
           {!hasJoined ? (
             <>
-              <h3 className="font-semibold text-sm">Next Step: Join Our Member-Only Discord</h3>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 1 of 2</p>
+              <h3 className="font-semibold text-sm">Join Our Member-Only Discord</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Take full advantage of our platform &amp; engage with the group.
               </p>
@@ -82,13 +83,10 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
             </>
           ) : (
             <>
-              <div className="flex items-center gap-1.5 mb-1">
-                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                <span className="text-xs text-green-500 font-medium">Server joined</span>
-              </div>
-              <h3 className="font-semibold text-sm">Link Your Account</h3>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 2 of 2</p>
+              <h3 className="font-semibold text-sm">Link Your Discord Account</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Connect to get the <span className="text-[#5865F2] font-medium">Subscriber</span> role &amp; private channel access.
+                Get the <span className="text-[#5865F2] font-medium">Subscriber</span> role for private channel access.
               </p>
               <Button
                 size="sm"
