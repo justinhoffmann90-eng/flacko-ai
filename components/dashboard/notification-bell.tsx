@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -8,20 +8,25 @@ import Link from "next/link";
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const supabase = createClient();
+  // Memoize the client to prevent infinite re-renders
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-      const { count } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("read", false);
+        const { count } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("read", false);
 
-      setUnreadCount(count || 0);
+        setUnreadCount(count || 0);
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      }
     };
 
     fetchUnreadCount();
