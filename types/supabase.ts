@@ -14,6 +14,7 @@ export interface Database {
           id: string
           email: string
           x_handle: string
+          discord_user_id: string | null
           discord_username: string | null
           is_admin: boolean
           created_at: string
@@ -23,6 +24,7 @@ export interface Database {
           id: string
           email: string
           x_handle: string
+          discord_user_id?: string | null
           discord_username?: string | null
           is_admin?: boolean
           created_at?: string
@@ -32,6 +34,7 @@ export interface Database {
           id?: string
           email?: string
           x_handle?: string
+          discord_user_id?: string | null
           discord_username?: string | null
           is_admin?: boolean
           created_at?: string

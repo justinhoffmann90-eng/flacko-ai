@@ -5,7 +5,12 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 
 interface SubscriptionRow {
   id: string;
-  users: { email: string; x_handle: string } | null;
+  users: { 
+    email: string; 
+    x_handle: string;
+    discord_user_id: string | null;
+    discord_username: string | null;
+  } | null;
   status: string;
   price_tier: number;
   price_amount: number;
@@ -22,7 +27,7 @@ export default async function AdminSubscribersPage() {
     .from("subscriptions")
     .select(`
       *,
-      users (email, x_handle)
+      users (email, x_handle, discord_user_id, discord_username)
     `)
     .order("created_at", { ascending: false });
 
@@ -65,6 +70,7 @@ export default async function AdminSubscribersPage() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4">User</th>
                   <th className="text-left py-3 px-4">Status</th>
+                  <th className="text-left py-3 px-4">Discord</th>
                   <th className="text-left py-3 px-4">Tier</th>
                   <th className="text-left py-3 px-4">Price</th>
                   <th className="text-left py-3 px-4">Subscribed</th>
@@ -88,6 +94,16 @@ export default async function AdminSubscribersPage() {
                         <Badge variant={getStatusColor(sub.status) as "green" | "yellow" | "red" | "secondary"}>
                           {sub.status}
                         </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        {user?.discord_user_id ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500">✓</span>
+                            <span className="text-sm">{user.discord_username || "Linked"}</span>
+                          </div>
+                        ) : (
+                          <span className="text-yellow-500">Not linked</span>
+                        )}
                       </td>
                       <td className="py-3 px-4">Tier {sub.price_tier}</td>
                       <td className="py-3 px-4">
