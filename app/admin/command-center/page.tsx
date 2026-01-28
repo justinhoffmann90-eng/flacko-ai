@@ -157,7 +157,7 @@ export default function CommandCenterPage() {
             <div className="flex items-center gap-3">
               <span className="text-3xl">🤖</span>
               <div>
-                <h1 className="text-xl font-semibold text-white">Mission Control</h1>
+                <h1 className="text-xl font-semibold text-white">Command Center</h1>
                 <p className="text-xs text-white/50">Clawd Operations Dashboard</p>
               </div>
             </div>
