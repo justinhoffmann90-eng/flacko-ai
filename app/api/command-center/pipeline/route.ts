@@ -166,7 +166,7 @@ export async function GET() {
             const lastPrice = data[0].value.last_price;
             priceAlertsTimestamp = lastRun;
             
-            // Check if last run was within 15 minutes (during market hours)
+            // Check if last run was within 5 minutes (for 1-min checks)
             const lastRunDate = new Date(lastRun);
             const minutesAgo = Math.floor((now.getTime() - lastRunDate.getTime()) / 1000 / 60);
             
@@ -174,7 +174,7 @@ export async function GET() {
             const hour = now.getUTCHours();
             const isMarketHours = hour >= 14 && hour < 22 && now.getUTCDay() >= 1 && now.getUTCDay() <= 5;
             
-            if (minutesAgo <= 15) {
+            if (minutesAgo <= 5) {
               priceAlertsStatus = "complete";
               priceAlertsDetails = `Active - Last: ${minutesAgo}m ago, Price: $${lastPrice}`;
             } else if (isMarketHours) {
@@ -197,7 +197,7 @@ export async function GET() {
       status: priceAlertsStatus,
       timestamp: priceAlertsTimestamp,
       details: priceAlertsDetails,
-      expectedTime: "Every 5 min (market hours)"
+      expectedTime: "Every 1 min (market hours)"
     });
 
     // Step 6: Ready for Morning Brief

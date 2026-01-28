@@ -296,14 +296,14 @@ export default function InformationFlowPage() {
             {/* Price Monitoring */}
             <Card className="bg-white/5 border-white/10 p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-white">🚨 Price Monitoring (Every 5 min)</h3>
+                <h3 className="font-semibold text-white">🚨 Price Monitoring (Every 1 min)</h3>
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Cloud System</Badge>
               </div>
               <div className="space-y-3">
                 <div>
                   <div className="text-xs text-white/40 uppercase mb-1">Architecture:</div>
                   <div className="text-sm text-white/70 space-y-1">
-                    <div>1. cron-job.org triggers every 5 min during market hours</div>
+                    <div>1. cron-job.org triggers every 1 min during market hours</div>
                     <div>2. Hits: https://www.flacko.ai/api/cron/check-alerts</div>
                     <div>3. API reads key_levels.json from database/storage</div>
                     <div>4. Fetches current TSLA price</div>
