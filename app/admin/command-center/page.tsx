@@ -47,6 +47,13 @@ interface PipelineData {
   };
 }
 
+interface WorkflowExecution {
+  lastCompleted: string | null;
+  status?: string;
+  fileCount?: number;
+  latestFile?: string;
+}
+
 interface DashboardData {
   lastUpdated: string;
   roles: Role[];
@@ -57,6 +64,13 @@ interface DashboardData {
     blockers: number;
   };
   activity: Array<{ type: string; message: string; time: string }>;
+  workflows?: {
+    tradingCapture?: WorkflowExecution;
+    morningBrief?: WorkflowExecution;
+    reportUpload?: WorkflowExecution;
+    keyLevelsUpdate?: WorkflowExecution;
+    eodWrap?: WorkflowExecution;
+  };
 }
 
 export default function CommandCenterPage() {
@@ -176,6 +190,192 @@ export default function CommandCenterPage() {
             <div className="text-xs text-white/50 uppercase mt-1">Blockers</div>
           </Card>
         </div>
+
+        {/* Workflow Execution Status */}
+        {data.workflows && (
+          <div>
+            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4">⏱️ Workflow Execution Status</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Trading Capture */}
+              <Card className="bg-white/5 border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">📸</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">Trading Capture</div>
+                    <div className="text-xs text-white/40">Expected: 3:00p CT</div>
+                  </div>
+                  {data.workflows.tradingCapture ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                  )}
+                </div>
+                {data.workflows.tradingCapture ? (
+                  <>
+                    <div className="text-xs text-white/50">Last completed:</div>
+                    <div className="text-sm text-green-400 font-medium">
+                      {new Date(data.workflows.tradingCapture.lastCompleted!).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                    {data.workflows.tradingCapture.fileCount && (
+                      <div className="text-xs text-white/40 mt-1">
+                        {data.workflows.tradingCapture.fileCount} files captured
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-xs text-yellow-400">Pending today</div>
+                )}
+              </Card>
+
+              {/* Morning Brief */}
+              <Card className="bg-white/5 border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">🌅</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">Morning Brief</div>
+                    <div className="text-xs text-white/40">Expected: 8:00a CT</div>
+                  </div>
+                  {data.workflows.morningBrief ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                  )}
+                </div>
+                {data.workflows.morningBrief ? (
+                  <>
+                    <div className="text-xs text-white/50">Status:</div>
+                    <div className="text-sm text-green-400 font-medium">Completed</div>
+                  </>
+                ) : (
+                  <div className="text-xs text-yellow-400">Pending today</div>
+                )}
+              </Card>
+
+              {/* Report Upload */}
+              <Card className="bg-white/5 border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">📄</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">Report Upload</div>
+                    <div className="text-xs text-white/40">After Claude generates</div>
+                  </div>
+                  {data.workflows.reportUpload ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                  )}
+                </div>
+                {data.workflows.reportUpload ? (
+                  <>
+                    <div className="text-xs text-white/50">Last completed:</div>
+                    <div className="text-sm text-green-400 font-medium">
+                      {new Date(data.workflows.reportUpload.lastCompleted!).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-xs text-yellow-400">Pending</div>
+                )}
+              </Card>
+
+              {/* Key Levels Update */}
+              <Card className="bg-white/5 border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">🔑</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">Key Levels Update</div>
+                    <div className="text-xs text-white/40">After report upload</div>
+                  </div>
+                  {data.workflows.keyLevelsUpdate ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                  )}
+                </div>
+                {data.workflows.keyLevelsUpdate ? (
+                  <>
+                    <div className="text-xs text-white/50">Last completed:</div>
+                    <div className="text-sm text-green-400 font-medium">
+                      {new Date(data.workflows.keyLevelsUpdate.lastCompleted!).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-xs text-yellow-400">Pending</div>
+                )}
+              </Card>
+
+              {/* EOD Wrap */}
+              <Card className="bg-white/5 border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">📊</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">EOD Wrap</div>
+                    <div className="text-xs text-white/40">Expected: 8:00p CT</div>
+                  </div>
+                  {data.workflows.eodWrap ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                  )}
+                </div>
+                {data.workflows.eodWrap ? (
+                  <>
+                    <div className="text-xs text-white/50">Status:</div>
+                    <div className="text-sm text-green-400 font-medium">Completed</div>
+                  </>
+                ) : (
+                  <div className="text-xs text-yellow-400">Pending today</div>
+                )}
+              </Card>
+
+              {/* Price Monitor */}
+              <Card className="bg-white/5 border-white/10 p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">🚨</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-white">Price Monitor</div>
+                    <div className="text-xs text-white/40">Every 1 min</div>
+                  </div>
+                  {pipeline?.steps?.[3]?.status === "complete" ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  )}
+                </div>
+                {pipeline?.steps?.[3] && (
+                  <>
+                    <div className="text-xs text-white/50">Last check:</div>
+                    <div className="text-sm text-green-400 font-medium">
+                      {pipeline.steps[3].timestamp && new Date(pipeline.steps[3].timestamp).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                    <div className="text-xs text-white/40 mt-1">
+                      {pipeline.steps[3].details}
+                    </div>
+                  </>
+                )}
+              </Card>
+            </div>
+          </div>
+        )}
 
         {/* Daily Report Pipeline */}
         {pipeline && (

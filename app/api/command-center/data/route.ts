@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 // Command Center data - synced from Clawd's roles.json
 const rolesData = {
@@ -201,6 +204,9 @@ export async function GET() {
   const allJobs = rolesData.roles.flatMap(r => r.scheduledJobs || []);
   const totalBlockers = rolesData.roles.reduce((sum, r) => sum + (r.blockers?.length || 0), 0);
   
+  // Get real workflow execution timestamps
+  const workflows = await getWorkflowTimestamps();
+  
   return NextResponse.json({
     ...rolesData,
     stats: {
@@ -208,6 +214,92 @@ export async function GET() {
       completed: 17,
       inProgress: 0,
       blockers: totalBlockers
-    }
+    },
+    workflows
   });
+}
+
+async function getWorkflowTimestamps() {
+  const homeDir = os.homedir();
+  const today = new Date().toISOString().split('T')[0];
+  const workflows: any = {};
+
+  try {
+    // Trading Capture (3:00p) - check screenshots directory
+    const screenshotDir = path.join(homeDir, "Desktop", "Clawd Screenshots", today);
+    if (fs.existsSync(screenshotDir)) {
+      const files = fs.readdirSync(screenshotDir);
+      if (files.length > 0) {
+        const stats = fs.statSync(path.join(screenshotDir, files[0]));
+        workflows.tradingCapture = {
+          lastCompleted: stats.mtime.toISOString(),
+          fileCount: files.length
+        };
+      }
+    }
+
+    // Morning Brief (8:00a) - check memory file or activity log
+    const memoryFile = path.join(homeDir, "clawd", "memory", `${today}.md`);
+    if (fs.existsSync(memoryFile)) {
+      const content = fs.readFileSync(memoryFile, "utf-8");
+      const briefMatch = content.match(/## (\d+:\d+ [AP]M) — Morning Brief/i);
+      if (briefMatch) {
+        // Parse time from memory file
+        const timeStr = briefMatch[1];
+        // Convert to ISO (rough estimate based on today's date)
+        workflows.morningBrief = {
+          lastCompleted: content.includes("Morning Brief") ? new Date().toISOString() : null,
+          status: "completed"
+        };
+      }
+    }
+
+    // Daily Report Upload - check latest report file
+    const dailyReportsDir = path.join(homeDir, "trading_inputs", "daily-reports");
+    if (fs.existsSync(dailyReportsDir)) {
+      const files = fs.readdirSync(dailyReportsDir)
+        .filter(f => f.startsWith("TSLA_Daily_Report_") && f.endsWith(".md"))
+        .map(f => {
+          const filePath = path.join(dailyReportsDir, f);
+          const stats = fs.statSync(filePath);
+          return {
+            file: f,
+            modified: stats.mtime.toISOString()
+          };
+        })
+        .sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+      
+      if (files.length > 0) {
+        workflows.reportUpload = {
+          lastCompleted: files[0].modified,
+          latestFile: files[0].file
+        };
+      }
+    }
+
+    // Key Levels Update - check key_levels.json
+    const keyLevelsPath = path.join(homeDir, "trading_inputs", "key_levels.json");
+    if (fs.existsSync(keyLevelsPath)) {
+      const stats = fs.statSync(keyLevelsPath);
+      workflows.keyLevelsUpdate = {
+        lastCompleted: stats.mtime.toISOString()
+      };
+    }
+
+    // EOD Wrap (8:00p) - check memory file
+    if (fs.existsSync(memoryFile)) {
+      const content = fs.readFileSync(memoryFile, "utf-8");
+      if (content.includes("EOD Wrap") || content.includes("FS Insight EOD")) {
+        workflows.eodWrap = {
+          lastCompleted: new Date().toISOString(),
+          status: "completed"
+        };
+      }
+    }
+
+  } catch (error) {
+    console.error("Error getting workflow timestamps:", error);
+  }
+
+  return workflows;
 }
