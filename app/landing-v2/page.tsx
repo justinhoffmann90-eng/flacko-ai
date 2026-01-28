@@ -585,7 +585,7 @@ export default function LandingPageV2() {
               </div>
             </div>
             <p className="text-xs text-zinc-500 mt-6 md:mt-8 text-center border-t border-zinc-800 pt-4">
-              Powered by $500+/mo in data feed subscriptions. You get the synthesis, not the complexity.
+              Powered by $700+/mo in data feed subscriptions. You get the synthesis, not the complexity.
             </p>
           </div>
         </div>
