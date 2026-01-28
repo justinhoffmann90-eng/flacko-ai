@@ -152,14 +152,15 @@ export default function InformationFlowPage() {
                 <h3 className="font-semibold text-white">📄 Daily Report Upload</h3>
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
               </div>
-              <div className="text-xs text-blue-400 mb-2 font-mono">flacko.ai/admin + Telegram</div>
+              <div className="text-xs text-blue-400 mb-2 font-mono">flacko.ai/admin</div>
               <div className="text-sm text-white/70 space-y-1 mb-3">
-                <div>• Justin uploads .md file via Telegram</div>
+                <div>• Justin uploads .md file to flacko.ai admin panel</div>
+                <div>• System parses MD → displays report on website</div>
+                <div>• System auto-saves MD to daily-reports/ directory</div>
                 <div>• Contains: Mode, Tiers, Alert Levels table</div>
-                <div>• Trigger: New daily analysis complete</div>
               </div>
               <div className="text-xs text-white/40 font-mono bg-black/30 rounded p-2">
-                Saved to: ~/trading_inputs/daily-reports/TSLA_Daily_Report_YYYY-MM-DD.md
+                Auto-saved to: ~/trading_inputs/daily-reports/TSLA_Daily_Report_YYYY-MM-DD.md
               </div>
             </Card>
           </div>

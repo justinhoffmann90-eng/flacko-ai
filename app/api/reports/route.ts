@@ -4,6 +4,9 @@ import { parseReport, PARSER_VERSION, validateReport } from "@/lib/parser";
 import { sendReportNotification } from "@/lib/discord/client";
 import { getNewReportDiscordMessage } from "@/lib/discord/templates";
 import { logReportGeneration, logApiError } from "@/lib/api-logger";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 export async function GET() {
   try {
@@ -119,6 +122,27 @@ export async function POST(request: Request) {
       parseWarnings: warnings,
       fieldsParsed: Object.keys(extracted_data).length,
     });
+
+    // Save MD file to ~/trading_inputs/daily-reports/ for Clawd's workflows
+    try {
+      const homeDir = os.homedir();
+      const dailyReportsDir = path.join(homeDir, "trading_inputs", "daily-reports");
+      
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(dailyReportsDir)) {
+        fs.mkdirSync(dailyReportsDir, { recursive: true });
+      }
+      
+      // Save file with standard naming: TSLA_Daily_Report_YYYY-MM-DD.md
+      const filename = `TSLA_Daily_Report_${today}.md`;
+      const filepath = path.join(dailyReportsDir, filename);
+      fs.writeFileSync(filepath, markdown, 'utf-8');
+      
+      console.log(`✅ Saved report to ${filepath} for Clawd workflows`);
+    } catch (fsError) {
+      console.error("Failed to save MD file locally:", fsError);
+      // Don't fail the whole request if local save fails
+    }
 
     // Create alerts for all active subscribers
     const { data: subscribers } = await serviceSupabase
