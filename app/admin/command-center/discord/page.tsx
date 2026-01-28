@@ -110,22 +110,24 @@ const channels: DiscordChannel[] = [
     name: "#tesla-research",
     emoji: "🔬",
     webhookId: "1465733362626072691",
-    purpose: "Deep research & weekly updates",
+    purpose: "Deep research & weekly catalyst suggestions",
     schedule: "Weekly + Post-Earnings",
-    scheduleDetails: "Sundays 10:00 AM CT (weekly), and after each earnings call",
+    scheduleDetails: "Sun 10am (Robotaxi), Sun 5pm (Catalyst Review + Suggestions), post-earnings",
     automated: false,
     approvalRequired: true,
     contentTypes: [
-      "Earnings call analysis",
+      "Earnings call analysis + catalyst extraction",
       "Robotaxi Weekly Tracker (robotaxitracker.com)",
-      "Catalyst calendar updates",
+      "Weekly Catalyst Suggestions (NEW items to add)",
+      "Catalyst calendar updates (date changes)",
       "Deep dive research",
       "Quarterly reviews"
     ],
     doNot: [
       "Daily updates",
       "Price alerts",
-      "Breaking news"
+      "Breaking news",
+      "Add catalysts without approval"
     ]
   },
   {
@@ -181,13 +183,14 @@ const weeklySchedule = [
   ]},
   { day: "Sunday", items: [
     { time: "10:00 AM", channel: "#tesla-research", task: "Robotaxi Weekly Tracker", auto: false },
-    { time: "5:00 PM", channel: "#tesla-research", task: "Weekly Catalyst Review", auto: false },
+    { time: "5:00 PM", channel: "#tesla-research", task: "Weekly Catalyst Review + Suggestions", auto: false },
   ]},
 ];
 
 const specialEvents = [
   { event: "New Daily Report Upload", channel: "#reports", timing: "Immediate (auto)", description: "Auto-fires when Justin uploads to admin" },
   { event: "TSLA Earnings Call", channel: "#tesla-research", timing: "Next morning", description: "Full earnings analysis + catalyst updates" },
+  { event: "Weekly Catalyst Suggestions", channel: "Telegram → #tesla-research", timing: "Sunday 5pm", description: "Review week ahead, propose NEW catalysts to add" },
   { event: "FOMC Decision", channel: "#market-pulse", timing: "After announcement", description: "Fed decision impact analysis" },
   { event: "Major News/Catalyst", channel: "#market-pulse", timing: "As needed", description: "Breaking news affecting TSLA" },
   { event: "HIRO Major Move", channel: "#hiro-intraday", timing: "When detected", description: "Significant dealer flow shifts" },
