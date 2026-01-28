@@ -62,20 +62,17 @@ export default function RolesPage() {
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/admin/command-center" className="text-white/60 hover:text-white">
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🤖</span>
-                <div>
-                  <h1 className="text-xl font-semibold text-white">Employee Roles</h1>
-                  <p className="text-xs text-white/50">Responsibilities & Rules</p>
-                </div>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🤖</span>
+              <div>
+                <h1 className="text-xl font-semibold text-white">Employee Roles</h1>
+                <p className="text-xs text-white/50">Responsibilities & Rules</p>
               </div>
             </div>
             <nav className="flex gap-2">
+              <Link href="/admin" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Admin</Link>
               <Link href="/admin/command-center" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Dashboard</Link>
+              <Link href="/admin/command-center/flow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Flow</Link>
               <Link href="/admin/command-center/roles" className="px-3 py-1.5 text-sm text-white bg-white/10 rounded-lg">Roles</Link>
               <Link href="/admin/command-center/workflow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Workflow</Link>
             </nav>
