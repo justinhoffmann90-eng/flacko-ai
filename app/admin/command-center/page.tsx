@@ -65,6 +65,27 @@ interface WorkflowExecution {
   latestFile?: string;
 }
 
+interface DailyJob {
+  id: string;
+  time: string;
+  name: string;
+  note?: string;
+  status: "pending" | "completed" | "failed";
+  completedAt: string | null;
+}
+
+interface JobsData {
+  date: string;
+  lastUpdated: string;
+  summary: {
+    total: number;
+    completed: number;
+    pending: number;
+    failed: number;
+  };
+  jobs: DailyJob[];
+}
+
 interface DashboardData {
   lastUpdated: string;
   roles: Role[];
@@ -87,19 +108,23 @@ interface DashboardData {
 export default function CommandCenterPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
+  const [jobs, setJobs] = useState<JobsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchData = async () => {
     try {
-      const [dataRes, pipelineRes] = await Promise.all([
+      const [dataRes, pipelineRes, jobsRes] = await Promise.all([
         fetch('/api/command-center/data'),
-        fetch('/api/command-center/pipeline')
+        fetch('/api/command-center/pipeline'),
+        fetch('/api/command-center/jobs')
       ]);
       const dataJson = await dataRes.json();
       const pipelineJson = await pipelineRes.json();
+      const jobsJson = await jobsRes.json();
       setData(dataJson);
       setPipeline(pipelineJson);
+      setJobs(jobsJson);
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -185,22 +210,75 @@ export default function CommandCenterPage() {
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-4">
           <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-blue-400">{data.stats.scheduled}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">Scheduled</div>
+            <div className="text-3xl font-bold text-blue-400">{jobs?.summary.total || data.stats.scheduled}</div>
+            <div className="text-xs text-white/50 uppercase mt-1">Daily Jobs</div>
           </Card>
           <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-green-400">{data.stats.completed}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">Completed</div>
+            <div className="text-3xl font-bold text-green-400">{jobs?.summary.completed || 0}</div>
+            <div className="text-xs text-white/50 uppercase mt-1">Completed Today</div>
           </Card>
           <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-yellow-400">{data.stats.inProgress}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">In Progress</div>
+            <div className="text-3xl font-bold text-yellow-400">{jobs?.summary.pending || 0}</div>
+            <div className="text-xs text-white/50 uppercase mt-1">Pending</div>
           </Card>
           <Card className="bg-white/5 border-white/10 p-4 text-center">
             <div className="text-3xl font-bold text-red-400">{data.stats.blockers}</div>
             <div className="text-xs text-white/50 uppercase mt-1">Blockers</div>
           </Card>
         </div>
+
+        {/* Daily Jobs Status */}
+        {jobs && (
+          <div>
+            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4 flex items-center gap-2">
+              📅 Daily Jobs 
+              <Badge variant="outline" className="bg-white/10 text-white/70 border-white/20">
+                {jobs.date}
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  jobs.summary.completed === jobs.summary.total
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                }`}
+              >
+                {jobs.summary.completed}/{jobs.summary.total} Done
+              </Badge>
+              <span className="text-xs text-white/30 ml-auto">Resets daily</span>
+            </h2>
+            <Card className="bg-white/5 border-white/10 overflow-hidden">
+              <div className="divide-y divide-white/10">
+                {jobs.jobs.map((job) => (
+                  <div 
+                    key={job.id} 
+                    className={`p-3 flex items-center gap-3 ${
+                      job.status === 'completed' ? 'bg-green-500/5' : 
+                      job.status === 'failed' ? 'bg-red-500/5' : ''
+                    }`}
+                  >
+                    <div className="text-lg">
+                      {job.status === 'completed' ? '✅' : 
+                       job.status === 'failed' ? '❌' : '⏳'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm text-white font-medium">{job.name}</div>
+                      {job.note && <div className="text-xs text-white/40">{job.note}</div>}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-white/60 font-mono">{job.time}</div>
+                      {job.completedAt && (
+                        <div className="text-xs text-green-400">
+                          @ {new Date(job.completedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Workflow Execution Status */}
         {data.workflows && (
