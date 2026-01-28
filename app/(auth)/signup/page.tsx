@@ -11,6 +11,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
+  const [xHandle, setXHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,12 +20,15 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
 
+    // Clean up X handle - remove @ if provided
+    const cleanHandle = xHandle.trim().replace(/^@/, "");
+
     try {
       // Combined signup + checkout in one call
       const response = await fetch("/api/signup-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, xHandle: cleanHandle || null }),
       });
 
       const data = await response.json();
@@ -98,6 +102,18 @@ export default function SignupPage() {
                 required
                 autoComplete="email"
                 autoFocus
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="xHandle">X (Twitter) Username <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                id="xHandle"
+                name="xHandle"
+                type="text"
+                placeholder="@yourhandle"
+                value={xHandle}
+                onChange={(e) => setXHandle(e.target.value)}
                 disabled={loading}
               />
             </div>

@@ -1,46 +1,69 @@
+export const dynamic = 'force-dynamic';
+
 import { createServiceClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 interface UserRow {
   id: string;
   email: string;
-  x_handle: string;
+  x_handle: string | null;
   discord_user_id: string | null;
   discord_username: string | null;
   created_at: string;
-  subscriptions: {
-    id: string;
-    status: string;
-    stripe_subscription_id: string | null;
-    current_period_end: string | null;
-  }[] | null;
+}
+
+interface SubscriptionRow {
+  id: string;
+  user_id: string;
+  status: string;
+  stripe_subscription_id: string | null;
+  current_period_end: string | null;
 }
 
 export default async function AdminSubscribersPage() {
   const supabase = await createServiceClient();
 
-  // Fetch all users with their subscription info (if any)
-  const { data: usersData } = await supabase
+  // Fetch all non-admin users
+  const { data: usersData, error: usersError } = await supabase
     .from("users")
-    .select(`
-      id,
-      email,
-      x_handle,
-      discord_user_id,
-      discord_username,
-      created_at,
-      subscriptions (id, status, stripe_subscription_id, current_period_end)
-    `)
+    .select("id, email, x_handle, discord_user_id, discord_username, created_at")
     .eq("is_admin", false)
     .order("created_at", { ascending: false });
 
-  const users = (usersData || []) as UserRow[];
+  if (usersError) {
+    return (
+      <div className="p-8">
+        <p className="text-red-500">Error loading users: {usersError.message}</p>
+      </div>
+    );
+  }
 
-  const getSubscriptionStatus = (subs: UserRow["subscriptions"]) => {
-    if (!subs || subs.length === 0) return { status: "none", label: "No subscription" };
-    const sub = subs[0];
+  // Fetch all subscriptions
+  const { data: subsData } = await supabase
+    .from("subscriptions")
+    .select("id, user_id, status, stripe_subscription_id, current_period_end");
+
+  const users = (usersData || []) as UserRow[];
+  const subscriptions = (subsData || []) as SubscriptionRow[];
+
+  // Create a map of user_id -> subscription
+  const subsByUser = new Map<string, SubscriptionRow>();
+  for (const sub of subscriptions) {
+    // Keep the most recent/active subscription per user
+    const existing = subsByUser.get(sub.user_id);
+    if (!existing || sub.status === 'active' || sub.status === 'comped') {
+      subsByUser.set(sub.user_id, sub);
+    }
+  }
+
+  const getSubscriptionStatus = (userId: string) => {
+    const sub = subsByUser.get(userId);
+    if (!sub) return { status: "none", label: "No subscription" };
     return { status: sub.status, label: sub.status };
   };
 
@@ -65,7 +88,7 @@ export default async function AdminSubscribersPage() {
   const totalUsers = users.length;
   const discordLinked = users.filter(u => u.discord_user_id).length;
   const activeSubscriptions = users.filter(u => {
-    const sub = u.subscriptions?.[0];
+    const sub = subsByUser.get(u.id);
     return sub && ["active", "comped", "trialing"].includes(sub.status);
   }).length;
 
@@ -73,31 +96,38 @@ export default async function AdminSubscribersPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Users</h1>
+          <Link href="/admin">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Admin
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Subscribers</h1>
           <p className="text-muted-foreground mt-2">
-            {totalUsers} total users • {activeSubscriptions} active • {discordLinked} Discord linked
+            {totalUsers} total • {activeSubscriptions} active • {discordLinked} Discord linked
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Onboarding Health</CardTitle>
+          <CardTitle>All Users</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4">User</th>
-                  <th className="text-left py-3 px-4">Subscription</th>
+                  <th className="text-left py-3 px-4">Email</th>
+                  <th className="text-left py-3 px-4">Handle</th>
+                  <th className="text-left py-3 px-4">Stripe</th>
                   <th className="text-left py-3 px-4">Discord</th>
                   <th className="text-left py-3 px-4">Joined</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => {
-                  const subInfo = getSubscriptionStatus(user.subscriptions);
+                  const subInfo = getSubscriptionStatus(user.id);
                   const hasIssues = !user.discord_user_id || subInfo.status === "none" || subInfo.status === "past_due";
                   
                   return (
@@ -106,12 +136,10 @@ export default async function AdminSubscribersPage() {
                       className={`border-b hover:bg-muted/50 ${hasIssues ? "bg-yellow-500/5" : ""}`}
                     >
                       <td className="py-3 px-4">
-                        <div>
-                          <p className="font-medium">{user.email}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.x_handle || "No handle"}
-                          </p>
-                        </div>
+                        <p className="font-medium">{user.email}</p>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground">
+                        {user.x_handle || "—"}
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant={getStatusColor(subInfo.status) as "green" | "yellow" | "red" | "secondary"}>

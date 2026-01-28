@@ -4,12 +4,17 @@ import { createCheckoutSession } from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
   try {
-    const { email, founder } = await request.json();
+    const { email, founder, xHandle } = await request.json();
     const isFounder = founder === true;
     
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
+
+    // Clean and format X handle
+    const cleanXHandle = xHandle && typeof xHandle === "string" 
+      ? `@${xHandle.trim().replace(/^@/, "")}` 
+      : null;
 
     const supabase = await createServiceClient();
     let userId: string;
@@ -67,8 +72,18 @@ export async function POST(request: Request) {
       userId,
       email,
       successUrl: `${appUrl}/welcome?email=${encodeURIComponent(email)}`,
-      cancelUrl: isFounder ? `${appUrl}/founder?canceled=true` : `${appUrl}/pricing?canceled=true`,
+      cancelUrl: isFounder ? `${appUrl}/founder?canceled=true` : `${appUrl}/signup?canceled=true`,
       isFounder,
+    });
+
+    // Update user record with x_handle (upsert in case it doesn't exist yet)
+    await supabase.from("users").upsert({
+      id: userId,
+      email,
+      x_handle: cleanXHandle || "@unknown",
+      is_beta_founder: isFounder,
+    }, {
+      onConflict: "id",
     });
 
     // Create pending subscription record
