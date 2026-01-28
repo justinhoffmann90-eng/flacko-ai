@@ -270,7 +270,7 @@ export default function InformationFlowPage() {
             {/* EOD Wrap */}
             <Card className="bg-white/5 border-white/10 p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-white">📊 EOD Wrap (4:30p CT)</h3>
+                <h3 className="font-semibold text-white">📊 FS Insight EOD Wrap (8:00p CT)</h3>
                 <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Cron Job</Badge>
               </div>
               <div className="space-y-3">
