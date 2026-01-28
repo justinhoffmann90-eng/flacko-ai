@@ -220,6 +220,24 @@ export async function GET() {
       expectedTime: "Before 8:00a CT"
     });
 
+    // Get current report and key levels for verification display
+    let verificationData = null;
+    if (fs.existsSync(keyLevelsPath)) {
+      const klContent = fs.readFileSync(keyLevelsPath, "utf-8");
+      const klData = JSON.parse(klContent);
+      verificationData = {
+        reportDate: klData.reportDate,
+        reportFile: latestReportDate ? `TSLA_Daily_Report_${latestReportDate}.md` : null,
+        masterEject: klData.quickReference?.masterEject || klData.tsla?.masterEject,
+        callWall: klData.quickReference?.callWall || klData.tsla?.callWall,
+        keyGammaStrike: klData.quickReference?.keyGammaStrike || klData.tsla?.keyGammaStrike,
+        hedgeWall: klData.quickReference?.hedgeWall || klData.tsla?.hedgeWall,
+        levelCount: klData.levels?.length || 0,
+        lastUpdated: klData.lastUpdated,
+        source: klData.source
+      };
+    }
+
     return NextResponse.json({
       timestamp: new Date().toISOString(),
       steps: steps,
@@ -228,7 +246,8 @@ export async function GET() {
         complete: steps.filter(s => s.status === "complete").length,
         pending: steps.filter(s => s.status === "pending").length,
         blocked: steps.filter(s => s.status === "blocked" || s.status === "incomplete" || s.status === "stale" || s.status === "out-of-sync").length
-      }
+      },
+      verification: verificationData
     });
 
   } catch (error: any) {

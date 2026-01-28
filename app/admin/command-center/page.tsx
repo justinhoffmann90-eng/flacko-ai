@@ -45,6 +45,17 @@ interface PipelineData {
     pending: number;
     blocked: number;
   };
+  verification?: {
+    reportDate: string;
+    reportFile: string;
+    masterEject: number;
+    callWall: number;
+    keyGammaStrike: number;
+    hedgeWall: number;
+    levelCount: number;
+    lastUpdated: string;
+    source: string;
+  };
 }
 
 interface WorkflowExecution {
@@ -375,6 +386,88 @@ export default function CommandCenterPage() {
               </Card>
             </div>
           </div>
+        )}
+
+        {/* Current Report & Key Levels Verification */}
+        {pipeline?.verification && (
+          <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                🔍 Current Report & Key Levels
+              </h2>
+              <Badge 
+                className={`${
+                  pipeline.verification.reportDate === new Date().toISOString().split('T')[0] ||
+                  pipeline.verification.reportDate === new Date(Date.now() - 86400000).toISOString().split('T')[0]
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                }`}
+              >
+                Report: {pipeline.verification.reportDate}
+              </Badge>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Report Info */}
+              <div>
+                <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Latest Report File</div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/50">File:</span>
+                    <span className="text-sm text-white font-mono">{pipeline.verification.reportFile}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/50">Date:</span>
+                    <span className="text-sm text-white">{pipeline.verification.reportDate}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/50">Updated:</span>
+                    <span className="text-sm text-white/70">
+                      {new Date(pipeline.verification.lastUpdated).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/50">Levels:</span>
+                    <span className="text-sm text-white">{pipeline.verification.levelCount} configured</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Levels */}
+              <div>
+                <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Key Price Levels</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-white/50 mb-1">Master Eject</div>
+                    <div className="text-2xl font-bold text-red-400">${pipeline.verification.masterEject}</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-white/50 mb-1">Call Wall</div>
+                    <div className="text-2xl font-bold text-green-400">${pipeline.verification.callWall}</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-white/50 mb-1">Key Gamma Strike</div>
+                    <div className="text-2xl font-bold text-blue-400">${pipeline.verification.keyGammaStrike}</div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-white/50 mb-1">Hedge Wall</div>
+                    <div className="text-2xl font-bold text-yellow-400">${pipeline.verification.hedgeWall}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="text-xs text-white/40">
+                Source: {pipeline.verification.source}
+              </div>
+            </div>
+          </Card>
         )}
 
         {/* Daily Report Pipeline */}
