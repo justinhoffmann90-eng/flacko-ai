@@ -27,36 +27,6 @@ interface Role {
   scheduledJobs: Array<{ id: string; time: string }>;
 }
 
-interface VerificationData {
-  report: {
-    filename: string;
-    date: string;
-    modified: number;
-  };
-  keyLevels: {
-    exists: boolean;
-    modified: number;
-    data: {
-      reportDate: string;
-      levels: Array<{
-        price: number;
-        level: string;
-        emoji: string;
-        action: string;
-      }>;
-      quickReference: {
-        masterEject: number;
-        callWall: number;
-        keyGammaStrike: number;
-        hedgeWall: number;
-      };
-      source: string;
-      lastUpdated: string;
-    };
-  };
-  timestamp: number;
-}
-
 interface DashboardData {
   lastUpdated: string;
   roles: Role[];
@@ -71,20 +41,14 @@ interface DashboardData {
 
 export default function CommandCenterPage() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [verification, setVerification] = useState<VerificationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchData = async () => {
     try {
-      const [dataRes, verifyRes] = await Promise.all([
-        fetch('/api/command-center/data'),
-        fetch('/api/command-center/verification')
-      ]);
-      const dataJson = await dataRes.json();
-      const verifyJson = await verifyRes.json();
-      setData(dataJson);
-      setVerification(verifyJson);
+      const res = await fetch('/api/command-center/data');
+      const json = await res.json();
+      setData(json);
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -155,6 +119,7 @@ export default function CommandCenterPage() {
             <div className="flex items-center gap-4">
               <nav className="flex gap-2 mr-4">
                 <Link href="/admin/command-center" className="px-3 py-1.5 text-sm text-white bg-white/10 rounded-lg">Dashboard</Link>
+                <Link href="/admin/command-center/flow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Flow</Link>
                 <Link href="/admin/command-center/roles" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Roles</Link>
                 <Link href="/admin/command-center/workflow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Workflow</Link>
               </nav>
@@ -189,90 +154,6 @@ export default function CommandCenterPage() {
             <div className="text-xs text-white/50 uppercase mt-1">Blockers</div>
           </Card>
         </div>
-
-        {/* Data Verification Panel */}
-        {verification && (
-          <Card className="bg-white/5 border-white/10 p-6">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
-              <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider">🔍 Data Verification</h2>
-              <Badge 
-                variant="outline" 
-                className={`${
-                  verification.report.date === verification.keyLevels.data.reportDate
-                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                }`}
-              >
-                {verification.report.date === verification.keyLevels.data.reportDate ? '✅ Synced' : '⚠️ Out of sync'}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Latest Report */}
-              <div>
-                <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Latest Daily Report</div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex gap-2">
-                    <span className="text-white/50">File:</span>
-                    <span className="text-white/80">{verification.report.filename}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-white/50">Date:</span>
-                    <span className="text-white/80">{verification.report.date}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-white/50">Modified:</span>
-                    <span className="text-white/80">{new Date(verification.report.modified * 1000).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Key Levels Config */}
-              <div>
-                <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Key Levels Config</div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex gap-2">
-                    <span className="text-white/50">Source:</span>
-                    <span className="text-white/80 text-xs">{verification.keyLevels.data.source}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-white/50">Updated:</span>
-                    <span className="text-white/80">{new Date(verification.keyLevels.modified * 1000).toLocaleString()}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-white/50">Master Eject:</span>
-                    <span className="text-red-400 font-semibold">${verification.keyLevels.data.quickReference.masterEject}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Key Levels Table */}
-            <div className="pt-6 border-t border-white/10">
-              <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Active Alert Levels</div>
-              <div className="grid grid-cols-[auto_1fr_auto] gap-2 max-h-80 overflow-y-auto text-sm">
-                {verification.keyLevels.data.levels.map((level, i) => {
-                  let priceColor = 'text-blue-400';
-                  if (level.price === verification.keyLevels.data.quickReference.masterEject) {
-                    priceColor = 'text-red-400';
-                  } else if (level.emoji === '🎯') {
-                    priceColor = 'text-green-400';
-                  } else if (level.emoji === '⚠️') {
-                    priceColor = 'text-yellow-400';
-                  }
-
-                  return (
-                    <div key={i} className="contents">
-                      <div className={`${priceColor} font-semibold font-mono`}>${level.price}</div>
-                      <div className="text-white/70">{level.emoji} {level.level}</div>
-                      <div className="text-white/40 text-xs text-right">{level.action}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </Card>
-        )}
 
         {/* The Desk */}
         <div>
