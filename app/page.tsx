@@ -801,7 +801,7 @@ export default function LandingPageV2() {
           <span>Flacko AI</span>
           <div className="flex gap-6">
             <a
-              href="https://twitter.com/flaboratory"
+              href="https://x.com/smdcapital"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-zinc-400"
