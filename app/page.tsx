@@ -779,12 +779,9 @@ export default function LandingPageV2() {
           <div className="text-4xl font-bold text-white mb-2">
             $29.99<span className="text-xl text-zinc-500">/month</span>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center justify-center gap-2 mb-8">
             <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full font-medium">🔥 Launch Price</span>
           </div>
-          <p className="text-zinc-400 text-sm mb-8">
-            Price increases to $34.99/mo next month. Lock in $29.99 forever.
-          </p>
           
           <Link href="/signup">
             <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
