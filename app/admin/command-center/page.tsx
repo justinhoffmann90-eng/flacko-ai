@@ -27,6 +27,26 @@ interface Role {
   scheduledJobs: Array<{ id: string; time: string }>;
 }
 
+interface PipelineStep {
+  id: string;
+  name: string;
+  status: string;
+  timestamp: string | null;
+  details: string;
+  expectedTime: string;
+}
+
+interface PipelineData {
+  timestamp: string;
+  steps: PipelineStep[];
+  summary: {
+    total: number;
+    complete: number;
+    pending: number;
+    blocked: number;
+  };
+}
+
 interface DashboardData {
   lastUpdated: string;
   roles: Role[];
@@ -41,14 +61,20 @@ interface DashboardData {
 
 export default function CommandCenterPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/command-center/data');
-      const json = await res.json();
-      setData(json);
+      const [dataRes, pipelineRes] = await Promise.all([
+        fetch('/api/command-center/data'),
+        fetch('/api/command-center/pipeline')
+      ]);
+      const dataJson = await dataRes.json();
+      const pipelineJson = await pipelineRes.json();
+      setData(dataJson);
+      setPipeline(pipelineJson);
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -150,6 +176,74 @@ export default function CommandCenterPage() {
             <div className="text-xs text-white/50 uppercase mt-1">Blockers</div>
           </Card>
         </div>
+
+        {/* Daily Report Pipeline */}
+        {pipeline && (
+          <div>
+            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4 flex items-center gap-2">
+              📊 Daily Report Pipeline
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  pipeline.summary.blocked > 0 
+                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                    : pipeline.summary.complete === pipeline.summary.total
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                }`}
+              >
+                {pipeline.summary.complete}/{pipeline.summary.total} Complete
+              </Badge>
+            </h2>
+            <Card className="bg-white/5 border-white/10 overflow-hidden">
+              <div className="divide-y divide-white/10">
+                {pipeline.steps.map((step, i) => {
+                  let statusIcon = <Clock className="h-5 w-5 text-yellow-400" />;
+                  let statusColor = "text-yellow-400";
+                  
+                  if (step.status === "complete") {
+                    statusIcon = <CheckCircle2 className="h-5 w-5 text-green-400" />;
+                    statusColor = "text-green-400";
+                  } else if (step.status === "incomplete" || step.status === "stale" || step.status === "out-of-sync" || step.status === "blocked") {
+                    statusIcon = <AlertCircle className="h-5 w-5 text-red-400" />;
+                    statusColor = "text-red-400";
+                  }
+
+                  return (
+                    <div key={step.id} className="p-4 flex items-center gap-4">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="text-2xl">{i === 0 ? '📸' : i === 1 ? '📝' : i === 2 ? '🔑' : i === 3 ? '🚨' : '✅'}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-white">{step.name}</span>
+                            {statusIcon}
+                          </div>
+                          <div className="text-xs text-white/50">{step.details}</div>
+                          {step.timestamp && (
+                            <div className="text-xs text-white/30 mt-1">
+                              {new Date(step.timestamp).toLocaleString([], { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                hour: 'numeric', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-xs font-medium ${statusColor} uppercase`}>
+                          {step.status === "out-of-sync" ? "Out of Sync" : step.status}
+                        </div>
+                        <div className="text-xs text-white/40 mt-1">{step.expectedTime}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* The Desk */}
         <div>
