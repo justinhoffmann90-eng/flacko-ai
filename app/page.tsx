@@ -771,7 +771,7 @@ export default function LandingPageV2() {
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-2">
-            Get the system.
+            Download our operating system.
           </h2>
           <p className="text-zinc-500 mb-6">
             Sleep at night knowing you have a plan for every scenario.
@@ -793,7 +793,7 @@ export default function LandingPageV2() {
           </Link>
           
           <p className="mt-6 text-zinc-500 text-sm">
-            Join 500+ members who wake up with a plan.
+            Price increases to $34.99/mo next month. Lock in $29.99 forever.
           </p>
         </div>
       </section>
