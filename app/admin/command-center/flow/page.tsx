@@ -282,6 +282,7 @@ export default function InformationFlowPage() {
                     <li>Run date command to verify current date</li>
                     <li>FS Insight Daily Technical Strategy (Mark Newton)</li>
                     <li>FS Insight FlashInsights (filter to today only)</li>
+                    <li>FS Insight First to Market (Hardika Singh)</li>
                     <li>FS Insight US Policy (Tom Block) - ONLY if relevant (Fed, shutdown)</li>
                   </ol>
                 </div>
