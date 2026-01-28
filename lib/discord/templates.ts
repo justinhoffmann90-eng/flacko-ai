@@ -2,6 +2,38 @@ import { DiscordMessage, DiscordEmbed, DISCORD_COLORS } from "./client";
 import { ReportAlert, TrafficLightMode, Positioning, TierSignals } from "@/types";
 import { formatPrice } from "@/lib/utils";
 
+/**
+ * CRITICAL: Get the correct emoji for each mode/tier signal
+ * 
+ * DO NOT use wrong colors or default to wrong emoji!
+ * 
+ * Correct mappings:
+ * - green  → 🟢 (U+1F7E2 GREEN CIRCLE)
+ * - yellow → 🟡 (U+1F7E1 YELLOW CIRCLE)
+ * - orange → 🟠 (U+1F7E0 ORANGE CIRCLE)
+ * - red    → 🔴 (U+1F534 RED CIRCLE)
+ * 
+ * This function validates input and throws error for invalid modes.
+ */
+function getColorEmoji(signal: string): string {
+  const normalized = signal.toLowerCase().trim();
+  
+  switch (normalized) {
+    case "green":
+      return "🟢";
+    case "yellow":
+      return "🟡";
+    case "orange":
+      return "🟠";
+    case "red":
+      return "🔴";
+    default:
+      console.error(`[DISCORD TEMPLATE ERROR] Invalid signal color: "${signal}". Must be green/yellow/orange/red.`);
+      // Throw error instead of defaulting - this forces us to catch bugs
+      throw new Error(`Invalid signal color: "${signal}". Must be green/yellow/orange/red.`);
+  }
+}
+
 export function getAlertDiscordMessage({
   alerts,
   mode,
@@ -13,7 +45,8 @@ export function getAlertDiscordMessage({
   reportDate?: string; // deprecated, not used in new format
   positioning?: string; // e.g., "Lean Bullish"
 }): DiscordMessage {
-  const modeEmoji = mode === "green" ? "🟢" : mode === "yellow" ? "🟡" : "🔴";
+  // CRITICAL: Use validated color emoji (throws error if invalid mode)
+  const modeEmoji = getColorEmoji(mode);
   const modeLabel = positioning
     ? `${modeEmoji} ${mode.toUpperCase()} MODE (${positioning})`
     : `${modeEmoji} ${mode.toUpperCase()} MODE`;
@@ -67,7 +100,8 @@ export function getNewReportDiscordMessage({
   tiers?: TierSignals;
   masterEject?: number;
 }): DiscordMessage {
-  const modeEmoji = mode === "green" ? "🟢" : mode === "yellow" ? "🟡" : "🔴";
+  // CRITICAL: Use validated color emoji (throws error if invalid mode)
+  const modeEmoji = getColorEmoji(mode);
 
   const upsideAlerts = alerts.filter((a) => a.type === "upside");
   const downsideAlerts = alerts.filter((a) => a.type === "downside");
@@ -78,8 +112,8 @@ export function getNewReportDiscordMessage({
 
   // Tier signals if available
   if (tiers) {
-    const tierEmoji = (s: string) => s === 'green' ? '🟢' : s === 'red' ? '🔴' : '🟡';
-    description += `**Tiers:** ${tierEmoji(tiers.regime)} Regime | ${tierEmoji(tiers.trend)} Trend | ${tierEmoji(tiers.timing)} Timing | ${tierEmoji(tiers.flow)} Flow\n\n`;
+    // CRITICAL: Use validated color emoji (throws error if invalid tier signal)
+    description += `**Tiers:** ${getColorEmoji(tiers.regime)} Regime | ${getColorEmoji(tiers.trend)} Trend | ${getColorEmoji(tiers.timing)} Timing | ${getColorEmoji(tiers.flow)} Flow\n\n`;
   }
 
   // Positioning if available
