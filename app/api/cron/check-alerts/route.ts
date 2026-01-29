@@ -6,6 +6,55 @@ import { sendAlertMessage } from "@/lib/discord/client";
 import { getAlertDiscordMessage } from "@/lib/discord/templates";
 import { TrafficLightMode, ReportAlert } from "@/types";
 
+// Telegram backup notification for critical failures
+async function sendTelegramBackup(message: string): Promise<boolean> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_ALERT_CHAT_ID; // Justin's chat ID
+  
+  if (!botToken || !chatId) {
+    console.error("Telegram backup not configured - TELEGRAM_BOT_TOKEN or TELEGRAM_ALERT_CHAT_ID missing");
+    return false;
+  }
+  
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "HTML",
+      }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error("Telegram backup failed:", error);
+    return false;
+  }
+}
+
+// Log alert delivery attempt to database
+async function logAlertDelivery(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  channelName: string,
+  success: boolean,
+  alertCount: number,
+  price: number,
+  errorMessage?: string
+) {
+  try {
+    await supabase.from("discord_alert_log").insert({
+      job_name: "check-alerts",
+      channel_name: channelName,
+      status: success ? "success" : "failed",
+      message_preview: `${alertCount} alerts triggered at $${price.toFixed(2)}`,
+      error_message: errorMessage || null,
+    });
+  } catch (error) {
+    console.error("Failed to log alert delivery:", error);
+  }
+}
+
 export async function GET(request: Request) {
   // Verify cron secret (temporary: also allow hardcoded secret for debugging)
   const headersList = await headers();
@@ -115,7 +164,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Send Discord alert (single message to channel)
+    // Send Discord alert (single message to #alerts channel)
     const discordMessage = getAlertDiscordMessage({
       alerts: Array.from(uniqueAlerts.values()),
       mode: extractedData?.mode?.current || "yellow",
@@ -123,6 +172,38 @@ export async function GET(request: Request) {
     });
 
     const discordSent = await sendAlertMessage(discordMessage);
+    
+    // Log the delivery attempt
+    await logAlertDelivery(
+      supabase,
+      "alerts",
+      discordSent,
+      triggeredAlerts.length,
+      currentPrice,
+      discordSent ? undefined : "Discord webhook failed"
+    );
+
+    // CRITICAL: If Discord failed, send backup via Telegram
+    if (!discordSent) {
+      const alertList = Array.from(uniqueAlerts.values())
+        .map(a => `• $${a.price} - ${a.level_name}`)
+        .join("\n");
+      
+      const backupMessage = `🚨 <b>DISCORD ALERT FAILED</b> 🚨\n\nTSLA: $${currentPrice.toFixed(2)}\n\nAlerts that should have fired:\n${alertList}\n\n⚠️ Discord webhook is broken. Check Vercel env vars.`;
+      
+      const telegramSent = await sendTelegramBackup(backupMessage);
+      
+      console.error(`Discord alert failed! Telegram backup: ${telegramSent ? "sent" : "also failed"}`);
+      
+      return NextResponse.json({
+        success: false,
+        price: currentPrice,
+        triggeredCount: triggeredAlerts.length,
+        discordSent: false,
+        telegramBackup: telegramSent,
+        error: "Discord delivery failed - backup notification attempted",
+      });
+    }
 
     // Create in-app notifications for all affected users
     const userIds = new Set(triggeredAlerts.map((a) => a.user_id));
@@ -145,10 +226,14 @@ export async function GET(request: Request) {
       success: true,
       price: currentPrice,
       triggeredCount: triggeredAlerts.length,
-      discordSent,
+      discordSent: true,
     });
   } catch (error) {
     console.error("Alert check error:", error);
+    
+    // Try to send Telegram notification about the crash
+    await sendTelegramBackup(`🚨 <b>ALERT SYSTEM CRASHED</b> 🚨\n\nError: ${error instanceof Error ? error.message : "Unknown error"}\n\nCheck Vercel logs immediately.`);
+    
     return NextResponse.json({ error: "Alert check failed" }, { status: 500 });
   }
 }
