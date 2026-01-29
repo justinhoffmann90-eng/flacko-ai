@@ -26,19 +26,21 @@ const folderStructure = [
 
 // Key files reference
 const keyFiles = [
-  { file: "YYYY-MM-DD.md", location: "~/trading_inputs/daily-reports/", purpose: "Daily report markdown", updatedBy: "Justin (upload)", isSource: true },
-  { file: "key_levels.json", location: "~/trading_inputs/", purpose: "Price alert levels for monitoring", updatedBy: "Trunks (from report)", isSource: false },
+  { file: "YYYY-MM-DD.md", location: "~/trading_inputs/daily-reports/", purpose: "Daily report markdown", updatedBy: "Trunks (builds) → Justin (approves) → Trunks (uploads)", isSource: true },
+  { file: "key_levels.json", location: "~/trading_inputs/", purpose: "Price alert levels for monitoring", updatedBy: "Trunks (extracted from report)", isSource: false },
   { file: "verification.json", location: "~/clawd/dashboard/", purpose: "Dashboard verification data", updatedBy: "Trunks (via script)", isSource: false },
-  { file: "daily_reports", location: "Supabase", purpose: "Report storage for website", updatedBy: "Justin (upload)", isSource: false },
+  { file: "daily_reports", location: "Supabase", purpose: "Report storage for website", updatedBy: "Trunks (after approval)", isSource: false },
 ];
 
-// New report checklist
+// Report creation checklist
 const reportChecklist = [
-  { step: 1, title: "Read the latest .md report file", detail: "Location: ~/trading_inputs/daily-reports/" },
-  { step: 2, title: "Extract ALL key levels from Alert Levels table", detail: "Master Eject, Put Wall, Support, Key Strike, Call Wall, Resistance" },
-  { step: 3, title: "Update key_levels.json", detail: "Location: ~/trading_inputs/key_levels.json" },
-  { step: 4, title: "Run update-key-levels.sh", detail: "Regenerates dashboard verification data" },
-  { step: 5, title: "Confirm update complete", detail: "Verify levels match between report and key_levels.json" },
+  { step: 1, title: "Capture trading screenshots", detail: "TradingView charts, SpotGamma HIRO, FlowPatrol PDF" },
+  { step: 2, title: "Build report markdown", detail: "Analyze data, write .md file with mode/tier/levels" },
+  { step: 3, title: "Generate PDF and send to Justin", detail: "Convert .md to PDF, send via Telegram for review" },
+  { step: 4, title: "Wait for Justin's approval", detail: "Justin reviews PDF, requests changes or approves" },
+  { step: 5, title: "Upload approved .md to flacko.ai", detail: "Use admin upload or API to publish report" },
+  { step: 6, title: "Extract key levels and update alerts", detail: "Parse Alert Levels table → key_levels.json → Supabase" },
+  { step: 7, title: "Confirm price monitor is active", detail: "Verify alerts are live in Discord #alerts" },
 ];
 
 // Scripts reference
@@ -139,60 +141,78 @@ export default function ReportSystemPage() {
         <Card className="bg-white/[0.02] border-white/10 p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <ArrowRight className="w-5 h-5 text-blue-400" />
-            Report Data Flow
+            Report Creation Flow
           </h2>
           
-          {/* Flow 1: Report Upload */}
-          <div className="flex items-center justify-center gap-4 flex-wrap py-6">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">📝</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">Justin Writes</div>
-              <div className="text-xs text-white/40 mt-1">.md file</div>
+          <p className="text-white/50 text-sm mb-6">End-to-end workflow from data capture to live alerts</p>
+          
+          {/* Main Flow: Full Pipeline */}
+          <div className="flex items-center justify-center gap-3 flex-wrap py-6">
+            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4 text-center min-w-[110px]">
+              <div className="text-2xl mb-2">📸</div>
+              <div className="text-xs font-semibold uppercase tracking-wide">Screenshots</div>
+              <div className="text-xs text-white/40 mt-1">Trunks captures</div>
             </div>
             <ArrowRight className="w-5 h-5 text-white/30" />
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-center min-w-[120px]">
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center min-w-[110px]">
+              <div className="text-2xl mb-2">⚔️</div>
+              <div className="text-xs font-semibold uppercase tracking-wide">Build Report</div>
+              <div className="text-xs text-white/40 mt-1">Trunks writes .md</div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-white/30" />
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-center min-w-[110px]">
+              <div className="text-2xl mb-2">📄</div>
+              <div className="text-xs font-semibold uppercase tracking-wide">PDF Review</div>
+              <div className="text-xs text-white/40 mt-1">Send to Justin</div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-white/30" />
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center min-w-[110px]">
+              <div className="text-2xl mb-2">✅</div>
+              <div className="text-xs font-semibold uppercase tracking-wide">Approve</div>
+              <div className="text-xs text-white/40 mt-1">Justin reviews</div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-white/30" />
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 text-center min-w-[110px]">
               <div className="text-2xl mb-2">📤</div>
               <div className="text-xs font-semibold uppercase tracking-wide">Upload</div>
-              <div className="text-xs text-white/40 mt-1">flacko.ai/report</div>
+              <div className="text-xs text-white/40 mt-1">Trunks → website</div>
             </div>
             <ArrowRight className="w-5 h-5 text-white/30" />
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">🗄️</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">Supabase</div>
-              <div className="text-xs text-white/40 mt-1">daily_reports</div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/30" />
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">🌐</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">Live Site</div>
-              <div className="text-xs text-white/40 mt-1">flacko.ai/report</div>
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center min-w-[110px]">
+              <div className="text-2xl mb-2">🚨</div>
+              <div className="text-xs font-semibold uppercase tracking-wide">Alerts Active</div>
+              <div className="text-xs text-white/40 mt-1">Price monitor</div>
             </div>
           </div>
 
-          {/* Flow 2: Alert Levels */}
-          <div className="flex items-center justify-center gap-4 flex-wrap py-6 border-t border-white/10 mt-4">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">📄</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">.md File</div>
-              <div className="text-xs text-white/40 mt-1">Alert Levels table</div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/30" />
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">⚔️</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">Trunks</div>
-              <div className="text-xs text-white/40 mt-1">Extracts levels</div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/30" />
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">📊</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">key_levels.json</div>
-              <div className="text-xs text-white/40 mt-1">~/trading_inputs/</div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-white/30" />
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 text-center min-w-[120px]">
-              <div className="text-2xl mb-2">🚨</div>
-              <div className="text-xs font-semibold uppercase tracking-wide">Price Alerts</div>
-              <div className="text-xs text-white/40 mt-1">Discord #alerts</div>
+          {/* Flow 2: Post-Upload - Key Levels */}
+          <div className="border-t border-white/10 mt-6 pt-6">
+            <p className="text-white/50 text-xs uppercase tracking-wide mb-4">After Upload: Key Levels Pipeline</p>
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 text-center min-w-[100px]">
+                <div className="text-xl mb-1">📄</div>
+                <div className="text-xs font-semibold">.md on website</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/30" />
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-center min-w-[100px]">
+                <div className="text-xl mb-1">⚔️</div>
+                <div className="text-xs font-semibold">Extract levels</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/30" />
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center min-w-[100px]">
+                <div className="text-xl mb-1">📊</div>
+                <div className="text-xs font-semibold">key_levels.json</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/30" />
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-center min-w-[100px]">
+                <div className="text-xl mb-1">🔄</div>
+                <div className="text-xs font-semibold">Sync to Supabase</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/30" />
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-center min-w-[100px]">
+                <div className="text-xl mb-1">🚨</div>
+                <div className="text-xs font-semibold">Discord #alerts</div>
+              </div>
             </div>
           </div>
         </Card>
@@ -238,13 +258,13 @@ export default function ReportSystemPage() {
           </div>
         </Card>
 
-        {/* When New Report Uploaded */}
+        {/* Report Creation Workflow */}
         <Card className="bg-white/[0.02] border-white/10 p-6 mb-6">
           <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <Bell className="w-5 h-5 text-yellow-400" />
-            When a New Report is Uploaded
+            Daily Report Workflow
           </h2>
-          <p className="text-white/50 text-sm mb-6">Mandatory checklist when Justin uploads a new report to flacko.ai:</p>
+          <p className="text-white/50 text-sm mb-6">Trunks builds the report end-to-end. Justin approves before publish.</p>
           
           <div className="space-y-3">
             {reportChecklist.map((item) => (
@@ -266,10 +286,12 @@ export default function ReportSystemPage() {
               ⛔ Critical Rules
             </h3>
             <ul className="text-sm text-white/70 space-y-2">
-              <li>• ALWAYS extract levels from the .md report&apos;s Alert Levels table — NOT from dashboard, NOT from memory</li>
-              <li>• The report file is the source of truth — dashboard may lag behind</li>
-              <li>• Use the levels exactly as listed in the Alert Levels table</li>
+              <li>• NEVER upload report to website without Justin&apos;s explicit approval</li>
+              <li>• ALWAYS send PDF for review first — no exceptions</li>
+              <li>• Extract levels from the .md report&apos;s Alert Levels table — NOT from memory</li>
+              <li>• The uploaded report is the source of truth for price alerts</li>
               <li>• ALWAYS run update-key-levels.sh after updating key_levels.json</li>
+              <li>• Verify price monitor is active after upload</li>
             </ul>
           </div>
         </Card>
