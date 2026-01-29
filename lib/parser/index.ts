@@ -1,7 +1,7 @@
 import { ExtractedReportData, ParsedReportData, ReportAlert, TrafficLightMode, TierSignal, TierSignals, Positioning, LevelMapEntry } from "@/types";
 import matter from "gray-matter";
 
-export const PARSER_VERSION = "3.1.1"; // Support JSON in HTML comments + null actions
+export const PARSER_VERSION = "3.5.0"; // v3.5 tier naming (long/medium/short/hourly) + pause_zone + HIRO data
 
 // Interface for level in frontmatter (v3.1)
 interface FrontmatterLevel {
@@ -10,7 +10,15 @@ interface FrontmatterLevel {
   action: string | null; // Can be null for Current Price marker
 }
 
-// Interface for YAML frontmatter data (v3.1)
+// Interface for level with type field (v3.5)
+interface FrontmatterLevelV35 {
+  price: number;
+  name: string;
+  action: string | null;
+  type?: 'trim' | 'watch' | 'current' | 'nibble' | 'pause' | 'caution' | 'eject';
+}
+
+// Interface for YAML frontmatter data (v3.1/v3.5)
 interface ReportFrontmatter {
   // Basic info
   date?: string;
@@ -20,10 +28,15 @@ interface ReportFrontmatter {
   price_change_pct?: number | string; // Can be number or string like "-0.07" or "+3.98%"
 
   // Mode
-  mode?: string; // e.g., "Yellow (Improving)", "Green", "Red"
+  mode?: string; // e.g., "Yellow (Improving)", "Green", "Red", "YELLOW", "GREEN"
   mode_emoji?: string; // "🟢", "🟡", "🔴"
 
-  // Tiers (v3.1 uses emoji values like "🔴", "🟢", "🟡")
+  // Tiers v3.5 naming (Long/Medium/Short/Hourly)
+  tier1_long?: string;
+  tier2_medium?: string;
+  tier3_short?: string;
+  tier4_hourly?: string;
+  // Tiers v3.1 naming (regime/trend/timing/flow)
   tier1_regime?: string;
   tier2_trend?: string;
   tier3_timing?: string;
@@ -35,11 +48,12 @@ interface ReportFrontmatter {
   tier_4_flow?: string;
 
   // Positioning
-  positioning?: string; // "Lean Bullish", "Neutral", "Lean Bearish"
+  positioning?: string; // "Lean Bullish", "Neutral", "Lean Bearish", "Neutral-to-Cautious"
   daily_cap_pct?: number;
   daily_cap_dollars?: number;
   per_trade_dollars?: number;
   target_position?: number;
+  cash_available?: number;
   // Legacy format
   daily_cap_min?: number;
   daily_cap_max?: number;
@@ -49,13 +63,33 @@ interface ReportFrontmatter {
   // Risk
   correction_risk?: string; // "LOW", "LOW-MODERATE", "MODERATE", "HIGH"
 
-  // Levels array (v3.1)
-  levels?: FrontmatterLevel[];
+  // Levels array (v3.1/v3.5 - v3.5 includes type field)
+  levels?: (FrontmatterLevel | FrontmatterLevelV35)[];
 
   // Key levels
   master_eject?: number;
+  pause_zone?: number; // v3.5: Daily 21 EMA pause level
   key_gamma_strike?: number;
   gamma_regime?: string; // "Positive" or "Negative"
+
+  // EMA levels (v3.5)
+  weekly_9ema?: number;
+  weekly_13ema?: number;
+  weekly_21ema?: number;
+  daily_9ema?: number;
+  daily_21ema?: number;
+
+  // HIRO data (v3.5)
+  hiro_reading?: number;
+  hiro_30day_low?: number;
+  hiro_30day_high?: number;
+
+  // Scenarios (v3.5)
+  scenarios?: {
+    bull?: { trigger: string; target: string };
+    base?: { trigger: string; target: string };
+    bear?: { trigger: string; target: string };
+  };
 
   // Earnings
   earnings_date?: string;
@@ -304,13 +338,22 @@ function extractFromFrontmatter(
     action: "Daily close below = exit all positions",
   };
 
-  // Tiers from frontmatter (support both v3.1 and v3.0 field names)
-  const tier1 = fm.tier1_regime || fm.tier_1_regime;
-  const tier2 = fm.tier2_trend || fm.tier_2_trend;
-  const tier3 = fm.tier3_timing || fm.tier_3_timing;
-  const tier4 = fm.tier4_flow || fm.tier_4_flow;
+  // Tiers from frontmatter (support v3.5, v3.1, and v3.0 field names)
+  // v3.5 uses tier1_long, tier2_medium, tier3_short, tier4_hourly
+  // v3.1 uses tier1_regime, tier2_trend, tier3_timing, tier4_flow
+  // v3.0 uses tier_1_regime, tier_2_trend, tier_3_timing, tier_4_flow
+  const tier1 = fm.tier1_long || fm.tier1_regime || fm.tier_1_regime;
+  const tier2 = fm.tier2_medium || fm.tier2_trend || fm.tier_2_trend;
+  const tier3 = fm.tier3_short || fm.tier3_timing || fm.tier_3_timing;
+  const tier4 = fm.tier4_hourly || fm.tier4_flow || fm.tier_4_flow;
 
   const tiers: TierSignals | undefined = (tier1 || tier2 || tier3 || tier4) ? {
+    // v3.5 names (preferred)
+    long: parseTierValue(tier1),
+    medium: parseTierValue(tier2),
+    short: parseTierValue(tier3),
+    hourly: parseTierValue(tier4),
+    // Legacy names (for backwards compatibility)
     regime: parseTierValue(tier1),
     trend: parseTierValue(tier2),
     timing: parseTierValue(tier3),
@@ -370,7 +413,7 @@ function extractFromFrontmatter(
   // Performance - still from markdown
   const performance = extractPerformance(parsed.previous_review);
 
-  // Levels map from frontmatter (v3.1) or markdown tables
+  // Levels map from frontmatter (v3.1/v3.5) or markdown tables
   let levels_map: LevelMapEntry[] | undefined;
   if (fm.levels && fm.levels.length > 0) {
     levels_map = fm.levels.map(level => ({
@@ -379,10 +422,29 @@ function extractFromFrontmatter(
       source: 'Report',
       depth: '—',
       action: level.action || '—', // Handle null action
+      type: (level as FrontmatterLevelV35).type, // v3.5 type field
     }));
   } else {
     levels_map = extractLevelsMap(markdown);
   }
+
+  // v3.5 fields
+  const pause_zone = fm.pause_zone;
+  const daily_9ema = fm.daily_9ema;
+  const daily_21ema = fm.daily_21ema;
+  const weekly_9ema = fm.weekly_9ema;
+  const weekly_13ema = fm.weekly_13ema;
+  const weekly_21ema = fm.weekly_21ema;
+  const key_gamma_strike = fm.key_gamma_strike;
+  const gamma_regime = fm.gamma_regime as 'Positive' | 'Negative' | undefined;
+  const correction_risk = fm.correction_risk as 'LOW' | 'LOW-MODERATE' | 'MODERATE' | 'HIGH' | undefined;
+
+  // HIRO data (v3.5)
+  const hiro = (fm.hiro_reading !== undefined) ? {
+    reading: fm.hiro_reading,
+    low_30day: fm.hiro_30day_low || 0,
+    high_30day: fm.hiro_30day_high || 0,
+  } : undefined;
 
   // Validate required fields
   if (price.close <= 0) {
@@ -404,12 +466,24 @@ function extractFromFrontmatter(
     tiers,
     positioning,
     levels_map,
+    // v3.5 fields
+    pause_zone,
+    daily_9ema,
+    daily_21ema,
+    weekly_9ema,
+    weekly_13ema,
+    weekly_21ema,
+    key_gamma_strike,
+    gamma_regime,
+    hiro,
+    correction_risk,
   };
 }
 
-// Convert frontmatter levels array to ReportAlert objects (v3.1)
+// Convert frontmatter levels array to ReportAlert objects (v3.1/v3.5)
 // Trim actions (above current price) = upside, Nibble actions (below current price) = downside
-function extractAlertsFromLevels(levels: FrontmatterLevel[], currentPrice: number): ReportAlert[] {
+// v3.5 includes explicit 'type' field for level classification
+function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35)[], currentPrice: number): ReportAlert[] {
   const alerts: ReportAlert[] = [];
 
   for (const level of levels) {
@@ -417,19 +491,27 @@ function extractAlertsFromLevels(levels: FrontmatterLevel[], currentPrice: numbe
     if (!level.action) continue;
 
     const action = level.action.toLowerCase();
+    const levelType = (level as FrontmatterLevelV35).type;
 
     // Skip current price marker and master eject (handled separately)
     if (level.name.toLowerCase().includes('current price')) continue;
+    if (levelType === 'current') continue;
     if (level.name.toLowerCase().includes('master eject')) continue;
+    if (levelType === 'eject') continue;
     if (action.includes('exit all')) continue;
 
-    // Determine type based on action keywords
-    // Trim = upside (take profit), Nibble = downside (buy the dip)
+    // Determine type based on v3.5 type field first, then action keywords
+    // Trim/Watch = upside (take profit), Nibble/Pause/Caution = downside (buy the dip)
     let type: 'upside' | 'downside';
 
-    if (action.includes('trim') || action.includes('breakout')) {
+    // v3.5: Use explicit type field if available
+    if (levelType === 'trim' || levelType === 'watch') {
       type = 'upside';
-    } else if (action.includes('nibble') || action.includes('pause') || action.includes('buy')) {
+    } else if (levelType === 'nibble' || levelType === 'pause' || levelType === 'caution') {
+      type = 'downside';
+    } else if (action.includes('trim') || action.includes('breakout')) {
+      type = 'upside';
+    } else if (action.includes('nibble') || action.includes('pause') || action.includes('buy') || action.includes('caution')) {
       type = 'downside';
     } else {
       // Use price relative to current to determine type
@@ -441,7 +523,7 @@ function extractAlertsFromLevels(levels: FrontmatterLevel[], currentPrice: numbe
       level_name: level.name,
       price: level.price,
       action: level.action,
-      reason: '', // v3.1 doesn't have separate reason field
+      reason: levelType ? `Level type: ${levelType}` : '', // Include level type in reason if available
     });
   }
 

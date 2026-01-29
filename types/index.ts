@@ -103,14 +103,28 @@ export interface PositionGuidance {
   size_recommendation: string;
 }
 
-// v3.0 Report Types
+// v3.0/v3.5 Report Types
 export type TierSignal = 'green' | 'yellow' | 'orange' | 'red';
 
+// v3.5 tier naming: Long/Medium/Short/Hourly
 export interface TierSignals {
-  regime: TierSignal;
-  trend: TierSignal;
-  timing: TierSignal;
-  flow: TierSignal;
+  // v3.5 names (preferred)
+  long?: TierSignal;      // Tier 1: Weekly - Regime definition
+  medium?: TierSignal;    // Tier 2: Daily - Trend confirmation  
+  short?: TierSignal;     // Tier 3: 4H - Entry timing
+  hourly?: TierSignal;    // Tier 4: 1H - Intraday pullback zones
+  // Legacy v3.0 names (for backwards compatibility)
+  regime?: TierSignal;
+  trend?: TierSignal;
+  timing?: TierSignal;
+  flow?: TierSignal;
+}
+
+// v3.5 HIRO data
+export interface HiroData {
+  reading: number;
+  low_30day: number;
+  high_30day: number;
 }
 
 export interface Positioning {
@@ -119,12 +133,15 @@ export interface Positioning {
   posture: string;
 }
 
+export type LevelType = 'trim' | 'watch' | 'current' | 'nibble' | 'pause' | 'caution' | 'eject';
+
 export interface LevelMapEntry {
   level: string;
   price: number;
   source: string;
   depth: 'Shallow' | 'Normal' | 'Deep' | '—' | string;
   action: string;
+  type?: LevelType; // v3.5: trim/watch/current/nibble/pause/caution/eject
 }
 
 export interface ForecastPerformance {
@@ -151,6 +168,17 @@ export interface ExtractedReportData {
   tiers?: TierSignals;
   positioning?: Positioning;
   levels_map?: LevelMapEntry[];
+  // v3.5 fields
+  pause_zone?: number;
+  daily_9ema?: number;
+  daily_21ema?: number;
+  weekly_9ema?: number;
+  weekly_13ema?: number;
+  weekly_21ema?: number;
+  key_gamma_strike?: number;
+  gamma_regime?: 'Positive' | 'Negative';
+  hiro?: HiroData;
+  correction_risk?: 'LOW' | 'LOW-MODERATE' | 'MODERATE' | 'HIGH';
 }
 
 export interface ParsedReportData {
