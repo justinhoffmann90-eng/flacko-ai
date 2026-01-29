@@ -9,7 +9,7 @@ import {
   FileText,
   Bell,
   MessageSquare,
-  Settings,
+  Calendar,
 } from "lucide-react";
 
 const navItems = [
@@ -34,9 +34,9 @@ const navItems = [
     icon: MessageSquare,
   },
   {
-    href: "/settings",
-    label: "Settings",
-    icon: Settings,
+    href: "/catalysts",
+    label: "Catalysts",
+    icon: Calendar,
   },
 ];
 
