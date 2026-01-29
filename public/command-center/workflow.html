@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clawd Command Center — Workflow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo span { font-size: 2rem; }
+    .logo h1 { font-size: 1.4rem; font-weight: 600; }
+
+    nav { display: flex; gap: 15px; }
+    nav a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+    nav a.active { color: #fff; background: rgba(96,165,250,0.2); }
+
+    .page-title { margin-bottom: 25px; }
+    .page-title h2 { font-size: 1.5rem; margin-bottom: 5px; }
+    .page-title p { color: rgba(255,255,255,0.5); font-size: 0.9rem; }
+
+    .section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      margin-bottom: 20px;
+    }
+    .section-title h3 { font-size: 1.1rem; margin-bottom: 5px; }
+    .section-title p { color: rgba(255,255,255,0.5); font-size: 0.85rem; }
+
+    /* Horizontal Timeline */
+    .timeline-container {
+      overflow-x: auto;
+      padding-bottom: 15px;
+    }
+
+    .timeline {
+      min-width: 1400px;
+      position: relative;
+    }
+
+    /* Time axis */
+    .time-axis {
+      display: flex;
+      border-bottom: 2px solid rgba(255,255,255,0.2);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .time-marker {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      position: relative;
+    }
+
+    .time-marker::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      width: 2px;
+      height: 8px;
+      background: rgba(255,255,255,0.3);
+    }
+
+    .time-marker.active {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+
+    /* Swim lanes */
+    .swim-lanes {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .swim-lane {
+      display: flex;
+      align-items: center;
+      min-height: 50px;
+    }
+
+    .lane-label {
+      width: 140px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding-right: 15px;
+    }
+
+    .lane-label span { font-size: 1.2rem; }
+
+    .lane-track {
+      flex: 1;
+      display: flex;
+      position: relative;
+      height: 48px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+    }
+
+    /* Task blocks */
+    .task-block {
+      position: absolute;
+      height: 40px;
+      top: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 60px;
+    }
+
+    .task-block:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      z-index: 10;
+      min-width: auto;
+      padding: 0 12px;
+    }
+
+    .task-block.ta { background: linear-gradient(135deg, #ef4444, #f97316); }
+    .task-block.cm { background: linear-gradient(135deg, #22c55e, #10b981); }
+    .task-block.cc { background: linear-gradient(135deg, #eab308, #f59e0b); color: #1a1a2e; }
+    .task-block.ops { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .task-block.justin { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+
+    /* Time positioning (percentage of day 7am-5pm = 10 hours) */
+    .t-0700 { left: 0%; }
+    .t-0730 { left: 5%; }
+    .t-0800 { left: 10%; }
+    .t-0815 { left: 12.5%; }
+    .t-0900 { left: 20%; }
+    .t-1100 { left: 40%; }
+    .t-1115 { left: 42.5%; }
+    .t-1300 { left: 60%; }
+    .t-1400 { left: 70%; }
+    .t-1500 { left: 80%; }
+    .t-1530 { left: 85%; }
+    .t-1600 { left: 90%; }
+    .t-1615 { left: 92.5%; }
+    .t-1630 { left: 95%; }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.ta { background: linear-gradient(135deg, #ef4444, #f97316); }
+    .legend-dot.cm { background: linear-gradient(135deg, #22c55e, #10b981); }
+    .legend-dot.cc { background: linear-gradient(135deg, #eab308, #f59e0b); }
+    .legend-dot.ops { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .legend-dot.justin { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+
+    /* Deliverables Section */
+    .deliverables-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    
+    @media (max-width: 1100px) {
+      .deliverables-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 700px) {
+      .deliverables-grid { grid-template-columns: 1fr; }
+    }
+
+    .channel-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .channel-header {
+      padding: 15px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .channel-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .channel-icon.discord { background: rgba(88, 101, 242, 0.2); }
+    .channel-icon.telegram { background: rgba(0, 136, 204, 0.2); }
+    .channel-icon.files { background: rgba(156, 163, 175, 0.2); }
+    .channel-icon.justin { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(249,115,22,0.2)); }
+
+    .deliverable-badge.action { background: rgba(239,68,68,0.2); color: #f87171; }
+
+    .channel-info h4 { font-size: 0.95rem; margin-bottom: 2px; }
+    .channel-info p { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+
+    .channel-body {
+      padding: 15px 18px;
+    }
+
+    .deliverable-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .deliverable-item:last-child { border-bottom: none; }
+
+    .deliverable-time {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.4);
+      width: 55px;
+      flex-shrink: 0;
+    }
+
+    .deliverable-content {
+      flex: 1;
+    }
+
+    .deliverable-content h5 {
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+
+    .deliverable-content p {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .deliverable-badge {
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .deliverable-badge.ta { background: rgba(239,68,68,0.2); color: #f87171; }
+    .deliverable-badge.cm { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .deliverable-badge.cc { background: rgba(234,179,8,0.2); color: #fbbf24; }
+    .deliverable-badge.ops { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+
+    /* System Layout - Two Columns */
+    .system-layout {
+      display: flex;
+      gap: 30px;
+      align-items: stretch;
+    }
+
+    /* System Stack - Left Side */
+    .system-stack {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Benefits - Right Side */
+    .system-benefits {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .system-benefits .benefits-grid {
+      flex: 1;
+    }
+
+    .stack-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      padding: 18px 20px;
+      border-radius: 12px;
+      margin-bottom: 0;
+    }
+
+    .stack-item.foundation {
+      background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(139,92,246,0.2));
+      border: 1px solid rgba(168,85,247,0.3);
+    }
+
+    .stack-item.primary {
+      background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(99,102,241,0.2));
+      border: 1px solid rgba(59,130,246,0.3);
+    }
+
+    .stack-item.secondary {
+      background: rgba(234,179,8,0.12);
+      border: 1px solid rgba(234,179,8,0.25);
+    }
+
+    .stack-item.tertiary {
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+
+    .stack-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 40px;
+      text-align: center;
+    }
+
+    .stack-content h4 {
+      font-size: 0.95rem;
+      margin-bottom: 5px;
+    }
+
+    .stack-content p {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.4;
+    }
+
+    .stack-content strong {
+      color: #fff;
+    }
+
+    .stack-arrow {
+      text-align: center;
+      color: rgba(255,255,255,0.3);
+      font-size: 1.2rem;
+      padding: 5px 0;
+    }
+
+    /* Benefits */
+    .benefits-title {
+      margin-bottom: 15px;
+    }
+
+    .benefits-title h4 {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .benefit-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 18px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      min-height: 95px;
+    }
+
+    .benefit-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .benefit-content h5 {
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .benefit-content p {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.4;
+    }
+
+    @media (max-width: 1000px) {
+      .system-layout { flex-direction: column; }
+      .benefits-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 700px) {
+      .benefits-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 500px) {
+      .benefits-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Value Flow Grid */
+    .value-flow-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .value-flow-grid .flow-node {
+      min-height: 320px;
+    }
+
+    .flow-node {
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .flow-node-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .flow-node.ta .flow-node-header { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.15)); }
+    .flow-node.cm .flow-node-header { background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(16,185,129,0.15)); }
+    .flow-node.cc .flow-node-header { background: linear-gradient(135deg, rgba(234,179,8,0.15), rgba(245,158,11,0.15)); }
+    .flow-node.ops .flow-node-header { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15)); }
+    .flow-node.research .flow-node-header { background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(6,182,212,0.15)); }
+    .flow-node.justin .flow-node-header { background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(244,63,94,0.15)); }
+
+    .flow-emoji {
+      font-size: 1.5rem;
+    }
+
+    .flow-node-header h4 {
+      font-size: 0.9rem;
+      margin-bottom: 2px;
+    }
+
+    .flow-mission {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .flow-node-body {
+      padding: 16px 18px;
+    }
+
+    .flow-section {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .flow-section:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .flow-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .flow-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .flow-items span {
+      font-size: 0.75rem;
+      background: rgba(255,255,255,0.12);
+      padding: 4px 10px;
+      border-radius: 5px;
+      color: rgba(255,255,255,0.85);
+      font-weight: 500;
+    }
+
+    .flow-outputs {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .flow-output {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    @media (max-width: 1100px) {
+      .value-flow-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 700px) {
+      .value-flow-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 900px) {
+      .hierarchy-compact { flex-direction: column; }
+      .hierarchy-item { border-radius: 0 !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+      .hierarchy-item:not(:last-child)::after { display: none; }
+      .flywheel-mini { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span>🦞</span>
+        <h1>Command Center</h1>
+      </div>
+      <nav>
+        <a href="index.html">Dashboard</a>
+        <a href="workflow.html" class="active">Workflow</a>
+        <a href="flow.html">Flow</a>
+        <a href="roles.html">Roles</a>
+        <a href="report.html">Report</a>
+      </nav>
+    </header>
+
+    <div class="page-title">
+      <h2>⚡ System Workflow</h2>
+      <p>How intelligence flows through the desk each trading day</p>
+    </div>
+
+    <!-- Information Hierarchy & System Benefits -->
+    <div class="section">
+      <div class="section-title">
+        <h3>📊 Flacko AI System</h3>
+        <p>How we protect capital and surface opportunity</p>
+      </div>
+      
+      <!-- Two Column Layout -->
+      <div class="system-layout">
+      
+      <!-- Left: Core Stack -->
+      <div class="system-stack">
+        <div class="stack-item foundation">
+          <div class="stack-icon">📖</div>
+          <div class="stack-content">
+            <h4>Rulebook</h4>
+            <p>The trading philosophy. Mode system, tier framework, position sizing rules, ratchet discipline. This is the <strong>why</strong> behind everything.</p>
+          </div>
+        </div>
+        <div class="stack-arrow">↓</div>
+        <div class="stack-item primary">
+          <div class="stack-icon">📋</div>
+          <div class="stack-content">
+            <h4>Daily Report</h4>
+            <p>THE plan for today. Mode (🟢🟡🔴), key levels, tier readings, scenarios. Generated from the rulebook. <strong>Doesn't change based on noise.</strong></p>
+          </div>
+        </div>
+        <div class="stack-arrow">↓</div>
+        <div class="stack-item secondary">
+          <div class="stack-icon">📈</div>
+          <div class="stack-content">
+            <h4>Intraday HIRO Flow Readings</h4>
+            <p>Real-time dealer positioning. Confirms or challenges the report thesis. Are dealers buying or selling? Is flow supporting price?</p>
+          </div>
+        </div>
+        <div class="stack-arrow">↓</div>
+        <div class="stack-item tertiary">
+          <div class="stack-icon">📰</div>
+          <div class="stack-content">
+            <h4>Market Pulse</h4>
+            <p>Curated context from 22+ sources. Explains <strong>why</strong> things are moving. Never overrides the report — just adds color.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Benefits -->
+      <div class="system-benefits">
+        <div class="benefits-title">
+          <h4>🎯 What This Delivers</h4>
+        </div>
+        <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">🛡️</div>
+          <div class="benefit-content">
+            <h5>Correction Protection</h5>
+            <p>Mode system reduces exposure before drawdowns hit. Yellow/Red = smaller positions, tighter stops.</p>
+          </div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📍</div>
+          <div class="benefit-content">
+            <h5>Key Level Alerts</h5>
+            <p>Know exactly where support/resistance lives. Get notified when levels are tested — before the move happens.</p>
+          </div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📅</div>
+          <div class="benefit-content">
+            <h5>Updated Catalysts</h5>
+            <p>Never miss an earnings date, FSD update, or macro event. Calendar maintained daily from verified sources.</p>
+          </div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">📡</div>
+          <div class="benefit-content">
+            <h5>High-Signal News</h5>
+            <p>22 curated sources filtered for TSLA/tech relevance. No noise — only what moves the needle.</p>
+          </div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🎯</div>
+          <div class="benefit-content">
+            <h5>Accuracy Tracking</h5>
+            <p>Every call logged. Mode accuracy, level hold rates, documented proof — not just claims.</p>
+          </div>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🔬</div>
+          <div class="benefit-content">
+            <h5>Thesis Deep Dives</h5>
+            <p>Weekly Tesla research covering FSD, Robotaxi, Energy — what actually matters for the long-term bull case.</p>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Horizontal Timeline -->
+    <div class="section" style="margin-top: 15px;">
+      <div class="section-title">
+        <h3>📅 Daily Sequence</h3>
+        <p>Tasks across the trading day (7am - 5pm CT) — scroll horizontally</p>
+      </div>
+      <div class="timeline-container">
+        <div class="timeline">
+          <!-- Time axis -->
+          <div class="time-axis">
+            <div class="time-marker active">7am</div>
+            <div class="time-marker">8am</div>
+            <div class="time-marker">9am</div>
+            <div class="time-marker">10am</div>
+            <div class="time-marker">11am</div>
+            <div class="time-marker">12pm</div>
+            <div class="time-marker">1pm</div>
+            <div class="time-marker">2pm</div>
+            <div class="time-marker">3pm</div>
+            <div class="time-marker">4pm</div>
+          </div>
+
+          <!-- Swim lanes by role -->
+          <div class="swim-lanes">
+            <!-- Trading Analyst -->
+            <div class="swim-lane">
+              <div class="lane-label"><span>🎯</span> Trading Analyst</div>
+              <div class="lane-track">
+                <div class="task-block ta t-0730" style="width: 6%;" title="7:30am - News Scan">News Scan</div>
+                <div class="task-block ta t-0900" style="width: 6%;" title="9:00am - HIRO Check">HIRO</div>
+                <div class="task-block ta t-1100" style="width: 6%;" title="11:00am - HIRO Check">HIRO</div>
+                <div class="task-block ta t-1300" style="width: 6%;" title="1:00pm - HIRO Check">HIRO</div>
+                <div class="task-block ta t-1500" style="width: 6%;" title="3:00pm - Chart Capture">Charts</div>
+                <div class="task-block ta t-1530" style="width: 6%;" title="3:30pm - EOD News Scan">EOD Scan</div>
+                <div class="task-block ta t-1630" style="width: 6%;" title="4:30pm - Daily Journal">Journal</div>
+              </div>
+            </div>
+
+            <!-- Community Manager -->
+            <div class="swim-lane">
+              <div class="lane-label"><span>💬</span> Community Mgr</div>
+              <div class="lane-track">
+                <div class="task-block cm t-0815" style="width: 7%;" title="8:15am - Market Pulse">Pulse</div>
+                <div class="task-block cm t-1115" style="width: 7%;" title="11:15am - Market Pulse">Pulse</div>
+                <div class="task-block cm t-2000" style="width: 7%;" title="8:00pm - FS Insight EOD Wrap">EOD Wrap</div>
+              </div>
+            </div>
+
+            <!-- Content Creator -->
+            <div class="swim-lane">
+              <div class="lane-label"><span>✍️</span> Content Creator</div>
+              <div class="lane-track">
+                <div class="task-block cc t-0800" style="width: 8%;" title="8:00am - Morning Brief Draft">Brief Draft</div>
+                <div class="task-block cc t-1600" style="width: 7%;" title="4:00pm - Tweet Drafts">Tweets</div>
+              </div>
+            </div>
+
+            <!-- Ops -->
+            <div class="swim-lane">
+              <div class="lane-label"><span>⚙️</span> Ops</div>
+              <div class="lane-track">
+                <div class="task-block ops t-0700" style="width: 7%;" title="7:00am - Daily Briefing">Briefing</div>
+              </div>
+            </div>
+
+            <!-- Justin -->
+            <div class="swim-lane">
+              <div class="lane-label"><span>👤</span> Justin</div>
+              <div class="lane-track">
+                <div class="task-block justin t-0815" style="width: 8%;" title="~8:15am - Review & Post Brief">Post Brief</div>
+                <div class="task-block justin t-1500" style="width: 8%;" title="~3:10pm - Generate Report">Gen Report</div>
+                <div class="task-block justin t-1615" style="width: 8%;" title="~4:15pm - Review & Post Tweets">Post Tweets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot ta"></div> Trading Analyst</div>
+        <div class="legend-item"><div class="legend-dot cm"></div> Community Manager</div>
+        <div class="legend-item"><div class="legend-dot cc"></div> Content Creator</div>
+        <div class="legend-item"><div class="legend-dot ops"></div> Ops</div>
+        <div class="legend-item"><div class="legend-dot justin"></div> Justin</div>
+      </div>
+    </div>
+
+    <!-- Full Schedule by Role -->
+    <div class="section">
+      <div class="section-title">
+        <h3>📋 Full Schedule by Role</h3>
+        <p>Every task organized by who does it</p>
+      </div>
+      <div class="deliverables-grid">
+        <!-- Justin -->
+        <div class="channel-card">
+          <div class="channel-header">
+            <div class="channel-icon justin">👤</div>
+            <div class="channel-info">
+              <h4>Justin</h4>
+              <p>Final authority & public voice</p>
+            </div>
+          </div>
+          <div class="channel-body">
+            <div class="deliverable-item">
+              <div class="deliverable-time">~8:15a</div>
+              <div class="deliverable-content">
+                <h5>Review & Post Brief</h5>
+                <p>Check draft → Post to X</p>
+              </div>
+              <span class="deliverable-badge action">Action</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">~3:10p</div>
+              <div class="deliverable-content">
+                <h5>Generate Daily Report</h5>
+                <p>Run Flacko report generation</p>
+              </div>
+              <span class="deliverable-badge action">Action</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">~4:15p</div>
+              <div class="deliverable-content">
+                <h5>Review & Post Tweets</h5>
+                <p>Check 3 drafts → Post to X</p>
+              </div>
+              <span class="deliverable-badge action">Action</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">Async</div>
+              <div class="deliverable-content">
+                <h5>Approve Catalysts</h5>
+                <p>Review flagged events</p>
+              </div>
+              <span class="deliverable-badge action">Action</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trading Analyst -->
+        <div class="channel-card">
+          <div class="channel-header">
+            <div class="channel-icon" style="background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(249,115,22,0.2));">🎯</div>
+            <div class="channel-info">
+              <h4>Trading Analyst</h4>
+              <p>Risk alerts & flow analysis</p>
+            </div>
+          </div>
+          <div class="channel-body">
+            <div class="deliverable-item">
+              <div class="deliverable-time">7:30a</div>
+              <div class="deliverable-content">
+                <h5>News Scan</h5>
+                <p>→ news/morning.md</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">9:00a</div>
+              <div class="deliverable-content">
+                <h5>HIRO Check #1</h5>
+                <p>→ Discord #alerts + Telegram</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">11:00a</div>
+              <div class="deliverable-content">
+                <h5>HIRO Check #2</h5>
+                <p>→ Discord #alerts + Telegram</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">1:00p</div>
+              <div class="deliverable-content">
+                <h5>HIRO Check #3</h5>
+                <p>→ Discord #alerts + Telegram</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">3:00p</div>
+              <div class="deliverable-content">
+                <h5>Chart Capture</h5>
+                <p>→ trading_inputs/</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">3:30p</div>
+              <div class="deliverable-content">
+                <h5>EOD News Scan</h5>
+                <p>→ news/afternoon.md</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">4:30p</div>
+              <div class="deliverable-content">
+                <h5>Daily Journal</h5>
+                <p>→ journals/ + Telegram</p>
+              </div>
+              <span class="deliverable-badge ta">TA</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Community Manager -->
+        <div class="channel-card">
+          <div class="channel-header">
+            <div class="channel-icon" style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2));">💬</div>
+            <div class="channel-info">
+              <h4>Community Manager</h4>
+              <p>Curate signal & engage</p>
+            </div>
+          </div>
+          <div class="channel-body">
+            <div class="deliverable-item">
+              <div class="deliverable-time">8:15a</div>
+              <div class="deliverable-content">
+                <h5>Market Pulse #1</h5>
+                <p>→ Discord #market-pulse</p>
+              </div>
+              <span class="deliverable-badge cm">CM</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">11:15a</div>
+              <div class="deliverable-content">
+                <h5>Market Pulse #2</h5>
+                <p>→ Discord #market-pulse</p>
+              </div>
+              <span class="deliverable-badge cm">CM</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">8:00p</div>
+              <div class="deliverable-content">
+                <h5>FS Insight EOD Wrap</h5>
+                <p>→ Discord #market-pulse</p>
+              </div>
+              <span class="deliverable-badge cm">CM</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">All day</div>
+              <div class="deliverable-content">
+                <h5>Pulse Log</h5>
+                <p>→ pulse/YYYY-MM-DD.md</p>
+              </div>
+              <span class="deliverable-badge cm">CM</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">Async</div>
+              <div class="deliverable-content">
+                <h5>Catalyst Flags</h5>
+                <p>→ Telegram for approval</p>
+              </div>
+              <span class="deliverable-badge cm">CM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Creator -->
+        <div class="channel-card">
+          <div class="channel-header">
+            <div class="channel-icon" style="background: linear-gradient(135deg, rgba(234,179,8,0.2), rgba(245,158,11,0.2));">✍️</div>
+            <div class="channel-info">
+              <h4>Content Creator</h4>
+              <p>Turn analysis into authority</p>
+            </div>
+          </div>
+          <div class="channel-body">
+            <div class="deliverable-item">
+              <div class="deliverable-time">8:00a</div>
+              <div class="deliverable-content">
+                <h5>Morning Brief Draft</h5>
+                <p>→ Telegram for review</p>
+              </div>
+              <span class="deliverable-badge cc">CC</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">4:00p</div>
+              <div class="deliverable-content">
+                <h5>Tweet Drafts (3)</h5>
+                <p>→ drafts/tweets.md + Telegram</p>
+              </div>
+              <span class="deliverable-badge cc">CC</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ops -->
+        <div class="channel-card">
+          <div class="channel-header">
+            <div class="channel-icon" style="background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));">⚙️</div>
+            <div class="channel-info">
+              <h4>Ops</h4>
+              <p>Keep the machine running</p>
+            </div>
+          </div>
+          <div class="channel-body">
+            <div class="deliverable-item">
+              <div class="deliverable-time">7:00a</div>
+              <div class="deliverable-content">
+                <h5>Daily Briefing</h5>
+                <p>→ Telegram</p>
+              </div>
+              <span class="deliverable-badge ops">Ops</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">All day</div>
+              <div class="deliverable-content">
+                <h5>Dashboard Updates</h5>
+                <p>→ dashboard/data.json</p>
+              </div>
+              <span class="deliverable-badge ops">Ops</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">Async</div>
+              <div class="deliverable-content">
+                <h5>Blocker Resolution</h5>
+                <p>Fix issues as they arise</p>
+              </div>
+              <span class="deliverable-badge ops">Ops</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Research Analyst -->
+        <div class="channel-card">
+          <div class="channel-header">
+            <div class="channel-icon" style="background: linear-gradient(135deg, rgba(14,165,233,0.2), rgba(6,182,212,0.2));">📊</div>
+            <div class="channel-info">
+              <h4>Research Analyst</h4>
+              <p>Deep thesis work</p>
+            </div>
+          </div>
+          <div class="channel-body">
+            <div class="deliverable-item">
+              <div class="deliverable-time">Weekly</div>
+              <div class="deliverable-content">
+                <h5>Thesis Deep Dive</h5>
+                <p>FSD/Robotaxi/Energy research</p>
+              </div>
+              <span class="deliverable-badge" style="background: rgba(14,165,233,0.2); color: #38bdf8;">RA</span>
+            </div>
+            <div class="deliverable-item">
+              <div class="deliverable-time">Weekly</div>
+              <div class="deliverable-content">
+                <h5>State of Tesla</h5>
+                <p>Weekly summary report</p>
+              </div>
+              <span class="deliverable-badge" style="background: rgba(14,165,233,0.2); color: #38bdf8;">RA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Value Flow -->
+    <div class="section">
+      <div class="section-title">
+        <h3>🔄 Value Flow</h3>
+        <p>How each role produces value — inputs, tasks, and outputs</p>
+      </div>
+      
+      <div class="value-flow-grid">
+        <!-- Trading Analyst -->
+        <div class="flow-node ta">
+          <div class="flow-node-header">
+            <span class="flow-emoji">🎯</span>
+            <div>
+              <h4>Trading Analyst</h4>
+              <p class="flow-mission">Protect capital & surface intelligence</p>
+            </div>
+          </div>
+          <div class="flow-node-body">
+            <div class="flow-section">
+              <div class="flow-label">INPUTS</div>
+              <div class="flow-items">
+                <span>Daily Report</span>
+                <span>HIRO Data</span>
+                <span>Pulse Log</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">TASKS</div>
+              <div class="flow-items">
+                <span>News Scans</span>
+                <span>HIRO Checks (3x)</span>
+                <span>Chart Capture</span>
+                <span>Daily Journal</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">VALUE PRODUCED</div>
+              <div class="flow-outputs">
+                <div class="flow-output">🛡️ Real-time risk alerts</div>
+                <div class="flow-output">📊 Accuracy tracking data</div>
+                <div class="flow-output">📈 Flow confirmation</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Community Manager -->
+        <div class="flow-node cm">
+          <div class="flow-node-header">
+            <span class="flow-emoji">💬</span>
+            <div>
+              <h4>Community Manager</h4>
+              <p class="flow-mission">Curate signal & track catalysts</p>
+            </div>
+          </div>
+          <div class="flow-node-body">
+            <div class="flow-section">
+              <div class="flow-label">INPUTS</div>
+              <div class="flow-items">
+                <span>22 X Accounts</span>
+                <span>News Sites</span>
+                <span>robotaxitracker.com</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">TASKS</div>
+              <div class="flow-items">
+                <span>Market Pulse (3x)</span>
+                <span>Catalyst Flagging</span>
+                <span>Member Q&A</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">VALUE PRODUCED</div>
+              <div class="flow-outputs">
+                <div class="flow-output">📡 High-signal news feed</div>
+                <div class="flow-output">📅 Updated catalyst calendar</div>
+                <div class="flow-output">💬 Community engagement</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Creator -->
+        <div class="flow-node cc">
+          <div class="flow-node-header">
+            <span class="flow-emoji">✍️</span>
+            <div>
+              <h4>Content Creator</h4>
+              <p class="flow-mission">Turn analysis into authority</p>
+            </div>
+          </div>
+          <div class="flow-node-body">
+            <div class="flow-section">
+              <div class="flow-label">INPUTS</div>
+              <div class="flow-items">
+                <span>Daily Report</span>
+                <span>Pulse Log</span>
+                <span>Journal</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">TASKS</div>
+              <div class="flow-items">
+                <span>Morning Brief</span>
+                <span>Tweet Drafts (3x)</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">VALUE PRODUCED</div>
+              <div class="flow-outputs">
+                <div class="flow-output">🎯 Public accuracy proof</div>
+                <div class="flow-output">📣 Brand authority on X</div>
+                <div class="flow-output">🧲 Subscriber acquisition</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Research Analyst -->
+        <div class="flow-node research">
+          <div class="flow-node-header">
+            <span class="flow-emoji">📊</span>
+            <div>
+              <h4>Research Analyst</h4>
+              <p class="flow-mission">Deep thesis intelligence</p>
+            </div>
+          </div>
+          <div class="flow-node-body">
+            <div class="flow-section">
+              <div class="flow-label">INPUTS</div>
+              <div class="flow-items">
+                <span>X Accounts</span>
+                <span>robotaxitracker.com</span>
+                <span>Catalyst Calendar</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">TASKS</div>
+              <div class="flow-items">
+                <span>Weekly Deep Dive</span>
+                <span>Thesis Tracking</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">VALUE PRODUCED</div>
+              <div class="flow-outputs">
+                <div class="flow-output">🔬 FSD/Robotaxi insights</div>
+                <div class="flow-output">📋 Weekly "State of Tesla"</div>
+                <div class="flow-output">🎯 Long-term conviction</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ops -->
+        <div class="flow-node ops">
+          <div class="flow-node-header">
+            <span class="flow-emoji">⚙️</span>
+            <div>
+              <h4>Ops</h4>
+              <p class="flow-mission">Keep the machine running</p>
+            </div>
+          </div>
+          <div class="flow-node-body">
+            <div class="flow-section">
+              <div class="flow-label">INPUTS</div>
+              <div class="flow-items">
+                <span>System State</span>
+                <span>Blockers</span>
+                <span>Job Logs</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">TASKS</div>
+              <div class="flow-items">
+                <span>Daily Briefing</span>
+                <span>Health Monitoring</span>
+                <span>Dashboard Updates</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">VALUE PRODUCED</div>
+              <div class="flow-outputs">
+                <div class="flow-output">✅ Reliable automation</div>
+                <div class="flow-output">🚧 Blocker resolution</div>
+                <div class="flow-output">📈 Continuous improvement</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Justin -->
+        <div class="flow-node justin">
+          <div class="flow-node-header">
+            <span class="flow-emoji">👤</span>
+            <div>
+              <h4>Justin</h4>
+              <p class="flow-mission">Final authority & public voice</p>
+            </div>
+          </div>
+          <div class="flow-node-body">
+            <div class="flow-section">
+              <div class="flow-label">INPUTS</div>
+              <div class="flow-items">
+                <span>Drafts via Telegram</span>
+                <span>Catalyst Flags</span>
+                <span>Daily Briefing</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">TASKS</div>
+              <div class="flow-items">
+                <span>Generate Report</span>
+                <span>Approve & Post</span>
+                <span>Approve Catalysts</span>
+              </div>
+            </div>
+            <div class="flow-section">
+              <div class="flow-label">VALUE PRODUCED</div>
+              <div class="flow-outputs">
+                <div class="flow-output">📋 Daily Flacko Report</div>
+                <div class="flow-output">📣 Published X content</div>
+                <div class="flow-output">✅ Quality control</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

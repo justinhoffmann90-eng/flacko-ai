@@ -1,0 +1,91 @@
+{
+  "report": {
+    "filename": "TSLA_Daily_Report_2026-01-28.md",
+    "date": "2026-01-28",
+    "size": 14587,
+    "modified": 1769639510
+  },
+  "keyLevels": {
+    "exists": true,
+    "modified": 1769639510,
+    "data": {
+  "reportDate": "2026-01-28",
+  "levels": [
+  {
+    "price": 500,
+    "level": "Call Wall",
+    "emoji": "🎯",
+    "action": "Trim heavily"
+  },
+  {
+    "price": 473,
+    "level": "Mark Newton Resistance",
+    "emoji": "📈",
+    "action": "Trim heavily"
+  },
+  {
+    "price": 460,
+    "level": "Mark Newton Resistance",
+    "emoji": "📈",
+    "action": "Trim lightly"
+  },
+  {
+    "price": 450,
+    "level": "Round number / Momentum",
+    "emoji": "⚡",
+    "action": "Watch for continuation"
+  },
+  {
+    "price": 442.25,
+    "level": "Weekly 9 EMA",
+    "emoji": "🛡️",
+    "action": "Nibble zone - now support"
+  },
+  {
+    "price": 440,
+    "level": "Key Gamma Strike",
+    "emoji": "⚡",
+    "action": "Quality dip buy"
+  },
+  {
+    "price": 438.07,
+    "level": "Weekly 13 EMA",
+    "emoji": "🛡️",
+    "action": "Nibble zone"
+  },
+  {
+    "price": 435,
+    "level": "Hedge Wall",
+    "emoji": "⚠️",
+    "action": "Caution - if lost, pause"
+  },
+  {
+    "price": 424.95,
+    "level": "Weekly 21 EMA",
+    "emoji": "⚠️",
+    "action": "Assess carefully"
+  },
+  {
+    "price": 400,
+    "level": "Put Wall / Master Eject",
+    "emoji": "❌",
+    "action": "Exit all"
+  }
+],
+  "quickReference": {
+    "masterEject": 400,
+    "callWall": 500,
+    "keyGammaStrike": 440,
+    "hedgeWall": 435
+  },
+  "gammaRegime": "Positive - Price is ABOVE Key Gamma Strike ($440) — stabilizing, mean-reverting price action",
+  "lastUpdated": "2026-01-28T22:31:50-06:00",
+  "source": "TSLA_Daily_Report_2026-01-28.md - Alert Levels table (auto-extracted)"
+}
+  },
+  "priceMonitor": {
+    "status": "unknown",
+    "lastRun": "unknown"
+  },
+  "timestamp": 1769639510
+}

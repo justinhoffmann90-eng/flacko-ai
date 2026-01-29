@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clawd Command Center — Report System</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo span { font-size: 2rem; }
+    .logo h1 { font-size: 1.4rem; font-weight: 600; }
+
+    nav { display: flex; gap: 15px; flex-wrap: wrap; }
+    nav a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+    nav a.active { color: #fff; background: rgba(96,165,250,0.2); }
+
+    .page-title { margin-bottom: 25px; }
+    .page-title h2 { font-size: 1.5rem; margin-bottom: 5px; }
+    .page-title p { color: rgba(255,255,255,0.5); font-size: 0.9rem; }
+
+    .section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title h3 { font-size: 1.1rem; }
+    .section-title .icon { font-size: 1.3rem; }
+
+    /* Folder Tree */
+    .folder-tree {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      padding: 20px 25px;
+      overflow-x: auto;
+    }
+
+    .folder-tree .folder { color: #60a5fa; }
+    .folder-tree .file { color: #fbbf24; }
+    .folder-tree .source-truth { color: #4ade80; font-weight: 600; }
+    .folder-tree .comment { color: rgba(255,255,255,0.4); font-style: italic; }
+    .folder-tree .highlight { background: rgba(96,165,250,0.2); padding: 2px 6px; border-radius: 4px; }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card h4 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card p, .card li {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .card ul {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .card li {
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .card li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #60a5fa;
+    }
+
+    /* Flow Diagram */
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 30px 20px;
+      flex-wrap: wrap;
+    }
+
+    .flow-box {
+      background: rgba(96,165,250,0.1);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: 10px;
+      padding: 15px 20px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .flow-box.source { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); }
+    .flow-box.process { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); }
+    .flow-box.output { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.3); }
+
+    .flow-box .icon { font-size: 1.5rem; margin-bottom: 8px; }
+    .flow-box .label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .flow-box .detail { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+    .flow-arrow {
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 12px 15px;
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-weight: 600;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .data-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.7);
+    }
+
+    .data-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .data-table code {
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    /* Tags */
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .tag.green { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .tag.blue { background: rgba(96,165,250,0.2); color: #60a5fa; }
+    .tag.yellow { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .tag.purple { background: rgba(168,85,247,0.2); color: #a855f7; }
+
+    /* Checklist */
+    .checklist {
+      list-style: none;
+    }
+
+    .checklist li {
+      padding: 10px 15px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .checklist .step-num {
+      background: rgba(96,165,250,0.2);
+      color: #60a5fa;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .checklist .step-content { flex: 1; }
+    .checklist .step-content strong { color: #fff; }
+    .checklist .step-content span { color: rgba(255,255,255,0.6); }
+
+    /* Code Block */
+    .code-block {
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      padding: 15px 20px;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      margin-top: 15px;
+    }
+
+    .code-block .cmd { color: #4ade80; }
+    .code-block .comment { color: rgba(255,255,255,0.4); }
+
+    /* Alert Box */
+    .alert {
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 10px;
+      padding: 15px 20px;
+      margin-top: 15px;
+    }
+
+    .alert h5 {
+      color: #f87171;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert p {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span>⚔️</span>
+        <h1>Command Center</h1>
+      </div>
+      <nav>
+        <a href="index.html">Dashboard</a>
+        <a href="workflow.html">Workflow</a>
+        <a href="flow.html">Data Flow</a>
+        <a href="roles.html">Roles</a>
+        <a href="report.html" class="active">Report</a>
+      </nav>
+    </header>
+
+    <div class="page-title">
+      <h2>📊 Daily Report System</h2>
+      <p>Complete documentation for the Flacko AI daily trading report pipeline</p>
+    </div>
+
+    <!-- Folder Structure Overview -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">📁</span>
+        <h3>File System Overview</h3>
+      </div>
+      
+      <div class="folder-tree">
+<span class="folder">~/trading_inputs/</span> <span class="comment">← All trading data lives here</span>
+│
+├── <span class="folder">daily-reports/</span> <span class="comment">← Report markdown files</span>
+│   ├── <span class="file source-truth">YYYY-MM-DD.md</span> <span class="comment">← ⭐ SOURCE OF TRUTH (latest = today's report)</span>
+│   ├── <span class="file">2026-01-27.md</span>
+│   ├── <span class="file">2026-01-26.md</span>
+│   └── <span class="file">...</span>
+│
+├── <span class="file highlight">key_levels.json</span> <span class="comment">← Alert levels (extracted from report)</span>
+│
+├── <span class="folder">FlowPatrol/</span> <span class="comment">← SpotGamma PDFs</span>
+│   └── <span class="file">YYYY-MM-DD.pdf</span>
+│
+└── <span class="folder">screenshots/</span> <span class="comment">← Trading screenshots</span>
+    └── <span class="folder">YYYY-MM-DD/</span>
+        ├── <span class="file">TSLA-weekly.png</span>
+        ├── <span class="file">TSLA-daily.png</span>
+        └── <span class="file">...</span>
+
+<span class="folder">~/clawd/dashboard/</span> <span class="comment">← Command Center</span>
+│
+├── <span class="file">verification.json</span> <span class="comment">← Dashboard key levels copy</span>
+└── <span class="file">data.json</span> <span class="comment">← Dashboard state</span>
+
+<span class="folder">Web (flacko.ai)</span>
+│
+├── <span class="file">/report</span> <span class="comment">← Public report page (pulls from Supabase)</span>
+└── <span class="file">/api/report</span> <span class="comment">← Report API endpoint</span>
+
+<span class="folder">Supabase</span>
+│
+├── <span class="file">daily_reports</span> <span class="comment">← Report table (date, mode, tier, content)</span>
+└── <span class="file">system_config</span> <span class="comment">← Alert system status</span>
+      </div>
+    </div>
+
+    <!-- Data Flow -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">🔄</span>
+        <h3>Report Data Flow</h3>
+      </div>
+      
+      <div class="flow-diagram">
+        <div class="flow-box source">
+          <div class="icon">📝</div>
+          <div class="label">Justin Writes</div>
+          <div class="detail">.md file</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box process">
+          <div class="icon">📤</div>
+          <div class="label">Upload</div>
+          <div class="detail">flacko.ai/report</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">
+          <div class="icon">🗄️</div>
+          <div class="label">Supabase</div>
+          <div class="detail">daily_reports</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box output">
+          <div class="icon">🌐</div>
+          <div class="label">Live Site</div>
+          <div class="detail">flacko.ai/report</div>
+        </div>
+      </div>
+
+      <div class="flow-diagram" style="margin-top: 20px;">
+        <div class="flow-box source">
+          <div class="icon">📄</div>
+          <div class="label">.md File</div>
+          <div class="detail">Alert Levels table</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box process">
+          <div class="icon">⚔️</div>
+          <div class="label">Trunks</div>
+          <div class="detail">Extracts levels</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">
+          <div class="icon">📊</div>
+          <div class="label">key_levels.json</div>
+          <div class="detail">~/trading_inputs/</div>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box output">
+          <div class="icon">🚨</div>
+          <div class="label">Price Alerts</div>
+          <div class="detail">Discord #alerts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Files Reference -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">📋</span>
+        <h3>Key Files Reference</h3>
+      </div>
+      
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Location</th>
+            <th>Purpose</th>
+            <th>Updated By</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>YYYY-MM-DD.md</code></td>
+            <td><code>~/trading_inputs/daily-reports/</code></td>
+            <td><span class="tag green">Source of Truth</span> Daily report markdown</td>
+            <td>Justin (upload)</td>
+          </tr>
+          <tr>
+            <td><code>key_levels.json</code></td>
+            <td><code>~/trading_inputs/</code></td>
+            <td>Price alert levels for monitoring</td>
+            <td>Trunks (extracted from report)</td>
+          </tr>
+          <tr>
+            <td><code>verification.json</code></td>
+            <td><code>~/clawd/dashboard/</code></td>
+            <td>Dashboard verification data</td>
+            <td>Trunks (via update-key-levels.sh)</td>
+          </tr>
+          <tr>
+            <td><code>daily_reports</code></td>
+            <td>Supabase</td>
+            <td>Report storage for website</td>
+            <td>Justin (upload via flacko.ai)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Report Markdown Structure -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">📝</span>
+        <h3>Report Markdown Structure</h3>
+      </div>
+      
+      <div class="cards-grid">
+        <div class="card">
+          <h4>📊 Required Sections</h4>
+          <ul>
+            <li><strong>YAML Frontmatter</strong> — date, title, mode, tier</li>
+            <li><strong>Mode &amp; Tier</strong> — Trading stance and risk level</li>
+            <li><strong>Market Structure</strong> — Technical analysis</li>
+            <li><strong>Alert Levels Table</strong> — Key price levels</li>
+            <li><strong>Key Catalysts</strong> — Upcoming events</li>
+            <li><strong>Daily Strategy</strong> — Action plan</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h4>🎯 Alert Levels Table Format</h4>
+          <p>The table I extract levels from:</p>
+          <div class="code-block">
+| Level | Price | Type |
+|-------|-------|------|
+| Master Eject | $XXX | 🔴 |
+| Put Wall | $XXX | 🟠 |
+| Key Strike | $XXX | 🟢 |
+| Call Wall | $XXX | 🟡 |
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- When New Report Uploaded -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">⚡</span>
+        <h3>When a New Report is Uploaded</h3>
+      </div>
+      
+      <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+        This is my mandatory checklist when Justin uploads a new report to flacko.ai:
+      </p>
+      
+      <ul class="checklist">
+        <li>
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <strong>Read the latest .md report file</strong><br>
+            <span>Location: <code>~/trading_inputs/daily-reports/</code></span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <strong>Extract ALL key levels from Alert Levels table</strong><br>
+            <span>Master Eject, Put Wall, Support, Key Strike, Call Wall, Resistance</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <strong>Update key_levels.json</strong><br>
+            <span>Location: <code>~/trading_inputs/key_levels.json</code></span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <strong>Run update-key-levels.sh</strong><br>
+            <span>Regenerates dashboard verification data</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <strong>Confirm update complete</strong><br>
+            <span>Verify levels match between report and key_levels.json</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="alert">
+        <h5>⛔ Critical Rules</h5>
+        <p>
+          • ALWAYS extract levels from the .md report's Alert Levels table — NOT from dashboard, NOT from memory<br>
+          • The report file is the source of truth — dashboard may lag behind<br>
+          • Use the levels exactly as listed in the Alert Levels table<br>
+          • ALWAYS run update-key-levels.sh after updating key_levels.json
+        </p>
+      </div>
+    </div>
+
+    <!-- Scripts Reference -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">🔧</span>
+        <h3>Scripts Reference</h3>
+      </div>
+      
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Script</th>
+            <th>Location</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>update-key-levels.sh</code></td>
+            <td><code>~/clawd/</code></td>
+            <td>Syncs key_levels.json → dashboard/verification.json</td>
+          </tr>
+          <tr>
+            <td><code>sync-catalysts-supabase.sh</code></td>
+            <td><code>~/clawd/scripts/</code></td>
+            <td>Syncs catalyst calendar to website</td>
+          </tr>
+          <tr>
+            <td><code>get-verification-data.sh</code></td>
+            <td><code>~/clawd/dashboard/</code></td>
+            <td>Fetches current verification data</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block" style="margin-top: 20px;">
+<span class="comment"># Update key levels after new report</span>
+<span class="cmd">~/clawd/update-key-levels.sh</span>
+
+<span class="comment"># Check current key levels</span>
+<span class="cmd">cat ~/trading_inputs/key_levels.json | jq</span>
+
+<span class="comment"># Find latest report</span>
+<span class="cmd">ls -la ~/trading_inputs/daily-reports/ | tail -5</span>
+      </div>
+    </div>
+
+    <!-- Quick Reference -->
+    <div class="section">
+      <div class="section-title">
+        <span class="icon">🚀</span>
+        <h3>Quick Reference</h3>
+      </div>
+      
+      <div class="cards-grid">
+        <div class="card">
+          <h4>📍 Where Things Live</h4>
+          <ul>
+            <li><strong>Reports:</strong> ~/trading_inputs/daily-reports/</li>
+            <li><strong>Key Levels:</strong> ~/trading_inputs/key_levels.json</li>
+            <li><strong>Screenshots:</strong> ~/trading_inputs/screenshots/</li>
+            <li><strong>FlowPatrol:</strong> ~/trading_inputs/FlowPatrol/</li>
+            <li><strong>Dashboard:</strong> ~/clawd/dashboard/</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h4>🌐 Web Endpoints</h4>
+          <ul>
+            <li><strong>Report Page:</strong> flacko.ai/report</li>
+            <li><strong>Report API:</strong> flacko.ai/api/report</li>
+            <li><strong>Alert Cron:</strong> flacko.ai/api/cron/check-alerts</li>
+            <li><strong>Catalysts:</strong> flacko.ai/catalysts</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h4>🔔 Alert Channels</h4>
+          <ul>
+            <li><strong>#alerts:</strong> Price alerts only</li>
+            <li><strong>#reports:</strong> New report announcements only</li>
+            <li><strong>#market-pulse:</strong> Briefs, pulse, wrap</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h4>⏰ Daily Schedule</h4>
+          <ul>
+            <li><strong>8:00a CT:</strong> Morning Brief</li>
+            <li><strong>8a-4p CT:</strong> Price monitor active</li>
+            <li><strong>~3:00p CT:</strong> Trading capture</li>
+            <li><strong>4:30p CT:</strong> EOD Wrap</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
