@@ -186,12 +186,9 @@ export default function RolesPage() {
                   <div>
                     <h4 className="text-xs uppercase text-white/40 tracking-wider mb-2">🚗 Tesla</h4>
                     <div className="flex flex-wrap gap-1">
-                      {role.sources.tesla.slice(0, 6).map((s, i) => (
+                      {role.sources.tesla.map((s, i) => (
                         <span key={i} className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">{s}</span>
                       ))}
-                      {role.sources.tesla.length > 6 && (
-                        <span className="text-xs text-white/40">+{role.sources.tesla.length - 6} more</span>
-                      )}
                     </div>
                   </div>
                 )}
@@ -219,12 +216,9 @@ export default function RolesPage() {
                   <div>
                     <h4 className="text-xs uppercase text-white/40 tracking-wider mb-2">Technicals</h4>
                     <div className="flex flex-wrap gap-1">
-                      {role.sources.technicals.slice(0, 6).map((s, i) => (
+                      {role.sources.technicals.map((s, i) => (
                         <span key={i} className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">{s}</span>
                       ))}
-                      {role.sources.technicals.length > 6 && (
-                        <span className="text-xs text-white/40">+{role.sources.technicals.length - 6} more</span>
-                      )}
                     </div>
                   </div>
                 )}
