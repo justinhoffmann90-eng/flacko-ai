@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft, FolderTree, ArrowRight, FileText, Database, Globe, Bell, Terminal, Clock } from "lucide-react";
+import { FolderTree, ArrowRight, FileText, Globe, Bell, Terminal, Clock } from "lucide-react";
 
 // Folder structure data
 const folderStructure = [
@@ -78,24 +78,33 @@ const quickRef = {
 
 export default function ReportSystemPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link 
-            href="/admin/command-center" 
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-3">
-              <span className="text-2xl">📊</span>
-              Daily Report System
-            </h1>
-            <p className="text-white/50 text-sm mt-1">Complete documentation for the Flacko AI daily trading report pipeline</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">📊</span>
+              <div>
+                <h1 className="text-xl font-semibold text-white">Report System</h1>
+                <p className="text-xs text-white/50">Daily trading report pipeline documentation</p>
+              </div>
+            </div>
+            
+            <nav className="flex gap-2">
+              <Link href="/admin" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Admin</Link>
+              <Link href="/admin/command-center" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Dashboard</Link>
+              <Link href="/admin/command-center/flow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Flow</Link>
+              <Link href="/admin/command-center/discord" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Discord</Link>
+              <Link href="/admin/command-center/roles" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Roles</Link>
+              <Link href="/admin/command-center/workflow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Workflow</Link>
+              <Link href="/admin/command-center/report" className="px-3 py-1.5 text-sm text-white bg-white/10 rounded-lg">Report</Link>
+            </nav>
           </div>
         </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-6">
 
         {/* Folder Structure */}
         <Card className="bg-white/[0.02] border-white/10 p-6 mb-6">
@@ -374,7 +383,7 @@ export default function ReportSystemPage() {
             </ul>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
