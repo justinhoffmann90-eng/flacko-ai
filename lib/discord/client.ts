@@ -3,6 +3,7 @@
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const DISCORD_REPORTS_WEBHOOK_URL = process.env.DISCORD_REPORTS_WEBHOOK_URL;
+const DISCORD_ALERTS_WEBHOOK_URL = process.env.DISCORD_ALERTS_WEBHOOK_URL;
 
 export interface DiscordEmbed {
   title?: string;
@@ -47,6 +48,37 @@ export async function sendDiscordMessage(message: DiscordMessage): Promise<boole
     return true;
   } catch (error) {
     console.error("Error sending Discord message:", error);
+    return false;
+  }
+}
+
+// Send alert to #alerts channel (price alerts, mode changes, etc.)
+export async function sendAlertMessage(message: DiscordMessage): Promise<boolean> {
+  // Use dedicated alerts webhook, fall back to generic webhook
+  const webhookUrl = DISCORD_ALERTS_WEBHOOK_URL || DISCORD_WEBHOOK_URL;
+  
+  if (!webhookUrl) {
+    console.error("No Discord webhook URL configured for alerts");
+    return false;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+
+    if (!response.ok) {
+      console.error(`Discord alerts webhook error: ${response.status}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error sending Discord alert:", error);
     return false;
   }
 }

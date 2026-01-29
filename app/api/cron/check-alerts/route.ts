@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchRealtimePrice } from "@/lib/price/fetcher";
-import { sendDiscordMessage } from "@/lib/discord/client";
+import { sendAlertMessage } from "@/lib/discord/client";
 import { getAlertDiscordMessage } from "@/lib/discord/templates";
 import { TrafficLightMode, ReportAlert } from "@/types";
 
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
       positioning: extractedData?.positioning?.posture || "",
     });
 
-    const discordSent = await sendDiscordMessage(discordMessage);
+    const discordSent = await sendAlertMessage(discordMessage);
 
     // Create in-app notifications for all affected users
     const userIds = new Set(triggeredAlerts.map((a) => a.user_id));
