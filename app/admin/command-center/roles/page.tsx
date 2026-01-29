@@ -18,6 +18,8 @@ interface Role {
   rules: string[];
   channels?: string[];
   sources?: {
+    primary?: string[];
+    tesla?: string[];
     breakingNews?: string[];
     flowPositioning?: string[];
     technicals?: string[];
@@ -179,7 +181,20 @@ export default function RolesPage() {
             </div>
 
             {role.sources && (
-              <div className="p-5 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-5 border-t border-white/10 grid grid-cols-2 md:grid-cols-5 gap-4">
+                {role.sources.tesla && (
+                  <div>
+                    <h4 className="text-xs uppercase text-white/40 tracking-wider mb-2">🚗 Tesla</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {role.sources.tesla.slice(0, 6).map((s, i) => (
+                        <span key={i} className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">{s}</span>
+                      ))}
+                      {role.sources.tesla.length > 6 && (
+                        <span className="text-xs text-white/40">+{role.sources.tesla.length - 6} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {role.sources.breakingNews && (
                   <div>
                     <h4 className="text-xs uppercase text-white/40 tracking-wider mb-2">Breaking News</h4>

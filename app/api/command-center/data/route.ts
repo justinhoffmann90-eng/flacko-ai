@@ -109,7 +109,8 @@ const rolesData = {
       channels: ["#market-pulse", "#general", "DMs"],
       output: ["News digests", "Q&A responses", "Catalyst updates", "Notion/Supabase sync"],
       sources: {
-        breakingNews: ["@DeItaone", "@elonmusk", "@robotaxi", "Yahoo Finance", "CNBC", "Reuters"],
+        tesla: ["@elonmusk", "@Tesla", "@SawyerMerritt", "@robotaxi", "@garyblack00", "@tesla_optimus", "@tesla_ai", "@alojoh", "@Tesla_App_iOS", "@ethanmckanna", "robotaxitracker.com"],
+        breakingNews: ["@DeItaone", "Yahoo Finance", "CNBC", "Reuters"],
         flowPositioning: ["@spotgamma", "@unusual_whales", "@VolSignals", "@Mr_Derivatives"],
         technicals: ["@MarkNewtonCMT", "@NorthmanTrader", "@macrocharts", "@TheChartReport", "@AlfCharts", "@SubuTrade", "@JC_ParetsX", "@_rob_anderson", "@sstrazza", "@TraderStewie", "@PeterLBrandt"],
         macroSentiment: ["@LizAnnSonders", "@RyanDetrick", "@TicTocTick", "@StockMktTV"]
