@@ -108,6 +108,27 @@ export default function ReportSystemPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-6">
 
+        {/* Spec Sheet Link */}
+        <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📋</span>
+              <div>
+                <h3 className="font-semibold">Daily Report Automation Spec</h3>
+                <p className="text-sm text-white/50">Complete technical specification for the report pipeline</p>
+              </div>
+            </div>
+            <a 
+              href="/docs/daily-report-automation.md" 
+              target="_blank"
+              className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              View Spec Sheet
+            </a>
+          </div>
+        </Card>
+
         {/* Folder Structure */}
         <Card className="bg-white/[0.02] border-white/10 p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
