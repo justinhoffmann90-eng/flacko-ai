@@ -112,9 +112,15 @@ function cleanContent(raw: string): string {
   // The second table (Tier Summary with Implication) should keep its original format
   
   // Only transform the "What It Measures" format (first table)
+  // Header
   cleaned = cleaned.replace(
     /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*What It Measures\s*\|\s*Signal\s*\|/gi,
     '| Tier | Definition | Status |'
+  );
+  // Separator (4 cols → 3 cols) - must come right after header
+  cleaned = cleaned.replace(
+    /\| Tier \| Definition \| Status \|\n\|[-:\s]+\|[-:\s]+\|[-:\s]+\|[-:\s]+\|/gi,
+    '| Tier | Definition | Status |\n|------|------------|--------|'
   );
   
   // Transform rows that have "Regime", "Trend", "Timing", "Pullback" (first table's content)
