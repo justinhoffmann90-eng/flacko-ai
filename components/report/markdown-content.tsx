@@ -104,9 +104,9 @@ function cleanContent(raw: string): string {
 
   cleaned = result.join('\n');
 
-  // Format tier names with line break for mobile: "Tier 1 (Long)" → "Long<br>(Tier 1)"
-  cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
-  cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
+  // Format "Tier N: Name" as "Name (Tier N)" - no line breaks
+  cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2 (Tier $1)');
+  cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2 (Tier $1)');
 
   // No table transformations - render tables as-is from markdown
 
