@@ -112,24 +112,20 @@ html, body {
   table-layout: auto;
 }
 
-/* All cells: allow text wrapping */
-.markdown-content th,
-.markdown-content td {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-}
-
-/* First column (Price/Tier) - keep compact */
-.markdown-content th:first-child,
-.markdown-content td:first-child {
+/* All non-last columns: shrink to fit content */
+.markdown-content th:not(:last-child),
+.markdown-content td:not(:last-child) {
+  width: 1%;
   white-space: nowrap;
 }
 
-/* Last column - let it breathe and wrap */
+/* Last column: expand to fill, allow wrapping */
 .markdown-content th:last-child,
 .markdown-content td:last-child {
+  width: auto;
   white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .markdown-content th {
