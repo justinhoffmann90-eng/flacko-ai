@@ -287,28 +287,65 @@ function extractKeyLevelsFromMarkdown(
   levelsMap: LevelMapEntry[] | undefined,
   masterEjectPrice: number
 ): ExtractedReportData['key_levels'] {
-  // Try to find specific level mentions in markdown
-  const gammaStrikeMatch = markdown.match(/(?:Key\s+)?Gamma\s+Strike[:\s]*\$?([\d.]+)/i);
-  const putWallMatch = markdown.match(/Put\s+Wall[:\s]*\$?([\d.]+)/i);
-  const callWallMatch = markdown.match(/Call\s+Wall[:\s]*\$?([\d.]+)/i);
-  const hedgeWallMatch = markdown.match(/Hedge\s+Wall[:\s]*\$?([\d.]+)/i);
-  const pauseZoneMatch = markdown.match(/Pause\s+Zone[:\s]*\$?([\d.]+)/i);
+  // Try to find specific level mentions in markdown using multiple patterns
+  // Pattern 1: "Level | $XXX" table format
+  // Pattern 2: "Level: $XXX" or "Level $XXX" inline
+  
+  const findLevelPrice = (patterns: RegExp[]): number | undefined => {
+    for (const pattern of patterns) {
+      const match = markdown.match(pattern);
+      if (match) return parseFloat(match[1]);
+    }
+    return undefined;
+  };
 
-  // Also try from levels_map
+  const gammaStrikePatterns = [
+    /(?:Key\s+)?Gamma\s+Strike\s*\|\s*\$?([\d.]+)/i,
+    /\$?([\d.]+)\s*\|\s*[^|]*Key\s+Gamma\s+Strike/i,
+    /(?:Key\s+)?Gamma\s+Strike[:\s]+\$?([\d.]+)/i,
+  ];
+  
+  const putWallPatterns = [
+    /Put\s+Wall\s*\|\s*\$?([\d.]+)/i,
+    /\$?([\d.]+)\s*\|\s*[^|]*Put\s+Wall/i,
+    /Put\s+Wall[:\s]+\$?([\d.]+)/i,
+  ];
+  
+  const callWallPatterns = [
+    /\|\s*Call\s+Wall\s*\|\s*\$?([\d.]+)/i,  // | Call Wall | $500 |
+    /Call\s+Wall\s*\|\s*\$?([\d.]+)/i,
+    /\$?([\d.]+)\s*\|\s*[^|]*Call\s+Wall/i,
+    /Call\s+Wall[:\s]+\$?([\d.]+)/i,
+  ];
+  
+  const hedgeWallPatterns = [
+    /\|\s*Hedge\s+Wall\s*\|\s*\$?([\d.]+)/i,  // | Hedge Wall | $435 |
+    /Hedge\s+Wall\s*\|\s*\$?([\d.]+)/i,
+    /\$?([\d.]+)\s*\|\s*[^|]*Hedge\s+Wall/i,
+    /Hedge\s+Wall[:\s]+\$?([\d.]+)/i,
+  ];
+  
+  const pauseZonePatterns = [
+    /Pause\s+Zone\s*[^|]*\|\s*\$?([\d.]+)/i,
+    /\$?([\d.]+)\s*\|\s*[^|]*Pause\s+Zone/i,
+    /Pause\s+Zone[:\s]+\$?([\d.]+)/i,
+  ];
+
+  // Also try from levels_map as fallback
   const fromMap = {
     gamma_strike: extractKeyLevelPrice(levelsMap, ['gamma strike', 'key gamma']),
-    put_wall: extractKeyLevelPrice(levelsMap, ['put wall', 'critical support']),
+    put_wall: extractKeyLevelPrice(levelsMap, ['put wall']),
     call_wall: extractKeyLevelPrice(levelsMap, ['call wall']),
     hedge_wall: extractKeyLevelPrice(levelsMap, ['hedge wall']),
     pause_zone: extractKeyLevelPrice(levelsMap, ['pause zone', 'daily 21 ema']),
   };
 
   return {
-    gamma_strike: gammaStrikeMatch ? parseFloat(gammaStrikeMatch[1]) : fromMap.gamma_strike,
-    put_wall: putWallMatch ? parseFloat(putWallMatch[1]) : fromMap.put_wall,
-    call_wall: callWallMatch ? parseFloat(callWallMatch[1]) : fromMap.call_wall,
-    hedge_wall: hedgeWallMatch ? parseFloat(hedgeWallMatch[1]) : fromMap.hedge_wall,
-    pause_zone: pauseZoneMatch ? parseFloat(pauseZoneMatch[1]) : fromMap.pause_zone,
+    gamma_strike: findLevelPrice(gammaStrikePatterns) || fromMap.gamma_strike,
+    put_wall: findLevelPrice(putWallPatterns) || fromMap.put_wall,
+    call_wall: findLevelPrice(callWallPatterns) || fromMap.call_wall,
+    hedge_wall: findLevelPrice(hedgeWallPatterns) || fromMap.hedge_wall,
+    pause_zone: findLevelPrice(pauseZonePatterns) || fromMap.pause_zone,
     master_eject: masterEjectPrice,
   };
 }
@@ -320,11 +357,15 @@ function extractHIROFromMarkdown(markdown: string): ExtractedReportData['hiro'] 
   
   if (!hiroMatch) return undefined;
 
+  // Parse value and normalize to millions
   const parseValue = (num: string, unit?: string): number => {
     let val = parseFloat(num);
-    if (unit?.toUpperCase() === 'B') val *= 1000;
-    if (unit?.toUpperCase() === 'K') val /= 1000;
-    return val; // Returns in millions
+    const u = unit?.toUpperCase();
+    if (u === 'B') val *= 1000; // Billions → millions
+    // M is already in millions, K would be thousands
+    if (u === 'K') val /= 1000; // Thousands → millions
+    // If no unit, assume millions
+    return val;
   };
 
   return {
@@ -516,13 +557,16 @@ function extractFromFrontmatter(
   }
 
   // Build consolidated key_levels object for email templates
+  // Check frontmatter fields, then levels_map, then fall back to markdown extraction
+  const markdownKeyLevels = extractKeyLevelsFromMarkdown(markdown, levels_map, master_eject.price);
+  
   const key_levels = {
-    hedge_wall: extractKeyLevelPrice(levels_map, ['hedge wall', 'hedgewall']),
-    gamma_strike: key_gamma_strike || extractKeyLevelPrice(levels_map, ['gamma strike', 'key gamma']),
-    put_wall: extractKeyLevelPrice(levels_map, ['put wall', 'putwall', 'critical support']),
-    call_wall: extractKeyLevelPrice(levels_map, ['call wall', 'callwall']),
+    hedge_wall: extractKeyLevelPrice(levels_map, ['hedge wall', 'hedgewall']) || markdownKeyLevels?.hedge_wall,
+    gamma_strike: key_gamma_strike || extractKeyLevelPrice(levels_map, ['gamma strike', 'key gamma']) || markdownKeyLevels?.gamma_strike,
+    put_wall: extractKeyLevelPrice(levels_map, ['put wall', 'putwall']) || markdownKeyLevels?.put_wall,
+    call_wall: extractKeyLevelPrice(levels_map, ['call wall', 'callwall']) || markdownKeyLevels?.call_wall,
     master_eject: master_eject.price,
-    pause_zone: pause_zone || extractKeyLevelPrice(levels_map, ['pause zone', 'daily 21 ema']),
+    pause_zone: pause_zone || extractKeyLevelPrice(levels_map, ['pause zone', 'daily 21 ema']) || markdownKeyLevels?.pause_zone,
   };
 
   return {
