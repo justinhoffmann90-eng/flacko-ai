@@ -5,25 +5,25 @@ import { formatPrice, formatPercent } from "@/lib/utils";
 const modeDescriptions: Record<TrafficLightMode, { emoji: string; cap: string; guidance: string }> = {
   green: {
     emoji: "🟢",
-    cap: "Full position (20%)",
+    cap: "up to 25%",
     guidance: "Favorable conditions for swing entries. Consider adding on dips to key levels.",
   },
   yellow: {
     emoji: "🟡", 
-    cap: "Reduced (15%)",
+    cap: "15% or less",
     guidance: "Proceed with caution. Tighter stops, smaller positions. Wait for clearer signals.",
   },
   red: {
     emoji: "🔴",
-    cap: "Minimal (10%)",
-    guidance: "Defensive stance. Protect capital. Only trade with tight risk management.",
+    cap: "5% or less",
+    guidance: "Defensive stance. Protect capital. Nibbles only at extreme support.",
   },
 };
 
 // Orange mode (between yellow and red)
 const orangeMode = {
   emoji: "🟠",
-  cap: "10% daily cap",
+  cap: "10% or less",
   guidance: "Elevated caution. Respect key levels. Size positions conservatively.",
 };
 

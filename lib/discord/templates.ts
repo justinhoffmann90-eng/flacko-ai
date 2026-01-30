@@ -36,10 +36,10 @@ function getColorEmoji(signal: string): string {
 
 // Mode descriptions for Discord alerts
 const modeGuidance: Record<string, { cap: string; guidance: string }> = {
-  green: { cap: "20% daily cap", guidance: "Favorable conditions for swing entries." },
-  yellow: { cap: "15% daily cap", guidance: "Proceed with caution. Tighter stops." },
-  orange: { cap: "10% daily cap", guidance: "Elevated caution. Respect key levels. Size positions conservatively." },
-  red: { cap: "10% daily cap", guidance: "Defensive stance. Protect capital." },
+  green: { cap: "up to 25%", guidance: "Favorable conditions for swing entries." },
+  yellow: { cap: "15% or less", guidance: "Proceed with caution. Tighter stops." },
+  orange: { cap: "10% or less", guidance: "Elevated caution. Respect key levels. Size positions conservatively." },
+  red: { cap: "5% or less", guidance: "Defensive stance. Protect capital. Nibbles only." },
 };
 
 export function getAlertDiscordMessage({
