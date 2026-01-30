@@ -530,9 +530,9 @@ export default function LandingPageV2() {
               </div>
               <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Trend intact, momentum healthy</p>
               <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
+                <li>• Daily cap: up to 25%</li>
                 <li>• Good to buy dips</li>
                 <li>• Hold with conviction</li>
-                <li>• Don't sell too fast</li>
               </ul>
             </div>
             
@@ -558,8 +558,8 @@ export default function LandingPageV2() {
               </div>
               <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Structure weakening</p>
               <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
-                <li>• Dropping daily cap to &lt;10%</li>
-                <li>• Small nibbles only</li>
+                <li>• Daily cap: 10% or less</li>
+                <li>• Pause or small nibbles only</li>
                 <li>• Preparing for potential exit</li>
               </ul>
             </div>
@@ -572,7 +572,7 @@ export default function LandingPageV2() {
               </div>
               <p className="text-[10px] md:text-xs text-zinc-400 mb-2">Structure broken or at risk</p>
               <ul className="space-y-1 text-[10px] md:text-xs text-zinc-300">
-                <li>• Dropping daily cap to 0-5%</li>
+                <li>• Daily cap: 5% or less</li>
                 <li>• Respecting Master Eject level</li>
                 <li>• Requiring evidence of bottom</li>
               </ul>
