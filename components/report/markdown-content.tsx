@@ -17,6 +17,18 @@ function cleanContent(raw: string): string {
   // Remove YAML frontmatter if present
   cleaned = cleaned.replace(/^---[\s\S]*?---\n*/m, '');
 
+  // Remove redundant "TSLA Daily Report" header (already in page title)
+  cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*\n/m, '');
+  
+  // Remove the date line that follows (e.g., "## Thursday, January 29, 2026")
+  cleaned = cleaned.replace(/^##\s*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+\w+\s+\d{1,2},?\s+\d{4}\s*\n/m, '');
+  
+  // Also remove standalone date lines
+  cleaned = cleaned.replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+\w+\s+\d{1,2},?\s+\d{4}\s*\n/m, '');
+  
+  // Remove horizontal rules that might be left orphaned at the start
+  cleaned = cleaned.replace(/^---\s*\n+/m, '');
+
   // Fix malformed tables: separator line (no leading |) followed by data rows
   // Pattern: line like "---|---|---" followed by lines starting with "|"
   const lines = cleaned.split('\n');
@@ -116,39 +128,39 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Custom table rendering
+          // Custom table rendering - mobile optimized with horizontal scroll
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="w-full border-collapse text-sm">{children}</table>
+            <div className="overflow-x-auto my-4 -mx-4 px-4 scrollbar-thin">
+              <table className="min-w-full border-collapse text-sm whitespace-nowrap">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-muted/50">{children}</thead>
+            <thead className="bg-muted/70 sticky top-0">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-border px-3 py-2 text-left font-semibold">
+            <th className="border border-border/50 px-4 py-2.5 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border px-3 py-2">{children}</td>
+            <td className="border border-border/50 px-4 py-3 whitespace-normal min-w-[100px]">{children}</td>
           ),
           tr: ({ children }) => (
-            <tr className="even:bg-muted/30">{children}</tr>
+            <tr className="even:bg-muted/20 hover:bg-muted/40 transition-colors">{children}</tr>
           ),
-          // Headers
+          // Headers - cleaner typography
           h1: ({ children }) => (
-            <h1 className="text-2xl font-bold mt-6 mb-3 text-foreground">{children}</h1>
+            <h1 className="text-xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-xl font-bold mt-6 mb-3 text-foreground border-b border-border pb-2">{children}</h2>
+            <h2 className="text-lg font-semibold mt-8 mb-3 text-foreground flex items-center gap-2">{children}</h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground">{children}</h3>
+            <h3 className="text-base font-semibold mt-5 mb-2 text-foreground/90">{children}</h3>
           ),
           // Paragraphs
           p: ({ children }) => (
-            <p className="mb-3 leading-relaxed text-foreground/90">{children}</p>
+            <p className="mb-4 leading-relaxed text-foreground/80 text-[15px]">{children}</p>
           ),
           // Lists
           ul: ({ children }) => (
@@ -183,9 +195,9 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
               </code>
             );
           },
-          // Blockquotes
+          // Blockquotes - for Flacko AI's Take sections
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/50 pl-4 py-1 my-4 bg-muted/30 italic">
+            <blockquote className="border-l-4 border-primary/60 pl-4 py-3 my-5 bg-primary/5 rounded-r-lg">
               {children}
             </blockquote>
           ),
