@@ -107,12 +107,13 @@ export interface PositionGuidance {
 export type TierSignal = 'green' | 'yellow' | 'orange' | 'red';
 
 // v3.5 tier naming: Long/Medium/Short/Hourly
+// NOTE: Tier 1-2 colors = trend health (green = healthy). Tier 3-4 colors = entry quality (green = good setup).
 export interface TierSignals {
   // v3.5 names (preferred)
-  long?: TierSignal;      // Tier 1: Weekly - Regime definition
-  medium?: TierSignal;    // Tier 2: Daily - Trend confirmation  
-  short?: TierSignal;     // Tier 3: 4H - Entry timing
-  hourly?: TierSignal;    // Tier 4: 1H - Intraday pullback zones
+  long?: TierSignal;      // Tier 1: Weekly trend — defines the game (green = healthy trend)
+  medium?: TierSignal;    // Tier 2: Daily trend — confirming or diverging? (green = healthy trend)
+  short?: TierSignal;     // Tier 3: 4H entry timing — good moment to buy? (green = good entry setup)
+  hourly?: TierSignal;    // Tier 4: 1H pullback — at a buy zone? (green = at pullback zone)
   // Legacy v3.0 names (for backwards compatibility)
   regime?: TierSignal;
   trend?: TierSignal;
