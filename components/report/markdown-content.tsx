@@ -128,7 +128,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Custom table rendering - fit on screen, no horizontal scroll
+          // Custom table rendering - clean and simple
           table: ({ children }) => (
             <div className="my-4">
               <table className="w-full border-collapse">{children}</table>
@@ -138,12 +138,12 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             <thead className="bg-muted/50">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-border/50 px-2 py-1.5 text-left font-semibold text-[10px] uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+            <th className="border border-border/50 px-2 py-2 text-left font-medium text-[10px] uppercase tracking-wide text-muted-foreground">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border/50 px-2 py-1.5 text-[11px] leading-snug align-top">{children}</td>
+            <td className="border border-border/50 px-2 py-2">{children}</td>
           ),
           tr: ({ children }) => (
             <tr className="even:bg-muted/20 hover:bg-muted/40 transition-colors">{children}</tr>

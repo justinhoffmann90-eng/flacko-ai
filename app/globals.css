@@ -108,24 +108,35 @@ html, body {
 }
 
 .markdown-content table {
-  @apply w-full;
-  table-layout: auto;
+  @apply w-full text-[11px] leading-snug;
+  table-layout: fixed;
 }
 
-/* All non-last columns: shrink to fit content */
-.markdown-content th:not(:last-child),
-.markdown-content td:not(:last-child) {
-  width: 1%;
+/* Headers - compact */
+.markdown-content th {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Last column: expand to fill, allow wrapping */
-.markdown-content th:last-child,
-.markdown-content td:last-child {
-  width: auto;
-  white-space: normal;
+/* All cells wrap by default */
+.markdown-content td {
+  vertical-align: top;
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+/* First column - compact, bold */
+.markdown-content th:first-child,
+.markdown-content td:first-child {
+  width: 15%;
+  font-weight: 500;
+}
+
+/* Last column - most space for text */
+.markdown-content th:last-child,
+.markdown-content td:last-child {
+  width: 45%;
 }
 
 .markdown-content th {
