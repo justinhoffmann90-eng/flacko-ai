@@ -74,13 +74,19 @@ export async function GET(request: Request) {
     // Fetch current TSLA price
     const currentPrice = await fetchRealtimePrice();
 
-    // Update system config with last price
+    // Update system config with last price and pending alert count
+    const { data: pendingCount } = await supabase
+      .from("report_alerts")
+      .select("id", { count: "exact", head: true })
+      .is("triggered_at", null);
+    
     const configToSave = {
       key: "alert_system_status",
       value: {
         enabled: true,
         last_run: new Date().toISOString(),
         last_price: currentPrice,
+        pending_alerts: pendingCount || 0,
       },
     };
     await (supabase.from("system_config") as unknown as { upsert: (data: typeof configToSave) => Promise<unknown> })
