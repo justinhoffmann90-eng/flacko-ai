@@ -2,6 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface MarkdownContentProps {
   content: string;
@@ -101,9 +102,11 @@ function cleanContent(raw: string): string {
 
   cleaned = result.join('\n');
 
-  // Format "Tier N: Name" as "Name (Tier N)" and "Tier N (Name)" as "Name (Tier N)"
-  cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2 (Tier $1)');
-  cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2 (Tier $1)');
+  // Format "Tier N: Name" as "Name<br>(Tier N)" with line break for mobile
+  cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
+  cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
+  // Also handle already-formatted "Name (Tier N)" → "Name<br>(Tier N)"
+  cleaned = cleaned.replace(/(\w+)\s+\(Tier\s+(\d+)\)/g, '$1<br>(Tier $2)');
 
   // Format indicator detail headers - simple text replacements
   cleaned = cleaned.replace(/Regime \(Tier 1\) \(Weekly\)/g, 'Regime (Tier 1) - Weekly');
@@ -203,6 +206,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
     <div className="markdown-content">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           // Table with type detection for custom styling
           table: ({ children }) => {
@@ -214,10 +218,10 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             );
           },
           thead: ({ children }) => (
-            <thead className="bg-muted/50">{children}</thead>
+            <thead className="bg-muted">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-border/50 px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-muted-foreground">
+            <th className="border border-border px-3 py-2 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground">
               {children}
             </th>
           ),
