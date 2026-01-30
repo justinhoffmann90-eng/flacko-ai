@@ -114,6 +114,61 @@ function cleanContent(raw: string): string {
   // Change "Per-Trade Size" to "Bullet Size"
   cleaned = cleaned.replace(/Per-Trade Size/gi, 'Bullet Size');
 
+  // Remove PRICE TARGET column from Gameplan table
+  // Find table with SCENARIO header and remove 3rd column
+  const gameplanTableRegex = /(\|[^|]*SCENARIO[^|]*\|[^|]*\|)[^|]*PRICE\s*TARGET[^|]*(\|[^|]*\|)\n(\|[-:\s|]+\|[-:\s|]+)\|[-:\s]+(\|[-:\s|]+\|)/gi;
+  cleaned = cleaned.replace(gameplanTableRegex, '$1$2\n$3$4');
+  
+  // Also remove the 3rd column from data rows in Gameplan table
+  // This is tricky - we need to process line by line after detecting the table
+  const lines2 = cleaned.split('\n');
+  let inGameplanTable = false;
+  const result2: string[] = [];
+  
+  for (let i = 0; i < lines2.length; i++) {
+    const line = lines2[i];
+    
+    // Detect Gameplan table header
+    if (/SCENARIO/i.test(line) && /WHAT\s*TRIGGERS/i.test(line) && /YOUR\s*RESPONSE/i.test(line)) {
+      inGameplanTable = true;
+      // Remove 3rd column from header
+      const cols = line.split('|').filter(c => c.trim() !== '');
+      if (cols.length >= 4) {
+        cols.splice(2, 1); // Remove 3rd column (index 2)
+        result2.push('| ' + cols.join(' | ') + ' |');
+        continue;
+      }
+    }
+    
+    // If in Gameplan table and this is a table row
+    if (inGameplanTable && line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      const cols = line.split('|').filter(c => c !== '');
+      if (cols.length >= 4) {
+        cols.splice(2, 1); // Remove 3rd column
+        result2.push('|' + cols.join('|') + '|');
+        continue;
+      }
+      // If separator row or other
+      if (/^[\|\s-:]+$/.test(line.trim())) {
+        const parts = line.split('|').filter(p => p !== '');
+        if (parts.length >= 4) {
+          parts.splice(2, 1);
+          result2.push('|' + parts.join('|') + '|');
+          continue;
+        }
+      }
+    }
+    
+    // Detect end of table
+    if (inGameplanTable && line.trim() !== '' && !line.trim().startsWith('|')) {
+      inGameplanTable = false;
+    }
+    
+    result2.push(line);
+  }
+  
+  cleaned = result2.join('\n');
+
   // Clean up excessive blank lines
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
 
