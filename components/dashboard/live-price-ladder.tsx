@@ -116,12 +116,12 @@ export function LivePriceLadder({
 
   const renderLevel = (level: LevelMapEntry, idx: number) => {
     const isAbovePrice = level.price > currentPrice;
-    const isPauseZone = level.level.toLowerCase().includes('pause') || level.type === 'pause';
+    const isSlowZone = level.level.toLowerCase().includes('slow') || level.level.toLowerCase().includes('pause') || level.type === 'pause';
     const isCritical = level.level.toLowerCase().includes('critical') || level.level.toLowerCase().includes('put wall');
     
     // Determine colors based on position relative to price
     let colorClass = isAbovePrice ? 'green' : 'blue';
-    if (isPauseZone) colorClass = 'amber';
+    if (isSlowZone) colorClass = 'amber';
     else if (isCritical) colorClass = 'yellow';
     
     const colors: Record<string, { bg: string; border: string; text: string; icon: string }> = {

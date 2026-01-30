@@ -337,7 +337,7 @@ function extractKeyLevelsFromMarkdown(
     put_wall: extractKeyLevelPrice(levelsMap, ['put wall']),
     call_wall: extractKeyLevelPrice(levelsMap, ['call wall']),
     hedge_wall: extractKeyLevelPrice(levelsMap, ['hedge wall']),
-    pause_zone: extractKeyLevelPrice(levelsMap, ['pause zone', 'daily 21 ema']),
+    pause_zone: extractKeyLevelPrice(levelsMap, ['slow zone', 'pause zone', 'daily 21 ema']),
   };
 
   return {
@@ -345,7 +345,7 @@ function extractKeyLevelsFromMarkdown(
     put_wall: findLevelPrice(putWallPatterns) || fromMap.put_wall,
     call_wall: findLevelPrice(callWallPatterns) || fromMap.call_wall,
     hedge_wall: findLevelPrice(hedgeWallPatterns) || fromMap.hedge_wall,
-    pause_zone: findLevelPrice(pauseZonePatterns) || fromMap.pause_zone,
+    pause_zone: findLevelPrice([...pauseZonePatterns, 'slow zone']) || fromMap.pause_zone,
     master_eject: masterEjectPrice,
   };
 }
@@ -566,7 +566,7 @@ function extractFromFrontmatter(
     put_wall: extractKeyLevelPrice(levels_map, ['put wall', 'putwall']) || markdownKeyLevels?.put_wall,
     call_wall: extractKeyLevelPrice(levels_map, ['call wall', 'callwall']) || markdownKeyLevels?.call_wall,
     master_eject: master_eject.price,
-    pause_zone: pause_zone || extractKeyLevelPrice(levels_map, ['pause zone', 'daily 21 ema']) || markdownKeyLevels?.pause_zone,
+    pause_zone: pause_zone || extractKeyLevelPrice(levels_map, ['slow zone', 'pause zone', 'daily 21 ema']) || markdownKeyLevels?.pause_zone,
   };
 
   return {
@@ -1274,7 +1274,7 @@ function generateAlertReason(levelName: string, action: string, type: 'upside' |
     return 'Moving average support/resistance — watch for trend continuation';
   }
 
-  if (name.includes('pause zone') || name.includes('pause')) {
+  if (name.includes('slow zone') || name.includes('pause zone') || name.includes('pause')) {
     return 'Momentum stalling zone — wait for clearer direction before adding';
   }
 
