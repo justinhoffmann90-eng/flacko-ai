@@ -46,10 +46,10 @@ export function formatPriceForDisplay(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-// Price IDs - update these for live mode
+// Price IDs - hardcoded to avoid env var conflicts
 export const PRICE_IDS = {
-  founder: process.env.STRIPE_PRICE_FOUNDER || "price_1Sv6zLRNdSDJbZblqWBJYnIc", // $14.99/mo
-  public: process.env.STRIPE_PRICE_PUBLIC || "price_1SuKNSRNdSDJbZblxblHmkcn",   // $29.99/mo
+  founder: "price_1Sv6zLRNdSDJbZblqWBJYnIc", // $14.99/mo
+  public: "price_1SuKNSRNdSDJbZblxblHmkcn",   // $29.99/mo
 };
 
 export async function createCheckoutSession({
