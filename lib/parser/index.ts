@@ -1436,6 +1436,24 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
     if (levelName.toLowerCase().includes('current price')) continue;
     if (levelName.toLowerCase().includes('master eject')) continue;
 
+    // Skip reference/descriptive levels (not actionable alerts)
+    // Only extract alerts with explicit action verbs
+    const actionLower = whatToDo.toLowerCase();
+    const isActionableAlert = 
+      actionLower.includes('trim') ||
+      actionLower.includes('nibble') ||
+      actionLower.includes('add') ||
+      actionLower.includes('buy') ||
+      actionLower.includes('breakout') ||
+      actionLower.includes('exit') ||
+      actionLower.includes('sell') ||
+      actionLower.includes('take profit');
+    
+    if (!isActionableAlert) {
+      // Skip reference levels like "Critical level", "Support confirmed", "Pivot", etc.
+      continue;
+    }
+
     // Split action and reason on em-dash
     let action = whatToDo;
     let explicitReason = '';
