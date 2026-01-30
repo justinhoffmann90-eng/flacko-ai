@@ -4,7 +4,7 @@ import { Header } from "@/components/dashboard/header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatPrice, formatDate } from "@/lib/utils";
+import { formatPrice, formatDateShort } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio } from "lucide-react";
 import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
@@ -175,7 +175,7 @@ export default async function DashboardPage() {
                   {mode.toUpperCase()} MODE
                 </Badge>
                 <p className="text-sm text-muted-foreground mt-3">
-                  {report ? `Latest Report: ${formatDate(report.report_date)}` : "No report yet"}
+                  {report ? `Latest Report: ${formatDateShort(report.report_date)}` : "No report yet"}
                 </p>
               </div>
               <Link href="/report">
