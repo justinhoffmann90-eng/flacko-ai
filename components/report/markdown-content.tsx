@@ -218,10 +218,10 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             );
           },
           thead: ({ children }) => (
-            <thead className="bg-muted">{children}</thead>
+            <thead className="bg-slate-700">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-border px-3 py-2 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground">
+            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-[11px] uppercase tracking-wider text-slate-200">
               {children}
             </th>
           ),
