@@ -109,6 +109,36 @@ html, body {
 
 .markdown-content table {
   @apply w-full text-sm;
+  table-layout: auto;
+}
+
+/* Smart column widths - narrow columns for short content */
+.markdown-content td:first-child,
+.markdown-content th:first-child {
+  width: auto;
+  white-space: nowrap;
+}
+
+.markdown-content td:nth-child(2),
+.markdown-content th:nth-child(2) {
+  width: auto;
+  white-space: nowrap;
+}
+
+/* Signal/emoji columns - very narrow and centered */
+.markdown-content td:nth-child(3),
+.markdown-content th:nth-child(3) {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Last column (usually text/implication) - let it expand */
+.markdown-content td:last-child,
+.markdown-content th:last-child {
+  width: auto;
 }
 
 .markdown-content th {
