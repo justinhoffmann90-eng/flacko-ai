@@ -175,6 +175,27 @@ function cleanContent(raw: string): string {
   return cleaned.trim();
 }
 
+// Helper to extract text from React children
+function getTextContent(node: React.ReactNode): string {
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (!node) return '';
+  if (Array.isArray(node)) return node.map(getTextContent).join('');
+  if (typeof node === 'object' && 'props' in node) {
+    return getTextContent((node as React.ReactElement).props?.children);
+  }
+  return '';
+}
+
+// Detect table type from content
+function getTableClass(children: React.ReactNode): string {
+  const text = getTextContent(children).toLowerCase();
+  if (text.includes('tier') && text.includes('timeframe') && text.includes('signal')) {
+    return 'table-tier-summary';
+  }
+  return '';
+}
+
 export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
 
@@ -183,12 +204,15 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Simple table - let browser handle column widths
-          table: ({ children }) => (
-            <div className="my-4">
-              <table className="w-full border-collapse">{children}</table>
-            </div>
-          ),
+          // Table with type detection for custom styling
+          table: ({ children }) => {
+            const tableClass = getTableClass(children);
+            return (
+              <div className="my-4">
+                <table className={`w-full border-collapse ${tableClass}`}>{children}</table>
+              </div>
+            );
+          },
           thead: ({ children }) => (
             <thead className="bg-muted/50">{children}</thead>
           ),
