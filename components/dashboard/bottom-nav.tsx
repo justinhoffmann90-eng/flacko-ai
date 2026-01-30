@@ -54,14 +54,14 @@ export function BottomNav() {
   if (!mounted) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+        <div className="flex items-center justify-around h-20 max-w-lg mx-auto pb-2">
           {navItems.map((item) => {
             const isComingSoon = 'comingSoon' in item && item.comingSoon;
             return (
               <div
                 key={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center w-full h-full space-y-1",
+                  "flex flex-col items-center justify-center w-full h-full space-y-1 pt-2",
                   isComingSoon ? "text-muted-foreground/50" : "text-muted-foreground"
                 )}
               >
@@ -77,7 +77,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+      <div className="flex items-center justify-around h-20 max-w-lg mx-auto pb-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const isComingSoon = 'comingSoon' in item && item.comingSoon;
@@ -86,7 +86,7 @@ export function BottomNav() {
             return (
               <div
                 key={item.href}
-                className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground/50 cursor-not-allowed"
+                className="flex flex-col items-center justify-center w-full h-full space-y-1 pt-2 text-muted-foreground/50 cursor-not-allowed"
                 title="Coming Soon"
               >
                 <item.icon className="h-5 w-5" />
@@ -100,7 +100,7 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
+                "flex flex-col items-center justify-center w-full h-full space-y-1 pt-2 transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
