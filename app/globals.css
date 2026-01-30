@@ -107,6 +107,13 @@ html, body {
   @apply text-foreground;
 }
 
+/* Mode headline - make it prominent */
+.markdown-content h2:first-of-type {
+  @apply text-xl font-bold text-center py-3 px-4 mb-6 rounded-lg;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
 /* Simple table styling - let browser auto-size */
 .markdown-content table {
   @apply w-full text-[13px];
