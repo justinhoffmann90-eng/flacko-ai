@@ -191,13 +191,14 @@ export default async function DashboardPage() {
               <div className="mt-4 pt-3 border-t border-white/10">
                 <div className="grid grid-cols-4 gap-3 text-center">
                   {[
-                    { label: "Regime", signal: tiers.regime },
-                    { label: "Trend", signal: tiers.trend },
-                    { label: "Timing", signal: tiers.timing },
-                    { label: "Flow", signal: tiers.flow },
+                    { label: "Long", sublabel: "Weekly", signal: tiers.long || tiers.regime },
+                    { label: "Medium", sublabel: "Daily", signal: tiers.medium || tiers.trend },
+                    { label: "Short", sublabel: "4H Entry", signal: tiers.short || tiers.timing },
+                    { label: "Hourly", sublabel: "1H Zone", signal: tiers.hourly || tiers.flow },
                   ].map((tier) => (
                     <div key={tier.label} className="flex flex-col items-center">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">{tier.label}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{tier.label}</p>
+                      <p className="text-[8px] text-muted-foreground/70 mb-1">{tier.sublabel}</p>
                       <div className="relative">
                         <div className={`w-4 h-4 rounded-full ${tierColors[tier.signal || 'yellow']} shadow-lg`}>
                           <div className={`absolute inset-0 rounded-full ${tierColors[tier.signal || 'yellow']} animate-ping opacity-30`} />
@@ -206,6 +207,9 @@ export default async function DashboardPage() {
                     </div>
                   ))}
                 </div>
+                <p className="text-[8px] text-center text-muted-foreground/60 mt-2">
+                  Long/Medium = trend health • Short/Hourly = entry quality
+                </p>
               </div>
             )}
           </div>
