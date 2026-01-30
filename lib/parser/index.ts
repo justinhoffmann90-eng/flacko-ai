@@ -258,6 +258,12 @@ function extractData(
   const positioning = extractPositioning(markdown);
   const levels_map = extractLevelsMap(markdown);
 
+  // Extract key levels from markdown (gamma strike, put wall, etc.)
+  const key_levels = extractKeyLevelsFromMarkdown(markdown, levels_map, master_eject.price);
+
+  // Extract HIRO data from markdown
+  const hiro = extractHIROFromMarkdown(markdown);
+
   return {
     mode,
     price,
@@ -270,6 +276,61 @@ function extractData(
     tiers,
     positioning,
     levels_map,
+    key_levels,
+    hiro,
+  };
+}
+
+// Extract key levels from markdown text
+function extractKeyLevelsFromMarkdown(
+  markdown: string, 
+  levelsMap: LevelMapEntry[] | undefined,
+  masterEjectPrice: number
+): ExtractedReportData['key_levels'] {
+  // Try to find specific level mentions in markdown
+  const gammaStrikeMatch = markdown.match(/(?:Key\s+)?Gamma\s+Strike[:\s]*\$?([\d.]+)/i);
+  const putWallMatch = markdown.match(/Put\s+Wall[:\s]*\$?([\d.]+)/i);
+  const callWallMatch = markdown.match(/Call\s+Wall[:\s]*\$?([\d.]+)/i);
+  const hedgeWallMatch = markdown.match(/Hedge\s+Wall[:\s]*\$?([\d.]+)/i);
+  const pauseZoneMatch = markdown.match(/Pause\s+Zone[:\s]*\$?([\d.]+)/i);
+
+  // Also try from levels_map
+  const fromMap = {
+    gamma_strike: extractKeyLevelPrice(levelsMap, ['gamma strike', 'key gamma']),
+    put_wall: extractKeyLevelPrice(levelsMap, ['put wall', 'critical support']),
+    call_wall: extractKeyLevelPrice(levelsMap, ['call wall']),
+    hedge_wall: extractKeyLevelPrice(levelsMap, ['hedge wall']),
+    pause_zone: extractKeyLevelPrice(levelsMap, ['pause zone', 'daily 21 ema']),
+  };
+
+  return {
+    gamma_strike: gammaStrikeMatch ? parseFloat(gammaStrikeMatch[1]) : fromMap.gamma_strike,
+    put_wall: putWallMatch ? parseFloat(putWallMatch[1]) : fromMap.put_wall,
+    call_wall: callWallMatch ? parseFloat(callWallMatch[1]) : fromMap.call_wall,
+    hedge_wall: hedgeWallMatch ? parseFloat(hedgeWallMatch[1]) : fromMap.hedge_wall,
+    pause_zone: pauseZoneMatch ? parseFloat(pauseZoneMatch[1]) : fromMap.pause_zone,
+    master_eject: masterEjectPrice,
+  };
+}
+
+// Extract HIRO data from markdown
+function extractHIROFromMarkdown(markdown: string): ExtractedReportData['hiro'] | undefined {
+  // Pattern: **HIRO:** -707M (30-day range: -1.9B to +1.4B)
+  const hiroMatch = markdown.match(/HIRO[:\s]*([+-]?[\d.]+)([MBK])?(?:\s*\(30-day\s+range:\s*([+-]?[\d.]+)([MBK])?\s*to\s*([+-]?[\d.]+)([MBK])?\))?/i);
+  
+  if (!hiroMatch) return undefined;
+
+  const parseValue = (num: string, unit?: string): number => {
+    let val = parseFloat(num);
+    if (unit?.toUpperCase() === 'B') val *= 1000;
+    if (unit?.toUpperCase() === 'K') val /= 1000;
+    return val; // Returns in millions
+  };
+
+  return {
+    reading: parseValue(hiroMatch[1], hiroMatch[2]),
+    low_30day: hiroMatch[3] ? parseValue(hiroMatch[3], hiroMatch[4]) : 0,
+    high_30day: hiroMatch[5] ? parseValue(hiroMatch[5], hiroMatch[6]) : 0,
   };
 }
 
@@ -454,6 +515,16 @@ function extractFromFrontmatter(
     warnings.push("Could not extract Master Eject from frontmatter");
   }
 
+  // Build consolidated key_levels object for email templates
+  const key_levels = {
+    hedge_wall: extractKeyLevelPrice(levels_map, ['hedge wall', 'hedgewall']),
+    gamma_strike: key_gamma_strike || extractKeyLevelPrice(levels_map, ['gamma strike', 'key gamma']),
+    put_wall: extractKeyLevelPrice(levels_map, ['put wall', 'putwall', 'critical support']),
+    call_wall: extractKeyLevelPrice(levels_map, ['call wall', 'callwall']),
+    master_eject: master_eject.price,
+    pause_zone: pause_zone || extractKeyLevelPrice(levels_map, ['pause zone', 'daily 21 ema']),
+  };
+
   return {
     mode,
     price,
@@ -466,6 +537,7 @@ function extractFromFrontmatter(
     tiers,
     positioning,
     levels_map,
+    key_levels,
     // v3.5 fields
     pause_zone,
     daily_9ema,
@@ -478,6 +550,21 @@ function extractFromFrontmatter(
     hiro,
     correction_risk,
   };
+}
+
+// Helper to extract a key level price from levels_map by name patterns
+function extractKeyLevelPrice(levelsMap: LevelMapEntry[] | undefined, patterns: string[]): number | undefined {
+  if (!levelsMap) return undefined;
+  
+  for (const level of levelsMap) {
+    const levelLower = level.level.toLowerCase();
+    for (const pattern of patterns) {
+      if (levelLower.includes(pattern)) {
+        return level.price;
+      }
+    }
+  }
+  return undefined;
 }
 
 // Convert frontmatter levels array to ReportAlert objects (v3.1/v3.5)
@@ -518,12 +605,15 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type = level.price > currentPrice ? 'upside' : 'downside';
     }
 
+    // Generate contextual reason instead of just "Level type: X"
+    const reason = generateAlertReason(level.name, level.action, type);
+
     alerts.push({
       type,
       level_name: level.name,
       price: level.price,
       action: level.action,
-      reason: levelType ? `Level type: ${levelType}` : '', // Include level type in reason if available
+      reason,
     });
   }
 
@@ -1098,12 +1188,100 @@ function extractLevelsMap(markdown: string): LevelMapEntry[] | undefined {
   return levels.length > 0 ? levels : undefined;
 }
 
-function extractAlertsV3(markdown: string, warnings: string[]): ReportAlert[] | null {
-  // v3.0 format: ## 🔔 Alerts to Set
-  // Table: | Alert | Price | What It Means | Action |
-  // Rows: | 🟢 | $XXX | Level name | Action |
+// Generate better reasons based on level name and action
+function generateAlertReason(levelName: string, action: string, type: 'upside' | 'downside'): string {
+  const name = levelName.toLowerCase();
+  const act = action.toLowerCase();
 
-  // First, find the Alerts to Set section - look for it more broadly
+  // Check for explicit reason after em-dash in action
+  if (action.includes('—')) {
+    const parts = action.split('—');
+    if (parts[1]?.trim()) {
+      return parts[1].trim();
+    }
+  }
+
+  // Generate contextual reasons based on level characteristics
+  if (name.includes('gamma strike') || name.includes('key gamma')) {
+    return type === 'upside' 
+      ? 'Above gamma strike = positive gamma regime, smoother price action'
+      : 'Key dealer hedging pivot — watch for support/resistance flip';
+  }
+
+  if (name.includes('call wall')) {
+    return 'Major call option concentration — strong overhead resistance';
+  }
+
+  if (name.includes('put wall')) {
+    return 'Major put option concentration — significant support from dealer hedging';
+  }
+
+  if (name.includes('hedge wall')) {
+    return 'Dealer hedging activity concentrated here — expect price to gravitate toward this level';
+  }
+
+  if (name.includes('ema') || name.includes('moving average')) {
+    if (name.includes('weekly')) {
+      return 'Weekly trend indicator — break above/below signals regime change';
+    }
+    if (name.includes('daily') || name.includes('21')) {
+      return 'Daily momentum gauge — key for short-term trend direction';
+    }
+    return 'Moving average support/resistance — watch for trend continuation';
+  }
+
+  if (name.includes('pause zone') || name.includes('pause')) {
+    return 'Momentum stalling zone — wait for clearer direction before adding';
+  }
+
+  if (name.includes('resistance') || name.includes('newton')) {
+    return 'Technical resistance level — consider taking profits on strength';
+  }
+
+  if (name.includes('support') || name.includes('round number')) {
+    return 'Technical support level — potential bounce zone if tested';
+  }
+
+  if (name.includes('critical')) {
+    return 'Critical structural level — break could accelerate move';
+  }
+
+  // Default based on action keywords
+  if (act.includes('trim')) {
+    return 'Taking profits to lock in gains and reduce risk';
+  }
+
+  if (act.includes('nibble')) {
+    return 'Controlled accumulation opportunity — small position sizing';
+  }
+
+  if (act.includes('breakout')) {
+    return 'Breakout trigger — momentum could accelerate above this level';
+  }
+
+  if (act.includes('stop') || act.includes('caution')) {
+    return 'Risk management level — pause and reassess';
+  }
+
+  // Final fallback based on type
+  return type === 'upside' 
+    ? 'Potential profit-taking zone'
+    : 'Potential support/accumulation zone';
+}
+
+function extractAlertsV3(markdown: string, warnings: string[]): ReportAlert[] | null {
+  // Try multiple alert section formats
+
+  // Format 1: ## 🚨 Alert Levels (newer format with | Price | Level | What To Do |)
+  const alertLevelsPattern = /##\s*🚨\s*Alert\s+Levels[\s\S]*?(?=##|---\s*\n\s*#|$)/i;
+  const alertLevelsMatch = markdown.match(alertLevelsPattern);
+
+  if (alertLevelsMatch) {
+    const alerts = parseAlertLevelsTable(alertLevelsMatch[0]);
+    if (alerts.length > 0) return alerts;
+  }
+
+  // Format 2: ## 🔔 Alerts to Set (older format with | Alert | Price | What It Means | Action |)
   const sectionPattern = /##\s*🔔\s*Alerts\s+to\s+Set[\s\S]*?(?=##\s*[💡⚠️📌]|---\s*\n\s*---|$)/i;
   let sectionMatch = markdown.match(sectionPattern);
 
@@ -1154,18 +1332,102 @@ function extractAlertsV3(markdown: string, warnings: string[]): ReportAlert[] | 
 
     // Determine type: 🟢 = upside (take profit), 🔴 = downside (buy dip), 🟡 = neutral/caution
     const isDownside = emoji === '🔴';
-    const isUpside = emoji === '🟢';
+    const type: 'upside' | 'downside' = isDownside ? 'downside' : 'upside';
 
     alerts.push({
-      type: isDownside ? 'downside' : 'upside',
+      type,
       level_name: levelName,
       price,
       action,
-      reason: emoji === '🟡' ? 'Caution level' : '',
+      reason: generateAlertReason(levelName, action, type),
     });
   }
 
   if (alerts.length === 0) return null; // Fall back to old format
+
+  // Sort: upside first (descending by price), then downside (descending by price)
+  alerts.sort((a, b) => {
+    if (a.type !== b.type) {
+      return a.type === 'upside' ? -1 : 1;
+    }
+    return b.price - a.price;
+  });
+
+  return alerts;
+}
+
+// Parse the newer "Alert Levels" table format: | Price | Level | What To Do |
+function parseAlertLevelsTable(section: string): ReportAlert[] {
+  const alerts: ReportAlert[] = [];
+  const lines = section.split('\n');
+
+  // Find header line
+  const headerIdx = lines.findIndex(l => 
+    l.includes('Price') && l.includes('Level') && l.includes('What To Do')
+  );
+  
+  if (headerIdx === -1) return alerts;
+
+  // Process rows after header (skip separator)
+  for (let i = headerIdx + 2; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim() || line.trim().startsWith('#')) break;
+    if (line.includes('---')) continue;
+
+    // Match: | $460 | 🎯 Mark Newton Resistance | **Trim heavily** — reason |
+    // or: | $433 | ⏸️ **Pause Zone** (Daily 21 EMA) | **Stop adding** — reason |
+    const rowMatch = line.match(/\|\s*\$?([\d.]+)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/);
+    if (!rowMatch) continue;
+
+    const price = parseFloat(rowMatch[1]);
+    if (isNaN(price) || price <= 0) continue;
+
+    let levelName = rowMatch[2].trim()
+      .replace(/\*\*/g, '')  // Remove bold
+      .replace(/^[🎯📈⏸️🛡️⚠️❌📍]\s*/, '');  // Remove emoji prefix
+
+    const whatToDo = rowMatch[3].trim().replace(/\*\*/g, '');
+
+    // Skip current price and master eject
+    if (levelName.toLowerCase().includes('current price')) continue;
+    if (levelName.toLowerCase().includes('master eject')) continue;
+
+    // Split action and reason on em-dash
+    let action = whatToDo;
+    let explicitReason = '';
+    if (whatToDo.includes('—')) {
+      const parts = whatToDo.split('—');
+      action = parts[0].trim();
+      explicitReason = parts[1]?.trim() || '';
+    }
+
+    // Determine type from action or emoji in level name
+    const act = action.toLowerCase();
+    const originalLevel = rowMatch[2].toLowerCase();
+    
+    let type: 'upside' | 'downside';
+    if (act.includes('trim') || act.includes('breakout') || originalLevel.includes('🎯') || originalLevel.includes('📈')) {
+      type = 'upside';
+    } else if (act.includes('nibble') || act.includes('stop adding') || act.includes('support') || 
+               act.includes('pause') || act.includes('caution') || act.includes('last') ||
+               originalLevel.includes('🛡️') || originalLevel.includes('⏸️') || originalLevel.includes('⚠️')) {
+      type = 'downside';
+    } else {
+      // Default based on common keywords
+      type = originalLevel.includes('resistance') ? 'upside' : 'downside';
+    }
+
+    // Use explicit reason if available, otherwise generate one
+    const reason = explicitReason || generateAlertReason(levelName, action, type);
+
+    alerts.push({
+      type,
+      level_name: levelName,
+      price,
+      action,
+      reason,
+    });
+  }
 
   // Sort: upside first (descending by price), then downside (descending by price)
   alerts.sort((a, b) => {

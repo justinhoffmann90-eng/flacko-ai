@@ -155,6 +155,16 @@ export interface ReportPerformance {
   forecasts: ForecastPerformance[];
 }
 
+// Consolidated key levels for email templates and display
+export interface KeyLevels {
+  hedge_wall?: number;
+  gamma_strike?: number;
+  put_wall?: number;
+  call_wall?: number;
+  master_eject?: number;
+  pause_zone?: number;
+}
+
 export interface ExtractedReportData {
   mode: ReportMode;
   price: ReportPrice;
@@ -168,6 +178,8 @@ export interface ExtractedReportData {
   tiers?: TierSignals;
   positioning?: Positioning;
   levels_map?: LevelMapEntry[];
+  // Consolidated key levels (for email templates)
+  key_levels?: KeyLevels;
   // v3.5 fields
   pause_zone?: number;
   daily_9ema?: number;
