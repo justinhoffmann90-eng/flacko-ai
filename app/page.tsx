@@ -55,8 +55,10 @@ export default function LandingPageV2() {
 
       {/* Sign In Link - Top Right */}
       <div className="absolute top-4 right-6 z-40">
-        <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-300">
-          Sign in
+        <Link href="/login">
+          <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+            Sign in
+          </Button>
         </Link>
       </div>
 
