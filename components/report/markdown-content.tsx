@@ -117,53 +117,34 @@ function cleanContent(raw: string): string {
   // Change "Per-Trade Size" to "Bullet Size"
   cleaned = cleaned.replace(/Per-Trade Size/gi, 'Bullet Size');
 
-  // Remove PRICE TARGET column from Gameplan table
-  // Find table with SCENARIO header and remove 3rd column
-  const gameplanTableRegex = /(\|[^|]*SCENARIO[^|]*\|[^|]*\|)[^|]*PRICE\s*TARGET[^|]*(\|[^|]*\|)\n(\|[-:\s|]+\|[-:\s|]+)\|[-:\s]+(\|[-:\s|]+\|)/gi;
-  cleaned = cleaned.replace(gameplanTableRegex, '$1$2\n$3$4');
-  
-  // Also remove the 3rd column from data rows in Gameplan table
-  // This is tricky - we need to process line by line after detecting the table
+  // Remove PRICE TARGET column (3rd column) from Gameplan table
   const lines2 = cleaned.split('\n');
   let inGameplanTable = false;
   const result2: string[] = [];
   
   for (let i = 0; i < lines2.length; i++) {
     const line = lines2[i];
+    const trimmed = line.trim();
     
-    // Detect Gameplan table header
-    if (/SCENARIO/i.test(line) && /WHAT\s*TRIGGERS/i.test(line) && /YOUR\s*RESPONSE/i.test(line)) {
+    // Detect Gameplan table header (has Scenario and Price Target)
+    if (/Scenario/i.test(line) && /Price\s*Target/i.test(line)) {
       inGameplanTable = true;
-      // Remove 3rd column from header
-      const cols = line.split('|').filter(c => c.trim() !== '');
-      if (cols.length >= 4) {
-        cols.splice(2, 1); // Remove 3rd column (index 2)
-        result2.push('| ' + cols.join(' | ') + ' |');
+    }
+    
+    // If in Gameplan table and this is a table row with pipes
+    if (inGameplanTable && trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      // Split by | but keep structure
+      const parts = line.split('|');
+      // parts[0] is empty (before first |), parts[1] is col1, etc.
+      if (parts.length >= 5) { // 4 columns = 5 parts (empty + 4 cols + empty-ish)
+        parts.splice(3, 1); // Remove 4th element (3rd column, index 3 since [0] is empty)
+        result2.push(parts.join('|'));
         continue;
       }
     }
     
-    // If in Gameplan table and this is a table row
-    if (inGameplanTable && line.trim().startsWith('|') && line.trim().endsWith('|')) {
-      const cols = line.split('|').filter(c => c !== '');
-      if (cols.length >= 4) {
-        cols.splice(2, 1); // Remove 3rd column
-        result2.push('|' + cols.join('|') + '|');
-        continue;
-      }
-      // If separator row or other
-      if (/^[\|\s-:]+$/.test(line.trim())) {
-        const parts = line.split('|').filter(p => p !== '');
-        if (parts.length >= 4) {
-          parts.splice(2, 1);
-          result2.push('|' + parts.join('|') + '|');
-          continue;
-        }
-      }
-    }
-    
-    // Detect end of table
-    if (inGameplanTable && line.trim() !== '' && !line.trim().startsWith('|')) {
+    // Detect end of table (non-empty line that doesn't start with |)
+    if (inGameplanTable && trimmed !== '' && !trimmed.startsWith('|')) {
       inGameplanTable = false;
     }
     
