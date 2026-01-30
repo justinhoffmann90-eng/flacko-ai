@@ -102,17 +102,57 @@ function cleanContent(raw: string): string {
 
   cleaned = result.join('\n');
 
-  // Format "Tier N: Name" as "Name<br>(Tier N)" with line break for mobile
+  // Format tier names with line break for mobile: "Tier 1 (Long)" → "Long<br>(Tier 1)"
   cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
   cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
-  // Also handle already-formatted "Name (Tier N)" → "Name<br>(Tier N)"
-  cleaned = cleaned.replace(/(\w+)\s+\(Tier\s+(\d+)\)/g, '$1<br>(Tier $2)');
 
-  // Format indicator detail headers - simple text replacements
-  cleaned = cleaned.replace(/Regime \(Tier 1\) \(Weekly\)/g, 'Regime (Tier 1) - Weekly');
-  cleaned = cleaned.replace(/Trend \(Tier 2\) \(Daily\)/g, 'Trend (Tier 2) - Daily');
-  cleaned = cleaned.replace(/Timing \(Tier 3\) \(4H \+ 1H\)/g, 'Timing (Tier 3) - 4H and 1H');
-  cleaned = cleaned.replace(/Dealer \(Tier 4\) Flow/g, 'Dealer Flow (Tier 4)');
+  // Process Tier Summary table: rename headers, reorder columns (move Signal/emoji to end)
+  const tierTableLines = cleaned.split('\n');
+  let inTierTable = false;
+  const tierResult: string[] = [];
+  
+  for (let i = 0; i < tierTableLines.length; i++) {
+    const line = tierTableLines[i];
+    const trimmed = line.trim();
+    
+    // Detect Tier Summary header row
+    if (/\|\s*Tier\s*\|/i.test(line) && /Timeframe|Signal|Implication/i.test(line)) {
+      inTierTable = true;
+      // Replace with new headers: Tier | Time | Definition | Status
+      tierResult.push('| Tier | Time | Definition | Status |');
+      continue;
+    }
+    
+    // Handle separator row
+    if (inTierTable && /^\|[\s-:]+\|[\s-:]+\|[\s-:]+\|[\s-:]+\|$/.test(trimmed)) {
+      tierResult.push('|------|------|------------|--------|');
+      continue;
+    }
+    
+    // Handle data rows - swap columns 3 and 4 (Signal ↔ Implication)
+    if (inTierTable && trimmed.startsWith('|') && trimmed.endsWith('|') && !trimmed.includes('---')) {
+      const parts = line.split('|');
+      if (parts.length >= 5) {
+        // parts: ['', col1, col2, col3(signal), col4(implication), '']
+        const col1 = parts[1]; // Tier
+        const col2 = parts[2]; // Timeframe
+        const col3 = parts[3]; // Signal (emoji) - will become Status
+        const col4 = parts[4]; // Implication - will become Definition
+        // Reorder: Tier | Time | Definition | Status
+        tierResult.push(`|${col1}|${col2}|${col4}|${col3}|`);
+        continue;
+      }
+    }
+    
+    // End of table
+    if (inTierTable && trimmed !== '' && !trimmed.startsWith('|')) {
+      inTierTable = false;
+    }
+    
+    tierResult.push(line);
+  }
+  
+  cleaned = tierResult.join('\n');
 
   // Change "Per-Trade Size" to "Bullet Size"
   cleaned = cleaned.replace(/Per-Trade Size/gi, 'Bullet Size');
@@ -174,7 +214,7 @@ function getTextContent(node: React.ReactNode): string {
 // Detect table type from content
 function getTableClass(children: React.ReactNode): string {
   const text = getTextContent(children).toLowerCase();
-  if (text.includes('tier') && text.includes('timeframe') && text.includes('signal')) {
+  if (text.includes('tier') && text.includes('time') && text.includes('definition')) {
     return 'table-tier-summary';
   }
   return '';
