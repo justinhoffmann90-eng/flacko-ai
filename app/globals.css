@@ -117,14 +117,19 @@ html, body {
 .markdown-content table.table-tier-summary {
   table-layout: fixed;
 }
+.markdown-content table.table-tier-summary th,
+.markdown-content table.table-tier-summary td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
 .markdown-content table.table-tier-summary th:nth-child(1),
-.markdown-content table.table-tier-summary td:nth-child(1) { width: 20%; }
+.markdown-content table.table-tier-summary td:nth-child(1) { width: 22%; }
 .markdown-content table.table-tier-summary th:nth-child(2),
-.markdown-content table.table-tier-summary td:nth-child(2) { width: 15%; white-space: nowrap; }
+.markdown-content table.table-tier-summary td:nth-child(2) { width: 17%; }
 .markdown-content table.table-tier-summary th:nth-child(3),
-.markdown-content table.table-tier-summary td:nth-child(3) { width: 10%; text-align: center; }
+.markdown-content table.table-tier-summary td:nth-child(3) { width: 13%; text-align: center; }
 .markdown-content table.table-tier-summary th:nth-child(4),
-.markdown-content table.table-tier-summary td:nth-child(4) { width: 55%; }
+.markdown-content table.table-tier-summary td:nth-child(4) { width: 48%; }
 
 .markdown-content th {
   @apply text-left font-semibold;
