@@ -108,16 +108,45 @@ function cleanContent(raw: string): string {
   cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
   cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
 
-  // Simple header replacement for Tier tables
-  // Format 1: | Tier | Timeframe | What It Measures | Signal | → | Tier | Time | Definition | Status |
+  // Transform Tier tables to 3 columns: Tier | Definition | Status
+  // Delete Time column, merge timeframe into Definition with new descriptions
+  
+  // Replace header row (both formats)
   cleaned = cleaned.replace(
     /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*What It Measures\s*\|\s*Signal\s*\|/gi,
-    '| Tier | Time | Definition | Status |'
+    '| Tier | Definition | Status |'
   );
-  // Format 2: | Tier | Timeframe | Signal | Implication | → | Tier | Time | Definition | Status |
   cleaned = cleaned.replace(
     /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*Signal\s*\|\s*Implication\s*\|/gi,
-    '| Tier | Time | Definition | Status |'
+    '| Tier | Definition | Status |'
+  );
+  
+  // Replace separator row (4 cols → 3 cols)
+  cleaned = cleaned.replace(
+    /\|[-:\s]+\|[-:\s]+\|[-:\s]+\|[-:\s]+\|(\s*\n\s*\|.*(?:Tier 1|Long))/gi,
+    '|------|------------|--------|\n|$1'.substring(0, '|------|------------|--------|\n|'.length) + '$1'
+  );
+  
+  // Replace each tier row with new definitions
+  // Tier 1: Long
+  cleaned = cleaned.replace(
+    /\|\s*(?:Tier 1[:\s]*)?(?:Long)?[^|]*\|\s*Weekly\s*\|[^|]*\|\s*(🔴|🟡|🟢|RED|YELLOW|GREEN)\s*\|/gi,
+    '| Long<br>(Tier 1) | Weekly — BX + EMAs define the game | $1 |'
+  );
+  // Tier 2: Medium  
+  cleaned = cleaned.replace(
+    /\|\s*(?:Tier 2[:\s]*)?(?:Medium)?[^|]*\|\s*Daily\s*\|[^|]*\|\s*(🔴|🟡|🟢|RED|YELLOW|GREEN)\s*\|/gi,
+    '| Medium<br>(Tier 2) | Daily — confirming or diverging? | $1 |'
+  );
+  // Tier 3: Short
+  cleaned = cleaned.replace(
+    /\|\s*(?:Tier 3[:\s]*)?(?:Short)?[^|]*\|\s*4H\s*\|[^|]*\|\s*(🔴|🟡|🟢|RED|YELLOW|GREEN)\s*\|/gi,
+    '| Short<br>(Tier 3) | 4H — good moment for entries? | $1 |'
+  );
+  // Tier 4: Hourly
+  cleaned = cleaned.replace(
+    /\|\s*(?:Tier 4[:\s]*)?(?:Hourly)?[^|]*\|\s*1H\s*\|[^|]*\|\s*(🔴|🟡|🟢|RED|YELLOW|GREEN)\s*\|/gi,
+    '| Hourly<br>(Tier 4) | 1H — intraday entry quality | $1 |'
   );
 
   // Change "Per-Trade Size" to "Bullet Size"
@@ -180,7 +209,7 @@ function getTextContent(node: React.ReactNode): string {
 // Detect table type from content
 function getTableClass(children: React.ReactNode): string {
   const text = getTextContent(children).toLowerCase();
-  if (text.includes('tier') && text.includes('time') && text.includes('definition')) {
+  if (text.includes('tier') && text.includes('definition') && text.includes('status')) {
     return 'table-tier-summary';
   }
   return '';

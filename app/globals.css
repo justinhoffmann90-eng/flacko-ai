@@ -120,7 +120,7 @@ html, body {
 }
 
 /* ===== TIER SUMMARY TABLE ===== */
-/* Headers: Tier | Time | Definition | Status */
+/* Headers: Tier | Definition | Status (3 columns) */
 .markdown-content table.table-tier-summary {
   table-layout: fixed;
 }
@@ -130,13 +130,11 @@ html, body {
   overflow-wrap: break-word;
 }
 .markdown-content table.table-tier-summary th:nth-child(1),
-.markdown-content table.table-tier-summary td:nth-child(1) { width: 20%; }
+.markdown-content table.table-tier-summary td:nth-child(1) { width: 22%; }
 .markdown-content table.table-tier-summary th:nth-child(2),
-.markdown-content table.table-tier-summary td:nth-child(2) { width: 12%; }
+.markdown-content table.table-tier-summary td:nth-child(2) { width: 63%; }
 .markdown-content table.table-tier-summary th:nth-child(3),
-.markdown-content table.table-tier-summary td:nth-child(3) { width: 55%; }
-.markdown-content table.table-tier-summary th:nth-child(4),
-.markdown-content table.table-tier-summary td:nth-child(4) { width: 13%; text-align: center; }
+.markdown-content table.table-tier-summary td:nth-child(3) { width: 15%; text-align: center; }
 
 .markdown-content th {
   @apply text-left font-semibold;
