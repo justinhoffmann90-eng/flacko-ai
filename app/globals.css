@@ -109,42 +109,27 @@ html, body {
 
 .markdown-content table {
   @apply w-full;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
-/* Column width distribution for 4-column tables (Tier Summary style) */
-.markdown-content colgroup col:nth-child(1) { width: 22%; }
-.markdown-content colgroup col:nth-child(2) { width: 18%; }
-.markdown-content colgroup col:nth-child(3) { width: 12%; }
-.markdown-content colgroup col:nth-child(4) { width: 48%; }
-
-/* Smart column widths via CSS */
-.markdown-content th:first-child,
-.markdown-content td:first-child {
-  width: 22%;
-  word-wrap: break-word;
-}
-
-.markdown-content th:nth-child(2),
-.markdown-content td:nth-child(2) {
-  width: 18%;
-  white-space: nowrap;
-}
-
-/* Signal/emoji column - minimal width */
-.markdown-content th:nth-child(3),
-.markdown-content td:nth-child(3) {
-  width: 10%;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* Last column (text heavy) - takes remaining space */
-.markdown-content th:last-child,
-.markdown-content td:last-child {
-  width: auto;
+/* All cells: allow text wrapping */
+.markdown-content th,
+.markdown-content td {
   word-wrap: break-word;
   overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* First column (Price/Tier) - keep compact */
+.markdown-content th:first-child,
+.markdown-content td:first-child {
+  white-space: nowrap;
+}
+
+/* Last column - let it breathe and wrap */
+.markdown-content th:last-child,
+.markdown-content td:last-child {
+  white-space: normal;
 }
 
 .markdown-content th {
