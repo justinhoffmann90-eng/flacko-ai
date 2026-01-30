@@ -120,6 +120,26 @@ function cleanContent(raw: string): string {
   return cleaned.trim();
 }
 
+// Helper to extract text from React children
+function getTextContent(children: React.ReactNode): string {
+  if (typeof children === 'string') return children;
+  if (Array.isArray(children)) return children.map(getTextContent).join('');
+  if (children && typeof children === 'object' && 'props' in children) {
+    return getTextContent((children as React.ReactElement).props.children);
+  }
+  return '';
+}
+
+// Detect table type from first header
+function getTableType(children: React.ReactNode): string {
+  const text = getTextContent(children).toLowerCase();
+  if (text.includes('tier') && text.includes('timeframe')) return 'tier-summary';
+  if (text.includes('price') && text.includes('level')) return 'alert-levels';
+  if (text.includes('scenario') && text.includes('trigger')) return 'gameplan';
+  if (text.includes('scenario') && text.includes('target')) return 'scenarios';
+  return 'default';
+}
+
 export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
 
@@ -128,17 +148,20 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Custom table rendering - clean and simple
-          table: ({ children }) => (
-            <div className="my-4">
-              <table className="w-full border-collapse">{children}</table>
-            </div>
-          ),
+          // Custom table rendering with type detection
+          table: ({ children }) => {
+            const tableType = getTableType(children);
+            return (
+              <div className="my-4">
+                <table className={`w-full border-collapse table-${tableType}`}>{children}</table>
+              </div>
+            );
+          },
           thead: ({ children }) => (
             <thead className="bg-muted/50">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-border/50 px-2 py-2 text-left font-medium text-[10px] uppercase tracking-wide text-muted-foreground">
+            <th className="border border-border/50 px-2 py-2 text-left font-medium text-[11px] uppercase tracking-wide text-muted-foreground">
               {children}
             </th>
           ),

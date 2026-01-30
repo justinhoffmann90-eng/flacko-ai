@@ -108,36 +108,65 @@ html, body {
 }
 
 .markdown-content table {
-  @apply w-full text-[11px] leading-snug;
+  @apply w-full text-[13px] leading-snug;
   table-layout: fixed;
 }
 
-/* Headers - compact */
-.markdown-content th {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* All cells wrap by default */
+.markdown-content th,
 .markdown-content td {
   vertical-align: top;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-/* First column - compact, bold */
-.markdown-content th:first-child,
-.markdown-content td:first-child {
-  width: 15%;
-  font-weight: 500;
-}
+/* ===== TIER SUMMARY TABLE ===== */
+/* TIER | TIMEFRAME | SIGNAL | IMPLICATION */
+.markdown-content .table-tier-summary td:nth-child(1),
+.markdown-content .table-tier-summary th:nth-child(1) { width: 22%; }
+.markdown-content .table-tier-summary td:nth-child(2),
+.markdown-content .table-tier-summary th:nth-child(2) { width: 18%; white-space: nowrap; }
+.markdown-content .table-tier-summary td:nth-child(3),
+.markdown-content .table-tier-summary th:nth-child(3) { width: 12%; text-align: center; }
+.markdown-content .table-tier-summary td:nth-child(4),
+.markdown-content .table-tier-summary th:nth-child(4) { width: 48%; }
 
-/* Last column - most space for text */
-.markdown-content th:last-child,
-.markdown-content td:last-child {
-  width: 45%;
-}
+/* ===== ALERT LEVELS TABLE ===== */
+/* PRICE | LEVEL | WHAT TO DO */
+.markdown-content .table-alert-levels td:nth-child(1),
+.markdown-content .table-alert-levels th:nth-child(1) { width: 12%; white-space: nowrap; font-weight: 600; }
+.markdown-content .table-alert-levels td:nth-child(2),
+.markdown-content .table-alert-levels th:nth-child(2) { width: 28%; }
+.markdown-content .table-alert-levels td:nth-child(3),
+.markdown-content .table-alert-levels th:nth-child(3) { width: 60%; }
+
+/* ===== GAMEPLAN TABLE ===== */
+/* SCENARIO | WHAT TRIGGERS | PRICE TARGET | YOUR RESPONSE */
+.markdown-content .table-gameplan td:nth-child(1),
+.markdown-content .table-gameplan th:nth-child(1) { width: 14%; white-space: nowrap; font-weight: 600; }
+.markdown-content .table-gameplan td:nth-child(2),
+.markdown-content .table-gameplan th:nth-child(2) { width: 26%; }
+.markdown-content .table-gameplan td:nth-child(3),
+.markdown-content .table-gameplan th:nth-child(3) { width: 18%; white-space: nowrap; }
+.markdown-content .table-gameplan td:nth-child(4),
+.markdown-content .table-gameplan th:nth-child(4) { width: 42%; }
+
+/* ===== SCENARIOS TABLE ===== */
+/* Similar to gameplan */
+.markdown-content .table-scenarios td:nth-child(1),
+.markdown-content .table-scenarios th:nth-child(1) { width: 14%; white-space: nowrap; font-weight: 600; }
+.markdown-content .table-scenarios td:nth-child(2),
+.markdown-content .table-scenarios th:nth-child(2) { width: 26%; }
+.markdown-content .table-scenarios td:nth-child(3),
+.markdown-content .table-scenarios th:nth-child(3) { width: 18%; }
+.markdown-content .table-scenarios td:nth-child(4),
+.markdown-content .table-scenarios th:nth-child(4) { width: 42%; }
+
+/* ===== DEFAULT TABLE ===== */
+.markdown-content .table-default td:first-child,
+.markdown-content .table-default th:first-child { width: 20%; }
+.markdown-content .table-default td:last-child,
+.markdown-content .table-default th:last-child { width: 50%; }
 
 .markdown-content th {
   @apply text-left font-semibold;
