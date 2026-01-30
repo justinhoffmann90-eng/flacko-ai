@@ -179,6 +179,65 @@ export async function GET(request: Request) {
     if (missedAlerts.length > 0) {
       console.log(`[ALERT SYSTEM] ${missedAlerts.length} stale alerts marked as missed (not sent to Discord)`);
     }
+    
+    // CRITICAL: Detect alerts that SHOULD have triggered but didn't
+    // This catches logic bugs where price crossed through a level but trigger failed
+    const possiblyMissedAlerts: typeof pendingAlerts = [];
+    
+    for (const alert of pendingAlerts) {
+      // Skip if we already processed this alert above
+      if (triggeredAlerts.includes(alert) || missedAlerts.includes(alert)) continue;
+      
+      const alertAgeMs = now - (alert.created_at ? new Date(alert.created_at).getTime() : now);
+      const isOldAlert = alertAgeMs > 30 * 60 * 1000; // More than 30 minutes old
+      
+      // Check if price has moved significantly PAST this alert level
+      // This suggests price crossed through but alert didn't fire
+      const priceDiff = currentPrice - alert.price;
+      const priceDiffPercent = Math.abs(priceDiff / alert.price) * 100;
+      
+      // For UPSIDE alerts: price should be BELOW the level, waiting to rise
+      // If price is significantly ABOVE an old upside alert, it was missed
+      const missedUpside = alert.type === "upside" && priceDiff > 0 && priceDiffPercent > 1.5;
+      
+      // For DOWNSIDE alerts: price should be ABOVE the level, waiting to fall
+      // If price is significantly BELOW an old downside alert, it was missed  
+      const missedDownside = alert.type === "downside" && priceDiff < 0 && priceDiffPercent > 1.5;
+      
+      if (isOldAlert && (missedUpside || missedDownside)) {
+        possiblyMissedAlerts.push(alert);
+      }
+    }
+    
+    // ALERT JUSTIN if we detect possibly missed alerts
+    if (possiblyMissedAlerts.length > 0) {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+      
+      if (botToken && chatId) {
+        const alertList = possiblyMissedAlerts
+          .map(a => `• $${a.price} ${a.level_name} (${a.type}) — price is now $${currentPrice.toFixed(2)}`)
+          .join("\n");
+        
+        const message = `🚨 <b>POSSIBLY MISSED ALERTS DETECTED</b> 🚨\n\nThese alerts are >30 min old and price has moved >1.5% past the level without triggering:\n\n${alertList}\n\n<b>Action needed:</b> Check if these should have fired. May indicate a bug in alert type classification.`;
+        
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "HTML",
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to send missed alert notification:", e);
+        }
+      }
+      
+      console.error(`[CRITICAL] Possibly missed alerts detected: ${possiblyMissedAlerts.map(a => `${a.level_name}@$${a.price}`).join(", ")}`);
+    }
 
     if (triggeredAlerts.length === 0) {
       return NextResponse.json({
