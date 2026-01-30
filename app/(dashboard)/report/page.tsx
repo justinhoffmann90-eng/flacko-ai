@@ -67,9 +67,15 @@ export default async function ReportPage() {
   const dailyCapPct = dailyCapMatch ? parseInt(dailyCapMatch[1]) : (extractedData?.position?.daily_cap_pct || null);
   const dailyCap = dailyCapPct ? `${dailyCapPct}% of cash` : "—";
 
+  // Format date as "Thursday, Jan 29"
+  const reportDate = new Date(report.report_date + 'T12:00:00');
+  const dayName = reportDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthDay = reportDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formattedTitle = `TSLA Report - ${dayName}, ${monthDay}`;
+
   return (
     <>
-      <Header title={`Report - ${formatDate(report.report_date)}`} />
+      <Header title={formattedTitle} />
       <main className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Quick Stats Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
