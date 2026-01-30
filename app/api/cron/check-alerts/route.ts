@@ -68,6 +68,30 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Check if within market hours (9:30 AM - 4:00 PM ET, Mon-Fri)
+  // Convert to ET for market hours check
+  const now = new Date();
+  const etTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const hour = etTime.getHours();
+  const minute = etTime.getMinutes();
+  const day = etTime.getDay(); // 0=Sun, 6=Sat
+  
+  const isWeekday = day >= 1 && day <= 5;
+  const timeInMinutes = hour * 60 + minute;
+  const marketOpen = 9 * 60 + 30;  // 9:30 AM ET
+  const marketClose = 16 * 60;      // 4:00 PM ET
+  const isMarketHours = timeInMinutes >= marketOpen && timeInMinutes <= marketClose;
+  
+  if (!isWeekday || !isMarketHours) {
+    return NextResponse.json({ 
+      status: "skipped", 
+      reason: "outside market hours",
+      time: etTime.toISOString(),
+      isWeekday,
+      isMarketHours
+    });
+  }
+
   try {
     const supabase = await createServiceClient();
 
