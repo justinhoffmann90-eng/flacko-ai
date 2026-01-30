@@ -108,9 +108,10 @@ export async function POST(request: Request) {
     // Build system prompt
     const systemPrompt = buildSystemPrompt(report, settings);
 
-    // Initialize Gemini model
+    // Initialize Gemini model (Pro for better reasoning and formatting)
+    // Options: gemini-1.5-pro (stable), gemini-2.0-flash (fast), gemini-2.0-flash-thinking-exp (best reasoning)
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-pro",
       systemInstruction: systemPrompt,
     });
 
