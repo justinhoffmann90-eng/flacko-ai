@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="bladeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4d4d8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4d4d8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#0a0a0a"/>
+  
+  <!-- Crossed Swords with glow -->
+  <g filter="url(#glow)" transform="translate(512, 512)">
+    <!-- Left sword (pointing down-right) -->
+    <g transform="rotate(-45)">
+      <!-- Blade -->
+      <rect x="-22" y="-280" width="44" height="380" fill="url(#bladeGradient)" rx="4"/>
+      <!-- Blade edge highlight -->
+      <rect x="-18" y="-275" width="8" height="370" fill="#ffffff" opacity="0.7"/>
+      <!-- Guard -->
+      <rect x="-85" y="95" width="170" height="32" fill="#a1a1aa" rx="8"/>
+      <rect x="-85" y="100" width="170" height="12" fill="#78787f"/>
+      <!-- Handle wrap -->
+      <rect x="-18" y="127" width="36" height="110" fill="#52525b"/>
+      <rect x="-14" y="135" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="155" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="175" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="195" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="215" width="28" height="8" fill="#71717a"/>
+      <!-- Pommel -->
+      <circle cx="0" cy="260" r="28" fill="#a1a1aa"/>
+      <circle cx="0" cy="260" r="18" fill="#78787f"/>
+    </g>
+    
+    <!-- Right sword (pointing down-left) -->
+    <g transform="rotate(45)">
+      <!-- Blade -->
+      <rect x="-22" y="-280" width="44" height="380" fill="url(#bladeGradient)" rx="4"/>
+      <!-- Blade edge highlight -->
+      <rect x="-18" y="-275" width="8" height="370" fill="#ffffff" opacity="0.7"/>
+      <!-- Guard -->
+      <rect x="-85" y="95" width="170" height="32" fill="#a1a1aa" rx="8"/>
+      <rect x="-85" y="100" width="170" height="12" fill="#78787f"/>
+      <!-- Handle wrap -->
+      <rect x="-18" y="127" width="36" height="110" fill="#52525b"/>
+      <rect x="-14" y="135" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="155" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="175" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="195" width="28" height="8" fill="#71717a"/>
+      <rect x="-14" y="215" width="28" height="8" fill="#71717a"/>
+      <!-- Pommel -->
+      <circle cx="0" cy="260" r="28" fill="#a1a1aa"/>
+      <circle cx="0" cy="260" r="18" fill="#78787f"/>
+    </g>
+  </g>
+</svg>

@@ -61,12 +61,15 @@ export function BottomNav() {
               <div
                 key={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center w-full h-full space-y-1 pt-2",
-                  isComingSoon ? "text-muted-foreground/50" : "text-muted-foreground"
+                  "flex flex-col items-center justify-center w-full h-full space-y-1.5 pt-2",
+                  isComingSoon ? "text-muted-foreground/40" : "text-muted-foreground"
                 )}
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs">{item.label}</span>
+                <item.icon className="h-6 w-6" />
+                <div className="flex flex-col items-center">
+                  <span className="text-xs">{item.label}</span>
+                  {isComingSoon && <span className="text-[8px] text-muted-foreground/60">soon</span>}
+                </div>
               </div>
             );
           })}
@@ -86,11 +89,14 @@ export function BottomNav() {
             return (
               <div
                 key={item.href}
-                className="flex flex-col items-center justify-center w-full h-full space-y-1 pt-2 text-muted-foreground/50 cursor-not-allowed"
+                className="flex flex-col items-center justify-center w-full h-full space-y-1.5 pt-2 text-muted-foreground/40 cursor-not-allowed"
                 title="Coming Soon"
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs">{item.label}</span>
+                <item.icon className="h-6 w-6" />
+                <div className="flex flex-col items-center">
+                  <span className="text-xs">{item.label}</span>
+                  <span className="text-[8px] text-muted-foreground/60">soon</span>
+                </div>
               </div>
             );
           }
@@ -100,13 +106,13 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full space-y-1 pt-2 transition-colors",
+                "flex flex-col items-center justify-center w-full h-full space-y-1.5 pt-2 transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-6 w-6" />
               <span className="text-xs">{item.label}</span>
             </Link>
           );
