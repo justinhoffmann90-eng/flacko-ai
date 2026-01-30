@@ -317,3 +317,6 @@ export interface PriceTier {
   price_cents: number;
   subscribers_range: string;
 }
+
+// Re-export weekly review types
+export * from "./weekly-review";

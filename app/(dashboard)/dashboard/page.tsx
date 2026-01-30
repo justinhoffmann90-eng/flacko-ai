@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice, formatDateShort } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio } from "lucide-react";
+import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio, CalendarDays } from "lucide-react";
 import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { PositioningCard } from "@/components/dashboard/positioning-card";
@@ -297,13 +297,22 @@ export default async function DashboardPage() {
         )}
 
         {/* Quick Actions */}
-        <div className={`grid gap-3 pt-2 ${isAdmin ? 'grid-cols-2' : 'grid-cols-2'}`}>
+        <div className={`grid gap-3 pt-2 grid-cols-2`}>
           <Link href="/report" className="block">
             <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full">
               <FileText className="h-5 w-5 text-muted-foreground mb-2" />
-              <p className="font-medium">Full Report</p>
+              <p className="font-medium">Daily Report</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Today&apos;s complete analysis
+              </p>
+            </Card>
+          </Link>
+          <Link href="/weekly" className="block">
+            <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full border-blue-500/30 bg-blue-500/5">
+              <CalendarDays className="h-5 w-5 text-blue-500 mb-2" />
+              <p className="font-medium">📅 Weekly Review</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Friday recap &amp; outlook
               </p>
             </Card>
           </Link>
@@ -326,7 +335,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           {isAdmin && (
-            <Link href="/admin/command-center" className="block">
+            <Link href="/admin/command-center" className="col-span-2 block">
               <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
                 <Radio className="h-5 w-5 text-primary mb-2" />
                 <p className="font-medium">Command Center</p>

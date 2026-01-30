@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, formatPercent, formatDate } from "@/lib/utils";
 import { MarkdownContent } from "@/components/report/markdown-content";
+import { ReportToggle } from "@/components/report/report-toggle";
 import { ExtractedReportData } from "@/types";
 import { AlertTriangle } from "lucide-react";
 
@@ -77,6 +78,9 @@ export default async function ReportPage() {
     <>
       <Header title={formattedTitle} />
       <main className="px-4 py-6 max-w-2xl mx-auto space-y-6">
+        {/* Daily/Weekly Toggle */}
+        <ReportToggle />
+
         {/* Quick Stats Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-card border rounded-lg p-3 text-center">
