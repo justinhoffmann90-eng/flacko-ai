@@ -150,19 +150,34 @@ export function LivePriceLadder({
           <div className="space-y-2 mb-3">
             {[...upsideLevels].sort((a, b) => b.price - a.price).map((level, idx) => {
               const pctAway = currentPrice ? ((level.price - currentPrice) / currentPrice * 100).toFixed(1) : '0';
+              const isPauseZone = level.level.toLowerCase().includes('pause') || level.type === 'pause';
+              
               return (
                 <div key={idx} className="flex items-center gap-3 pl-1">
-                  <div className="relative z-10 w-5 h-5 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
-                    <ArrowUp className="h-2.5 w-2.5 text-green-500" />
+                  <div className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center ${
+                    isPauseZone 
+                      ? 'bg-amber-500/20 border-2 border-amber-500' 
+                      : 'bg-green-500/20 border-2 border-green-500'
+                  }`}>
+                    <ArrowUp className={`h-2.5 w-2.5 ${isPauseZone ? 'text-amber-500' : 'text-green-500'}`} />
                   </div>
-                  <div className="flex-1 flex items-center justify-between bg-green-500/5 rounded-lg px-3 py-2">
-                    <div>
+                  <div className={`flex-1 rounded-lg px-3 py-2 ${
+                    isPauseZone 
+                      ? 'bg-amber-500/10 border border-amber-500/30' 
+                      : 'bg-green-500/5'
+                  }`}>
+                    <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">{level.level}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium ${isPauseZone ? 'text-amber-500' : 'text-green-500'}`}>+{pctAway}%</span>
+                        <span className={`font-bold ${isPauseZone ? 'text-amber-500' : 'text-green-500'}`}>{formatLevel(level.price)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-green-500 font-medium">+{pctAway}%</span>
-                      <span className="font-bold text-green-500">{formatLevel(level.price)}</span>
-                    </div>
+                    {level.action && level.action !== '—' && (
+                      <div className={`text-[10px] mt-1 ${isPauseZone ? 'text-amber-400' : 'text-green-400'}`}>
+                        📈 {level.action}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -209,24 +224,54 @@ export function LivePriceLadder({
           <div className="space-y-2 mt-3">
             {downsideLevels.map((level, idx) => {
               const pctAway = currentPrice ? ((level.price - currentPrice) / currentPrice * 100).toFixed(1) : '0';
+              const isPauseZone = level.level.toLowerCase().includes('pause') || level.type === 'pause';
+              const isCritical = level.level.toLowerCase().includes('critical') || level.level.toLowerCase().includes('put wall');
+              
               return (
                 <div key={idx} className="flex items-center gap-3 pl-1">
-                  <div className="relative z-10 w-5 h-5 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center">
-                    <ArrowDown className="h-2.5 w-2.5 text-blue-500" />
+                  <div className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center ${
+                    isPauseZone 
+                      ? 'bg-amber-500/20 border-2 border-amber-500'
+                      : isCritical
+                        ? 'bg-yellow-500/20 border-2 border-yellow-500'
+                        : 'bg-blue-500/20 border-2 border-blue-500'
+                  }`}>
+                    <ArrowDown className={`h-2.5 w-2.5 ${
+                      isPauseZone ? 'text-amber-500' : isCritical ? 'text-yellow-500' : 'text-blue-500'
+                    }`} />
                   </div>
-                  <div className="flex-1 flex items-center justify-between bg-blue-500/5 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{level.level}</span>
-                      {level.depth && level.depth !== '—' && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-500/10 border-blue-500/30 text-blue-400">
-                          {level.depth}
-                        </Badge>
-                      )}
+                  <div className={`flex-1 rounded-lg px-3 py-2 ${
+                    isPauseZone 
+                      ? 'bg-amber-500/10 border border-amber-500/30'
+                      : isCritical
+                        ? 'bg-yellow-500/5'
+                        : 'bg-blue-500/5'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{level.level}</span>
+                        {level.depth && level.depth !== '—' && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-500/10 border-blue-500/30 text-blue-400">
+                            {level.depth}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-medium ${
+                          isPauseZone ? 'text-amber-500' : isCritical ? 'text-yellow-500' : 'text-blue-500'
+                        }`}>{pctAway}%</span>
+                        <span className={`font-bold ${
+                          isPauseZone ? 'text-amber-500' : isCritical ? 'text-yellow-500' : 'text-blue-500'
+                        }`}>{formatLevel(level.price)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-blue-500 font-medium">{pctAway}%</span>
-                      <span className="font-bold text-blue-500">{formatLevel(level.price)}</span>
-                    </div>
+                    {level.action && level.action !== '—' && (
+                      <div className={`text-[10px] mt-1 ${
+                        isPauseZone ? 'text-amber-400' : isCritical ? 'text-yellow-400' : 'text-blue-400'
+                      }`}>
+                        💰 {level.action}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -240,15 +285,20 @@ export function LivePriceLadder({
             <div className="relative z-10 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center eject-warning">
               <AlertTriangle className="h-2.5 w-2.5 text-white" />
             </div>
-            <div className="flex-1 flex items-center justify-between bg-red-500/10 rounded-lg px-3 py-2 border border-red-500/30">
-              <span className="text-xs font-semibold text-red-500">EJECT</span>
-              <div className="flex items-center gap-2">
-                {currentPrice && currentPrice > 0 && (
-                  <span className="text-xs text-red-500 font-medium">
-                    {((masterEject - currentPrice) / currentPrice * 100).toFixed(1)}%
-                  </span>
-                )}
-                <span className="font-bold text-red-500">{formatLevel(masterEject)}</span>
+            <div className="flex-1 bg-red-500/10 rounded-lg px-3 py-2 border border-red-500/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-red-500">MASTER EJECT</span>
+                <div className="flex items-center gap-2">
+                  {currentPrice && currentPrice > 0 && (
+                    <span className="text-xs text-red-500 font-medium">
+                      {((masterEject - currentPrice) / currentPrice * 100).toFixed(1)}%
+                    </span>
+                  )}
+                  <span className="font-bold text-red-500">{formatLevel(masterEject)}</span>
+                </div>
+              </div>
+              <div className="text-[10px] mt-1 text-red-400">
+                ❌ Exit all — daily close below = out
               </div>
             </div>
           </div>

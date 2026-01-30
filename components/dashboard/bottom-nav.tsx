@@ -7,9 +7,9 @@ import { useState, useEffect } from "react";
 import {
   Home,
   FileText,
-  Bell,
   MessageSquare,
   Calendar,
+  GraduationCap,
 } from "lucide-react";
 
 const navItems = [
@@ -24,11 +24,6 @@ const navItems = [
     icon: FileText,
   },
   {
-    href: "/alerts",
-    label: "Alerts",
-    icon: Bell,
-  },
-  {
     href: "/chat",
     label: "Chat",
     icon: MessageSquare,
@@ -37,6 +32,12 @@ const navItems = [
     href: "/catalysts",
     label: "Catalysts",
     icon: Calendar,
+  },
+  {
+    href: "/learn",
+    label: "Learn",
+    icon: GraduationCap,
+    comingSoon: true,
   },
 ];
 
@@ -54,15 +55,21 @@ export function BottomNav() {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-          {navItems.map((item) => (
-            <div
-              key={item.href}
-              className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground"
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
-            </div>
-          ))}
+          {navItems.map((item) => {
+            const isComingSoon = 'comingSoon' in item && item.comingSoon;
+            return (
+              <div
+                key={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center w-full h-full space-y-1",
+                  isComingSoon ? "text-muted-foreground/50" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+              </div>
+            );
+          })}
         </div>
       </nav>
     );
@@ -73,6 +80,21 @@ export function BottomNav() {
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const isComingSoon = 'comingSoon' in item && item.comingSoon;
+          
+          if (isComingSoon) {
+            return (
+              <div
+                key={item.href}
+                className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground/50 cursor-not-allowed"
+                title="Coming Soon"
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+              </div>
+            );
+          }
+          
           return (
             <Link
               key={item.href}
