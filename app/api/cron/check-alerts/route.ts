@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { fetchRealtimePrice } from "@/lib/price/fetcher";
 import { sendAlertMessage } from "@/lib/discord/client";
 import { getAlertDiscordMessage } from "@/lib/discord/templates";
+import { resend, EMAIL_FROM } from "@/lib/resend/client";
+import { getAlertEmailHtml } from "@/lib/resend/templates";
 import { TrafficLightMode, ReportAlert } from "@/types";
 
 // Telegram backup notification for critical failures
@@ -222,11 +224,74 @@ export async function GET(request: Request) {
       });
     }
 
+    // Send email alerts to users who have email_alerts enabled
+    let emailsSent = 0;
+    for (const userId of userIds) {
+      // Check if user has email_alerts enabled (defaults to true if not set)
+      const { data: settings } = await supabase
+        .from("user_settings")
+        .select("email_alerts")
+        .eq("user_id", userId)
+        .single();
+
+      // Default to true if no settings or email_alerts not explicitly set
+      const emailAlertsEnabled = settings?.email_alerts !== false;
+
+      if (!emailAlertsEnabled) {
+        continue;
+      }
+
+      // Get user email
+      const { data: userData } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", userId)
+        .single();
+
+      if (!userData?.email) {
+        continue;
+      }
+
+      // Get this user's triggered alerts
+      const userAlerts = triggeredAlerts
+        .filter((a) => a.user_id === userId)
+        .map((a) => ({
+          type: a.type as "upside" | "downside",
+          level_name: a.level_name,
+          price: a.price,
+          action: a.action,
+          reason: a.reason || "",
+        }));
+
+      try {
+        const html = getAlertEmailHtml({
+          userName: userData.email.split("@")[0],
+          alerts: userAlerts,
+          currentPrice,
+          mode: extractedData?.mode?.current || "yellow",
+          reportDate: report.report_date,
+        });
+
+        await resend.emails.send({
+          from: EMAIL_FROM,
+          to: userData.email,
+          subject: `🚨 TSLA Alert: $${currentPrice.toFixed(2)} - ${userAlerts.map(a => a.level_name).join(", ")}`,
+          html,
+        });
+
+        emailsSent++;
+        console.log(`Email alert sent to ${userData.email}`);
+      } catch (emailError) {
+        console.error(`Failed to send email to ${userData.email}:`, emailError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       price: currentPrice,
       triggeredCount: triggeredAlerts.length,
       discordSent: true,
+      emailsSent,
     });
   } catch (error) {
     console.error("Alert check error:", error);
