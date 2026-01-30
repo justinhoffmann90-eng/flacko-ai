@@ -143,38 +143,53 @@ export function getAlertEmailHtml({
         u + .body .gmail-blend-difference { background:#000 !important; }
       </style>
     </head>
-    <body class="body" style="margin: 0; padding: 0; background-color: #111827 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827 !important;">
+    <body class="body" bgcolor="#0a0a0a" style="margin: 0; padding: 0; background-color: #0a0a0a !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0a" style="background-color: #0a0a0a !important;">
+        <tr>
+          <td align="center" style="padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0a0a0a !important;">
         
         <!-- Header -->
-        <div class="card" style="background-color: #1f2937 !important; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
-          <h1 style="color: #f9fafb !important; margin: 0; font-size: 24px;">
-            🚨 TSLA Alert Triggered
-          </h1>
-        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a1a1a" style="background-color: #1a1a1a !important; border-radius: 8px; margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 24px;">
+              <h1 style="color: #f9fafb !important; margin: 0; font-size: 24px;">
+                🚨 TSLA Alert Triggered
+              </h1>
+            </td>
+          </tr>
+        </table>
 
         <!-- Price + Mode -->
-        <div class="card" style="background-color: #1f2937 !important; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a1a1a" style="background-color: #1a1a1a !important; border-radius: 8px; margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 24px;">
           <div style="margin-bottom: 16px;">
             <p style="color: #9ca3af !important; margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase;">Current Price</p>
             <p style="color: #f9fafb !important; margin: 0; font-size: 32px; font-weight: bold;">${formatPrice(currentPrice)}</p>
           </div>
           <div style="background-color: ${modeColor}20 !important; border: 1px solid ${modeColor}; border-radius: 6px; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <p style="margin: 0 0 8px 0;">
               <span style="color: ${modeColor} !important; font-weight: bold; text-transform: uppercase; font-size: 16px;">
                 ${modeInfo.emoji} ${displayMode.toUpperCase()} MODE
               </span>
-              <span style="color: #9ca3af !important; font-size: 12px;">${modeInfo.cap}</span>
-            </div>
+              <span style="color: #9ca3af !important; font-size: 12px;"> — ${modeInfo.cap}</span>
+            </p>
             <p style="color: #d1d5db !important; margin: 0; font-size: 13px;">${modeInfo.guidance}</p>
           </div>
-        </div>
+            </td>
+          </tr>
+        </table>
 
         <!-- Triggered Alerts with Details -->
-        <div class="card" style="background-color: #1f2937 !important; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
-          <h2 style="color: #f9fafb !important; margin: 0 0 16px 0; font-size: 18px;">Triggered Alerts</h2>
-          ${alertDetails}
-        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a1a1a" style="background-color: #1a1a1a !important; border-radius: 8px; margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 24px;">
+              <h2 style="color: #f9fafb !important; margin: 0 0 16px 0; font-size: 18px;">Triggered Alerts</h2>
+              ${alertDetails}
+            </td>
+          </tr>
+        </table>
 
         <!-- Key Levels -->
         ${keyLevelsHtml}
@@ -204,6 +219,9 @@ export function getAlertEmailHtml({
           </p>
         </div>
       </div>
+          </td>
+        </tr>
+      </table>
     </body>
     </html>
   `;
