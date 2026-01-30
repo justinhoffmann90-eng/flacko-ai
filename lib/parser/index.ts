@@ -624,19 +624,23 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
     const action = level.action.toLowerCase();
     const levelType = (level as FrontmatterLevelV35).type;
 
-    // Skip current price marker and master eject (handled separately)
+    // Skip current price marker only
     if (level.name.toLowerCase().includes('current price')) continue;
     if (levelType === 'current') continue;
-    if (level.name.toLowerCase().includes('master eject')) continue;
-    if (levelType === 'eject') continue;
-    if (action.includes('exit all')) continue;
+    
+    // Master Eject gets included as a special 'eject' type alert
+    const isMasterEject = level.name.toLowerCase().includes('master eject') || 
+                          levelType === 'eject' || 
+                          action.includes('exit all');
 
     // Determine type based on v3.5 type field first, then action keywords
     // Trim/Watch = upside (take profit), Nibble/Pause/Caution = downside (buy the dip)
     let type: 'upside' | 'downside';
 
-    // v3.5: Use explicit type field if available
-    if (levelType === 'trim' || levelType === 'watch') {
+    // Master Eject is always downside
+    if (isMasterEject) {
+      type = 'downside';
+    } else if (levelType === 'trim' || levelType === 'watch') {
       type = 'upside';
     } else if (levelType === 'nibble' || levelType === 'pause' || levelType === 'caution') {
       type = 'downside';
@@ -649,14 +653,16 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type = level.price > currentPrice ? 'upside' : 'downside';
     }
 
-    // Generate contextual reason instead of just "Level type: X"
-    const reason = generateAlertReason(level.name, level.action, type);
+    // Generate contextual reason - Master Eject gets special warning message
+    const reason = isMasterEject 
+      ? "⚠️ WARNING: This is your line in the sand. If we CLOSE below this level, exit all positions. No exceptions."
+      : generateAlertReason(level.name, level.action, type);
 
     alerts.push({
       type,
-      level_name: level.name,
+      level_name: isMasterEject ? "Master Eject ⚠️" : level.name,
       price: level.price,
-      action: level.action,
+      action: isMasterEject ? "EXIT ALL if daily close below" : level.action,
       reason,
     });
   }
@@ -1432,27 +1438,12 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
     const whatToDo = rowMatch[3].trim().replace(/\*\*/g, '');
 
-    // Skip current price and master eject
+    // Skip current price only
     if (levelName.toLowerCase().includes('current price')) continue;
-    if (levelName.toLowerCase().includes('master eject')) continue;
 
-    // Skip reference/descriptive levels (not actionable alerts)
-    // Only extract alerts with explicit action verbs
-    const actionLower = whatToDo.toLowerCase();
-    const isActionableAlert = 
-      actionLower.includes('trim') ||
-      actionLower.includes('nibble') ||
-      actionLower.includes('add') ||
-      actionLower.includes('buy') ||
-      actionLower.includes('breakout') ||
-      actionLower.includes('exit') ||
-      actionLower.includes('sell') ||
-      actionLower.includes('take profit');
-    
-    if (!isActionableAlert) {
-      // Skip reference levels like "Critical level", "Support confirmed", "Pivot", etc.
-      continue;
-    }
+    // Check if this is Master Eject
+    const isMasterEject = levelName.toLowerCase().includes('master eject') || 
+                          whatToDo.toLowerCase().includes('exit all');
 
     // Split action and reason on em-dash
     let action = whatToDo;
@@ -1468,7 +1459,9 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
     const originalLevel = rowMatch[2].toLowerCase();
     
     let type: 'upside' | 'downside';
-    if (act.includes('trim') || act.includes('breakout') || originalLevel.includes('🎯') || originalLevel.includes('📈')) {
+    if (isMasterEject) {
+      type = 'downside';
+    } else if (act.includes('trim') || act.includes('breakout') || originalLevel.includes('🎯') || originalLevel.includes('📈')) {
       type = 'upside';
     } else if (act.includes('nibble') || act.includes('stop adding') || act.includes('support') || 
                act.includes('pause') || act.includes('caution') || act.includes('last') ||
@@ -1480,13 +1473,16 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
     }
 
     // Use explicit reason if available, otherwise generate one
-    const reason = explicitReason || generateAlertReason(levelName, action, type);
+    // Master Eject gets special warning message
+    const reason = isMasterEject 
+      ? "⚠️ WARNING: This is your line in the sand. If we CLOSE below this level, exit all positions. No exceptions."
+      : (explicitReason || generateAlertReason(levelName, action, type));
 
     alerts.push({
       type,
-      level_name: levelName,
+      level_name: isMasterEject ? "Master Eject ⚠️" : levelName,
       price,
-      action,
+      action: isMasterEject ? "EXIT ALL if daily close below" : action,
       reason,
     });
   }
