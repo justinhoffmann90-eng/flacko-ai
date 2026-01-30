@@ -891,10 +891,6 @@ export default function LandingPageNew() {
               Get Access
             </Button>
           </Link>
-          
-          <p className="mt-6 text-zinc-500 text-sm">
-            Price increases to $34.99/mo next month. Lock in $29.99 forever.
-          </p>
         </div>
       </section>
 
