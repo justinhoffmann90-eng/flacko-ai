@@ -130,11 +130,11 @@ html, body {
   overflow-wrap: break-word;
 }
 .markdown-content table.table-tier-summary th:nth-child(1),
-.markdown-content table.table-tier-summary td:nth-child(1) { width: 22%; }
+.markdown-content table.table-tier-summary td:nth-child(1) { width: 20%; }
 .markdown-content table.table-tier-summary th:nth-child(2),
-.markdown-content table.table-tier-summary td:nth-child(2) { width: 63%; }
+.markdown-content table.table-tier-summary td:nth-child(2) { width: 60%; }
 .markdown-content table.table-tier-summary th:nth-child(3),
-.markdown-content table.table-tier-summary td:nth-child(3) { width: 15%; text-align: center; }
+.markdown-content table.table-tier-summary td:nth-child(3) { width: 20%; text-align: center; }
 
 .markdown-content th {
   @apply text-left font-semibold;
