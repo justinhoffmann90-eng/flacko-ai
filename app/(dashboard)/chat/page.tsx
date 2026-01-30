@@ -126,11 +126,11 @@ export default function ChatPage() {
   };
 
   return (
-    <>
+    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
       <Header title="AI Chat" showNotifications={false} />
-      <main className="flex flex-col h-[calc(100vh-8rem)] max-w-lg mx-auto">
-        {/* Usage indicator */}
-        <div className="px-4 py-2 border-b flex items-center justify-center gap-2">
+      <main className="flex flex-col flex-1 max-w-lg mx-auto w-full overflow-hidden">
+        {/* Usage indicator - fixed height, no scroll */}
+        <div className="shrink-0 px-4 py-2 border-b flex items-center justify-center gap-2 bg-background">
           <Badge variant={remainingMessages > 5 ? "secondary" : remainingMessages > 0 ? "yellow" : "red"}>
             {remainingMessages}/15
           </Badge>
@@ -139,8 +139,14 @@ export default function ChatPage() {
           </span>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Messages - only scrollable area */}
+        <div 
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+          style={{ 
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
           {messages.length === 0 && (
             <ChatWelcome onSuggestionClick={handleSuggestionClick} />
           )}
@@ -161,8 +167,8 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="px-4 py-4 border-t">
+        {/* Input - fixed at bottom, no scroll */}
+        <div className="shrink-0 px-4 py-4 border-t bg-background">
           <ChatInput
             onSend={handleSend}
             disabled={loading || remainingMessages <= 0}
@@ -174,6 +180,6 @@ export default function ChatPage() {
           />
         </div>
       </main>
-    </>
+    </div>
   );
 }

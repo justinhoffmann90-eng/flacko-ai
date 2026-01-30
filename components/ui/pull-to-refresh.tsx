@@ -6,9 +6,10 @@ import { RefreshCw } from "lucide-react";
 interface PullToRefreshProps {
   children: ReactNode;
   onRefresh?: () => Promise<void>;
+  disabled?: boolean;
 }
 
-export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
+export function PullToRefresh({ children, onRefresh, disabled = false }: PullToRefreshProps) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -21,7 +22,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || disabled) return;
 
     const handleTouchStart = (e: TouchEvent) => {
       // Only activate if we're at the top of the page
@@ -83,7 +84,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isPulling, pullDistance, isRefreshing, onRefresh]);
+  }, [isPulling, pullDistance, isRefreshing, onRefresh, disabled]);
 
   const progress = Math.min(pullDistance / THRESHOLD, 1);
   const showIndicator = pullDistance > 10 || isRefreshing;
