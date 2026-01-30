@@ -15,9 +15,8 @@ function cleanContent(raw: string): string {
   // Remove REPORT_DATA HTML comment
   cleaned = cleaned.replace(/<!--\s*REPORT_DATA[\s\S]*?-->/g, '');
 
-  // Remove YAML frontmatter if present (only at very start of document)
-  // Must start with --- on first line, then content, then --- on its own line
-  cleaned = cleaned.replace(/^---\n[\s\S]*?\n---\n*/m, '');
+  // Remove YAML frontmatter if present
+  cleaned = cleaned.replace(/^---[\s\S]*?---\n*/m, '');
 
   // Remove redundant "TSLA Daily Report" header (already in page title)
   cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*\n/m, '');
