@@ -15,8 +15,10 @@ function cleanContent(raw: string): string {
   // Remove REPORT_DATA HTML comment
   cleaned = cleaned.replace(/<!--\s*REPORT_DATA[\s\S]*?-->/g, '');
 
-  // Remove YAML frontmatter if present
-  cleaned = cleaned.replace(/^---[\s\S]*?---\n*/m, '');
+  // Remove YAML frontmatter if present (only at very start of document, no 'm' flag)
+  if (cleaned.startsWith('---')) {
+    cleaned = cleaned.replace(/^---\n[\s\S]*?\n---\n*/, '');
+  }
 
   // Remove redundant "TSLA Daily Report" header (already in page title)
   cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*\n/m, '');
