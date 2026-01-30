@@ -34,31 +34,46 @@ function getColorEmoji(signal: string): string {
   }
 }
 
+// Mode descriptions for Discord alerts
+const modeGuidance: Record<string, { cap: string; guidance: string }> = {
+  green: { cap: "20% daily cap", guidance: "Favorable conditions for swing entries." },
+  yellow: { cap: "15% daily cap", guidance: "Proceed with caution. Tighter stops." },
+  orange: { cap: "10% daily cap", guidance: "Elevated caution. Respect key levels. Size positions conservatively." },
+  red: { cap: "10% daily cap", guidance: "Defensive stance. Protect capital." },
+};
+
 export function getAlertDiscordMessage({
   alerts,
   mode,
   positioning,
+  keyLevels,
+  masterEject,
 }: {
   alerts: ReportAlert[];
   currentPrice?: number; // deprecated, not used in new format
   mode: TrafficLightMode;
   reportDate?: string; // deprecated, not used in new format
-  positioning?: string; // e.g., "Lean Bullish"
+  positioning?: string; // e.g., "Lean Bearish"
+  keyLevels?: {
+    callWall?: number;
+    hedgeWall?: number;
+    gammaStrike?: number;
+    putWall?: number;
+  };
+  masterEject?: number;
 }): DiscordMessage {
   // CRITICAL: Use validated color emoji (throws error if invalid mode)
   const modeEmoji = getColorEmoji(mode);
-  const modeLabel = positioning
-    ? `${modeEmoji} ${mode.toUpperCase()} MODE (${positioning})`
-    : `${modeEmoji} ${mode.toUpperCase()} MODE`;
+  const modeInfo = modeGuidance[mode] || modeGuidance.yellow;
 
-  // Build alert lines with simplified format
+  // 1. BUILD TRIGGERED ALERTS SECTION (first)
   const alertLines = alerts
     .map((alert) => {
       const isUpside = alert.type === "upside";
       const emoji = isUpside ? "🟢" : "🔴";
       const actionEmoji = isUpside ? "📈" : "💰";
 
-      let line = `${emoji} **${formatPrice(alert.price)}** - ${alert.level_name}`;
+      let line = `${emoji} **${formatPrice(alert.price)}** — ${alert.level_name}`;
       line += `\n${actionEmoji} ${alert.action}`;
       if (alert.reason) {
         line += `\n_${alert.reason}_`;
@@ -67,12 +82,39 @@ export function getAlertDiscordMessage({
     })
     .join("\n\n");
 
+  let description = `**Triggered:**\n${alertLines}\n\n`;
+
+  // 2. MODE SECTION
+  description += `${modeEmoji} **${mode.toUpperCase()} MODE** — ${modeInfo.cap}\n`;
+  description += `_${modeInfo.guidance}_\n\n`;
+
+  // 3. POSTURE SECTION
+  if (positioning) {
+    description += `**📊 Posture:** ${positioning}\n\n`;
+  }
+
+  // 4. KEY LEVELS SECTION
+  if (keyLevels && (keyLevels.callWall || keyLevels.gammaStrike || keyLevels.hedgeWall || keyLevels.putWall)) {
+    description += `**📍 Key Levels**\n\`\`\`\n`;
+    if (keyLevels.callWall) description += `Call Wall     $${keyLevels.callWall}  ▲ Resistance\n`;
+    if (keyLevels.gammaStrike) description += `Gamma Strike  $${keyLevels.gammaStrike}  ◆ Pivot\n`;
+    if (keyLevels.hedgeWall) description += `Hedge Wall    $${keyLevels.hedgeWall}  ◆ Pivot\n`;
+    if (keyLevels.putWall) description += `Put Wall      $${keyLevels.putWall}  ▼ Support\n`;
+    description += `\`\`\`\n`;
+  }
+
+  // 5. MASTER EJECT
+  if (masterEject && masterEject > 0) {
+    description += `**⚠️ Master Eject: ${formatPrice(masterEject)}**\n`;
+    description += `_Daily close below = exit all positions_`;
+  }
+
   const embed: DiscordEmbed = {
     title: "⚡ TSLA Price Alert Triggered!",
-    description: `${modeLabel}\n\n${alertLines}`,
+    description: description.trim(),
     color: DISCORD_COLORS[mode],
     footer: {
-      text: "Flacko AI • Check app for full details",
+      text: "Flacko AI • Set it and forget it",
     },
   };
 

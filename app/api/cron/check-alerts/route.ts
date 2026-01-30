@@ -173,11 +173,21 @@ export async function GET(request: Request) {
       }
     }
 
+    // Build key levels for Discord message
+    const discordKeyLevels = extractedData?.key_levels ? {
+      callWall: extractedData.key_levels.call_wall,
+      hedgeWall: extractedData.key_levels.hedge_wall,
+      gammaStrike: extractedData.key_levels.gamma_strike,
+      putWall: extractedData.key_levels.put_wall,
+    } : undefined;
+
     // Send Discord alert (single message to #alerts channel)
     const discordMessage = getAlertDiscordMessage({
       alerts: Array.from(uniqueAlerts.values()),
       mode: extractedData?.mode?.current || "yellow",
       positioning: extractedData?.positioning?.posture || "",
+      keyLevels: discordKeyLevels,
+      masterEject: extractedData?.master_eject?.price,
     });
 
     const discordSent = await sendAlertMessage(discordMessage);
