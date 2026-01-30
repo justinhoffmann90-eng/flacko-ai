@@ -1,4 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
   <rect width="192" height="192" fill="#0a0a0a"/>
-  <text x="96" y="130" font-size="100" text-anchor="middle">⚔️</text>
+  
+  <!-- Crossed Swords with glow -->
+  <g filter="url(#glow)" transform="translate(96, 96)">
+    <!-- Left sword (pointing down-right) -->
+    <g transform="rotate(-45)">
+      <!-- Blade -->
+      <rect x="-4" y="-50" width="8" height="70" fill="#e4e4e7" rx="1"/>
+      <!-- Blade highlight -->
+      <rect x="-2" y="-48" width="3" height="65" fill="#ffffff" opacity="0.6"/>
+      <!-- Guard -->
+      <rect x="-15" y="18" width="30" height="6" fill="#a1a1aa" rx="2"/>
+      <!-- Handle -->
+      <rect x="-3" y="24" width="6" height="20" fill="#71717a"/>
+      <!-- Pommel -->
+      <circle cx="0" cy="48" r="5" fill="#a1a1aa"/>
+    </g>
+    
+    <!-- Right sword (pointing down-left) -->
+    <g transform="rotate(45)">
+      <!-- Blade -->
+      <rect x="-4" y="-50" width="8" height="70" fill="#e4e4e7" rx="1"/>
+      <!-- Blade highlight -->
+      <rect x="-2" y="-48" width="3" height="65" fill="#ffffff" opacity="0.6"/>
+      <!-- Guard -->
+      <rect x="-15" y="18" width="30" height="6" fill="#a1a1aa" rx="2"/>
+      <!-- Handle -->
+      <rect x="-3" y="24" width="6" height="20" fill="#71717a"/>
+      <!-- Pommel -->
+      <circle cx="0" cy="48" r="5" fill="#a1a1aa"/>
+    </g>
+  </g>
 </svg>
