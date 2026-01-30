@@ -48,7 +48,7 @@ export function formatPriceForDisplay(cents: number): string {
 
 // Price IDs - update these for live mode
 export const PRICE_IDS = {
-  founder: process.env.STRIPE_PRICE_FOUNDER || "price_1StxnwRNdSDJbZblI7zBHuG1", // $19.99/mo
+  founder: process.env.STRIPE_PRICE_FOUNDER || "price_1Sv6zLRNdSDJbZblqWBJYnIc", // $14.99/mo
   public: process.env.STRIPE_PRICE_PUBLIC || "price_1SuKNSRNdSDJbZblxblHmkcn",   // $29.99/mo
 };
 

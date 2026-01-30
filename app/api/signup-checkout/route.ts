@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     // Create Stripe checkout session
-    // Founder: $19.99/mo + 45-day trial
+    // Founder: $14.99/mo + 45-day trial
     // Public: $29.99/mo + no trial
     const appUrl = "https://flacko.ai";
     const session = await createCheckoutSession({

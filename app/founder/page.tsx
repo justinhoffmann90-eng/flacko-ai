@@ -27,7 +27,7 @@ export default function FounderSignupPage() {
       const response = await fetch("/api/signup-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, founder: true, xHandle: cleanHandle || null }), // $19.99 + 45-day trial
+        body: JSON.stringify({ email, founder: true, xHandle: cleanHandle || null }), // $14.99 + 45-day trial
       });
 
       const data = await response.json();
@@ -75,7 +75,7 @@ export default function FounderSignupPage() {
             <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">FOUNDER PRICE</span>
           </div>
           <div className="text-4xl font-bold">
-            $19.99<span className="text-xl text-muted-foreground font-normal">/month</span>
+            $14.99<span className="text-xl text-muted-foreground font-normal">/month</span>
           </div>
           <p className="text-sm text-muted-foreground">Locked in forever</p>
         </div>
