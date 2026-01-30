@@ -128,22 +128,22 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Custom table rendering - mobile optimized with horizontal scroll
+          // Custom table rendering - fit on screen, no horizontal scroll
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4 -mx-4 px-4 scrollbar-thin">
-              <table className="min-w-full border-collapse text-sm whitespace-nowrap">{children}</table>
+            <div className="my-4">
+              <table className="w-full border-collapse table-fixed">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-muted/70 sticky top-0">{children}</thead>
+            <thead className="bg-muted/50">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-border/50 px-4 py-2.5 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground">
+            <th className="border border-border/50 px-2 py-2 text-left font-semibold text-[11px] uppercase tracking-wide text-muted-foreground">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border/50 px-4 py-3 whitespace-normal min-w-[100px]">{children}</td>
+            <td className="border border-border/50 px-2 py-2 text-xs leading-tight">{children}</td>
           ),
           tr: ({ children }) => (
             <tr className="even:bg-muted/20 hover:bg-muted/40 transition-colors">{children}</tr>
