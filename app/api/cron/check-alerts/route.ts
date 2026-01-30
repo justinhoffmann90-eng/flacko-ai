@@ -343,6 +343,7 @@ export async function GET(request: Request) {
 
     // Send email alerts to users who have email_alerts enabled
     let emailsSent = 0;
+    let emailsFailed = 0;
     for (const userId of userIds) {
       // Check if user has email_alerts enabled (defaults to true if not set)
       const { data: settings } = await supabase
@@ -410,7 +411,25 @@ export async function GET(request: Request) {
         emailsSent++;
         console.log(`Email alert sent to ${userData.email}`);
       } catch (emailError) {
+        emailsFailed++;
         console.error(`Failed to send email to ${userData.email}:`, emailError);
+      }
+    }
+
+    // ALERT if email delivery had failures
+    if (emailsFailed > 0) {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+      if (botToken && chatId) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `⚠️ <b>EMAIL ALERTS PARTIALLY FAILED</b>\n\n${emailsSent} sent, ${emailsFailed} failed\n\nCheck Vercel logs for details.`,
+            parse_mode: "HTML",
+          }),
+        }).catch(e => console.error("Failed to send email failure notification:", e));
       }
     }
 
