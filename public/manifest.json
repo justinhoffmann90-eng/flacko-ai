@@ -1,6 +1,6 @@
 {
-  "name": "Flacko AI",
-  "short_name": "Flacko AI",
+  "name": "flacko ai",
+  "short_name": "flacko ai",
   "description": "TSLA Trading Intelligence",
   "start_url": "/dashboard",
   "display": "standalone",
