@@ -106,40 +106,60 @@ function cleanContent(raw: string): string {
   cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
   cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
 
-  // Process Tier Summary table: rename headers, reorder columns (move Signal/emoji to end)
+  // Process Tier tables: rename headers to Tier | Time | Definition | Status
+  // Handle both formats: 
+  // 1. | Tier | Timeframe | What It Measures | Signal |
+  // 2. | Tier | Timeframe | Signal | Implication |
   const tierTableLines = cleaned.split('\n');
   let inTierTable = false;
+  let tierTableFormat = 0; // 1 = first format, 2 = second format
   const tierResult: string[] = [];
   
   for (let i = 0; i < tierTableLines.length; i++) {
     const line = tierTableLines[i];
     const trimmed = line.trim();
     
-    // Detect Tier Summary header row
-    if (/\|\s*Tier\s*\|/i.test(line) && /Timeframe|Signal|Implication/i.test(line)) {
-      inTierTable = true;
-      // Replace with new headers: Tier | Time | Definition | Status
-      tierResult.push('| Tier | Time | Definition | Status |');
-      continue;
+    // Detect Tier table header row (either format)
+    if (/\|\s*Tier\s*\|/i.test(line) && /Timeframe/i.test(line)) {
+      if (/What It Measures/i.test(line)) {
+        // Format 1: | Tier | Timeframe | What It Measures | Signal |
+        tierTableFormat = 1;
+        inTierTable = true;
+        tierResult.push('| Tier | Time | Definition | Status |');
+        continue;
+      } else if (/Signal/i.test(line) && /Implication/i.test(line)) {
+        // Format 2: | Tier | Timeframe | Signal | Implication |
+        tierTableFormat = 2;
+        inTierTable = true;
+        tierResult.push('| Tier | Time | Definition | Status |');
+        continue;
+      }
     }
     
     // Handle separator row
-    if (inTierTable && /^\|[\s-:]+\|[\s-:]+\|[\s-:]+\|[\s-:]+\|$/.test(trimmed)) {
+    if (inTierTable && /^\|[-:\s|]+\|$/.test(trimmed) && trimmed.includes('---')) {
       tierResult.push('|------|------|------------|--------|');
       continue;
     }
     
-    // Handle data rows - swap columns 3 and 4 (Signal ↔ Implication)
+    // Handle data rows
     if (inTierTable && trimmed.startsWith('|') && trimmed.endsWith('|') && !trimmed.includes('---')) {
       const parts = line.split('|');
       if (parts.length >= 5) {
-        // parts: ['', col1, col2, col3(signal), col4(implication), '']
         const col1 = parts[1]; // Tier
         const col2 = parts[2]; // Timeframe
-        const col3 = parts[3]; // Signal (emoji) - will become Status
-        const col4 = parts[4]; // Implication - will become Definition
-        // Reorder: Tier | Time | Definition | Status
-        tierResult.push(`|${col1}|${col2}|${col4}|${col3}|`);
+        const col3 = parts[3]; // What It Measures OR Signal
+        const col4 = parts[4]; // Signal OR Implication
+        
+        if (tierTableFormat === 1) {
+          // Format 1: cols are Tier | Timeframe | What It Measures | Signal
+          // Reorder to: Tier | Time | Definition (col3) | Status (col4)
+          tierResult.push(`|${col1}|${col2}|${col3}|${col4}|`);
+        } else {
+          // Format 2: cols are Tier | Timeframe | Signal | Implication
+          // Reorder to: Tier | Time | Definition (col4) | Status (col3)
+          tierResult.push(`|${col1}|${col2}|${col4}|${col3}|`);
+        }
         continue;
       }
     }
@@ -147,6 +167,7 @@ function cleanContent(raw: string): string {
     // End of table
     if (inTierTable && trimmed !== '' && !trimmed.startsWith('|')) {
       inTierTable = false;
+      tierTableFormat = 0;
     }
     
     tierResult.push(line);
