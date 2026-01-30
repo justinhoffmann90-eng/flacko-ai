@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOCKUP: Clean Report Layout</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a; 
+      color: #e4e4e7;
+      max-width: 390px;
+      margin: 0 auto;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 20px;
+      border-bottom: 1px solid #27272a;
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header .icon { width: 24px; height: 24px; opacity: 0.6; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-label { font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 16px; font-weight: 600; margin-top: 6px; }
+    .stat-badge { 
+      display: inline-block;
+      background: #f97316;
+      color: white;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .stat-card.eject { border-color: rgba(239, 68, 68, 0.3); }
+    .stat-card.eject .stat-label { color: #ef4444; }
+    .stat-card.eject .stat-value { color: #ef4444; font-size: 18px; }
+    
+    .report-card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    /* Tier Table - Clean Version */
+    .tier-table-wrapper {
+      overflow-x: auto;
+      margin: 0 -20px;
+      padding: 0 20px;
+    }
+    .tier-table {
+      width: 100%;
+      min-width: 500px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .tier-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #27272a;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #71717a;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .tier-table td {
+      padding: 12px;
+      border-bottom: 1px solid #27272a;
+      vertical-align: middle;
+    }
+    .tier-table tr:last-child td { border-bottom: none; }
+    .tier-table tr:hover { background: rgba(255,255,255,0.02); }
+    .tier-name { font-weight: 600; white-space: nowrap; }
+    .tier-timeframe { color: #a1a1aa; white-space: nowrap; }
+    .tier-desc { color: #a1a1aa; min-width: 180px; }
+    .signal { font-size: 18px; text-align: center; }
+    
+    /* Scroll hint */
+    .scroll-hint {
+      font-size: 11px;
+      color: #52525b;
+      text-align: right;
+      margin-top: 8px;
+    }
+    
+    /* AI Take */
+    .ai-take {
+      background: rgba(234, 179, 8, 0.05);
+      border-left: 3px solid #eab308;
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+    }
+    .ai-take p { color: #d4d4d8; margin-bottom: 12px; }
+    .ai-take p:last-child { margin-bottom: 0; }
+    .ai-take strong { color: #fafafa; }
+    
+    /* Scenarios Table */
+    .scenarios-wrapper {
+      overflow-x: auto;
+      margin: 0 -20px;
+      padding: 0 20px;
+    }
+    .scenarios-table {
+      width: 100%;
+      min-width: 550px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .scenarios-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #27272a;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #71717a;
+      font-weight: 600;
+    }
+    .scenarios-table td {
+      padding: 12px;
+      border-bottom: 1px solid #27272a;
+    }
+    .scenarios-table tr:last-child td { border-bottom: none; }
+    
+    .bull { color: #22c55e; }
+    .bear { color: #ef4444; }
+    .base { color: #a1a1aa; }
+    
+    .mockup-label {
+      background: #7c3aed;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Report - Thursday, Jan 29</h1>
+    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Mode</div>
+      <div class="stat-badge">ORANGE</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Positioning</div>
+      <div class="stat-value">Lean Bearish</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Daily Cap</div>
+      <div class="stat-value">10% of cash</div>
+    </div>
+    <div class="stat-card eject">
+      <div class="stat-label">⚠️ Eject</div>
+      <div class="stat-value">$380.00</div>
+    </div>
+  </div>
+
+  <div class="report-card">
+    <div class="section-title">🚦 Tier Signals</div>
+    <div class="tier-table-wrapper">
+      <table class="tier-table">
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Timeframe</th>
+            <th>What It Measures</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tier-name">Long (Tier 1)</td>
+            <td class="tier-timeframe">Weekly</td>
+            <td class="tier-desc">Regime — defines the game</td>
+            <td class="signal">🔴</td>
+          </tr>
+          <tr>
+            <td class="tier-name">Medium (Tier 2)</td>
+            <td class="tier-timeframe">Daily</td>
+            <td class="tier-desc">Trend — confirming or diverging?</td>
+            <td class="signal">🟡</td>
+          </tr>
+          <tr>
+            <td class="tier-name">Short (Tier 3)</td>
+            <td class="tier-timeframe">4H</td>
+            <td class="tier-desc">Timing — entry quality</td>
+            <td class="signal">🔴</td>
+          </tr>
+          <tr>
+            <td class="tier-name">Hourly (Tier 4)</td>
+            <td class="tier-timeframe">1H</td>
+            <td class="tier-desc">Pullback — intraday zones</td>
+            <td class="signal">🔴</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="scroll-hint">← Swipe to see more →</div>
+  </div>
+
+  <div class="report-card">
+    <div class="section-title">🧠 Flacko AI's Take</div>
+    <p><strong>Structure is deteriorating rapidly.</strong> Weekly BX-Trender is red with LL pattern, price has broken below all three weekly EMAs (9/13/21), and today's -3.46% drop has triggered the Pause Zone.</p>
+    
+    <div class="ai-take">
+      <p><strong>What I'd do:</strong> No new buys until Daily 21 EMA ($433) is reclaimed. If you're already positioned, hold but tighten stops. Watch $400-$410 zone for potential extreme support nibble opportunity.</p>
+      <p><strong>What would change my mind:</strong> Daily close back above $433 with BX-Trender showing HL pattern. That would clear the Pause Zone.</p>
+    </div>
+  </div>
+
+  <div class="report-card">
+    <div class="section-title">🎯 Tomorrow's Gameplan</div>
+    <div class="scenarios-wrapper">
+      <table class="scenarios-table">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Trigger</th>
+            <th>Target</th>
+            <th>Response</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bull">🐂 BULL</td>
+            <td>Reclaims $433 + volume</td>
+            <td>$440-445</td>
+            <td>Small nibbles at 10%/day</td>
+          </tr>
+          <tr>
+            <td class="base">⚖️ BASE</td>
+            <td>Chops $410-425</td>
+            <td>$415-420</td>
+            <td>Stay defensive, no buys</td>
+          </tr>
+          <tr>
+            <td class="bear">🐻 BEAR</td>
+            <td>Loses $410</td>
+            <td>$395-400</td>
+            <td>Extreme caution</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="scroll-hint">← Swipe to see more →</div>
+  </div>
+
+  <div class="mockup-label">MOCKUP — Not Live</div>
+</body>
+</html>
