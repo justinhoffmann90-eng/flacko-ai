@@ -149,6 +149,13 @@ export async function GET(request: Request) {
     const extractedData = report.extracted_data as {
       mode?: { current: TrafficLightMode };
       positioning?: { posture?: string };
+      key_levels?: {
+        hedge_wall?: number;
+        gamma_strike?: number;
+        put_wall?: number;
+        call_wall?: number;
+        master_eject?: number;
+      };
     };
 
     // Get unique alerts (deduplicate by price/type since multiple users may have same alert)
@@ -264,12 +271,23 @@ export async function GET(request: Request) {
         }));
 
       try {
+        // Build key levels from report data
+        const keyLevels = extractedData?.key_levels ? {
+          hedgeWall: extractedData.key_levels.hedge_wall,
+          gammaStrike: extractedData.key_levels.gamma_strike,
+          putWall: extractedData.key_levels.put_wall,
+          callWall: extractedData.key_levels.call_wall,
+          masterEject: extractedData.key_levels.master_eject,
+        } : undefined;
+
         const html = getAlertEmailHtml({
           userName: userData.email.split("@")[0],
           alerts: userAlerts,
           currentPrice,
           mode: extractedData?.mode?.current || "yellow",
           reportDate: report.report_date,
+          keyLevels,
+          positioning: extractedData?.positioning?.posture,
         });
 
         await resend.emails.send({
