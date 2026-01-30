@@ -108,37 +108,34 @@ function cleanContent(raw: string): string {
   cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
   cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
 
-  // Transform ONLY the first tier table (under Mode section) to 3 columns
-  // The second table (Tier Summary with Implication) should keep its original format
-  
-  // Only transform the "What It Measures" format (first table)
+  // Transform first tier table (under Mode section) to simple 2 columns: Tier | Status
   // Header
   cleaned = cleaned.replace(
     /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*What It Measures\s*\|\s*Signal\s*\|/gi,
-    '| Tier | Definition | Status |'
+    '| Tier | Status |'
   );
-  // Separator (4 cols → 3 cols) - must come right after header
+  // Separator (4 cols → 2 cols)
   cleaned = cleaned.replace(
-    /\| Tier \| Definition \| Status \|\n\|[-:\s]+\|[-:\s]+\|[-:\s]+\|[-:\s]+\|/gi,
-    '| Tier | Definition | Status |\n|------|------------|--------|'
+    /\| Tier \| Status \|\n\|[-:\s]+\|[-:\s]+\|[-:\s]+\|[-:\s]+\|/gi,
+    '| Tier | Status |\n|------|--------|'
   );
   
-  // Transform rows that have "Regime", "Trend", "Timing", "Pullback" (first table's content)
+  // Transform rows - just keep Tier name and Status emoji
   cleaned = cleaned.replace(
-    /\|[^|]*Tier 1[:\s]+Long[^|]*\|\s*Weekly\s*\|[^|]*Regime[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Long<br>(Tier 1) | Weekly — BX + EMAs define the game | $1 |'
+    /\|[^|]*Tier 1[:\s]+Long[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    '| Long (Tier 1) | $1 |'
   );
   cleaned = cleaned.replace(
-    /\|[^|]*Tier 2[:\s]+Medium[^|]*\|\s*Daily\s*\|[^|]*Trend[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Medium<br>(Tier 2) | Daily — confirming or diverging? | $1 |'
+    /\|[^|]*Tier 2[:\s]+Medium[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    '| Medium (Tier 2) | $1 |'
   );
   cleaned = cleaned.replace(
-    /\|[^|]*Tier 3[:\s]+Short[^|]*\|\s*4H\s*\|[^|]*Timing[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Short<br>(Tier 3) | 4H — good moment for entries? | $1 |'
+    /\|[^|]*Tier 3[:\s]+Short[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    '| Short (Tier 3) | $1 |'
   );
   cleaned = cleaned.replace(
-    /\|[^|]*Tier 4[:\s]+Hourly[^|]*\|\s*1H\s*\|[^|]*Pullback[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Hourly<br>(Tier 4) | 1H — intraday entry quality | $1 |'
+    /\|[^|]*Tier 4[:\s]+Hourly[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    '| Hourly (Tier 4) | $1 |'
   );
 
   // Change "Per-Trade Size" to "Bullet Size"
@@ -201,8 +198,9 @@ function getTextContent(node: React.ReactNode): string {
 // Detect table type from content
 function getTableClass(children: React.ReactNode): string {
   const text = getTextContent(children).toLowerCase();
-  if (text.includes('tier') && text.includes('definition') && text.includes('status')) {
-    return 'table-tier-summary';
+  // Simple 2-col tier overview (Tier | Status)
+  if (text.includes('tier') && text.includes('status') && !text.includes('definition') && !text.includes('implication')) {
+    return 'table-tier-overview';
   }
   return '';
 }
