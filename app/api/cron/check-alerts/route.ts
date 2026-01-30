@@ -120,6 +120,8 @@ export async function GET(request: Request) {
 
     // Check each alert
     const triggeredAlerts: typeof pendingAlerts = [];
+    const missedAlerts: typeof pendingAlerts = [];
+    const now = Date.now();
 
     for (const alert of pendingAlerts) {
       const shouldTrigger =
@@ -127,6 +129,34 @@ export async function GET(request: Request) {
         (alert.type === "downside" && currentPrice <= alert.price);
 
       if (shouldTrigger) {
+        // SAFEGUARD: Check if this is a "stale" alert from a recent parser update
+        // If alert was created in the last 5 minutes AND price has already moved
+        // significantly past the level, mark as missed instead of triggering
+        const alertCreatedAt = alert.created_at ? new Date(alert.created_at).getTime() : 0;
+        const alertAgeMs = now - alertCreatedAt;
+        const isRecentlyCreated = alertAgeMs < 5 * 60 * 1000; // Less than 5 minutes old
+        
+        // Calculate how far price has moved past the alert level
+        const priceDiff = Math.abs(currentPrice - alert.price);
+        const priceDiffPercent = (priceDiff / alert.price) * 100;
+        const hasMovedPastSignificantly = priceDiffPercent > 0.75; // More than 0.75% past level
+        
+        if (isRecentlyCreated && hasMovedPastSignificantly) {
+          // This alert was just created but price already blew past it
+          // Mark as missed to prevent late/stale alerts
+          missedAlerts.push(alert);
+          console.log(`[STALE ALERT] Marking as missed: ${alert.level_name} @ $${alert.price} (price: $${currentPrice.toFixed(2)}, diff: ${priceDiffPercent.toFixed(2)}%, age: ${Math.round(alertAgeMs / 1000)}s)`);
+          
+          await supabase
+            .from("report_alerts")
+            .update({
+              triggered_at: new Date().toISOString(),
+            })
+            .eq("id", alert.id);
+          
+          continue;
+        }
+
         triggeredAlerts.push(alert);
 
         // Mark as triggered
@@ -137,6 +167,11 @@ export async function GET(request: Request) {
           })
           .eq("id", alert.id);
       }
+    }
+    
+    // Log missed alerts for monitoring
+    if (missedAlerts.length > 0) {
+      console.log(`[ALERT SYSTEM] ${missedAlerts.length} stale alerts marked as missed (not sent to Discord)`);
     }
 
     if (triggeredAlerts.length === 0) {
