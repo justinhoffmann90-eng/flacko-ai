@@ -108,35 +108,7 @@ function cleanContent(raw: string): string {
   cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
   cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
 
-  // Transform first tier table (under Mode section) to simple 2 columns: Tier | Status
-  // Header
-  cleaned = cleaned.replace(
-    /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*What It Measures\s*\|\s*Signal\s*\|/gi,
-    '| Tier | Status |'
-  );
-  // Separator (4 cols → 2 cols)
-  cleaned = cleaned.replace(
-    /\| Tier \| Status \|\n\|[-:\s]+\|[-:\s]+\|[-:\s]+\|[-:\s]+\|/gi,
-    '| Tier | Status |\n|------|--------|'
-  );
-  
-  // Transform rows - just keep Tier name and Status emoji
-  cleaned = cleaned.replace(
-    /\|[^|]*Tier 1[:\s]+Long[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Long (Tier 1) | $1 |'
-  );
-  cleaned = cleaned.replace(
-    /\|[^|]*Tier 2[:\s]+Medium[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Medium (Tier 2) | $1 |'
-  );
-  cleaned = cleaned.replace(
-    /\|[^|]*Tier 3[:\s]+Short[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Short (Tier 3) | $1 |'
-  );
-  cleaned = cleaned.replace(
-    /\|[^|]*Tier 4[:\s]+Hourly[^|]*\|[^|]*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
-    '| Hourly (Tier 4) | $1 |'
-  );
+  // No table transformations - render tables as-is from markdown
 
   // Change "Per-Trade Size" to "Bullet Size"
   cleaned = cleaned.replace(/Per-Trade Size/gi, 'Bullet Size');
@@ -183,27 +155,7 @@ function cleanContent(raw: string): string {
   return cleaned.trim();
 }
 
-// Helper to extract text from React children
-function getTextContent(node: React.ReactNode): string {
-  if (typeof node === 'string') return node;
-  if (typeof node === 'number') return String(node);
-  if (!node) return '';
-  if (Array.isArray(node)) return node.map(getTextContent).join('');
-  if (typeof node === 'object' && 'props' in node) {
-    return getTextContent((node as React.ReactElement).props?.children);
-  }
-  return '';
-}
-
-// Detect table type from content
-function getTableClass(children: React.ReactNode): string {
-  const text = getTextContent(children).toLowerCase();
-  // Simple 2-col tier overview (Tier | Status)
-  if (text.includes('tier') && text.includes('status') && !text.includes('definition') && !text.includes('implication')) {
-    return 'table-tier-overview';
-  }
-  return '';
-}
+// Tables render as-is from markdown - no transformations
 
 export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
@@ -214,15 +166,12 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          // Table with type detection for custom styling
-          table: ({ children }) => {
-            const tableClass = getTableClass(children);
-            return (
-              <div className="my-4">
-                <table className={`w-full border-collapse ${tableClass}`}>{children}</table>
-              </div>
-            );
-          },
+          // Simple table rendering - no transformations
+          table: ({ children }) => (
+            <div className="my-4">
+              <table className="w-full border-collapse">{children}</table>
+            </div>
+          ),
           thead: ({ children }) => (
             <thead className="bg-slate-700">{children}</thead>
           ),
