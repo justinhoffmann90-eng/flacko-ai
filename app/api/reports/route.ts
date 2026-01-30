@@ -84,6 +84,48 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // CRITICAL: Validate alerts were extracted
+    // This prevents silent failures where report format doesn't match parser
+    const alertCount = extracted_data.alerts?.length || 0;
+    if (alertCount === 0) {
+      const alertWarning = "⚠️ NO ALERTS EXTRACTED - Parser may not support this report format";
+      warnings.push(alertWarning);
+      
+      // Send Telegram notification about missing alerts
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+      if (botToken && chatId) {
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `🚨 <b>ALERT EXTRACTION FAILED</b> 🚨\n\nReport uploaded but <b>0 alerts</b> were extracted!\n\nThis means price alerts will NOT work for this report.\n\n<b>Possible causes:</b>\n• Report format doesn't match parser\n• Missing "Alert Levels" or "Alerts to Set" section\n• Table format changed\n\nCheck parser warnings and report format immediately.`,
+              parse_mode: "HTML",
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to send Telegram alert about missing alerts:", e);
+        }
+      }
+      
+      console.error("⚠️ CRITICAL: Report uploaded with 0 alerts extracted!");
+    } else if (alertCount < 4) {
+      // Warn if fewer alerts than expected (typical reports have 6-10 levels)
+      const lowAlertWarning = `⚠️ Only ${alertCount} alerts extracted (expected 4+) - some levels may have been missed`;
+      warnings.push(lowAlertWarning);
+      console.warn(lowAlertWarning);
+      
+      // Log extracted alerts for debugging
+      console.log("Extracted alerts:", JSON.stringify(extracted_data.alerts, null, 2));
+    } else {
+      console.log(`✅ Extracted ${alertCount} alerts from report`);
+      // Log alert summary
+      const alertSummary = extracted_data.alerts?.map(a => `${a.type}: $${a.price} (${a.level_name})`).join(', ');
+      console.log(`Alert summary: ${alertSummary}`);
+    }
+
     // Get report date (today's date)
     const today = new Date().toISOString().split("T")[0];
 
