@@ -108,45 +108,30 @@ function cleanContent(raw: string): string {
   cleaned = cleaned.replace(/Tier (\d+):\s*(\w+)/g, '$2<br>(Tier $1)');
   cleaned = cleaned.replace(/Tier (\d+)\s*\((\w+)\)/g, '$2<br>(Tier $1)');
 
-  // Transform Tier tables to 3 columns: Tier | Definition | Status
-  // Delete Time column, merge timeframe into Definition with new descriptions
+  // Transform ONLY the first tier table (under Mode section) to 3 columns
+  // The second table (Tier Summary with Implication) should keep its original format
   
-  // Replace header row (both formats)
+  // Only transform the "What It Measures" format (first table)
   cleaned = cleaned.replace(
     /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*What It Measures\s*\|\s*Signal\s*\|/gi,
     '| Tier | Definition | Status |'
   );
-  cleaned = cleaned.replace(
-    /\|\s*Tier\s*\|\s*Timeframe\s*\|\s*Signal\s*\|\s*Implication\s*\|/gi,
-    '| Tier | Definition | Status |'
-  );
   
-  // Replace separator row (4 cols → 3 cols)
+  // Transform rows that have "Regime", "Trend", "Timing", "Pullback" (first table's content)
   cleaned = cleaned.replace(
-    /\|[-:\s]+\|[-:\s]+\|[-:\s]+\|[-:\s]+\|(\s*\n\s*\|.*(?:Tier 1|Long))/gi,
-    '|------|------------|--------|\n|$1'.substring(0, '|------|------------|--------|\n|'.length) + '$1'
-  );
-  
-  // Replace each tier row with new definitions
-  // Match both formats: "Tier 1: Long", "Tier 1 (Long)", or just tier with Weekly/Daily/4H/1H
-  // Tier 1 / Long / Weekly
-  cleaned = cleaned.replace(
-    /\|[^|]*(?:Tier 1|Long)[^|]*\|\s*Weekly\s*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    /\|[^|]*Tier 1[:\s]+Long[^|]*\|\s*Weekly\s*\|[^|]*Regime[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
     '| Long<br>(Tier 1) | Weekly — BX + EMAs define the game | $1 |'
   );
-  // Tier 2 / Medium / Daily
   cleaned = cleaned.replace(
-    /\|[^|]*(?:Tier 2|Medium)[^|]*\|\s*Daily\s*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    /\|[^|]*Tier 2[:\s]+Medium[^|]*\|\s*Daily\s*\|[^|]*Trend[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
     '| Medium<br>(Tier 2) | Daily — confirming or diverging? | $1 |'
   );
-  // Tier 3 / Short / 4H
   cleaned = cleaned.replace(
-    /\|[^|]*(?:Tier 3|Short)[^|]*\|\s*4H\s*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    /\|[^|]*Tier 3[:\s]+Short[^|]*\|\s*4H\s*\|[^|]*Timing[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
     '| Short<br>(Tier 3) | 4H — good moment for entries? | $1 |'
   );
-  // Tier 4 / Hourly / 1H
   cleaned = cleaned.replace(
-    /\|[^|]*(?:Tier 4|Hourly)[^|]*\|\s*1H\s*\|[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
+    /\|[^|]*Tier 4[:\s]+Hourly[^|]*\|\s*1H\s*\|[^|]*Pullback[^|]*\|\s*(🔴|🟡|🟢)[^|]*\|/gi,
     '| Hourly<br>(Tier 4) | 1H — intraday entry quality | $1 |'
   );
 
