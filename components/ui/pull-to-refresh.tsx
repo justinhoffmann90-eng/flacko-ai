@@ -12,19 +12,28 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
+  const [safeAreaTop, setSafeAreaTop] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const isPulling = useRef(false);
 
-  const THRESHOLD = 70; // px to trigger refresh
-  const MAX_PULL = 130; // max visual pull distance
+  const THRESHOLD = 60; // px to trigger refresh
+  const MAX_PULL = 120; // max visual pull distance
+
+  // Detect safe area inset on mount
+  useEffect(() => {
+    const computedStyle = getComputedStyle(document.documentElement);
+    const safeArea = parseInt(computedStyle.getPropertyValue('--sat') || '0', 10) ||
+      parseInt(computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0', 10);
+    setSafeAreaTop(safeArea);
+  }, []);
 
   // Rubber band resistance - feels more natural like iOS
   const applyResistance = useCallback((distance: number): number => {
     if (distance <= 0) return 0;
-    // Logarithmic resistance for that stretchy feel
-    const resistance = 0.55;
-    return Math.min(distance * resistance * (1 - distance / (MAX_PULL * 3)), MAX_PULL);
+    // Smoother logarithmic resistance
+    const maxDistance = MAX_PULL * 2.5;
+    return MAX_PULL * (1 - Math.exp(-distance / maxDistance * 2));
   }, []);
 
   useEffect(() => {
@@ -69,7 +78,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
         // Trigger refresh
         setIsRefreshing(true);
         setIsReleasing(true);
-        setPullDistance(55); // Settle position for spinner
+        setPullDistance(50); // Settle position for spinner
         
         try {
           if (onRefresh) {
@@ -83,7 +92,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
         
         // Animate out
         setIsRefreshing(false);
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 100));
         setPullDistance(0);
         setIsReleasing(false);
       } else {
@@ -106,34 +115,45 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
   }, [pullDistance, isRefreshing, onRefresh, disabled, applyResistance]);
 
   const progress = Math.min(pullDistance / THRESHOLD, 1);
-  const showSpinner = pullDistance > 8 || isRefreshing;
+  const showSpinner = pullDistance > 5 || isRefreshing;
   
-  // Scale from 0.3 to 1 as user pulls
-  const spinnerScale = isRefreshing ? 1 : 0.3 + (progress * 0.7);
-  const spinnerOpacity = isRefreshing ? 1 : Math.min(progress * 1.5, 1);
+  // Spinner positioning - starts hidden, slides down with content
+  const spinnerY = Math.max(0, pullDistance - 15);
+  const spinnerScale = isRefreshing ? 1 : Math.min(0.5 + (progress * 0.5), 1);
+  const spinnerOpacity = isRefreshing ? 1 : Math.min(progress * 1.2, 1);
 
   return (
-    <div ref={containerRef} className="relative min-h-screen touch-pan-y">
-      {/* iOS-style spinner indicator */}
+    <div 
+      ref={containerRef} 
+      className="relative min-h-screen touch-pan-y"
+      style={{
+        // CSS custom property for safe area (set in globals.css or layout)
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}
+    >
+      {/* iOS-style spinner indicator - fixed position for PWA compatibility */}
       <div 
-        className="absolute left-1/2 z-50 pointer-events-none"
+        className="fixed left-1/2 z-[100] pointer-events-none flex items-center justify-center"
         style={{ 
-          transform: `translateX(-50%) translateY(${pullDistance - 45}px)`,
+          top: `calc(env(safe-area-inset-top, 0px) + ${spinnerY}px)`,
+          transform: 'translateX(-50%)',
           opacity: showSpinner ? spinnerOpacity : 0,
-          transition: isReleasing ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 0.15s ease',
+          transition: isReleasing 
+            ? 'top 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease' 
+            : 'opacity 0.1s ease',
         }}
       >
         <div 
-          className="flex items-center justify-center"
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm shadow-lg border border-border/50"
           style={{
             transform: `scale(${spinnerScale})`,
-            transition: isReleasing ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+            transition: isReleasing ? 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)' : 'transform 0.1s ease',
           }}
         >
           <AppleSpinner 
             progress={progress} 
             isSpinning={isRefreshing} 
-            size={28}
+            size={20}
           />
         </div>
       </div>
@@ -142,7 +162,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       <div 
         style={{ 
           transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : 'none',
-          transition: isReleasing ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          transition: isReleasing ? 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
         }}
       >
         {children}
@@ -151,56 +171,56 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
   );
 }
 
-// Apple-style activity indicator
+// Apple-style activity indicator - thinner, more elegant
 function AppleSpinner({ 
   progress, 
   isSpinning, 
-  size = 28 
+  size = 20 
 }: { 
   progress: number; 
   isSpinning: boolean; 
   size?: number;
 }) {
   const lines = 12;
+  const lineWidth = 2;
+  const lineHeight = size * 0.28;
   
   return (
     <div 
-      className={`relative ${isSpinning ? 'animate-spin' : ''}`}
+      className="relative text-muted-foreground"
       style={{ 
         width: size, 
         height: size,
-        animationDuration: '0.8s',
+        animation: isSpinning ? 'spin 0.75s linear infinite' : 'none',
       }}
     >
       {Array.from({ length: lines }).map((_, i) => {
         const rotation = (i * 360) / lines;
-        // When pulling, reveal lines progressively
-        const lineProgress = isSpinning ? 1 : Math.max(0, (progress * lines - (lines - 1 - i)) / 1);
-        const opacity = isSpinning 
-          ? 0.25 + (0.75 * ((lines - i) / lines)) // Gradient for spinning
-          : Math.min(lineProgress, 0.2 + (0.6 * ((lines - i) / lines))); // Reveal during pull
+        // Progressive reveal during pull
+        const lineIndex = (lines - 1 - i);
+        const lineOpacity = isSpinning 
+          ? 0.15 + (0.85 * (1 - i / lines)) // Gradient for spinning
+          : Math.max(0.15, Math.min(1, (progress * lines - lineIndex) * 0.5 + 0.15));
         
         return (
           <div
             key={i}
-            className="absolute left-1/2 top-0 origin-bottom"
+            className="absolute"
             style={{
-              width: 2.5,
-              height: size / 2 - 2,
-              marginLeft: -1.25,
+              width: lineWidth,
+              height: lineHeight,
+              left: '50%',
+              top: '50%',
+              marginLeft: -lineWidth / 2,
+              marginTop: -size / 2 + 1,
+              borderRadius: lineWidth,
+              backgroundColor: 'currentColor',
+              opacity: lineOpacity,
               transform: `rotate(${rotation}deg)`,
-              transformOrigin: `center ${size / 2}px`,
+              transformOrigin: `center ${size / 2 - 1}px`,
+              transition: isSpinning ? 'none' : 'opacity 0.08s ease',
             }}
-          >
-            <div
-              className="w-full rounded-full bg-current"
-              style={{
-                height: '35%',
-                opacity: opacity,
-                transition: isSpinning ? 'none' : 'opacity 0.1s ease',
-              }}
-            />
-          </div>
+          />
         );
       })}
     </div>
