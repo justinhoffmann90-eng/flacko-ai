@@ -12,6 +12,7 @@ import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { PositioningCard } from "@/components/dashboard/positioning-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
+import { ModeProvider } from "@/components/providers/mode-provider";
 
 interface ExtractedData {
   mode?: { current: string; label: string };
@@ -162,7 +163,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <>
+    <ModeProvider mode={mode}>
       <Header title="Dashboard" />
       <main className="px-4 py-6 max-w-lg mx-auto md:max-w-none md:max-w-5xl lg:max-w-6xl md:px-0 space-y-4 md:space-y-8">
         {/* Discord Onboarding Banner */}
@@ -315,7 +316,7 @@ export default async function DashboardPage() {
         {/* Quick Actions */}
         <div className={`grid gap-3 md:gap-4 lg:gap-5 pt-2 grid-cols-2 md:grid-cols-4`}>
           <Link href="/report" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <FileText className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
               <p className="font-medium md:text-lg">Daily Report</p>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">
@@ -333,7 +334,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           <Link href="/catalysts" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <Calendar className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
               <p className="font-medium md:text-lg">Catalysts</p>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">
@@ -342,7 +343,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           <Link href="/history" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <History className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
               <p className="font-medium md:text-lg">History</p>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">
@@ -363,6 +364,6 @@ export default async function DashboardPage() {
           )}
         </div>
       </main>
-    </>
+    </ModeProvider>
   );
 }
