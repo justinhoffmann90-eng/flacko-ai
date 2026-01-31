@@ -2,6 +2,23 @@
 
 import { TimeframeData, TierSignal } from "@/types/weekly-review";
 
+// Format BXT display with light/dark terminology
+function formatBxtDisplay(color: string, pattern: string): string {
+  const upperPattern = pattern.toUpperCase();
+  
+  if (color === "green") {
+    // HH = Light Green, LH = Dark Green
+    if (upperPattern === "HH") return "Light Green (HH)";
+    if (upperPattern === "LH") return "Dark Green (LH)";
+    return `Green, ${pattern}`; // fallback
+  } else {
+    // HL = Light Red, LL = Dark Red  
+    if (upperPattern === "HL") return "Light Red (HL)";
+    if (upperPattern === "LL") return "Dark Red (LL)";
+    return `Red, ${pattern}`; // fallback
+  }
+}
+
 interface TimeframeGridProps {
   monthly: TimeframeData;
   weekly: TimeframeData;
@@ -45,7 +62,7 @@ function TimeframeCard({ label, data, borderColor }: TimeframeCardProps) {
         <div className="flex justify-between py-1 border-b border-border">
           <span className="text-muted-foreground">BX-Trender</span>
           <span className={`font-medium ${data.bx_trender.color === "green" ? "text-green-500" : "text-red-500"}`}>
-            {data.bx_trender.color === "green" ? "Green" : "Red"}, {data.bx_trender.pattern}
+            {formatBxtDisplay(data.bx_trender.color, data.bx_trender.pattern)}
           </span>
         </div>
         <div className="flex justify-between py-1 border-b border-border">
