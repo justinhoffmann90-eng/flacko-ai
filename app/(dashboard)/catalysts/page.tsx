@@ -212,7 +212,7 @@ export default async function CatalystsPage({
         )}
 
         {/* Legend */}
-        <Card className="p-4">
+        <Card className="p-4 md:p-6 lg:p-8">
           <p className="text-xs font-medium text-muted-foreground mb-2">Status Legend</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className={statusColors.confirmed}>
