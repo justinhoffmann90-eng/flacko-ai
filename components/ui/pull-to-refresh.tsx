@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, ReactNode } from "react";
-import { RefreshCw } from "lucide-react";
+import { useEffect, useState, useRef, ReactNode, useCallback } from "react";
 
 interface PullToRefreshProps {
   children: ReactNode;
@@ -10,15 +9,23 @@ interface PullToRefreshProps {
 }
 
 export function PullToRefresh({ children, onRefresh, disabled = false }: PullToRefreshProps) {
-  const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isReleasing, setIsReleasing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
-  const currentY = useRef(0);
+  const isPulling = useRef(false);
 
-  const THRESHOLD = 80; // px to trigger refresh
-  const MAX_PULL = 120; // max pull distance
+  const THRESHOLD = 70; // px to trigger refresh
+  const MAX_PULL = 130; // max visual pull distance
+
+  // Rubber band resistance - feels more natural like iOS
+  const applyResistance = useCallback((distance: number): number => {
+    if (distance <= 0) return 0;
+    // Logarithmic resistance for that stretchy feel
+    const resistance = 0.55;
+    return Math.min(distance * resistance * (1 - distance / (MAX_PULL * 3)), MAX_PULL);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -26,53 +33,65 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
 
     const handleTouchStart = (e: TouchEvent) => {
       // Only activate if we're at the top of the page
-      if (window.scrollY === 0) {
+      if (window.scrollY <= 0 && !isRefreshing) {
         startY.current = e.touches[0].clientY;
-        setIsPulling(true);
+        isPulling.current = true;
+        setIsReleasing(false);
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isPulling || isRefreshing) return;
+      if (!isPulling.current || isRefreshing) return;
       
-      currentY.current = e.touches[0].clientY;
-      const diff = currentY.current - startY.current;
+      const currentY = e.touches[0].clientY;
+      const rawDiff = currentY - startY.current;
       
-      if (diff > 0 && window.scrollY === 0) {
-        // Apply resistance to pull
-        const distance = Math.min(diff * 0.5, MAX_PULL);
+      if (rawDiff > 0 && window.scrollY <= 0) {
+        const distance = applyResistance(rawDiff);
         setPullDistance(distance);
         
-        // Prevent default scroll when pulling
-        if (distance > 10) {
+        // Prevent default scroll when pulling down
+        if (distance > 5) {
           e.preventDefault();
         }
+      } else {
+        setPullDistance(0);
       }
     };
 
     const handleTouchEnd = async () => {
-      if (!isPulling) return;
+      if (!isPulling.current) return;
+      isPulling.current = false;
       
-      if (pullDistance >= THRESHOLD && !isRefreshing) {
+      const currentPull = pullDistance;
+      
+      if (currentPull >= THRESHOLD && !isRefreshing) {
+        // Trigger refresh
         setIsRefreshing(true);
-        setPullDistance(60); // Keep spinner visible
+        setIsReleasing(true);
+        setPullDistance(55); // Settle position for spinner
         
         try {
           if (onRefresh) {
             await onRefresh();
           } else {
-            // Default: reload the page
             window.location.reload();
           }
         } catch (error) {
           console.error("Refresh failed:", error);
         }
         
+        // Animate out
         setIsRefreshing(false);
+        await new Promise(r => setTimeout(r, 150));
+        setPullDistance(0);
+        setIsReleasing(false);
+      } else {
+        // Spring back
+        setIsReleasing(true);
+        setPullDistance(0);
+        setTimeout(() => setIsReleasing(false), 300);
       }
-      
-      setIsPulling(false);
-      setPullDistance(0);
     };
 
     container.addEventListener("touchstart", handleTouchStart, { passive: true });
@@ -84,31 +103,37 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isPulling, pullDistance, isRefreshing, onRefresh, disabled]);
+  }, [pullDistance, isRefreshing, onRefresh, disabled, applyResistance]);
 
   const progress = Math.min(pullDistance / THRESHOLD, 1);
-  const showIndicator = pullDistance > 10 || isRefreshing;
+  const showSpinner = pullDistance > 8 || isRefreshing;
+  
+  // Scale from 0.3 to 1 as user pulls
+  const spinnerScale = isRefreshing ? 1 : 0.3 + (progress * 0.7);
+  const spinnerOpacity = isRefreshing ? 1 : Math.min(progress * 1.5, 1);
 
   return (
-    <div ref={containerRef} className="relative min-h-screen">
-      {/* Pull indicator */}
+    <div ref={containerRef} className="relative min-h-screen touch-pan-y">
+      {/* iOS-style spinner indicator */}
       <div 
-        className="absolute left-0 right-0 flex justify-center transition-transform duration-200 z-50"
+        className="absolute left-1/2 z-50 pointer-events-none"
         style={{ 
-          transform: `translateY(${Math.max(pullDistance - 40, -40)}px)`,
-          opacity: showIndicator ? 1 : 0,
+          transform: `translateX(-50%) translateY(${pullDistance - 45}px)`,
+          opacity: showSpinner ? spinnerOpacity : 0,
+          transition: isReleasing ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'opacity 0.15s ease',
         }}
       >
-        <div className={`
-          flex items-center justify-center w-10 h-10 rounded-full 
-          bg-background/95 border border-border shadow-lg
-          ${isRefreshing ? 'animate-spin' : ''}
-        `}>
-          <RefreshCw 
-            className={`h-5 w-5 text-muted-foreground transition-transform`}
-            style={{ 
-              transform: isRefreshing ? 'none' : `rotate(${progress * 360}deg)`,
-            }}
+        <div 
+          className="flex items-center justify-center"
+          style={{
+            transform: `scale(${spinnerScale})`,
+            transition: isReleasing ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          }}
+        >
+          <AppleSpinner 
+            progress={progress} 
+            isSpinning={isRefreshing} 
+            size={28}
           />
         </div>
       </div>
@@ -117,11 +142,67 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       <div 
         style={{ 
           transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : 'none',
-          transition: isPulling ? 'none' : 'transform 0.2s ease-out',
+          transition: isReleasing ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
         }}
       >
         {children}
       </div>
+    </div>
+  );
+}
+
+// Apple-style activity indicator
+function AppleSpinner({ 
+  progress, 
+  isSpinning, 
+  size = 28 
+}: { 
+  progress: number; 
+  isSpinning: boolean; 
+  size?: number;
+}) {
+  const lines = 12;
+  
+  return (
+    <div 
+      className={`relative ${isSpinning ? 'animate-spin' : ''}`}
+      style={{ 
+        width: size, 
+        height: size,
+        animationDuration: '0.8s',
+      }}
+    >
+      {Array.from({ length: lines }).map((_, i) => {
+        const rotation = (i * 360) / lines;
+        // When pulling, reveal lines progressively
+        const lineProgress = isSpinning ? 1 : Math.max(0, (progress * lines - (lines - 1 - i)) / 1);
+        const opacity = isSpinning 
+          ? 0.25 + (0.75 * ((lines - i) / lines)) // Gradient for spinning
+          : Math.min(lineProgress, 0.2 + (0.6 * ((lines - i) / lines))); // Reveal during pull
+        
+        return (
+          <div
+            key={i}
+            className="absolute left-1/2 top-0 origin-bottom"
+            style={{
+              width: 2.5,
+              height: size / 2 - 2,
+              marginLeft: -1.25,
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: `center ${size / 2}px`,
+            }}
+          >
+            <div
+              className="w-full rounded-full bg-current"
+              style={{
+                height: '35%',
+                opacity: opacity,
+                transition: isSpinning ? 'none' : 'opacity 0.1s ease',
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
