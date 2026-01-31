@@ -8,7 +8,6 @@ import { X, CheckCircle } from "lucide-react";
 const DISCORD_INVITE_URL = "https://discord.gg/rS3wsxjt";
 const DISCORD_CLIENT_ID = "1465761828461216028";
 const STORAGE_KEY = "discord_onboarding_dismissed";
-const JOINED_KEY = "discord_server_joined";
 
 interface DiscordOnboardingProps {
   isDiscordLinked: boolean;
@@ -16,18 +15,20 @@ interface DiscordOnboardingProps {
 
 export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
   const [dismissed, setDismissed] = useState(true);
-  const [hasJoined, setHasJoined] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const isDismissed = localStorage.getItem(STORAGE_KEY) === "true";
-    const joined = localStorage.getItem(JOINED_KEY) === "true";
     setDismissed(isDismissed);
-    setHasJoined(joined);
   }, []);
 
-  if (!mounted || isDiscordLinked || dismissed) {
+  // Show Step 2 (Join Server) if Discord is linked but card not dismissed
+  // Show Step 1 (Link Account) if Discord is NOT linked
+  const showJoinStep = isDiscordLinked && !dismissed;
+  const showLinkStep = !isDiscordLinked && !dismissed;
+
+  if (!mounted || dismissed || (isDiscordLinked && dismissed)) {
     return null;
   }
 
@@ -37,8 +38,9 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
   };
 
   const handleJoinServer = () => {
-    localStorage.setItem(JOINED_KEY, "true");
-    setHasJoined(true);
+    // After joining, dismiss the card
+    localStorage.setItem(STORAGE_KEY, "true");
+    setDismissed(true);
     window.open(DISCORD_INVITE_URL, "_blank");
   };
 
@@ -66,27 +68,12 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          {!hasJoined ? (
+          {showLinkStep && (
             <>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 1 of 2</p>
-              <h3 className="font-semibold text-sm">Join Our Member-Only Discord</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Take full advantage of our platform &amp; engage with the group.
-              </p>
-              <Button
-                size="sm"
-                className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
-                onClick={handleJoinServer}
-              >
-                Join Discord Server
-              </Button>
-            </>
-          ) : (
-            <>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 2 of 2</p>
               <h3 className="font-semibold text-sm">Link Your Discord Account</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Get the <span className="text-[#5865F2] font-medium">Subscriber</span> role for private channel access.
+                Connect your Discord to get the <span className="text-[#5865F2] font-medium">Subscriber</span> role automatically.
               </p>
               <Button
                 size="sm"
@@ -94,6 +81,22 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
                 onClick={handleLinkDiscord}
               >
                 Link Discord Account
+              </Button>
+            </>
+          )}
+          {showJoinStep && (
+            <>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 2 of 2</p>
+              <h3 className="font-semibold text-sm">Join Our Member-Only Discord</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your account is linked! Now join the server to access private channels.
+              </p>
+              <Button
+                size="sm"
+                className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
+                onClick={handleJoinServer}
+              >
+                Join Discord Server
               </Button>
             </>
           )}
