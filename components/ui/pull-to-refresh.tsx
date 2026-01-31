@@ -9,18 +9,20 @@ interface PullToRefreshProps {
 }
 
 export function PullToRefresh({ children, onRefresh, disabled = false }: PullToRefreshProps) {
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isReleasing, setIsReleasing] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const spinnerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
+  const currentPull = useRef(0);
   const isPulling = useRef(false);
 
-  const THRESHOLD = 80; // px to trigger refresh
-  const MAX_PULL = 150; // max visual pull distance
+  const THRESHOLD = 80;
+  const MAX_PULL = 140;
+  const RESISTANCE = 0.55;
 
-  // Detect if running as installed PWA (standalone mode)
+  // Detect standalone mode
   useEffect(() => {
     const standalone = 
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -28,16 +30,20 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
     setIsStandalone(standalone);
   }, []);
 
-  // Lighter resistance for more natural iOS-like pull
-  const applyResistance = useCallback((distance: number): number => {
-    if (distance <= 0) return 0;
-    // Less resistance = more movement like native iOS
-    const factor = 0.6;
-    return Math.min(distance * factor, MAX_PULL);
-  }, []);
-
-  // Only activate in standalone/PWA mode
   const isDisabled = disabled || !isStandalone;
+
+  // Direct DOM manipulation for smooth 60fps animation
+  const updateVisuals = useCallback((distance: number) => {
+    if (!contentRef.current || !spinnerRef.current) return;
+    
+    const progress = Math.min(distance / THRESHOLD, 1);
+    const spinnerY = distance / 2 - 10;
+    
+    // Direct style updates (no React re-render)
+    contentRef.current.style.transform = distance > 0 ? `translateY(${distance}px)` : '';
+    spinnerRef.current.style.transform = `translateX(-50%) translateY(${Math.max(spinnerY, 5)}px)`;
+    spinnerRef.current.style.opacity = distance > 10 ? String(Math.min(progress * 1.3, 1)) : '0';
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -47,25 +53,33 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       if (window.scrollY <= 0 && !isRefreshing) {
         startY.current = e.touches[0].clientY;
         isPulling.current = true;
-        setIsReleasing(false);
+        
+        // Remove transitions during drag
+        if (contentRef.current) contentRef.current.style.transition = 'none';
+        if (spinnerRef.current) spinnerRef.current.style.transition = 'none';
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!isPulling.current || isRefreshing) return;
       
-      const currentY = e.touches[0].clientY;
-      const rawDiff = currentY - startY.current;
+      const touchY = e.touches[0].clientY;
+      const rawDiff = touchY - startY.current;
       
       if (rawDiff > 0 && window.scrollY <= 0) {
-        const distance = applyResistance(rawDiff);
-        setPullDistance(distance);
+        // Apply resistance
+        const distance = Math.min(rawDiff * RESISTANCE, MAX_PULL);
+        currentPull.current = distance;
+        
+        // Update visuals directly (not through React state)
+        updateVisuals(distance);
         
         if (distance > 5) {
           e.preventDefault();
         }
       } else {
-        setPullDistance(0);
+        currentPull.current = 0;
+        updateVisuals(0);
       }
     };
 
@@ -73,12 +87,20 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       if (!isPulling.current) return;
       isPulling.current = false;
       
-      const currentPull = pullDistance;
+      const finalPull = currentPull.current;
       
-      if (currentPull >= THRESHOLD && !isRefreshing) {
+      // Re-enable transitions for release animation
+      if (contentRef.current) {
+        contentRef.current.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      }
+      if (spinnerRef.current) {
+        spinnerRef.current.style.transition = 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      }
+      
+      if (finalPull >= THRESHOLD && !isRefreshing) {
+        // Hold at refresh position
+        updateVisuals(65);
         setIsRefreshing(true);
-        setIsReleasing(true);
-        setPullDistance(70); // Hold position while refreshing
         
         try {
           if (onRefresh) {
@@ -91,14 +113,11 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
         }
         
         setIsRefreshing(false);
-        await new Promise(r => setTimeout(r, 100));
-        setPullDistance(0);
-        setIsReleasing(false);
-      } else {
-        setIsReleasing(true);
-        setPullDistance(0);
-        setTimeout(() => setIsReleasing(false), 300);
       }
+      
+      // Snap back
+      currentPull.current = 0;
+      updateVisuals(0);
     };
 
     container.addEventListener("touchstart", handleTouchStart, { passive: true });
@@ -110,65 +129,38 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [pullDistance, isRefreshing, onRefresh, isDisabled, applyResistance]);
+  }, [isRefreshing, onRefresh, isDisabled, updateVisuals]);
 
-  // In browser mode, just render children - let Safari's native work
+  // Browser mode - just render children
   if (!isStandalone) {
     return <>{children}</>;
   }
 
-  const progress = Math.min(pullDistance / THRESHOLD, 1);
-  const showSpinner = pullDistance > 10 || isRefreshing;
-  
-  // Spinner in the gap that opens up (centered in pull area)
-  const spinnerY = pullDistance / 2 - 15;
-
   return (
-    <div ref={containerRef} className="relative min-h-screen touch-pan-y overflow-x-hidden">
-      {/* iOS-style spinner - positioned in the gap that opens */}
+    <div ref={containerRef} className="relative min-h-screen touch-pan-y overflow-hidden">
+      {/* Spinner */}
       <div 
-        className="absolute left-1/2 z-50 pointer-events-none"
+        ref={spinnerRef}
+        className="fixed left-1/2 z-50 pointer-events-none"
         style={{ 
-          top: `calc(env(safe-area-inset-top, 0px) + ${Math.max(spinnerY, 10)}px)`,
-          transform: 'translateX(-50%)',
-          opacity: showSpinner ? Math.min(progress * 1.5, 1) : 0,
-          transition: isReleasing ? 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'opacity 0.1s',
+          top: 'env(safe-area-inset-top, 0px)',
+          opacity: 0,
         }}
       >
-        <IOSSpinner 
-          progress={progress} 
-          isSpinning={isRefreshing} 
-          size={32}
-        />
+        <IOSSpinner isSpinning={isRefreshing} size={30} />
       </div>
 
-      {/* Content moves down with pull */}
-      <div 
-        style={{ 
-          transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : 'none',
-          transition: isReleasing ? 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none',
-        }}
-      >
+      {/* Content */}
+      <div ref={contentRef}>
         {children}
       </div>
     </div>
   );
 }
 
-// Native iOS activity indicator style - no background, just the spinner
-function IOSSpinner({ 
-  progress, 
-  isSpinning, 
-  size = 32 
-}: { 
-  progress: number; 
-  isSpinning: boolean; 
-  size?: number;
-}) {
+// Simple iOS spinner
+function IOSSpinner({ isSpinning, size = 30 }: { isSpinning: boolean; size?: number }) {
   const lines = 12;
-  const lineWidth = 2.5;
-  const lineHeight = size * 0.3;
-  const innerRadius = size * 0.22;
   
   return (
     <div 
@@ -176,33 +168,30 @@ function IOSSpinner({
       style={{ 
         width: size, 
         height: size,
-        animationDuration: isSpinning ? '1s' : undefined,
-        animationTimingFunction: isSpinning ? 'steps(12)' : undefined,
+        animationDuration: '0.8s',
+        animationTimingFunction: 'steps(12)',
       }}
     >
       {Array.from({ length: lines }).map((_, i) => {
         const rotation = (i * 360) / lines;
-        // Gradient opacity - darkest at top, fading around
-        const baseOpacity = isSpinning 
-          ? 0.1 + (0.9 * (1 - i / lines))
-          : Math.max(0.1, progress * (1 - i / (lines * 1.2)));
+        const opacity = 0.15 + (0.85 * (1 - i / lines));
         
         return (
           <div
             key={i}
             style={{
               position: 'absolute',
-              width: lineWidth,
-              height: lineHeight,
+              width: 2.5,
+              height: size * 0.28,
               left: '50%',
               top: '50%',
-              marginLeft: -lineWidth / 2,
-              marginTop: -size / 2 + innerRadius,
-              borderRadius: lineWidth,
-              backgroundColor: '#8E8E93', // iOS gray
-              opacity: baseOpacity,
+              marginLeft: -1.25,
+              marginTop: -size / 2 + size * 0.18,
+              borderRadius: 2,
+              backgroundColor: '#8E8E93',
+              opacity,
               transform: `rotate(${rotation}deg)`,
-              transformOrigin: `center ${size / 2 - innerRadius}px`,
+              transformOrigin: `center ${size / 2 - size * 0.18}px`,
             }}
           />
         );
