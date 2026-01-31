@@ -35,7 +35,7 @@ export default function DashboardLayout({
       
       {/* Main content - offset for desktop sidebar */}
       <div className="md:pl-64">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-7xl md:px-8 lg:px-12">
           <PullToRefresh disabled={disablePullToRefresh}>
             {children}
           </PullToRefresh>

@@ -164,7 +164,7 @@ export default async function DashboardPage() {
   return (
     <>
       <Header title="Dashboard" />
-      <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
+      <main className="px-4 py-6 max-w-lg mx-auto md:max-w-none md:px-0 space-y-4 md:space-y-6">
         {/* Discord Onboarding Banner */}
         <DiscordOnboarding isDiscordLinked={isDiscordLinked} />
         
@@ -221,86 +221,96 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Positioning Card */}
-        {positioning && (
-          <PositioningCard
-            dailyCapPct={dailyCapPct}
-            posture={positioning.posture || ''}
-            serverCashAvailable={cashAvailable}
-            isDevMode={devBypass}
-          />
-        )}
+        {/* Desktop: 2-column grid | Mobile: stacked */}
+        <div className="md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0">
+          {/* Left column */}
+          <div className="space-y-4">
+            {/* Positioning Card */}
+            {positioning && (
+              <PositioningCard
+                dailyCapPct={dailyCapPct}
+                posture={positioning.posture || ''}
+                serverCashAvailable={cashAvailable}
+                isDevMode={devBypass}
+              />
+            )}
 
-        {/* Key Levels - Live Price Ladder */}
-        {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
-          <LivePriceLadder
-            upsideLevels={upsideLevels}
-            downsideLevels={downsideLevels}
-            masterEject={masterEject}
-            fallbackPrice={closePrice}
-            reportDate={report?.report_date}
-          />
-        )}
+            {/* Key Levels - Live Price Ladder */}
+            {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
+              <LivePriceLadder
+                upsideLevels={upsideLevels}
+                downsideLevels={downsideLevels}
+                masterEject={masterEject}
+                fallbackPrice={closePrice}
+                reportDate={report?.report_date}
+              />
+            )}
+          </div>
 
-        {/* Upcoming Catalysts */}
-        {upcomingCatalysts.length > 0 && (
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold text-sm">Upcoming Catalysts</h3>
-              </div>
-              <Link href="/catalysts" className="text-xs text-primary hover:underline">
-                View all →
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {upcomingCatalysts.map((catalyst) => {
-                const eventDate = new Date(catalyst.event_date + 'T12:00:00');
-                const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
-                const day = eventDate.getDate();
-                const statusColors: Record<string, string> = {
-                  confirmed: 'bg-green-500/20 text-green-500',
-                  projected: 'bg-yellow-500/20 text-yellow-500',
-                  speculative: 'bg-slate-500/20 text-slate-400',
-                };
-                return (
-                  <div key={catalyst.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                    <div className="text-center min-w-[40px]">
-                      <p className="text-[10px] uppercase text-muted-foreground">{month}</p>
-                      <p className="text-lg font-bold leading-tight">{day}</p>
+          {/* Right column */}
+          <div className="space-y-4">
+
+            {/* Upcoming Catalysts */}
+            {upcomingCatalysts.length > 0 && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm">Upcoming Catalysts</h3>
+                  </div>
+                  <Link href="/catalysts" className="text-xs text-primary hover:underline">
+                    View all →
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {upcomingCatalysts.map((catalyst) => {
+                    const eventDate = new Date(catalyst.event_date + 'T12:00:00');
+                    const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
+                    const day = eventDate.getDate();
+                    const statusColors: Record<string, string> = {
+                      confirmed: 'bg-green-500/20 text-green-500',
+                      projected: 'bg-yellow-500/20 text-yellow-500',
+                      speculative: 'bg-slate-500/20 text-slate-400',
+                    };
+                    return (
+                      <div key={catalyst.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                        <div className="text-center min-w-[40px]">
+                          <p className="text-[10px] uppercase text-muted-foreground">{month}</p>
+                          <p className="text-lg font-bold leading-tight">{day}</p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{catalyst.name}</p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${statusColors[catalyst.status]}`}>
+                            {catalyst.status.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
+            {!devBypass && !cashAvailable && (
+              <Link href="/settings">
+                <Card className="p-4 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                      <Wallet className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{catalyst.name}</p>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${statusColors[catalyst.status]}`}>
-                        {catalyst.status.toUpperCase()}
-                      </span>
+                    <div>
+                      <p className="font-medium">Set Up Position Sizing</p>
+                      <p className="text-xs text-muted-foreground">
+                        Enter your cash available to see daily budget &amp; bullet sizes
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </Card>
-        )}
-
-        {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
-        {!devBypass && !cashAvailable && (
-          <Link href="/settings">
-            <Card className="p-4 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                  <Wallet className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium">Set Up Position Sizing</p>
-                  <p className="text-xs text-muted-foreground">
-                    Enter your cash available to see daily budget &amp; bullet sizes
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </Link>
-        )}
+                </Card>
+              </Link>
+            )}
+          </div>
+        </div>
 
         {/* Quick Actions */}
         <div className={`grid gap-3 pt-2 grid-cols-2`}>
