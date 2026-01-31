@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
+import { ProgressTrigger } from "@/components/ui/progress-trigger";
 
 export default function DashboardLayout({
   children,
@@ -16,6 +17,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <ProgressTrigger />
       {/* Desktop sidebar nav */}
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-72 lg:w-80 md:flex-col">
         <div className="flex min-h-0 flex-1 flex-col border-r border-border bg-card">
