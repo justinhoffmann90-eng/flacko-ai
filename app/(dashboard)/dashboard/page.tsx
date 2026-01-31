@@ -69,6 +69,12 @@ export default async function DashboardPage() {
     if (!hasAccess) {
       redirect("/signup");
     }
+
+    // Track dashboard visit
+    await supabase
+      .from("users")
+      .update({ last_dashboard_visit: new Date().toISOString() })
+      .eq("id", user.id);
   }
 
   const { data: reportData } = await supabase
