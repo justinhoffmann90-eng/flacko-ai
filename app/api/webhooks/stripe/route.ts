@@ -42,7 +42,30 @@ export async function POST(request: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
         const priceTier = parseInt(session.metadata?.price_tier || "1");
-        const lockedPriceCents = parseInt(session.metadata?.locked_price_cents || "2999");
+        
+        // Get actual price from Stripe subscription (includes coupon discounts)
+        let lockedPriceCents = parseInt(session.metadata?.locked_price_cents || "2999");
+        
+        if (session.subscription) {
+          try {
+            const subscription = await getStripe().subscriptions.retrieve(
+              session.subscription as string,
+              { expand: ['discount'] }
+            );
+            const basePrice = subscription.items.data[0]?.price?.unit_amount || lockedPriceCents;
+            const couponPercent = subscription.discount?.coupon?.percent_off || 0;
+            
+            // Calculate actual price after discount
+            if (couponPercent > 0) {
+              lockedPriceCents = Math.round(basePrice * (1 - couponPercent / 100));
+              console.log(`Applied ${couponPercent}% discount: $${basePrice/100} -> $${lockedPriceCents/100}`);
+            } else {
+              lockedPriceCents = basePrice;
+            }
+          } catch (e) {
+            console.error("Failed to fetch subscription for price calculation:", e);
+          }
+        }
 
         if (userId) {
           // Create or update subscription
