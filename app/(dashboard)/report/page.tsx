@@ -82,30 +82,30 @@ export default async function ReportPage() {
         <ReportToggle />
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-card border rounded-lg p-3 md:p-4 text-center">
-            <p className="text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Mode</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Mode</p>
             <Badge
               variant={mode as "green" | "yellow" | "red"}
-              className="mt-1 md:mt-2 text-sm md:text-base px-3 md:px-4"
+              className="mt-1 md:mt-2 text-sm md:text-base lg:text-lg px-3 md:px-4"
             >
               {mode.toUpperCase()}
             </Badge>
           </div>
-          <div className="bg-card border rounded-lg p-3 md:p-4 text-center">
-            <p className="text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Positioning</p>
-            <p className="text-base md:text-lg font-semibold mt-1 md:mt-2">{posture}</p>
+          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Positioning</p>
+            <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{posture}</p>
           </div>
-          <div className="bg-card border rounded-lg p-3 md:p-4 text-center">
-            <p className="text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Daily Cap</p>
-            <p className="text-base md:text-lg font-semibold mt-1 md:mt-2">{dailyCap}</p>
+          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Daily Cap</p>
+            <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{dailyCap}</p>
           </div>
-          <div className="bg-card border border-red-500/30 rounded-lg p-3 md:p-4 text-center">
-            <p className="text-xs md:text-sm text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
+          <div className="bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
               <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
               Eject
             </p>
-            <p className="text-lg md:text-xl font-bold text-red-500">{formatPrice(masterEject)}</p>
+            <p className="text-lg md:text-xl lg:text-2xl font-bold text-red-500">{formatPrice(masterEject)}</p>
           </div>
         </div>
 
