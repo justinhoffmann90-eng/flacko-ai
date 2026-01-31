@@ -456,3 +456,63 @@ html, body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Press states - satisfying tap feedback */
+.press-scale {
+  transition: transform 0.1s ease;
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* Lighter press for smaller elements */
+.press-scale-sm {
+  transition: transform 0.1s ease;
+}
+.press-scale-sm:active {
+  transform: scale(0.98);
+}
+
+/* Mode-tinted UI colors */
+:root {
+  --mode-tint: 0 0% 100%;
+  --mode-accent: 0 0% 50%;
+}
+
+[data-mode="green"] {
+  --mode-tint: 142 76% 95%;
+  --mode-accent: 142 76% 36%;
+}
+
+[data-mode="yellow"] {
+  --mode-tint: 48 96% 95%;
+  --mode-accent: 48 96% 50%;
+}
+
+[data-mode="orange"] {
+  --mode-tint: 25 95% 95%;
+  --mode-accent: 25 95% 53%;
+}
+
+[data-mode="red"] {
+  --mode-tint: 0 84% 95%;
+  --mode-accent: 0 84% 60%;
+}
+
+/* Mode-aware backgrounds */
+.mode-tint-bg {
+  background-color: hsl(var(--mode-tint) / 0.1);
+}
+
+.mode-accent-text {
+  color: hsl(var(--mode-accent));
+}
+
+.mode-accent-border {
+  border-color: hsl(var(--mode-accent) / 0.3);
+}
+
+/* Smooth mode transitions */
+[data-mode] {
+  transition: --mode-tint 0.3s ease, --mode-accent 0.3s ease;
+}
