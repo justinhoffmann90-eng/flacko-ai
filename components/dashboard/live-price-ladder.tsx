@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, AlertTriangle } from "lucide-react";
 import { formatPrice, formatLevel } from "@/lib/utils";
 import { LevelMapEntry } from "@/types";
+import { Skeleton, SkeletonLevelRow } from "@/components/ui/skeleton";
 
 interface LivePriceLadderProps {
   upsideLevels: LevelMapEntry[];
@@ -57,6 +58,39 @@ function formatPctAway(levelPrice: number, currentPrice: number): string {
   }
 }
 
+// Animated price component
+function AnimatedPrice({ value, className }: { value: number; className?: string }) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const prevValue = useRef(value);
+  
+  useEffect(() => {
+    if (value === prevValue.current) return;
+    
+    const startValue = prevValue.current;
+    const endValue = value;
+    const duration = 400;
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      
+      setDisplayValue(startValue + (endValue - startValue) * eased);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        prevValue.current = endValue;
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }, [value]);
+  
+  return <span className={className}>${displayValue.toFixed(2)}</span>;
+}
+
 export function LivePriceLadder({
   upsideLevels,
   downsideLevels,
@@ -68,6 +102,7 @@ export function LivePriceLadder({
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [updateText, setUpdateText] = useState<string>("");
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const currentPrice = priceData?.price || fallbackPrice;
   const isMarketOpen = priceData?.isMarketOpen || false;
@@ -85,6 +120,7 @@ export function LivePriceLadder({
         console.error("Failed to fetch price:", error);
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     };
     fetchPrice();
@@ -188,7 +224,7 @@ export function LivePriceLadder({
           {isMarketOpen && updateText && (
             <span className="text-[10px] md:text-xs text-muted-foreground">↻ {updateText}</span>
           )}
-          <span className="font-bold md:text-lg">{formatPrice(currentPrice)}</span>
+          <AnimatedPrice value={currentPrice} className="font-bold md:text-lg" />
         </div>
       </div>
     </div>
@@ -215,6 +251,25 @@ export function LivePriceLadder({
       </div>
     </div>
   );
+
+  // Show skeleton during initial load
+  if (initialLoad) {
+    return (
+      <Card className="p-4 md:p-6 overflow-hidden">
+        <div className="flex items-center justify-between mb-4 md:mb-5">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
+        <div className="space-y-3">
+          <SkeletonLevelRow />
+          <SkeletonLevelRow />
+          <SkeletonLevelRow />
+          <SkeletonLevelRow />
+          <SkeletonLevelRow />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-4 md:p-6 overflow-hidden">
