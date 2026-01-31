@@ -172,31 +172,31 @@ export default async function DashboardPage() {
         {/* Mode Card - Hero with Glow */}
         <div className={`relative rounded-xl overflow-hidden animated-gradient-${mode}`}>
           {/* Glass overlay */}
-          <div className="glass-card rounded-xl p-5 md:p-8">
+          <div className="glass-card rounded-xl p-5 md:p-8 lg:p-10">
             <div className="flex items-start justify-between">
               <div>
                 <Badge
                   variant={mode as "green" | "yellow" | "orange" | "red"}
-                  className={`text-lg md:text-xl px-4 md:px-6 py-1.5 md:py-2 font-bold glow-${mode}`}
+                  className={`text-lg md:text-2xl lg:text-3xl px-4 md:px-8 lg:px-10 py-1.5 md:py-3 lg:py-4 font-bold glow-${mode}`}
                 >
                   {mode.toUpperCase()} MODE
                 </Badge>
-                <p className="text-sm text-muted-foreground mt-3">
+                <p className="text-sm md:text-base lg:text-lg text-muted-foreground mt-3 md:mt-4">
                   {report ? `Latest Report: ${formatDateShort(report.report_date)}` : "No report yet"}
                 </p>
               </div>
               <Link href="/report">
-                <Button size="sm" className="shadow-lg">
+                <Button size="sm" className="shadow-lg md:text-base md:px-6 md:py-6 lg:text-lg lg:px-8 lg:py-7">
                   View Report
-                  <ArrowRight className="ml-1 h-4 w-4" />
+                  <ArrowRight className="ml-1 h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 </Button>
               </Link>
             </div>
 
             {/* Tier Signals - Custom Indicators */}
             {tiers && (
-              <div className="mt-4 pt-3 border-t border-white/10">
-                <div className="grid grid-cols-4 gap-3 text-center">
+              <div className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-white/10">
+                <div className="grid grid-cols-4 gap-3 md:gap-6 lg:gap-8 text-center">
                   {[
                     { label: "Long", sublabel: "Weekly", signal: tiers.long || tiers.regime },
                     { label: "Medium", sublabel: "Daily", signal: tiers.medium || tiers.trend },
@@ -204,17 +204,17 @@ export default async function DashboardPage() {
                     { label: "Hourly", sublabel: "1H Zone", signal: tiers.hourly || tiers.flow },
                   ].map((tier) => (
                     <div key={tier.label} className="flex flex-col items-center">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{tier.label}</p>
-                      <p className="text-[8px] text-muted-foreground/70 mb-1">{tier.sublabel}</p>
+                      <p className="text-[10px] md:text-sm lg:text-base text-muted-foreground uppercase tracking-wider mb-0.5 md:mb-1 font-medium">{tier.label}</p>
+                      <p className="text-[8px] md:text-xs lg:text-sm text-muted-foreground/70 mb-1 md:mb-2">{tier.sublabel}</p>
                       <div className="relative">
-                        <div className={`w-4 h-4 rounded-full ${tierColors[tier.signal || 'yellow']} shadow-lg`}>
+                        <div className={`w-4 h-4 md:w-7 md:h-7 lg:w-9 lg:h-9 rounded-full ${tierColors[tier.signal || 'yellow']} shadow-lg`}>
                           <div className={`absolute inset-0 rounded-full ${tierColors[tier.signal || 'yellow']} animate-ping opacity-30`} />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[8px] text-center text-muted-foreground/60 mt-2">
+                <p className="text-[8px] md:text-xs lg:text-sm text-center text-muted-foreground/60 mt-2 md:mt-3">
                   Long/Medium = trend health • Short/Hourly = entry quality
                 </p>
               </div>
@@ -253,17 +253,17 @@ export default async function DashboardPage() {
 
             {/* Upcoming Catalysts */}
             {upcomingCatalysts.length > 0 && (
-              <Card className="p-4 md:p-6">
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                    <h3 className="font-semibold text-sm md:text-base">Upcoming Catalysts</h3>
+              <Card className="p-4 md:p-6 lg:p-8">
+                <div className="flex items-center justify-between mb-3 md:mb-4 lg:mb-6">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <Calendar className="h-4 w-4 md:h-6 md:w-6 lg:h-7 lg:w-7 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm md:text-lg lg:text-xl">Upcoming Catalysts</h3>
                   </div>
-                  <Link href="/catalysts" className="text-xs md:text-sm text-primary hover:underline">
+                  <Link href="/catalysts" className="text-xs md:text-sm lg:text-base text-primary hover:underline">
                     View all →
                   </Link>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:space-y-3 lg:space-y-4">
                   {upcomingCatalysts.map((catalyst) => {
                     const eventDate = new Date(catalyst.event_date + 'T12:00:00');
                     const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
@@ -274,14 +274,14 @@ export default async function DashboardPage() {
                       speculative: 'bg-slate-500/20 text-slate-400',
                     };
                     return (
-                      <div key={catalyst.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                        <div className="text-center min-w-[40px]">
-                          <p className="text-[10px] uppercase text-muted-foreground">{month}</p>
-                          <p className="text-lg font-bold leading-tight">{day}</p>
+                      <div key={catalyst.id} className="flex items-center gap-3 md:gap-4 lg:gap-5 p-2 md:p-3 lg:p-4 rounded-lg bg-muted/50">
+                        <div className="text-center min-w-[40px] md:min-w-[60px] lg:min-w-[70px]">
+                          <p className="text-[10px] md:text-xs lg:text-sm uppercase text-muted-foreground">{month}</p>
+                          <p className="text-lg md:text-2xl lg:text-3xl font-bold leading-tight">{day}</p>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{catalyst.name}</p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${statusColors[catalyst.status]}`}>
+                          <p className="text-sm md:text-base lg:text-lg font-medium truncate">{catalyst.name}</p>
+                          <span className={`text-[10px] md:text-xs lg:text-sm px-1.5 md:px-2 py-0.5 md:py-1 rounded font-medium ${statusColors[catalyst.status]}`}>
                             {catalyst.status.toUpperCase()}
                           </span>
                         </div>
@@ -295,14 +295,14 @@ export default async function DashboardPage() {
             {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
             {!devBypass && !cashAvailable && (
               <Link href="/settings">
-                <Card className="p-4 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <Wallet className="h-5 w-5 text-muted-foreground" />
+                <Card className="p-4 md:p-6 lg:p-8 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
+                    <div className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-full bg-muted flex items-center justify-center">
+                      <Wallet className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium">Set Up Position Sizing</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium md:text-lg lg:text-xl">Set Up Position Sizing</p>
+                      <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
                         Enter your cash available to see daily budget &amp; bullet sizes
                       </p>
                     </div>
@@ -314,49 +314,49 @@ export default async function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className={`grid gap-3 md:gap-4 lg:gap-5 pt-2 grid-cols-2 md:grid-cols-4`}>
+        <div className={`grid gap-3 md:gap-4 lg:gap-6 pt-2 grid-cols-2 md:grid-cols-4`}>
           <Link href="/report" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-all cursor-pointer h-full press-scale">
-              <FileText className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
-              <p className="font-medium md:text-lg">Daily Report</p>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
+              <FileText className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
+              <p className="font-medium md:text-xl lg:text-2xl">Daily Report</p>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
                 Today&apos;s complete analysis
               </p>
             </Card>
           </Link>
           <Link href="/weekly" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full border-blue-500/30 bg-blue-500/5">
-              <CalendarDays className="h-5 w-5 md:h-6 md:w-6 text-blue-500 mb-2 md:mb-3" />
-              <p className="font-medium md:text-lg">📅 Weekly Review</p>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-colors cursor-pointer h-full border-blue-500/30 bg-blue-500/5">
+              <CalendarDays className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-blue-500 mb-2 md:mb-3 lg:mb-4" />
+              <p className="font-medium md:text-xl lg:text-2xl">📅 Weekly Review</p>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
                 Friday recap &amp; outlook
               </p>
             </Card>
           </Link>
           <Link href="/catalysts" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-all cursor-pointer h-full press-scale">
-              <Calendar className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
-              <p className="font-medium md:text-lg">Catalysts</p>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
+              <Calendar className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
+              <p className="font-medium md:text-xl lg:text-2xl">Catalysts</p>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
                 Upcoming events
               </p>
             </Card>
           </Link>
           <Link href="/history" className="block">
-            <Card className="p-4 md:p-6 hover:bg-accent transition-all cursor-pointer h-full press-scale">
-              <History className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
-              <p className="font-medium md:text-lg">History</p>
-              <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
+              <History className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
+              <p className="font-medium md:text-xl lg:text-2xl">History</p>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
                 Previous reports
               </p>
             </Card>
           </Link>
           {isAdmin && (
             <Link href="/admin/command-center" className="col-span-2 md:col-span-4 block">
-              <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
-                <Radio className="h-5 w-5 md:h-6 md:w-6 text-primary mb-2 md:mb-3" />
-                <p className="font-medium md:text-lg">Command Center</p>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1">
+              <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
+                <Radio className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary mb-2 md:mb-3 lg:mb-4" />
+                <p className="font-medium md:text-xl lg:text-2xl">Command Center</p>
+                <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
                   Clawd ops
                 </p>
               </Card>
