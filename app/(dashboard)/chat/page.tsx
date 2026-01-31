@@ -126,7 +126,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ overscrollBehavior: 'none' }}>
+    <div className="flex flex-col h-[calc(100vh-64px)]">
       <Header title="AI Chat" showNotifications={false} />
       <main className="flex flex-col flex-1 max-w-lg mx-auto w-full overflow-hidden">
         {/* Usage indicator - fixed height, no scroll */}
@@ -139,7 +139,7 @@ export default function ChatPage() {
           </span>
         </div>
 
-        {/* Messages - only scrollable area */}
+        {/* Messages - scrollable area */}
         <div 
           className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
           style={{ 
@@ -167,8 +167,8 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input - fixed at bottom, no scroll */}
-        <div className="shrink-0 px-4 py-4 border-t bg-background">
+        {/* Input - fixed at bottom above nav */}
+        <div className="shrink-0 px-4 py-3 border-t bg-background safe-area-bottom">
           <ChatInput
             onSend={handleSend}
             disabled={loading || remainingMessages <= 0}
