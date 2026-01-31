@@ -85,7 +85,7 @@ export default async function WeeklyReviewPage() {
             <CardContent className="pt-6 text-center">
               <p className="text-muted-foreground">No weekly review available yet.</p>
               <p className="text-sm text-muted-foreground mt-2">
-                Weekly reviews are published Friday after close.
+                Weekly reviews are published Sunday.
               </p>
             </CardContent>
           </Card>
