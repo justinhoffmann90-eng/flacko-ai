@@ -139,10 +139,10 @@ export default async function WeeklyReviewPage() {
           </div>
         </section>
 
-        {/* Week in Pictures (Stats) */}
+        {/* Weekly Candle */}
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            📈 The Week in Pictures
+            📊 Weekly Candle
           </h2>
           <WeekStats candle={data.candle} />
         </section>
