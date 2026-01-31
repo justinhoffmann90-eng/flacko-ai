@@ -30,12 +30,12 @@ export function ThesisCheckCard({ thesis }: ThesisCheckCardProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           {thesis.supporting_points.length > 0 && (
             <div>
-              <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+              <h4 className="text-xs uppercase tracking-wider text-green-500 mb-2">
                 Supporting
               </h4>
               <ul className="space-y-1 text-sm">
                 {thesis.supporting_points.map((point, i) => (
-                  <li key={i} className="text-green-500 pl-3 relative before:content-['•'] before:absolute before:left-0">
+                  <li key={i} className="text-muted-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
                     {point}
                   </li>
                 ))}
@@ -44,12 +44,12 @@ export function ThesisCheckCard({ thesis }: ThesisCheckCardProps) {
           )}
           {thesis.concerning_points.length > 0 && (
             <div>
-              <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+              <h4 className="text-xs uppercase tracking-wider text-red-500 mb-2">
                 Concerning
               </h4>
               <ul className="space-y-1 text-sm">
                 {thesis.concerning_points.map((point, i) => (
-                  <li key={i} className="text-red-500 pl-3 relative before:content-['•'] before:absolute before:left-0">
+                  <li key={i} className="text-muted-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
                     {point}
                   </li>
                 ))}
