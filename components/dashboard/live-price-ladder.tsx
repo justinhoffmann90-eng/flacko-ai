@@ -133,26 +133,26 @@ export function LivePriceLadder({
     const c = colors[colorClass];
     
     return (
-      <div key={`${level.price}-${idx}`} className="flex items-center gap-3 pl-1">
-        <div className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center bg-${colorClass}-500/20 border-2 border-${colorClass}-500`}>
+      <div key={`${level.price}-${idx}`} className="flex items-center gap-3 md:gap-4 pl-1">
+        <div className={`relative z-10 w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center bg-${colorClass}-500/20 border-2 border-${colorClass}-500`}>
           {isAbovePrice ? (
-            <ArrowUp className={`h-2.5 w-2.5 ${c.icon}`} />
+            <ArrowUp className={`h-2.5 w-2.5 md:h-3 md:w-3 ${c.icon}`} />
           ) : (
-            <ArrowDown className={`h-2.5 w-2.5 ${c.icon}`} />
+            <ArrowDown className={`h-2.5 w-2.5 md:h-3 md:w-3 ${c.icon}`} />
           )}
         </div>
-        <div className={`flex-1 rounded-lg px-3 py-2 ${c.bg} ${c.border}`}>
+        <div className={`flex-1 rounded-lg px-3 py-2 md:px-4 md:py-3 ${c.bg} ${c.border}`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{level.level}</span>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-medium ${c.text}`}>
+            <span className="text-xs md:text-sm text-muted-foreground">{level.level}</span>
+            <div className="flex items-center gap-2 md:gap-3">
+              <span className={`text-xs md:text-sm font-medium ${c.text}`}>
                 {formatPctAway(level.price, currentPrice)}
               </span>
-              <span className={`font-bold ${c.text}`}>{formatLevel(level.price)}</span>
+              <span className={`font-bold md:text-lg ${c.text}`}>{formatLevel(level.price)}</span>
             </div>
           </div>
           {level.action && level.action !== '—' && (
-            <div className={`text-[10px] mt-1 ${c.text} opacity-80`}>
+            <div className={`text-[10px] md:text-xs mt-1 ${c.text} opacity-80`}>
               {isAbovePrice ? '📈' : '💰'} {level.action}
             </div>
           )}
@@ -162,54 +162,54 @@ export function LivePriceLadder({
   };
 
   const renderCurrentPrice = () => (
-    <div className="flex items-center gap-3 pl-1 my-2">
-      <div className="relative z-10 w-5 h-5 rounded-full bg-foreground flex items-center justify-center">
+    <div className="flex items-center gap-3 md:gap-4 pl-1 my-2 md:my-3">
+      <div className="relative z-10 w-5 h-5 md:w-6 md:h-6 rounded-full bg-foreground flex items-center justify-center">
         {isMarketOpen ? (
-          <span className="relative flex h-2 w-2">
+          <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+            <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-white" />
           </span>
         ) : (
-          <div className="w-2 h-2 rounded-full bg-background" />
+          <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-background" />
         )}
       </div>
-      <div className="flex-1 flex items-center justify-between bg-foreground/10 rounded-lg px-3 py-2 border border-foreground/20">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium">
+      <div className="flex-1 flex items-center justify-between bg-foreground/10 rounded-lg px-3 py-2 md:px-4 md:py-3 border border-foreground/20">
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="text-xs md:text-sm font-medium">
             {isMarketOpen ? "Live Price" : "Last Close"}
           </span>
           {priceData?.changePercent != null && (
-            <span className={`text-[10px] font-medium ${priceData.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`text-[10px] md:text-xs font-medium ${priceData.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {priceData.changePercent >= 0 ? '+' : ''}{priceData.changePercent.toFixed(2)}%
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
           {isMarketOpen && updateText && (
-            <span className="text-[10px] text-muted-foreground">↻ {updateText}</span>
+            <span className="text-[10px] md:text-xs text-muted-foreground">↻ {updateText}</span>
           )}
-          <span className="font-bold">{formatPrice(currentPrice)}</span>
+          <span className="font-bold md:text-lg">{formatPrice(currentPrice)}</span>
         </div>
       </div>
     </div>
   );
 
   const renderMasterEject = () => (
-    <div className="flex items-center gap-3 pl-1 mt-2">
-      <div className="relative z-10 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-        <AlertTriangle className="h-2.5 w-2.5 text-white" />
+    <div className="flex items-center gap-3 md:gap-4 pl-1 mt-2 md:mt-3">
+      <div className="relative z-10 w-5 h-5 md:w-6 md:h-6 rounded-full bg-red-500 flex items-center justify-center">
+        <AlertTriangle className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
       </div>
-      <div className="flex-1 bg-red-500/10 rounded-lg px-3 py-2 border border-red-500/30">
+      <div className="flex-1 bg-red-500/10 rounded-lg px-3 py-2 md:px-4 md:py-3 border border-red-500/30">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-red-500">MASTER EJECT</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-red-500 font-medium">
+          <span className="text-xs md:text-sm font-semibold text-red-500">MASTER EJECT</span>
+          <div className="flex items-center gap-2 md:gap-3">
+            <span className="text-xs md:text-sm text-red-500 font-medium">
               {formatPctAway(masterEject, currentPrice)}
             </span>
-            <span className="font-bold text-red-500">{formatLevel(masterEject)}</span>
+            <span className="font-bold md:text-lg text-red-500">{formatLevel(masterEject)}</span>
           </div>
         </div>
-        <div className="text-[10px] mt-1 text-red-400">
+        <div className="text-[10px] md:text-xs mt-1 text-red-400">
           ❌ Exit all — daily close below = out
         </div>
       </div>
@@ -217,15 +217,15 @@ export function LivePriceLadder({
   );
 
   return (
-    <Card className="p-4 overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">
+    <Card className="p-4 md:p-6 overflow-hidden">
+      <div className="flex items-center justify-between mb-4 md:mb-5">
+        <h3 className="font-semibold md:text-lg">
           Key Levels{reportDate && ` for ${formatReportDateHeader(reportDate)}`}
         </h3>
-        <div className="flex items-center gap-1.5 text-[10px] text-green-400 bg-green-500/20 px-2 py-0.5 rounded">
-          <span className="relative flex h-1.5 w-1.5">
+        <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-green-400 bg-green-500/20 px-2 md:px-3 py-0.5 md:py-1 rounded">
+          <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-green-500" />
           </span>
           <span>Alerts: LIVE</span>
         </div>
@@ -233,10 +233,10 @@ export function LivePriceLadder({
 
       <div className="relative">
         {/* Vertical line connector */}
-        <div className="absolute left-[11px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-500/50 via-foreground/20 to-red-500/50" />
+        <div className="absolute left-[11px] md:left-[13px] top-0 bottom-0 w-0.5 md:w-[3px] bg-gradient-to-b from-green-500/50 via-foreground/20 to-red-500/50" />
 
         {/* Levels ABOVE current price */}
-        <div className="space-y-2">
+        <div className="space-y-2 md:space-y-3">
           {levelsAbove.map((level, idx) => renderLevel(level, idx))}
         </div>
 
@@ -244,7 +244,7 @@ export function LivePriceLadder({
         {currentPrice > 0 && renderCurrentPrice()}
 
         {/* Levels BELOW current price */}
-        <div className="space-y-2">
+        <div className="space-y-2 md:space-y-3">
           {levelsBelow.map((level, idx) => renderLevel(level, idx))}
         </div>
 

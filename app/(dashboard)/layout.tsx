@@ -17,13 +17,13 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       {/* Desktop sidebar nav */}
-      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
+      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-72 lg:w-80 md:flex-col">
         <div className="flex min-h-0 flex-1 flex-col border-r border-border bg-card">
-          <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-            <div className="flex flex-shrink-0 items-center px-4">
-              <span className="text-xl font-bold">Flacko AI</span>
+          <div className="flex flex-1 flex-col overflow-y-auto pt-6 pb-4">
+            <div className="flex flex-shrink-0 items-center px-5">
+              <span className="text-2xl font-bold">Flacko AI</span>
             </div>
-            <nav className="mt-8 flex-1 space-y-1 px-2">
+            <nav className="mt-10 flex-1 space-y-2 px-3">
               <DesktopNavLink href="/dashboard" icon="home" label="Home" currentPath={pathname} />
               <DesktopNavLink href="/report" icon="file" label="Reports" currentPath={pathname} />
               <DesktopNavLink href="/catalysts" icon="spark" label="Catalysts" currentPath={pathname} />
@@ -35,7 +35,7 @@ export default function DashboardLayout({
       </div>
       
       {/* Main content - offset for desktop sidebar */}
-      <div className="md:pl-64">
+      <div className="md:pl-72 lg:pl-80">
         <div className="mx-auto max-w-7xl md:px-8 lg:px-12">
           <PullToRefresh disabled={disablePullToRefresh}>
             {children}
@@ -68,13 +68,13 @@ function DesktopNavLink({
   return (
     <a
       href={href}
-      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+      className={`group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors ${
         isActive 
           ? "bg-primary/10 text-primary" 
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
-      <NavIcon name={icon} className={`mr-3 h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+      <NavIcon name={icon} className={`mr-4 h-6 w-6 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
       {label}
     </a>
   );

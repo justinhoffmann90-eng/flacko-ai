@@ -346,3 +346,78 @@ html, body {
 .eject-warning {
   animation: warning-pulse 2s ease-in-out infinite;
 }
+
+/* ===== DESKTOP ENHANCEMENT ===== */
+/* Larger fonts, spacing, and components on desktop */
+
+@media (min-width: 768px) {
+  /* Base font size bump */
+  html {
+    font-size: 17px;
+  }
+  
+  /* Larger body text */
+  body {
+    @apply text-base;
+  }
+  
+  /* Cards get more padding */
+  .glass-card {
+    @apply p-8;
+  }
+  
+  /* Markdown content sizing */
+  .markdown-content {
+    @apply text-base;
+  }
+  
+  .markdown-content table {
+    @apply text-[15px];
+  }
+  
+  .markdown-content td,
+  .markdown-content th {
+    @apply py-3 px-4;
+  }
+  
+  .markdown-content h2 {
+    @apply text-xl;
+  }
+  
+  .markdown-content h3 {
+    @apply text-lg;
+  }
+  
+  .markdown-content li {
+    @apply text-base;
+  }
+  
+  .markdown-content td li {
+    @apply text-sm;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Larger base on big screens */
+  html {
+    font-size: 18px;
+  }
+  
+  /* Even more generous spacing */
+  .markdown-content td,
+  .markdown-content th {
+    @apply py-4 px-5;
+  }
+  
+  .markdown-content table {
+    @apply text-base;
+  }
+  
+  .markdown-content h2 {
+    @apply text-2xl;
+  }
+  
+  .markdown-content h2:first-of-type {
+    @apply text-2xl py-4 px-6;
+  }
+}
