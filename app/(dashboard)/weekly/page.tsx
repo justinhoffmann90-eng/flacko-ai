@@ -12,6 +12,9 @@ import {
   LessonsGrid,
   ThesisCheckCard,
   ScenariosCard,
+  KeyLevelsCard,
+  CatalystsCard,
+  FlackoTakeCard,
 } from "@/components/weekly";
 import { ReportToggle } from "@/components/report/report-toggle";
 import { hasSubscriptionAccess } from "@/lib/subscription";
@@ -113,6 +116,7 @@ export default async function WeeklyReviewPage() {
         {/* Mode Banner */}
         <ModeBanner
           mode={data.mode}
+          modeTrend={data.mode_trend}
           guidance={data.mode_guidance}
           dailyCap={data.daily_cap_pct}
         />
@@ -187,6 +191,33 @@ export default async function WeeklyReviewPage() {
                 <ScenariosCard scenarios={data.scenarios} />
               </div>
             )}
+          </section>
+        )}
+
+        {/* Catalyst Calendar */}
+        {data.catalysts && data.catalysts.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+              📅 Catalyst Calendar
+            </h2>
+            <CatalystsCard catalysts={data.catalysts} />
+          </section>
+        )}
+
+        {/* Key Levels for Next Week */}
+        {data.key_levels && data.key_levels.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+              📍 Key Levels for Next Week
+            </h2>
+            <KeyLevelsCard levels={data.key_levels} currentPrice={data.current_price} />
+          </section>
+        )}
+
+        {/* Flacko AI's Take / Conclusion */}
+        {data.flacko_take && (
+          <section>
+            <FlackoTakeCard content={data.flacko_take} />
           </section>
         )}
 

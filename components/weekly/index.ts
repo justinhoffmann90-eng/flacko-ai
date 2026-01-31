@@ -6,3 +6,6 @@ export { NarrativeCard } from "./narrative-card";
 export { LessonsGrid } from "./lessons-grid";
 export { ThesisCheckCard } from "./thesis-check";
 export { ScenariosCard } from "./scenarios-card";
+export { KeyLevelsCard } from "./key-levels-card";
+export { CatalystsCard } from "./catalysts-card";
+export { FlackoTakeCard } from "./flacko-take-card";

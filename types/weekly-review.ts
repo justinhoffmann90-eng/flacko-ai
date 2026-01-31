@@ -69,12 +69,20 @@ export interface GammaShifts {
   interpretation: string;
 }
 
+// Catalyst event
+export interface Catalyst {
+  date: string;
+  event: string;
+  impact?: string;
+}
+
 // Full Weekly Review Data
 export interface WeeklyReviewData {
   // Header
   week_start: string; // ISO date
   week_end: string;
   mode: TrafficLightMode;
+  mode_trend?: string; // e.g., "Stabilizing", "Bounce Encouraging"
   mode_guidance: string;
   daily_cap_pct: number;
 
@@ -99,6 +107,15 @@ export interface WeeklyReviewData {
   // Levels and scenarios
   key_levels: WeeklyKeyLevel[];
   scenarios: Scenario[];
+  
+  // Catalyst calendar
+  catalysts?: Catalyst[];
+  
+  // Flacko AI's conclusion / "So What"
+  flacko_take?: string;
+  
+  // Current price for level context
+  current_price?: number;
 
   // Optional gamma context
   gamma_shifts?: GammaShifts;
