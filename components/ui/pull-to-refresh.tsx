@@ -12,7 +12,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
-  const [safeAreaTop, setSafeAreaTop] = useState(0);
+  const [isStandalone, setIsStandalone] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const isPulling = useRef(false);
@@ -20,12 +20,12 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
   const THRESHOLD = 60; // px to trigger refresh
   const MAX_PULL = 120; // max visual pull distance
 
-  // Detect safe area inset on mount
+  // Detect if running as installed PWA (standalone mode)
   useEffect(() => {
-    const computedStyle = getComputedStyle(document.documentElement);
-    const safeArea = parseInt(computedStyle.getPropertyValue('--sat') || '0', 10) ||
-      parseInt(computedStyle.getPropertyValue('env(safe-area-inset-top)') || '0', 10);
-    setSafeAreaTop(safeArea);
+    const standalone = 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    setIsStandalone(standalone);
   }, []);
 
   // Rubber band resistance - feels more natural like iOS
@@ -36,9 +36,13 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
     return MAX_PULL * (1 - Math.exp(-distance / maxDistance * 2));
   }, []);
 
+  // Only activate custom pull-to-refresh in standalone/PWA mode
+  // In regular browser, let Safari's native pull-to-refresh handle it
+  const isDisabled = disabled || !isStandalone;
+
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || disabled) return;
+    if (!container || isDisabled) return;
 
     const handleTouchStart = (e: TouchEvent) => {
       // Only activate if we're at the top of the page
@@ -112,7 +116,7 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [pullDistance, isRefreshing, onRefresh, disabled, applyResistance]);
+  }, [pullDistance, isRefreshing, onRefresh, isDisabled, applyResistance]);
 
   const progress = Math.min(pullDistance / THRESHOLD, 1);
   const showSpinner = pullDistance > 5 || isRefreshing;
@@ -121,6 +125,11 @@ export function PullToRefresh({ children, onRefresh, disabled = false }: PullToR
   const spinnerY = Math.max(0, pullDistance - 15);
   const spinnerScale = isRefreshing ? 1 : Math.min(0.5 + (progress * 0.5), 1);
   const spinnerOpacity = isRefreshing ? 1 : Math.min(progress * 1.2, 1);
+
+  // In browser mode, just render children - let native Safari pull-to-refresh work
+  if (!isStandalone) {
+    return <>{children}</>;
+  }
 
   return (
     <div 
