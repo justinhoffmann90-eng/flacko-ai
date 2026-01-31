@@ -164,19 +164,19 @@ export default async function DashboardPage() {
   return (
     <>
       <Header title="Dashboard" />
-      <main className="px-4 py-6 max-w-lg mx-auto md:max-w-none md:px-0 space-y-4 md:space-y-6">
+      <main className="px-4 py-6 max-w-lg mx-auto md:max-w-none md:max-w-5xl lg:max-w-6xl md:px-0 space-y-4 md:space-y-8">
         {/* Discord Onboarding Banner */}
         <DiscordOnboarding isDiscordLinked={isDiscordLinked} />
         
         {/* Mode Card - Hero with Glow */}
         <div className={`relative rounded-xl overflow-hidden animated-gradient-${mode}`}>
           {/* Glass overlay */}
-          <div className="glass-card rounded-xl p-5">
+          <div className="glass-card rounded-xl p-5 md:p-8">
             <div className="flex items-start justify-between">
               <div>
                 <Badge
                   variant={mode as "green" | "yellow" | "orange" | "red"}
-                  className={`text-lg px-4 py-1.5 font-bold glow-${mode}`}
+                  className={`text-lg md:text-xl px-4 md:px-6 py-1.5 md:py-2 font-bold glow-${mode}`}
                 >
                   {mode.toUpperCase()} MODE
                 </Badge>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Desktop: 2-column grid | Mobile: stacked */}
-        <div className="md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0">
+        <div className="md:grid md:grid-cols-2 md:gap-8 lg:gap-10 space-y-4 md:space-y-0">
           {/* Left column */}
           <div className="space-y-4">
             {/* Positioning Card */}
@@ -252,13 +252,13 @@ export default async function DashboardPage() {
 
             {/* Upcoming Catalysts */}
             {upcomingCatalysts.length > 0 && (
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-3">
+              <Card className="p-4 md:p-6">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="font-semibold text-sm">Upcoming Catalysts</h3>
+                    <Calendar className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                    <h3 className="font-semibold text-sm md:text-base">Upcoming Catalysts</h3>
                   </div>
-                  <Link href="/catalysts" className="text-xs text-primary hover:underline">
+                  <Link href="/catalysts" className="text-xs md:text-sm text-primary hover:underline">
                     View all →
                   </Link>
                 </div>
@@ -313,49 +313,49 @@ export default async function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className={`grid gap-3 pt-2 grid-cols-2`}>
+        <div className={`grid gap-3 md:gap-4 lg:gap-5 pt-2 grid-cols-2 md:grid-cols-4`}>
           <Link href="/report" className="block">
-            <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full">
-              <FileText className="h-5 w-5 text-muted-foreground mb-2" />
-              <p className="font-medium">Daily Report</p>
-              <p className="text-xs text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full">
+              <FileText className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
+              <p className="font-medium md:text-lg">Daily Report</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Today&apos;s complete analysis
               </p>
             </Card>
           </Link>
           <Link href="/weekly" className="block">
-            <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full border-blue-500/30 bg-blue-500/5">
-              <CalendarDays className="h-5 w-5 text-blue-500 mb-2" />
-              <p className="font-medium">📅 Weekly Review</p>
-              <p className="text-xs text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full border-blue-500/30 bg-blue-500/5">
+              <CalendarDays className="h-5 w-5 md:h-6 md:w-6 text-blue-500 mb-2 md:mb-3" />
+              <p className="font-medium md:text-lg">📅 Weekly Review</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Friday recap &amp; outlook
               </p>
             </Card>
           </Link>
           <Link href="/catalysts" className="block">
-            <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full">
-              <Calendar className="h-5 w-5 text-muted-foreground mb-2" />
-              <p className="font-medium">Catalysts</p>
-              <p className="text-xs text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full">
+              <Calendar className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
+              <p className="font-medium md:text-lg">Catalysts</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Upcoming events
               </p>
             </Card>
           </Link>
           <Link href="/history" className="block">
-            <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full">
-              <History className="h-5 w-5 text-muted-foreground mb-2" />
-              <p className="font-medium">History</p>
-              <p className="text-xs text-muted-foreground mt-1">
+            <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full">
+              <History className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground mb-2 md:mb-3" />
+              <p className="font-medium md:text-lg">History</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Previous reports
               </p>
             </Card>
           </Link>
           {isAdmin && (
-            <Link href="/admin/command-center" className="col-span-2 block">
-              <Card className="p-4 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
-                <Radio className="h-5 w-5 text-primary mb-2" />
-                <p className="font-medium">Command Center</p>
-                <p className="text-xs text-muted-foreground mt-1">
+            <Link href="/admin/command-center" className="col-span-2 md:col-span-4 block">
+              <Card className="p-4 md:p-6 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
+                <Radio className="h-5 w-5 md:h-6 md:w-6 text-primary mb-2 md:mb-3" />
+                <p className="font-medium md:text-lg">Command Center</p>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   Clawd ops
                 </p>
               </Card>
