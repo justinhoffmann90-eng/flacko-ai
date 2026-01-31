@@ -128,9 +128,15 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div 
+      className="flex flex-col fixed inset-0 bg-background"
+      style={{ 
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)', // 64px for bottom nav
+      }}
+    >
       {/* Compact header with everything in one row */}
-      <header className="shrink-0 sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="shrink-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
           {/* Left: Title + Usage */}
           <div className="flex items-center gap-2">
@@ -166,10 +172,10 @@ export default function ChatPage() {
         </div>
       </header>
 
-      <main className="flex flex-col flex-1 max-w-lg mx-auto w-full overflow-hidden">
+      <main className="flex flex-col flex-1 max-w-lg mx-auto w-full min-h-0">
         {/* Messages - scrollable area */}
         <div 
-          className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
           style={{ 
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch'
