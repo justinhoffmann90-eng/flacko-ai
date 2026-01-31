@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Header } from "@/components/dashboard/header";
+import Link from "next/link";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatMessage } from "@/components/chat/chat-message";
 import { ChatWelcome } from "@/components/chat/chat-welcome";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Settings } from "lucide-react";
 
 interface Message {
   id: string;
@@ -129,31 +129,44 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
-      <Header title="AI Chat" showNotifications={false} />
-      <main className="flex flex-col flex-1 max-w-lg mx-auto w-full overflow-hidden">
-        {/* Usage indicator - fixed height, no scroll */}
-        <div className="shrink-0 px-4 py-2 border-b flex items-center justify-between bg-background">
+      {/* Compact header with everything in one row */}
+      <header className="shrink-0 sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
+          {/* Left: Title + Usage */}
           <div className="flex items-center gap-2">
-            <Badge variant={remainingMessages > 5 ? "secondary" : remainingMessages > 0 ? "yellow" : "red"}>
+            <h1 className="text-base font-semibold">AI Chat</h1>
+            <Badge 
+              variant={remainingMessages > 5 ? "secondary" : remainingMessages > 0 ? "yellow" : "red"}
+              className="text-xs"
+            >
               {remainingMessages}/15
             </Badge>
-            <span className="text-sm text-muted-foreground">
-              remaining today
-            </span>
           </div>
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMessages([])}
-              className="text-muted-foreground hover:text-foreground"
+          
+          {/* Right: New Chat + Settings */}
+          <div className="flex items-center gap-1">
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMessages([])}
+                className="text-muted-foreground hover:text-foreground h-8 px-2"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                <span className="text-xs">New</span>
+              </Button>
+            )}
+            <Link 
+              href="/settings" 
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              New Chat
-            </Button>
-          )}
+              <Settings className="h-5 w-5" />
+            </Link>
+          </div>
         </div>
+      </header>
 
+      <main className="flex flex-col flex-1 max-w-lg mx-auto w-full overflow-hidden">
         {/* Messages - scrollable area */}
         <div 
           className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
@@ -183,7 +196,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input - fixed at bottom above nav */}
-        <div className="shrink-0 px-4 py-3 border-t bg-background safe-area-bottom">
+        <div className="shrink-0 px-4 py-2 border-t bg-background">
           <ChatInput
             onSend={handleSend}
             disabled={loading || remainingMessages <= 0}
