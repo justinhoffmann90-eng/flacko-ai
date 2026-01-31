@@ -77,7 +77,7 @@ export default async function ReportPage() {
   return (
     <>
       <Header title={formattedTitle} />
-      <main className="px-4 py-6 max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto space-y-6 md:space-y-8">
+      <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-6 md:space-y-8">
         {/* Daily/Weekly Toggle */}
         <ReportToggle />
 

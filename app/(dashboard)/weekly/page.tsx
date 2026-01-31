@@ -83,7 +83,7 @@ export default async function WeeklyReviewPage() {
     return (
       <>
         <Header title="Weekly Review" />
-        <main className="px-4 py-6 max-w-2xl mx-auto">
+        <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto">
           <Card>
             <CardContent className="pt-6 text-center">
               <p className="text-muted-foreground">No weekly review available yet.</p>
@@ -103,7 +103,7 @@ export default async function WeeklyReviewPage() {
   return (
     <>
       <Header title="Weekly Review" />
-      <main className="px-4 py-6 max-w-2xl mx-auto space-y-6">
+      <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-6">
         {/* Daily/Weekly Toggle */}
         <ReportToggle />
 
