@@ -132,7 +132,7 @@ export default function ChatPage() {
       className="flex flex-col fixed inset-0 bg-background"
       style={{ 
         paddingTop: 'env(safe-area-inset-top, 0px)',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)', // 64px for bottom nav
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)', // 72px for bottom nav + breathing room
       }}
     >
       {/* Compact header with everything in one row */}
@@ -202,7 +202,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input - fixed at bottom above nav */}
-        <div className="shrink-0 px-4 py-2 border-t bg-background">
+        <div className="shrink-0 px-4 py-3 pb-4 border-t bg-background">
           <ChatInput
             onSend={handleSend}
             disabled={loading || remainingMessages <= 0}
