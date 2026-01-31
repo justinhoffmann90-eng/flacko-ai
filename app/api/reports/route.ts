@@ -222,7 +222,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send Discord notification for new report
+    // Send Discord notification for new report (full template)
     const discordMessage = getNewReportDiscordMessage({
       mode: extracted_data.mode?.current || "yellow",
       reportDate: today,
@@ -232,6 +232,11 @@ export async function POST(request: Request) {
       positioning: extracted_data.positioning,
       tiers: extracted_data.tiers,
       masterEject: extracted_data.master_eject?.price,
+      modeSummary: extracted_data.mode?.summary,
+      flackoTake: extracted_data.flacko_take,
+      scenarios: extracted_data.scenarios,
+      gammaRegime: extracted_data.gamma_regime,
+      hiro: extracted_data.hiro,
     });
     await sendReportNotification(discordMessage);
 

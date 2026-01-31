@@ -132,6 +132,11 @@ export function getNewReportDiscordMessage({
   positioning,
   tiers,
   masterEject,
+  modeSummary,
+  flackoTake,
+  scenarios,
+  gammaRegime,
+  hiro,
 }: {
   mode: TrafficLightMode;
   reportDate: string;
@@ -141,62 +146,107 @@ export function getNewReportDiscordMessage({
   positioning?: Positioning;
   tiers?: TierSignals;
   masterEject?: number;
+  modeSummary?: string;
+  flackoTake?: string;
+  scenarios?: { bull?: string; base?: string; bear?: string };
+  gammaRegime?: string;
+  hiro?: { reading?: string; context?: string };
 }): DiscordMessage {
   // CRITICAL: Use validated color emoji (throws error if invalid mode)
   const modeEmoji = getColorEmoji(mode);
+  const modeInfo = modeGuidance[mode] || modeGuidance.yellow;
 
   const upsideAlerts = alerts.filter((a) => a.type === "upside");
   const downsideAlerts = alerts.filter((a) => a.type === "downside");
 
-  // Build description
-  let description = `## ${modeEmoji} ${mode.toUpperCase()} MODE\n`;
-  description += `**${reportDate}**\n\n`;
+  // Build description - APPROVED FORMAT
+  let description = `📊 **TSLA Daily Report — ${reportDate}**\n\n`;
 
-  // Tier signals if available
+  // Mode header with summary
+  description += `${modeEmoji} **${mode.toUpperCase()} MODE** — ${modeInfo.cap}\n`;
+  if (positioning?.posture) {
+    description += `**Lean:** ${positioning.posture}\n`;
+  }
+  if (modeSummary) {
+    description += `_${modeSummary}_\n`;
+  }
+  description += "\n---\n\n";
+
+  // Flacko's Take (What I'd do)
+  if (flackoTake) {
+    description += `**What I'd do:** ${flackoTake}\n\n---\n\n`;
+  }
+
+  // Tier signals with proper labels
   if (tiers) {
-    // CRITICAL: Use validated color emoji (throws error if invalid tier signal)
-    description += `**Tiers:** ${getColorEmoji(tiers.regime)} Regime | ${getColorEmoji(tiers.trend)} Trend | ${getColorEmoji(tiers.timing)} Timing | ${getColorEmoji(tiers.flow)} Flow\n\n`;
+    description += `**Tiers**\n`;
+    description += `• Long (Weekly): ${getColorEmoji(tiers.regime)}\n`;
+    description += `• Medium (Daily): ${getColorEmoji(tiers.trend)}\n`;
+    description += `• Short (4H): ${getColorEmoji(tiers.timing)}\n`;
+    description += `• Hourly: ${getColorEmoji(tiers.flow)}\n\n`;
   }
 
-  // Positioning if available
-  if (positioning) {
-    description += `**Today's Positioning**\n`;
-    if (positioning.daily_cap) description += `• Daily Cap: ${positioning.daily_cap}\n`;
-    if (positioning.vehicle) description += `• Vehicle: ${positioning.vehicle}\n`;
-    if (positioning.posture) description += `• Posture: ${positioning.posture}\n`;
-    description += '\n';
+  // Scenarios
+  if (scenarios) {
+    description += `🎯 **Scenarios**\n`;
+    if (scenarios.bull) description += `🐂 ${scenarios.bull}\n`;
+    if (scenarios.base) description += `⚖️ ${scenarios.base}\n`;
+    if (scenarios.bear) description += `🐻 ${scenarios.bear}\n`;
+    description += "\n---\n\n";
   }
 
-  // Take Profit levels (price first)
+  // Alert Levels
+  description += `📍 **Alert Levels**\n\n`;
+
+  // Upside targets
   if (upsideAlerts.length > 0) {
-    description += `**📈 Take Profit Levels**\n`;
+    description += `**⬆️ Upside Targets**\n`;
     description += upsideAlerts
-      .map((a) => `🟢 **${formatPrice(a.price)}** — ${a.level_name} → ${a.action}`)
+      .map((a) => `🎯 ${formatPrice(a.price)} — ${a.level_name} — ${a.action}`)
       .join("\n");
     description += "\n\n";
   }
 
-  // Buy the Dip levels (price first)
+  // Current price marker
+  if (closePrice > 0) {
+    description += `**📍 Current: ~${formatPrice(closePrice)}**\n\n`;
+  }
+
+  // Downside support
   if (downsideAlerts.length > 0) {
-    description += `**💰 Buy the Dip Levels**\n`;
+    description += `**⬇️ Downside Support**\n`;
     description += downsideAlerts
-      .map((a) => `🔴 **${formatPrice(a.price)}** — ${a.level_name} → ${a.action}`)
+      .filter((a) => !a.level_name?.toLowerCase().includes("master eject"))
+      .map((a) => `🛡️ ${formatPrice(a.price)} — ${a.level_name} — ${a.action}`)
       .join("\n");
     description += "\n\n";
   }
 
   // Master Eject
   if (masterEject && masterEject > 0) {
-    description += `**⚠️ Master Eject: ${formatPrice(masterEject)}**\n`;
-    description += `_Daily close below = exit all positions_`;
+    description += `❌ **Master Eject: ${formatPrice(masterEject)}** — daily close below = exit all\n\n`;
   }
+
+  description += "---\n\n";
+
+  // Gamma + HIRO
+  if (gammaRegime) {
+    description += `⚡ **Gamma:** ${gammaRegime}\n`;
+  }
+  if (hiro?.reading) {
+    description += `📊 **HIRO:** ${hiro.reading}`;
+    if (hiro.context) description += ` (${hiro.context})`;
+    description += "\n";
+  }
+
+  description += `\n→ Full report: https://flacko.ai/report`;
 
   const embed: DiscordEmbed = {
     title: "📊 New TSLA Daily Report",
     description: description.trim(),
     color: DISCORD_COLORS[mode],
     footer: {
-      text: "Flacko AI • Alerts auto-set • View app for full analysis",
+      text: "Flacko AI • Alerts auto-set",
     },
   };
 
