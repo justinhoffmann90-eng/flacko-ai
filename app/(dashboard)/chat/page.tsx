@@ -6,6 +6,8 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { ChatMessage } from "@/components/chat/chat-message";
 import { ChatWelcome } from "@/components/chat/chat-welcome";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 interface Message {
   id: string;
@@ -130,13 +132,26 @@ export default function ChatPage() {
       <Header title="AI Chat" showNotifications={false} />
       <main className="flex flex-col flex-1 max-w-lg mx-auto w-full overflow-hidden">
         {/* Usage indicator - fixed height, no scroll */}
-        <div className="shrink-0 px-4 py-2 border-b flex items-center justify-center gap-2 bg-background">
-          <Badge variant={remainingMessages > 5 ? "secondary" : remainingMessages > 0 ? "yellow" : "red"}>
-            {remainingMessages}/15
-          </Badge>
-          <span className="text-sm text-muted-foreground">
-            messages remaining today
-          </span>
+        <div className="shrink-0 px-4 py-2 border-b flex items-center justify-between bg-background">
+          <div className="flex items-center gap-2">
+            <Badge variant={remainingMessages > 5 ? "secondary" : remainingMessages > 0 ? "yellow" : "red"}>
+              {remainingMessages}/15
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              remaining today
+            </span>
+          </div>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMessages([])}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              New Chat
+            </Button>
+          )}
         </div>
 
         {/* Messages - scrollable area */}
