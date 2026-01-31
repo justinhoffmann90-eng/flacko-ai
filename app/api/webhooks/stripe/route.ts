@@ -116,6 +116,20 @@ export async function POST(request: Request) {
                   error_message: JSON.stringify(linkError),
                   metadata: { session_id: session.id }
                 });
+                // Alert via Telegram
+                try {
+                  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      chat_id: process.env.TELEGRAM_CHAT_ID,
+                      text: `🚨 **Password Link Generation Failed**\n\nUser: ${customerEmail}\nSession: ${session.id}\nError: ${JSON.stringify(linkError)}`,
+                      parse_mode: 'Markdown'
+                    })
+                  });
+                } catch (telegramError) {
+                  console.error('Failed to send Telegram alert:', telegramError);
+                }
               } else if (linkData?.properties?.action_link) {
                 console.log(`[EMAIL] Generated password link for ${customerEmail}, sending email...`);
                 // Send email via Resend
@@ -188,6 +202,20 @@ export async function POST(request: Request) {
                     error_message: JSON.stringify(emailResult.error),
                     metadata: { session_id: session.id }
                   });
+                  // Alert via Telegram
+                  try {
+                    await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        chat_id: process.env.TELEGRAM_CHAT_ID,
+                        text: `🚨 **Password Email Send Failed**\n\nUser: ${customerEmail}\nSession: ${session.id}\nResend Error: ${JSON.stringify(emailResult.error)}`,
+                        parse_mode: 'Markdown'
+                      })
+                    });
+                  } catch (telegramError) {
+                    console.error('Failed to send Telegram alert:', telegramError);
+                  }
                 } else {
                   console.log(`[EMAIL SUCCESS] Password setup email sent to ${customerEmail}, Resend ID: ${emailResult.data?.id}`);
                   // Log success to database
@@ -213,9 +241,37 @@ export async function POST(request: Request) {
                 error_message: errorMsg,
                 metadata: { session_id: session.id }
               });
+              // Alert via Telegram
+              try {
+                await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: process.env.TELEGRAM_CHAT_ID,
+                    text: `🚨 **Password Email Exception**\n\nUser: ${customerEmail}\nSession: ${session.id}\nError: ${errorMsg}`,
+                    parse_mode: 'Markdown'
+                  })
+                });
+              } catch (telegramError) {
+                console.error('Failed to send Telegram alert:', telegramError);
+              }
             }
           } else {
             console.error(`[EMAIL ERROR] No customer email found for user ${userId}, session ${session.id}`);
+            // Alert via Telegram
+            try {
+              await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: process.env.TELEGRAM_CHAT_ID,
+                  text: `🚨 **No Email Found for Signup**\n\nUser ID: ${userId}\nSession: ${session.id}\n\nStripe checkout completed but no email address available.`,
+                  parse_mode: 'Markdown'
+                })
+              });
+            } catch (telegramError) {
+              console.error('Failed to send Telegram alert:', telegramError);
+            }
           }
 
           // Add Discord subscriber role if user has linked Discord
