@@ -18,6 +18,7 @@ interface Catalyst {
   notion_page_id: string | null;
   impact: string | null;
   type: string | null;
+  month_level: boolean | null;
 }
 
 export default async function CatalystsPage({
@@ -137,6 +138,7 @@ export default async function CatalystsPage({
                 const date = new Date(catalyst.event_date);
                 const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "short" });
                 const dayNum = date.getDate();
+                const isMonthLevel = catalyst.month_level === true;
                 
                 return (
                   <Card 
@@ -148,14 +150,16 @@ export default async function CatalystsPage({
                     }`}
                   >
                     <div className="flex gap-4">
-                      {/* Date Badge */}
-                      <div className="flex-shrink-0 w-12 text-center">
-                        <div className="text-xs text-muted-foreground uppercase">{dayOfWeek}</div>
-                        <div className="text-2xl font-bold">{dayNum}</div>
-                      </div>
+                      {/* Date Badge - only show for date-specific catalysts */}
+                      {!isMonthLevel && (
+                        <div className="flex-shrink-0 w-12 text-center">
+                          <div className="text-xs text-muted-foreground uppercase">{dayOfWeek}</div>
+                          <div className="text-2xl font-bold">{dayNum}</div>
+                        </div>
+                      )}
                       
                       {/* Content */}
-                      <div className="flex-1 min-w-0">
+                      <div className={`flex-1 min-w-0 ${isMonthLevel ? 'ml-0' : ''}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {catalyst.impact === 'high' && (
