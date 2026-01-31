@@ -23,7 +23,7 @@ export function FlackoTakeCard({ content }: FlackoTakeCardProps) {
           const parts = p.split(/\*\*([^*]+)\*\*/);
           
           return (
-            <p key={i} className="text-muted-foreground leading-relaxed">
+            <p key={i} className="text-foreground leading-relaxed">
               {parts.map((part, j) =>
                 j % 2 === 1 ? (
                   <span key={j} className="text-foreground font-medium">

@@ -15,7 +15,7 @@ export function LessonsGrid({ lessons }: LessonsGridProps) {
           <h4 className="text-sm font-medium text-green-500 mb-3 flex items-center gap-2">
             ✅ What Worked
           </h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2 text-sm text-foreground">
             {lessons.what_worked.length > 0 ? (
               lessons.what_worked.map((item, i) => (
                 <li key={i} className="pl-4 relative before:content-['•'] before:absolute before:left-0">
@@ -33,7 +33,7 @@ export function LessonsGrid({ lessons }: LessonsGridProps) {
           <h4 className="text-sm font-medium text-red-500 mb-3 flex items-center gap-2">
             ❌ What Didn&apos;t
           </h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2 text-sm text-foreground">
             {lessons.what_didnt.length > 0 ? (
               lessons.what_didnt.map((item, i) => (
                 <li key={i} className="pl-4 relative before:content-['•'] before:absolute before:left-0">
@@ -53,7 +53,7 @@ export function LessonsGrid({ lessons }: LessonsGridProps) {
           <h4 className="text-sm font-medium text-blue-500 mb-3 flex items-center gap-2">
             💡 Lessons to Carry Forward
           </h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+          <ul className="space-y-2 text-sm text-foreground">
             {lessons.lessons_forward.map((item, i) => (
               <li key={i} className="pl-4 relative before:content-['•'] before:absolute before:left-0">
                 {item.split(/\*\*([^*]+)\*\*/).map((part, j) =>

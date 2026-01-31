@@ -35,7 +35,7 @@ export function ThesisCheckCard({ thesis }: ThesisCheckCardProps) {
               </h4>
               <ul className="space-y-1 text-sm">
                 {thesis.supporting_points.map((point, i) => (
-                  <li key={i} className="text-muted-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
+                  <li key={i} className="text-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
                     {point}
                   </li>
                 ))}
@@ -49,7 +49,7 @@ export function ThesisCheckCard({ thesis }: ThesisCheckCardProps) {
               </h4>
               <ul className="space-y-1 text-sm">
                 {thesis.concerning_points.map((point, i) => (
-                  <li key={i} className="text-muted-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
+                  <li key={i} className="text-foreground pl-3 relative before:content-['•'] before:absolute before:left-0">
                     {point}
                   </li>
                 ))}
@@ -63,7 +63,7 @@ export function ThesisCheckCard({ thesis }: ThesisCheckCardProps) {
       {thesis.narrative && (
         <div className="prose prose-invert prose-sm max-w-none">
           {thesis.narrative.split(/\n\n+/).map((p, i) => (
-            <p key={i} className="text-muted-foreground leading-relaxed mb-3 last:mb-0">
+            <p key={i} className="text-foreground leading-relaxed mb-3 last:mb-0">
               {p.split(/\*\*([^*]+)\*\*/).map((part, j) =>
                 j % 2 === 1 ? (
                   <span key={j} className="text-foreground font-medium">

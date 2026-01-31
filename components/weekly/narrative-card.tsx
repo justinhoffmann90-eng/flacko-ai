@@ -26,7 +26,7 @@ export function NarrativeCard({ content }: NarrativeCardProps) {
                   <span className="text-muted-foreground">•</span>
                   <div>
                     <span className="text-foreground font-medium">{dayLabel}:</span>{" "}
-                    <span className="text-muted-foreground">{dayContent.trim()}</span>
+                    <span className="text-foreground">{dayContent.trim()}</span>
                   </div>
                 </li>
               );
@@ -48,7 +48,7 @@ export function NarrativeCard({ content }: NarrativeCardProps) {
     <div className="bg-card border border-border rounded-xl p-4 sm:p-6">
       <div className="prose prose-invert prose-sm max-w-none">
         {paragraphs.map((paragraph, i) => (
-          <p key={i} className="text-muted-foreground leading-relaxed mb-4 last:mb-0">
+          <p key={i} className="text-foreground leading-relaxed mb-4 last:mb-0">
             {paragraph.split(/\*\*([^*]+)\*\*/).map((part, j) =>
               j % 2 === 1 ? (
                 <span key={j} className="text-foreground font-medium">
