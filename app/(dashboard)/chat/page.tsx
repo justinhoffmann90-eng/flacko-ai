@@ -129,7 +129,7 @@ export default function ChatPage() {
 
   return (
     <div 
-      className="flex flex-col fixed inset-0 bg-background"
+      className="flex flex-col fixed inset-0 md:inset-auto md:h-screen bg-background"
       style={{ 
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)', // 72px for bottom nav + breathing room
