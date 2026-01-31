@@ -14,6 +14,22 @@ export default function SignupPage() {
   const [xHandle, setXHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [leadCaptured, setLeadCaptured] = useState(false);
+
+  // Capture lead when user leaves email field
+  const captureLead = async () => {
+    if (!email || leadCaptured || !email.includes("@")) return;
+    setLeadCaptured(true);
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, xHandle, source: "signup" }),
+      });
+    } catch {
+      // Silent fail - lead capture is non-critical
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +115,7 @@ export default function SignupPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={captureLead}
                 required
                 autoComplete="email"
                 autoFocus
