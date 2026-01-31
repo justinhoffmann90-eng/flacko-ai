@@ -96,6 +96,7 @@ export async function POST(request: Request) {
           if (customerEmail) {
             try {
               // Generate the magic link
+              console.log(`[EMAIL] Generating password link for ${customerEmail}...`);
               const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
                 type: "recovery",
                 email: customerEmail,
@@ -105,12 +106,21 @@ export async function POST(request: Request) {
               });
               
               if (linkError) {
-                console.error("Failed to generate password link:", linkError, "for email:", customerEmail);
+                console.error(`[EMAIL ERROR] Failed to generate password link for ${customerEmail}:`, linkError);
+                // Log to database
+                await supabase.from("email_send_log").insert({
+                  user_id: userId,
+                  email: customerEmail,
+                  type: "password_setup",
+                  status: "link_generation_failed",
+                  error_message: JSON.stringify(linkError),
+                  metadata: { session_id: session.id }
+                });
               } else if (linkData?.properties?.action_link) {
-                console.log("Generated password link for:", customerEmail);
+                console.log(`[EMAIL] Generated password link for ${customerEmail}, sending email...`);
                 // Send email via Resend
                 const { resend, EMAIL_FROM } = await import("@/lib/resend/client");
-                await resend.emails.send({
+                const emailResult = await resend.emails.send({
                   from: EMAIL_FROM,
                   to: customerEmail,
                   subject: "Set Your Password | Flacko AI",
@@ -166,11 +176,46 @@ export async function POST(request: Request) {
 </html>
                   `,
                 });
-                console.log("Password setup email sent to:", customerEmail);
+                
+                if (emailResult.error) {
+                  console.error(`[EMAIL ERROR] Resend returned error for ${customerEmail}:`, emailResult.error);
+                  // Log failure to database
+                  await supabase.from("email_send_log").insert({
+                    user_id: userId,
+                    email: customerEmail,
+                    type: "password_setup",
+                    status: "send_failed",
+                    error_message: JSON.stringify(emailResult.error),
+                    metadata: { session_id: session.id }
+                  });
+                } else {
+                  console.log(`[EMAIL SUCCESS] Password setup email sent to ${customerEmail}, Resend ID: ${emailResult.data?.id}`);
+                  // Log success to database
+                  await supabase.from("email_send_log").insert({
+                    user_id: userId,
+                    email: customerEmail,
+                    type: "password_setup",
+                    status: "sent",
+                    resend_id: emailResult.data?.id,
+                    metadata: { session_id: session.id }
+                  });
+                }
               }
             } catch (e) {
-              console.error("Failed to send password setup email:", e);
+              const errorMsg = e instanceof Error ? e.message : String(e);
+              console.error(`[EMAIL EXCEPTION] Failed to send password setup email to ${customerEmail}:`, e);
+              // Log exception to database
+              await supabase.from("email_send_log").insert({
+                user_id: userId,
+                email: customerEmail,
+                type: "password_setup",
+                status: "exception",
+                error_message: errorMsg,
+                metadata: { session_id: session.id }
+              });
             }
+          } else {
+            console.error(`[EMAIL ERROR] No customer email found for user ${userId}, session ${session.id}`);
           }
 
           // Add Discord subscriber role if user has linked Discord
