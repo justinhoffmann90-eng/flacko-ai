@@ -162,15 +162,27 @@ export default function SettingsPage() {
     router.push("/login");
   };
 
+  const [billingLoading, setBillingLoading] = useState(false);
+
   const handleManageBilling = async () => {
+    setBillingLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/user/billing-portal", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        if (data.error === "No subscription found") {
+          setError("No active subscription found. Please contact support if you believe this is an error.");
+        } else {
+          setError(`Billing error: ${data.error}`);
+        }
       }
     } catch (err) {
-      setError("Failed to open billing portal");
+      setError("Failed to open billing portal. Please try again.");
+    } finally {
+      setBillingLoading(false);
     }
   };
 
@@ -441,9 +453,10 @@ export default function SettingsPage() {
               variant="outline"
               className="w-full"
               onClick={handleManageBilling}
+              disabled={billingLoading}
             >
               <CreditCard className="h-4 w-4 mr-2" />
-              Manage Billing
+              {billingLoading ? "Loading..." : "Manage Billing"}
             </Button>
           </CardContent>
         </Card>
