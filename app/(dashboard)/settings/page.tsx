@@ -41,6 +41,13 @@ export default function SettingsPage() {
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [emailNewReports, setEmailNewReports] = useState(true);
   
+  // Password change state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  
   // Discord state
   const [discord, setDiscord] = useState<DiscordInfo | null>(null);
 
@@ -167,6 +174,41 @@ export default function SettingsPage() {
     }
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        setPasswordError(error.message);
+        return;
+      }
+
+      setPasswordSuccess(true);
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setTimeout(() => setPasswordSuccess(false), 5000);
+    } catch (err) {
+      setPasswordError("Failed to update password");
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   const handleLinkDiscord = () => {
     // Build Discord OAuth URL
     const redirectUri = encodeURIComponent(`${window.location.origin}/api/discord/callback`);
@@ -275,6 +317,60 @@ export default function SettingsPage() {
         <Button onClick={handleSave} className="w-full" disabled={saving}>
           {saving ? "Saving..." : "Save Settings"}
         </Button>
+
+        {/* Change Password */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Change Password</CardTitle>
+            <CardDescription>Update your account password</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {passwordSuccess && (
+              <Alert variant="success">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>Password updated successfully!</AlertDescription>
+              </Alert>
+            )}
+            {passwordError && (
+              <Alert variant="destructive">
+                <AlertDescription>{passwordError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+              <Input
+                id="confirmNewPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters
+              </p>
+            </div>
+            <Button 
+              onClick={handleChangePassword} 
+              variant="outline"
+              className="w-full" 
+              disabled={passwordSaving || !newPassword || !confirmNewPassword}
+            >
+              {passwordSaving ? "Updating..." : "Update Password"}
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Discord */}
         <Card>
