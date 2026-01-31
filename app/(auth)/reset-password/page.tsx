@@ -1,20 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-
-// Use standard Supabase client (not SSR) for handling hash tokens
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -23,7 +17,10 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [pageState, setPageState] = useState<"loading" | "form" | "success" | "error">("loading");
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
   const router = useRouter();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const initializeAuth = useCallback(async () => {
     try {
@@ -51,7 +48,7 @@ export default function ResetPasswordPage() {
         console.log("Tokens found:", !!accessToken, !!refreshToken);
 
         if (accessToken && refreshToken) {
-          // Set session with extracted tokens
+          // Set session with extracted tokens - SSR client will sync to cookies
           const { data, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -67,6 +64,7 @@ export default function ResetPasswordPage() {
 
           if (data.session) {
             console.log("Session established for:", data.session.user.email);
+            setUserEmail(data.session.user.email || "");
             // Clear the hash from URL for cleaner UX
             window.history.replaceState(null, "", "/reset-password");
             setPageState("form");
@@ -80,6 +78,7 @@ export default function ResetPasswordPage() {
       
       if (session) {
         console.log("Existing session found");
+        setUserEmail(session.user.email || "");
         setPageState("form");
         return;
       }
@@ -95,7 +94,7 @@ export default function ResetPasswordPage() {
       setDebugInfo(`Exception: ${err}`);
       setPageState("error");
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     // Small delay to ensure hash is available
@@ -127,11 +126,25 @@ export default function ResetPasswordPage() {
         return;
       }
 
+      // Re-authenticate with the new password to ensure cookies are properly set
+      if (userEmail) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: password,
+        });
+        
+        if (signInError) {
+          console.error("Re-auth error (non-critical):", signInError);
+          // Continue anyway - password was updated
+        }
+      }
+
       setPageState("success");
       
       // Redirect to dashboard after success
       setTimeout(() => {
         router.push("/dashboard");
+        router.refresh(); // Force server-side refresh to pick up new session
       }, 2000);
     } catch (err) {
       setError("An unexpected error occurred");
