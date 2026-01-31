@@ -176,12 +176,26 @@ export async function POST(request: Request) {
           // Add Discord subscriber role if user has linked Discord
           const { data: userData } = await supabase
             .from("users")
-            .select("discord_user_id")
+            .select("discord_user_id, email")
             .eq("id", userId)
             .single();
 
           if (userData?.discord_user_id) {
-            await addRoleToMember(userData.discord_user_id);
+            const result = await addRoleToMember(userData.discord_user_id);
+            if (!result.success) {
+              console.error(`Failed to add Discord role for user ${userId} (${userData.email}):`, result.error);
+              // Log to database for debugging
+              await supabase.from("discord_alert_log").insert({
+                user_id: userId,
+                event_type: "role_assignment_failed",
+                status: "error",
+                error_message: result.error || "Unknown error adding role",
+              });
+            } else {
+              console.log(`Discord role added for user ${userId} (${userData.email})`);
+            }
+          } else {
+            console.log(`User ${userId} has no Discord linked - skipping role assignment`);
           }
         }
         break;
