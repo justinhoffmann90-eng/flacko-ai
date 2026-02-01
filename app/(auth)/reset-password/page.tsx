@@ -24,20 +24,74 @@ export default function ResetPasswordPage() {
 
   const initializeAuth = useCallback(async () => {
     try {
-      // Since we're now going through /api/auth/callback first,
-      // we should have a valid session already
+      const hash = window.location.hash;
+      
+      // Check for error in hash first
+      if (hash.includes("error=")) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const errorDesc = hashParams.get("error_description") || "Link is invalid or expired";
+        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+        setDebugInfo("Error in URL hash");
+        setPageState("error");
+        return;
+      }
+
+      // Check for tokens in hash
+      if (hash.includes("access_token=")) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          // Set session with extracted tokens
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (sessionError) {
+            console.error("setSession error:", sessionError);
+            setError(`Failed to verify: ${sessionError.message}`);
+            setDebugInfo(`setSession failed: ${sessionError.message}`);
+            setPageState("error");
+            return;
+          }
+
+          if (data.session) {
+            console.log("Session established for:", data.session.user.email);
+            setUserEmail(data.session.user.email || "");
+            
+            // IMPORTANT: Wait for session to be persisted before clearing hash
+            // Set up listener first
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+              if (event === 'SIGNED_IN' && session) {
+                // Session is now persisted to cookies, safe to clear hash
+                console.log("Session persisted, clearing hash");
+                window.history.replaceState(null, "", "/reset-password");
+                subscription.unsubscribe();
+              }
+            });
+            
+            // Show the form immediately (session is in memory)
+            setPageState("form");
+            return;
+          }
+        }
+      }
+
+      // No hash tokens - check for existing session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        console.log("Session found for:", session.user.email);
+        console.log("Existing session found");
         setUserEmail(session.user.email || "");
         setPageState("form");
         return;
       }
 
-      // No session - they accessed this page directly without a valid link
+      // No session, no tokens - invalid state
       setError("No valid session found. Please request a new password link.");
-      setDebugInfo("No active session - link may have expired");
+      setDebugInfo("No hash tokens and no existing session");
       setPageState("error");
       
     } catch (err) {

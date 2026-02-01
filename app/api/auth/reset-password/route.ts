@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       type: "recovery",
       email,
       options: {
-        redirectTo: "https://www.flacko.ai/api/auth/callback?next=/reset-password",
+        redirectTo: "https://www.flacko.ai/reset-password",
       },
     });
 
