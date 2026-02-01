@@ -103,6 +103,13 @@ export default function CommandCenterPage() {
 
   function formatTime(time24?: string) {
     if (!time24) return time24;
+
+    // Handle recurring format: "Every 2h" or "Every 30m"
+    if (time24.startsWith("Every ")) {
+      return time24; // Already human-readable
+    }
+
+    // Handle standard time format: "14:30"
     const [hours, minutes] = time24.split(":");
     const h = parseInt(hours);
     const ampm = h >= 12 ? "PM" : "AM";
