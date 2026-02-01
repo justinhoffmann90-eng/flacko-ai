@@ -24,19 +24,26 @@ export default function AdminSubscribersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
   }, []);
 
   async function loadUsers() {
+    setError(null);
     try {
       const response = await fetch("/api/admin/subscribers");
-      if (!response.ok) throw new Error("Failed to load users");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
       const data = await response.json();
+      console.log("Loaded users:", data.users?.length || 0);
       setUsers(data.users || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading users:", error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -108,6 +115,11 @@ export default function AdminSubscribersPage() {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <p className="text-red-400">Error: {error}</p>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Subscribers</h1>
