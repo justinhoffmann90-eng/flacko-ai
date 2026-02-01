@@ -123,10 +123,10 @@ export default function RolesPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Responsibilities</h3>
                   <ul className="space-y-1 text-sm text-gray-300">
-                    {role.responsibilities.map((resp, idx) => (
+                    {role.responsibilities?.map((resp, idx) => (
                       <li key={idx} className="pl-3 relative">
                         <span className="absolute left-0">•</span>
-                        {resp}
+                        {typeof resp === 'string' ? resp : JSON.stringify(resp)}
                       </li>
                     ))}
                   </ul>
@@ -135,10 +135,10 @@ export default function RolesPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Scheduled Jobs</h3>
                   <div className="space-y-1 text-sm">
-                    {role.scheduledJobs.map((job, idx) => (
+                    {role.scheduledJobs?.map((job, idx) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <span className="font-mono text-blue-400 min-w-[60px]">{job.time}</span>
-                        <span className="text-gray-300">{job.id}</span>
+                        <span className="font-mono text-blue-400 min-w-[60px]">{job?.time || 'N/A'}</span>
+                        <span className="text-gray-300">{job?.id || 'Unknown'}</span>
                       </div>
                     ))}
                   </div>
@@ -147,9 +147,9 @@ export default function RolesPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Output Channels</h3>
                   <div className="flex flex-wrap gap-2">
-                    {role.output.map((out, idx) => (
+                    {role.output?.map((out, idx) => (
                       <span key={idx} className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded">
-                        {out}
+                        {typeof out === 'string' ? out : JSON.stringify(out)}
                       </span>
                     ))}
                   </div>
@@ -158,10 +158,10 @@ export default function RolesPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-400 uppercase mb-2">Rules</h3>
                   <ul className="space-y-1 text-sm text-gray-300">
-                    {role.rules.map((rule, idx) => (
+                    {role.rules?.map((rule, idx) => (
                       <li key={idx} className="pl-3 relative">
                         <span className="absolute left-0">→</span>
-                        {rule}
+                        {typeof rule === 'string' ? rule : JSON.stringify(rule)}
                       </li>
                     ))}
                   </ul>
@@ -175,13 +175,13 @@ export default function RolesPage() {
                     {role.todo.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-3 text-sm">
                         <span className={`px-2 py-0.5 text-xs rounded ${
-                          item.priority === "HIGH" ? "bg-red-500/20 text-red-400" :
+                          item?.priority === "HIGH" ? "bg-red-500/20 text-red-400" :
                           "bg-gray-500/20 text-gray-400"
                         }`}>
-                          {item.priority || "NORMAL"}
+                          {item?.priority || "NORMAL"}
                         </span>
-                        <span className="text-gray-300">{item.name}</span>
-                        {item.time && <span className="font-mono text-blue-400">{item.time}</span>}
+                        <span className="text-gray-300">{item?.name || 'Unknown'}</span>
+                        {item?.time && <span className="font-mono text-blue-400">{item.time}</span>}
                       </div>
                     ))}
                   </div>
@@ -193,7 +193,7 @@ export default function RolesPage() {
                   <h3 className="text-sm font-semibold text-red-400 uppercase mb-2">⚠️ Blockers</h3>
                   <ul className="space-y-1 text-sm text-red-300">
                     {role.blockers.map((blocker, idx) => (
-                      <li key={idx}>{blocker}</li>
+                      <li key={idx}>{typeof blocker === 'string' ? blocker : JSON.stringify(blocker)}</li>
                     ))}
                   </ul>
                 </div>
