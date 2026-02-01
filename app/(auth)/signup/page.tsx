@@ -88,7 +88,7 @@ export default function SignupPage() {
       {/* Pricing - larger */}
       <div className="text-center space-y-2 py-2">
         <div className="flex items-center justify-center gap-3">
-          <span className="text-xl text-muted-foreground line-through">$34.99</span>
+          <span className="text-xl text-muted-foreground line-through">$39.99</span>
           <span className="text-sm bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-medium">🔥 LAUNCH</span>
         </div>
         <div className="text-4xl font-bold">
@@ -97,34 +97,12 @@ export default function SignupPage() {
         <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>
 
-      {/* Value Stack */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-        <p className="text-xs text-muted-foreground text-center uppercase tracking-wider font-medium">
-          Powered by $700+/mo in premium tools
-        </p>
-        <div className="space-y-2.5 text-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="font-medium">FS Insight</span>
-              <p className="text-xs text-muted-foreground">Macro research from Tom Lee & Wall Street veterans</p>
-            </div>
-            <span className="text-muted-foreground text-xs whitespace-nowrap">$199/mo</span>
-          </div>
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="font-medium">SpotGamma Alpha</span>
-              <p className="text-xs text-muted-foreground">HIRO, gamma levels & real-time options flow</p>
-            </div>
-            <span className="text-muted-foreground text-xs whitespace-nowrap">$299/mo</span>
-          </div>
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="font-medium">Claude Max Pro</span>
-              <p className="text-xs text-muted-foreground">AI analysis, automated alerts & daily reports</p>
-            </div>
-            <span className="text-muted-foreground text-xs whitespace-nowrap">$200/mo</span>
-          </div>
-        </div>
+      {/* Value Leverage */}
+      <div className="text-center text-sm text-muted-foreground mb-1">
+        Leverage <span className="text-emerald-500 font-semibold">$800/mo</span> in institutional data & tools
+      </div>
+      <div className="text-center text-[10px] text-muted-foreground/60 mb-4">
+        FS Insight · SpotGamma · AI Infrastructure
       </div>
 
       <Card>
