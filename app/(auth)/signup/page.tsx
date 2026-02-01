@@ -73,7 +73,7 @@ export default function SignupPage() {
   return (
     <div className="w-full max-w-md mx-auto space-y-4">
       {/* Hero */}
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-2 mb-2">
         <h1 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
           Flacko AI
         </h1>
@@ -86,7 +86,7 @@ export default function SignupPage() {
       </div>
 
       {/* Pricing - larger */}
-      <div className="text-center space-y-1">
+      <div className="text-center space-y-1 mb-2">
         <div className="flex items-center justify-center gap-3">
           <span className="text-xl text-muted-foreground line-through">$39.99</span>
           <span className="text-sm bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-medium">🔥 LAUNCH PROMOTION</span>
