@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "flacko ai",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
