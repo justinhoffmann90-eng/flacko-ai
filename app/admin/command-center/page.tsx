@@ -210,9 +210,57 @@ export default function CommandCenterPage() {
           </div>
           <div className="bg-white/5 border border-white/10 rounded-lg p-4">
             <div className="text-gray-400 text-sm mb-1">System Health</div>
-            <div className="text-2xl font-bold text-green-400">Healthy</div>
+            <div className="text-2xl font-bold text-green-400">
+              {data?.systemHealth && Object.values(data.systemHealth).some((s: any) => s.status === "warning" || s.status === "error")
+                ? "Issues"
+                : "Healthy"}
+            </div>
           </div>
         </div>
+
+        {/* System Health Details */}
+        {data?.systemHealth && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">🏥 System Health</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Object.entries(data.systemHealth).map(([key, health]: [string, any]) => (
+                <div
+                  key={key}
+                  className={`rounded-lg p-4 border ${
+                    health.status === "error" ? "bg-red-500/10 border-red-500/30" :
+                    health.status === "warning" ? "bg-yellow-500/10 border-yellow-500/30" :
+                    "bg-white/5 border-white/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold text-white capitalize">
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </div>
+                    <div className={`w-3 h-3 rounded-full ${
+                      health.status === "online" || health.status === "healthy" ? "bg-green-400" :
+                      health.status === "warning" ? "bg-yellow-400" :
+                      "bg-red-400"
+                    }`} />
+                  </div>
+                  <div className="text-xs text-gray-400 mb-2">
+                    Last check: {formatTimestamp(health.lastCheck)}
+                  </div>
+                  {health.details && (
+                    <div className="text-xs text-gray-300 space-y-1">
+                      {health.emailDelivery && <div>Email: {health.emailDelivery}</div>}
+                      {health.details.p0Alerts > 0 && (
+                        <div className="text-red-400">P0 Alerts: {health.details.p0Alerts}</div>
+                      )}
+                      {health.details.p1Alerts > 0 && (
+                        <div className="text-yellow-400">P1 Alerts: {health.details.p1Alerts}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Missed Tasks */}
         {data?.missedTasks && data.missedTasks.length > 0 && (
