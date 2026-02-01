@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2, RefreshCw } from "lucide-react";
+import { Trash2, RefreshCw, FileText, Users } from "lucide-react";
 
 interface UserRow {
   id: string;
@@ -114,24 +115,62 @@ export default function AdminSubscribersPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-          <p className="text-red-400">Error: {error}</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+      {/* Navigation Bar */}
+      <nav className="bg-black/20 border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="text-lg font-bold text-blue-400">Subscribers</div>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-1 text-sm">
+                <Link href="/admin/reports" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Upload Report
+                </Link>
+                <Link href="/admin/subscribers" className="px-3 py-2 rounded bg-white/10 text-white">
+                  Subscribers
+                </Link>
+                <Link href="/admin/command-center" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Command Center
+                </Link>
+                <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Roles
+                </Link>
+                <Link href="/admin/dashboard/docs" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Docs
+                </Link>
+              </div>
+              <div className="text-right text-sm text-gray-400">
+                <div className="text-lg font-bold text-blue-400">
+                  {new Date().toLocaleTimeString("en-US", {
+                    timeZone: "America/Chicago",
+                    hour12: true,
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Subscribers</h1>
-          <p className="text-muted-foreground mt-2">
-            {totalUsers} total • {activeSubscriptions} active • {discordLinked} Discord linked
-          </p>
+      </nav>
+
+      <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8 space-y-8">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+            <p className="text-red-400">Error: {error}</p>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-muted-foreground mt-2">
+              {totalUsers} total • {activeSubscriptions} active • {discordLinked} Discord linked
+            </p>
+          </div>
+          <Button onClick={loadUsers} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
-        <Button onClick={loadUsers} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
 
       <Card>
         <CardHeader>
@@ -213,6 +252,7 @@ export default function AdminSubscribersPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
