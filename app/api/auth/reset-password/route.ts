@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     // Check if user exists
     const { data: users, error: lookupError } = await supabase
-      .from("profiles")
+      .from("users")
       .select("id")
       .eq("email", email)
       .limit(1);
