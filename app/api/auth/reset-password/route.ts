@@ -21,6 +21,26 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (lookupError || !users?.length) {
+      // Log the failure internally (but don't reveal to client)
+      console.error("Password reset requested for non-existent email:", email, lookupError?.message);
+      
+      // Alert via Telegram if lookup error (not just "user doesn't exist")
+      if (lookupError) {
+        try {
+          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: process.env.TELEGRAM_CHAT_ID,
+              text: `⚠️ **Password Reset DB Error**\n\nEmail: ${email}\nError: ${lookupError.message}`,
+              parse_mode: 'Markdown'
+            })
+          });
+        } catch (e) {
+          console.error('Failed to send Telegram alert:', e);
+        }
+      }
+      
       // Don't reveal if email exists or not (security)
       return NextResponse.json({ success: true });
     }
@@ -36,11 +56,43 @@ export async function POST(request: Request) {
 
     if (linkError) {
       console.error("Failed to generate recovery link:", linkError);
+      
+      // Alert via Telegram
+      try {
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: process.env.TELEGRAM_CHAT_ID,
+            text: `🚨 **Password Reset Link Generation Failed**\n\nEmail: ${email}\nError: ${JSON.stringify(linkError)}`,
+            parse_mode: 'Markdown'
+          })
+        });
+      } catch (e) {
+        console.error('Failed to send Telegram alert:', e);
+      }
+      
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
     }
 
     if (!linkData?.properties?.action_link) {
       console.error("No action_link in response");
+      
+      // Alert via Telegram
+      try {
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: process.env.TELEGRAM_CHAT_ID,
+            text: `🚨 **Password Reset No Link Generated**\n\nEmail: ${email}\nNo action_link in response`,
+            parse_mode: 'Markdown'
+          })
+        });
+      } catch (e) {
+        console.error('Failed to send Telegram alert:', e);
+      }
+      
       return NextResponse.json({ error: "Failed to generate link" }, { status: 500 });
     }
 
@@ -104,12 +156,45 @@ export async function POST(request: Request) {
 
     if (emailError) {
       console.error("Failed to send email via Resend:", emailError);
+      
+      // Alert via Telegram
+      try {
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: process.env.TELEGRAM_CHAT_ID,
+            text: `🚨 **Password Reset Email Send Failed**\n\nEmail: ${email}\nResend Error: ${JSON.stringify(emailError)}`,
+            parse_mode: 'Markdown'
+          })
+        });
+      } catch (e) {
+        console.error('Failed to send Telegram alert:', e);
+      }
+      
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
     console.error("Password reset error:", error);
+    
+    // Alert via Telegram
+    try {
+      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: `🚨 **Password Reset Exception**\n\nError: ${errorMsg}`,
+          parse_mode: 'Markdown'
+        })
+      });
+    } catch (e) {
+      console.error('Failed to send Telegram alert:', e);
+    }
+    
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
