@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { RefreshCw, FileText, Users } from "lucide-react";
 
 interface Agent {
   role: string;
@@ -418,12 +418,15 @@ Report back with:
       <nav className="bg-black/20 border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-6">
-              <Link href="/admin" className="text-gray-400 hover:text-gray-100">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <div className="text-lg font-bold text-blue-400">Command Center</div>
+            <div className="text-lg font-bold text-blue-400">Command Center</div>
+            <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-1 text-sm">
+                <Link href="/admin/reports" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Upload Report
+                </Link>
+                <Link href="/admin/subscribers" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Subscribers
+                </Link>
                 <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
                   Roles
                 </Link>
@@ -431,15 +434,15 @@ Report back with:
                   Docs
                 </Link>
               </div>
-            </div>
-            <div className="text-right text-sm text-gray-400">
-              <div className="text-lg font-bold text-blue-400">
-                {new Date().toLocaleTimeString("en-US", {
-                  timeZone: "America/Chicago",
-                  hour12: true,
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
+              <div className="text-right text-sm text-gray-400">
+                <div className="text-lg font-bold text-blue-400">
+                  {new Date().toLocaleTimeString("en-US", {
+                    timeZone: "America/Chicago",
+                    hour12: true,
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -447,6 +450,38 @@ Report back with:
       </nav>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8">
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Link
+            href="/admin/reports"
+            className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6 hover:bg-blue-500/20 transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+                <FileText className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-semibold text-white mb-1">Upload New Report</div>
+                <div className="text-sm text-gray-400">Publish today's daily analysis</div>
+              </div>
+            </div>
+          </Link>
+          <Link
+            href="/admin/subscribers"
+            className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 hover:bg-green-500/20 transition-colors group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                <Users className="w-6 h-6 text-green-400" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-semibold text-white mb-1">Manage Subscribers</div>
+                <div className="text-sm text-gray-400">View and manage subscriber accounts</div>
+              </div>
+            </div>
+          </Link>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
