@@ -97,6 +97,36 @@ export default function SignupPage() {
         <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>
 
+      {/* Value Stack */}
+      <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+        <p className="text-xs text-muted-foreground text-center uppercase tracking-wider font-medium">
+          Powered by $700+/mo in premium tools
+        </p>
+        <div className="space-y-2.5 text-sm">
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="font-medium">FS Insight</span>
+              <p className="text-xs text-muted-foreground">Macro research from Tom Lee & Wall Street veterans</p>
+            </div>
+            <span className="text-muted-foreground text-xs whitespace-nowrap">$199/mo</span>
+          </div>
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="font-medium">SpotGamma Alpha</span>
+              <p className="text-xs text-muted-foreground">HIRO, gamma levels & real-time options flow</p>
+            </div>
+            <span className="text-muted-foreground text-xs whitespace-nowrap">$299/mo</span>
+          </div>
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="font-medium">Claude Max Pro</span>
+              <p className="text-xs text-muted-foreground">AI analysis, automated alerts & daily reports</p>
+            </div>
+            <span className="text-muted-foreground text-xs whitespace-nowrap">$200/mo</span>
+          </div>
+        </div>
+      </div>
+
       <Card>
         <form onSubmit={handleSignup} autoComplete="on">
           <CardContent className="space-y-4 pt-6">

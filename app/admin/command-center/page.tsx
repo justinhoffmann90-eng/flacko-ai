@@ -424,24 +424,12 @@ Report back with:
               </Link>
               <div className="text-lg font-bold text-blue-400">Command Center</div>
               <div className="hidden md:flex items-center gap-1 text-sm">
-                <a href={`file://${process.env.HOME}/clawd/dashboard/workflow.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
-                  Workflow
-                </a>
-                <a href={`file://${process.env.HOME}/clawd/dashboard/roles.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
                   Roles
-                </a>
-                <a href={`file://${process.env.HOME}/clawd/dashboard/flow.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
-                  Flow
-                </a>
-                <a href={`file://${process.env.HOME}/clawd/dashboard/report.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
-                  Reports
-                </a>
-                <a href={`file://${process.env.HOME}/clawd/dashboard/catalysts.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
-                  Catalysts
-                </a>
-                <a href={`file://${process.env.HOME}/clawd/dashboard/daily-wins.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
-                  Daily Wins
-                </a>
+                </Link>
+                <Link href="/admin/dashboard/docs" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Docs
+                </Link>
               </div>
             </div>
             <div className="text-right text-sm text-gray-400">
