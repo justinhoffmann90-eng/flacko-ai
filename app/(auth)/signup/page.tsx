@@ -71,36 +71,36 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-4">
+    <div className="w-full max-w-md md:max-w-lg mx-auto space-y-4 md:space-y-6">
       {/* Hero */}
-      <div className="text-center space-y-2 mb-2">
+      <div className="text-center space-y-2 md:space-y-3 mb-2 md:mb-4">
         <h1 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
           Flacko AI
         </h1>
-        <p className="text-2xl font-bold">
+        <p className="text-2xl md:text-3xl font-bold">
           Wake up with a plan.
         </p>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground md:text-lg">
           Daily reports, price alerts and a system that tells you when to pay attention.
         </p>
       </div>
 
       {/* Pricing - larger */}
-      <div className="text-center space-y-1 mb-2">
+      <div className="text-center space-y-1 md:space-y-2 mb-2 md:mb-4">
         <div className="flex items-center justify-center gap-3">
-          <span className="text-xl text-muted-foreground line-through">$39.99</span>
+          <span className="text-xl md:text-2xl text-muted-foreground line-through">$39.99</span>
           <span className="text-sm bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-medium">🔥 LAUNCH PROMOTION</span>
         </div>
-        <div className="text-4xl font-bold">
-          $29.99<span className="text-xl text-muted-foreground font-normal">/month</span>
+        <div className="text-4xl md:text-5xl font-bold">
+          $29.99<span className="text-xl md:text-2xl text-muted-foreground font-normal">/month</span>
         </div>
       </div>
 
       {/* Value Leverage */}
-      <div className="text-center text-sm text-muted-foreground mb-1">
+      <div className="text-center text-sm md:text-base text-muted-foreground mb-1 md:mb-2">
         You'll leverage <span className="text-emerald-500 font-semibold">$800/mo</span> in institutional data & tools that power our system:
       </div>
-      <div className="text-center text-[13px] text-muted-foreground/70 leading-relaxed mb-3">
+      <div className="text-center text-[13px] md:text-sm text-muted-foreground/70 leading-relaxed mb-3 md:mb-5">
         <span className="text-muted-foreground">FS Insight</span> <span className="text-muted-foreground/50">(Macro & Technical)</span> · <span className="text-muted-foreground">SpotGamma</span> <span className="text-muted-foreground/50">(Alpha, HIRO)</span>
         <br />
         <span className="text-muted-foreground">AI Agents & Infra</span> <span className="text-muted-foreground/50">(Claude Max, Grok, M4 Mini)</span>
@@ -108,7 +108,7 @@ export default function SignupPage() {
 
       <Card>
         <form onSubmit={handleSignup} autoComplete="on">
-          <CardContent className="space-y-4 pt-5">
+          <CardContent className="space-y-4 md:space-y-5 pt-5 md:pt-6 md:pb-2">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
