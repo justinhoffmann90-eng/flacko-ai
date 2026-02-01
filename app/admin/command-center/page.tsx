@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { RefreshCw, FileText, Users } from "lucide-react";
 
@@ -71,13 +71,7 @@ export default function CommandCenterPage() {
 
   const tasksPerPage = 20;
 
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const [statusRes, tasksRes] = await Promise.all([
         fetch("/api/admin/command-center/status"),
@@ -99,7 +93,13 @@ export default function CommandCenterPage() {
       console.error("Error loading data:", error);
       setLoading(false);
     }
-  }
+  }, [taskInfo]);
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   function formatTime(time24?: string) {
     if (!time24) return time24;
