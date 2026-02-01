@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
 export async function GET() {
   try {
@@ -24,12 +22,22 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
     }
 
-    // Read tasks-info.json from clawd dashboard
-    const tasksPath = join(process.env.HOME || "", "clawd", "dashboard", "tasks-info.json");
-    const tasksData = await readFile(tasksPath, "utf-8");
-    const data = JSON.parse(tasksData);
+    // Read tasks info from Supabase
+    const { data: dashboardData, error: dbError } = await supabase
+      .from("dashboard_data")
+      .select("value")
+      .eq("key", "tasks-info")
+      .single();
 
-    return NextResponse.json(data);
+    if (dbError) {
+      console.error("Error reading tasks info from DB:", dbError);
+      return NextResponse.json(
+        { error: "Failed to load tasks info" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(dashboardData.value || { tasks: [] });
   } catch (error) {
     console.error("Error reading tasks info:", error);
     return NextResponse.json(

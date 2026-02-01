@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
 export async function GET() {
   try {
@@ -24,12 +22,22 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
     }
 
-    // Read agent-status.json from clawd dashboard
-    const statusPath = join(process.env.HOME || "", "clawd", "dashboard", "agent-status.json");
-    const statusData = await readFile(statusPath, "utf-8");
-    const data = JSON.parse(statusData);
+    // Read agent status from Supabase
+    const { data: dashboardData, error: dbError } = await supabase
+      .from("dashboard_data")
+      .select("value")
+      .eq("key", "agent-status")
+      .single();
 
-    return NextResponse.json(data);
+    if (dbError) {
+      console.error("Error reading agent status from DB:", dbError);
+      return NextResponse.json(
+        { error: "Failed to load agent status" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(dashboardData.value || {});
   } catch (error) {
     console.error("Error reading agent status:", error);
     return NextResponse.json(
