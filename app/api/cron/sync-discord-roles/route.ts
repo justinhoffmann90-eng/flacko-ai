@@ -13,6 +13,9 @@ import { addRoleToMember } from "@/lib/discord/bot";
  * 4. Need role assigned (happens here)
  */
 export async function GET(request: Request) {
+  // Force redeploy - check env vars
+  console.log('Sync starting at:', new Date().toISOString());
+  
   const supabase = await createServiceClient();
 
   try {
