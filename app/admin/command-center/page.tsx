@@ -1,752 +1,390 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  Activity, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle,
-  Zap,
-  MessageSquare,
-  Radio,
-  RefreshCw
-} from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
-interface Role {
-  id: string;
-  name: string;
+interface Agent {
+  role: string;
   emoji: string;
   status: string;
-  mission: string;
-  todo: Array<{ name: string; time?: string; priority?: string }>;
-  blockers: Array<{ name: string }>;
-  scheduledJobs: Array<{ id: string; time: string }>;
+  lastHeartbeat: string | null;
+  currentTask: string | null;
+  tasksCompleted: number;
+  todayScheduled?: Array<{
+    time: string;
+    job: string;
+    status: string;
+  }>;
+  weeklyScheduled?: Array<{
+    day: string;
+    time: string;
+    job: string;
+  }>;
+  todayCompleted?: string[];
 }
 
-interface PipelineStep {
-  id: string;
-  name: string;
-  status: string;
-  timestamp: string | null;
-  details: string;
-  expectedTime: string;
-}
-
-interface PipelineData {
-  timestamp: string;
-  steps: PipelineStep[];
-  summary: {
-    total: number;
-    complete: number;
-    pending: number;
-    blocked: number;
+interface AgentStatus {
+  agents: Record<string, Agent>;
+  reviewQueue: any[];
+  completedTaskLog?: Array<{
+    agent: string;
+    taskName: string;
+    completedAt: string;
+  }>;
+  missedTasks?: Array<{
+    agent: string;
+    taskName: string;
+    scheduledTime: string;
+    overdue: string;
+    detectedAt: string;
+  }>;
+  systemHealth?: any;
+  dailyStats?: {
+    date: string;
+    totalScheduled: number;
+    totalCompleted: number;
+    pendingReviews: number;
+    failedJobs: number;
   };
-  verification?: {
-    reportDate: string;
-    reportFile: string;
-    masterEject: number;
-    callWall: number;
-    keyGammaStrike: number;
-    hedgeWall: number;
-    levelCount: number;
-    lastUpdated: string;
-    source: string;
-  };
+  lastUpdated?: string;
 }
 
-interface WorkflowExecution {
-  lastCompleted: string | null;
-  status?: string;
-  fileCount?: number;
-  latestFile?: string;
-}
-
-interface DailyJob {
-  id: string;
-  time: string;
-  name: string;
-  note?: string;
-  status: "pending" | "completed" | "failed";
-  completedAt: string | null;
-}
-
-interface JobsData {
-  date: string;
-  lastUpdated: string;
-  summary: {
-    total: number;
-    completed: number;
-    pending: number;
-    failed: number;
-  };
-  jobs: DailyJob[];
-}
-
-interface DashboardData {
-  lastUpdated: string;
-  roles: Role[];
-  stats: {
-    scheduled: number;
-    completed: number;
-    inProgress: number;
-    blockers: number;
-  };
-  activity: Array<{ type: string; message: string; time: string }>;
-  workflows?: {
-    tradingCapture?: WorkflowExecution;
-    morningBrief?: WorkflowExecution;
-    reportUpload?: WorkflowExecution;
-    keyLevelsUpdate?: WorkflowExecution;
-    eodWrap?: WorkflowExecution;
-  };
+interface TaskInfo {
+  tasks: Array<{
+    name: string;
+    instructions: string;
+    schedule: string;
+    enabled: boolean;
+    agent: string;
+  }>;
 }
 
 export default function CommandCenterPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [pipeline, setPipeline] = useState<PipelineData | null>(null);
-  const [jobs, setJobs] = useState<JobsData | null>(null);
+  const [data, setData] = useState<AgentStatus | null>(null);
+  const [taskInfo, setTaskInfo] = useState<TaskInfo | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [selectedTask, setSelectedTask] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    try {
-      const [dataRes, pipelineRes, jobsRes] = await Promise.all([
-        fetch('/api/command-center/data'),
-        fetch('/api/command-center/pipeline'),
-        fetch('/api/command-center/jobs')
-      ]);
-      const dataJson = await dataRes.json();
-      const pipelineJson = await pipelineRes.json();
-      const jobsJson = await jobsRes.json();
-      setData(dataJson);
-      setPipeline(pipelineJson);
-      setJobs(jobsJson);
-      setLastRefresh(new Date());
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const tasksPerPage = 20;
 
   useEffect(() => {
-    fetchData();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    loadData();
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading || !data) {
+  async function loadData() {
+    try {
+      const [statusRes, tasksRes] = await Promise.all([
+        fetch("/api/admin/command-center/status"),
+        taskInfo ? Promise.resolve({ json: async () => taskInfo }) : fetch("/api/admin/command-center/tasks")
+      ]);
+
+      if (!statusRes.ok) throw new Error("Failed to load status");
+
+      const statusData = await statusRes.json();
+      setData(statusData);
+
+      if (!taskInfo) {
+        const tasksData = await tasksRes.json();
+        setTaskInfo(tasksData);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      setLoading(false);
+    }
+  }
+
+  function formatTime(time24?: string) {
+    if (!time24) return time24;
+    const [hours, minutes] = time24.split(":");
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
+  }
+
+  function formatTimestamp(isoString?: string) {
+    if (!isoString) return "Never";
+    const date = new Date(isoString);
+    return date.toLocaleString("en-US", {
+      timeZone: "America/Chicago",
+      hour12: true,
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function showTaskDetails(taskName: string) {
+    setSelectedTask(taskName);
+  }
+
+  function closeTaskModal() {
+    setSelectedTask(null);
+  }
+
+  async function resolveAlert(alertId: string) {
+    try {
+      await fetch("/api/admin/command-center/resolve-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertId }),
+      });
+      loadData();
+    } catch (error) {
+      console.error("Error resolving alert:", error);
+    }
+  }
+
+  const selectedTaskData = selectedTask && taskInfo
+    ? taskInfo.tasks.find((t) => t.name === selectedTask)
+    : null;
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-white/50">Loading Command Center...</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-400" />
+          <p>Loading command center...</p>
+        </div>
       </div>
     );
   }
 
-  const roleColors: Record<string, string> = {
-    "trading-analyst": "text-blue-400",
-    "content-creator": "text-purple-400",
-    "community-manager": "text-green-400",
-    "ops": "text-orange-400",
-    "research-analyst": "text-pink-400"
-  };
-
-  // Aggregate all jobs and sort by time
-  const allJobs = data.roles
-    .flatMap(r => r.scheduledJobs.map(j => ({ ...j, role: r.id })))
-    .sort((a, b) => parseTime(a.time) - parseTime(b.time));
-
-  function parseTime(timeStr: string): number {
-    if (!timeStr) return 9999;
-    const match = timeStr.match(/(\d+):?(\d*)([ap])?/i);
-    if (!match) return 9999;
-    let hour = parseInt(match[1]);
-    const min = parseInt(match[2]) || 0;
-    const ampm = (match[3] || 'a').toLowerCase();
-    if (ampm === 'p' && hour !== 12) hour += 12;
-    if (ampm === 'a' && hour === 12) hour = 0;
-    return hour * 60 + min;
-  }
+  const totalAgents = data ? Object.keys(data.agents).length : 0;
+  const onlineAgents = data
+    ? Object.values(data.agents).filter((a) => a.status === "online").length
+    : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🤖</span>
-              <div>
-                <h1 className="text-xl font-semibold text-white">Command Center</h1>
-                <p className="text-xs text-white/50">Clawd Operations Dashboard</p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/admin" className="text-gray-400 hover:text-gray-100">
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <h1 className="text-3xl font-bold text-blue-400">🎯 Live Command Center</h1>
+          </div>
+          <div className="text-right text-sm text-gray-400">
+            <div className="text-2xl font-bold text-blue-400">
+              {new Date().toLocaleTimeString("en-US", {
+                timeZone: "America/Chicago",
+                hour12: true,
+                hour: "numeric",
+                minute: "2-digit",
+              })}
             </div>
-            
-            <div className="flex items-center gap-4">
-              <nav className="flex gap-2 mr-4">
-                <Link href="/admin" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Admin</Link>
-                <Link href="/admin/command-center" className="px-3 py-1.5 text-sm text-white bg-white/10 rounded-lg">Dashboard</Link>
-                <Link href="/admin/command-center/flow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Flow</Link>
-                <Link href="/admin/command-center/discord" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Discord</Link>
-              <Link href="/admin/command-center/roles" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Roles</Link>
-                <Link href="/admin/command-center/workflow" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Workflow</Link>
-                <Link href="/admin/command-center/report" className="px-3 py-1.5 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/10">Report</Link>
-              </nav>
-              <button 
-                onClick={fetchData}
-                className="flex items-center gap-2 text-white/60 hover:text-white text-sm"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
+            <div>
+              {new Date().toLocaleDateString("en-US", {
+                timeZone: "America/Chicago",
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats Row */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-blue-400">{jobs?.summary.total || data.stats.scheduled}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">Daily Jobs</div>
-          </Card>
-          <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-green-400">{jobs?.summary.completed || 0}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">Completed Today</div>
-          </Card>
-          <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-yellow-400">{jobs?.summary.pending || 0}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">Pending</div>
-          </Card>
-          <Card className="bg-white/5 border-white/10 p-4 text-center">
-            <div className="text-3xl font-bold text-red-400">{data.stats.blockers}</div>
-            <div className="text-xs text-white/50 uppercase mt-1">Blockers</div>
-          </Card>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <div className="text-gray-400 text-sm mb-1">Agents Online</div>
+            <div className="text-2xl font-bold text-green-400">{onlineAgents}/{totalAgents}</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <div className="text-gray-400 text-sm mb-1">Tasks Today</div>
+            <div className="text-2xl font-bold text-blue-400">
+              {data?.dailyStats?.totalCompleted || 0}/{data?.dailyStats?.totalScheduled || 0}
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <div className="text-gray-400 text-sm mb-1">Review Queue</div>
+            <div className="text-2xl font-bold text-yellow-400">{data?.reviewQueue?.length || 0}</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+            <div className="text-gray-400 text-sm mb-1">System Health</div>
+            <div className="text-2xl font-bold text-green-400">Healthy</div>
+          </div>
         </div>
 
-        {/* Daily Jobs Status */}
-        {jobs && (
-          <div>
-            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4 flex items-center gap-2">
-              📅 Daily Jobs 
-              <Badge variant="outline" className="bg-white/10 text-white/70 border-white/20">
-                {jobs.date}
-              </Badge>
-              <Badge 
-                variant="outline" 
-                className={`text-xs ${
-                  jobs.summary.completed === jobs.summary.total
-                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                }`}
-              >
-                {jobs.summary.completed}/{jobs.summary.total} Done
-              </Badge>
-              <span className="text-xs text-white/30 ml-auto">Resets daily</span>
-            </h2>
-            <Card className="bg-white/5 border-white/10 overflow-hidden">
-              <div className="divide-y divide-white/10">
-                {jobs.jobs.map((job) => (
-                  <div 
-                    key={job.id} 
-                    className={`p-3 flex items-center gap-3 ${
-                      job.status === 'completed' ? 'bg-green-500/5' : 
-                      job.status === 'failed' ? 'bg-red-500/5' : ''
-                    }`}
-                  >
-                    <div className="text-lg">
-                      {job.status === 'completed' ? '✅' : 
-                       job.status === 'failed' ? '❌' : '⏳'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm text-white font-medium">{job.name}</div>
-                      {job.note && <div className="text-xs text-white/40">{job.note}</div>}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-white/60 font-mono">{job.time}</div>
-                      {job.completedAt && (
-                        <div className="text-xs text-green-400">
-                          @ {new Date(job.completedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Workflow Execution Status */}
-        {data.workflows && (
-          <div>
-            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4">⏱️ Workflow Execution Status</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Trading Capture */}
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">📸</span>
+        {/* Missed Tasks */}
+        {data?.missedTasks && data.missedTasks.length > 0 && (
+          <div className="mb-8 bg-red-500/10 border-2 border-red-500 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-red-400 mb-4">⚠️ Missed Tasks</h2>
+            <div className="space-y-4">
+              {data.missedTasks.map((task, idx) => (
+                <div key={idx} className="bg-white/5 border border-red-500/30 rounded-lg p-4 flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-white">Trading Capture</div>
-                    <div className="text-xs text-white/40">Expected: 3:00p CT</div>
-                  </div>
-                  {data.workflows.tradingCapture ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-yellow-400" />
-                  )}
-                </div>
-                {data.workflows.tradingCapture ? (
-                  <>
-                    <div className="text-xs text-white/50">Last completed:</div>
-                    <div className="text-sm text-green-400 font-medium">
-                      {new Date(data.workflows.tradingCapture.lastCompleted!).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
+                    <div className="text-blue-400 font-semibold mb-1">{task.agent}</div>
+                    <div
+                      className="text-white text-lg mb-2 cursor-pointer hover:text-blue-300 underline decoration-dotted"
+                      onClick={() => showTaskDetails(task.taskName)}
+                    >
+                      {task.taskName}
                     </div>
-                    {data.workflows.tradingCapture.fileCount && (
-                      <div className="text-xs text-white/40 mt-1">
-                        {data.workflows.tradingCapture.fileCount} files captured
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-xs text-yellow-400">Pending today</div>
-                )}
-              </Card>
-
-              {/* Morning Brief */}
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">🌅</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white">Morning Brief</div>
-                    <div className="text-xs text-white/40">Expected: 8:00a CT</div>
-                  </div>
-                  {data.workflows.morningBrief ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-yellow-400" />
-                  )}
-                </div>
-                {data.workflows.morningBrief ? (
-                  <>
-                    <div className="text-xs text-white/50">Status:</div>
-                    <div className="text-sm text-green-400 font-medium">Completed</div>
-                  </>
-                ) : (
-                  <div className="text-xs text-yellow-400">Pending today</div>
-                )}
-              </Card>
-
-              {/* Report Upload */}
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">📄</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white">Report Upload</div>
-                    <div className="text-xs text-white/40">After Claude generates</div>
-                  </div>
-                  {data.workflows.reportUpload ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-yellow-400" />
-                  )}
-                </div>
-                {data.workflows.reportUpload ? (
-                  <>
-                    <div className="text-xs text-white/50">Last completed:</div>
-                    <div className="text-sm text-green-400 font-medium">
-                      {new Date(data.workflows.reportUpload.lastCompleted!).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
+                    <div className="text-gray-400 text-sm">
+                      Scheduled: {formatTime(task.scheduledTime)} • <span className="text-red-400">Overdue: {task.overdue}</span>
                     </div>
-                  </>
-                ) : (
-                  <div className="text-xs text-yellow-400">Pending</div>
-                )}
-              </Card>
-
-              {/* Key Levels Update */}
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">🔑</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white">Key Levels Update</div>
-                    <div className="text-xs text-white/40">After report upload</div>
                   </div>
-                  {data.workflows.keyLevelsUpdate ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-yellow-400" />
-                  )}
                 </div>
-                {data.workflows.keyLevelsUpdate ? (
-                  <>
-                    <div className="text-xs text-white/50">Last completed:</div>
-                    <div className="text-sm text-green-400 font-medium">
-                      {new Date(data.workflows.keyLevelsUpdate.lastCompleted!).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-xs text-yellow-400">Pending</div>
-                )}
-              </Card>
-
-              {/* EOD Wrap */}
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">📊</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white">EOD Wrap</div>
-                    <div className="text-xs text-white/40">Expected: 8:00p CT</div>
-                  </div>
-                  {data.workflows.eodWrap ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-yellow-400" />
-                  )}
-                </div>
-                {data.workflows.eodWrap ? (
-                  <>
-                    <div className="text-xs text-white/50">Status:</div>
-                    <div className="text-sm text-green-400 font-medium">Completed</div>
-                  </>
-                ) : (
-                  <div className="text-xs text-yellow-400">Pending today</div>
-                )}
-              </Card>
-
-              {/* Price Monitor */}
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">🚨</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white">Price Monitor</div>
-                    <div className="text-xs text-white/40">Every 1 min</div>
-                  </div>
-                  {pipeline?.steps?.[3]?.status === "complete" ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-red-400" />
-                  )}
-                </div>
-                {pipeline?.steps?.[3] && (
-                  <>
-                    <div className="text-xs text-white/50">Last check:</div>
-                    <div className="text-sm text-green-400 font-medium">
-                      {pipeline.steps[3].timestamp && new Date(pipeline.steps[3].timestamp).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                    <div className="text-xs text-white/40 mt-1">
-                      {pipeline.steps[3].details}
-                    </div>
-                  </>
-                )}
-              </Card>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Current Report & Key Levels Verification */}
-        {pipeline?.verification && (
-          <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                🔍 Current Report & Key Levels
-              </h2>
-              <Badge 
-                className={`${
-                  pipeline.verification.reportDate === new Date().toISOString().split('T')[0] ||
-                  pipeline.verification.reportDate === new Date(Date.now() - 86400000).toISOString().split('T')[0]
-                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                }`}
-              >
-                Report: {pipeline.verification.reportDate}
-              </Badge>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Report Info */}
-              <div>
-                <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Latest Report File</div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/50">File:</span>
-                    <span className="text-sm text-white font-mono">{pipeline.verification.reportFile}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/50">Date:</span>
-                    <span className="text-sm text-white">{pipeline.verification.reportDate}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/50">Updated:</span>
-                    <span className="text-sm text-white/70">
-                      {new Date(pipeline.verification.lastUpdated).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/50">Levels:</span>
-                    <span className="text-sm text-white">{pipeline.verification.levelCount} configured</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Key Levels */}
-              <div>
-                <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Key Price Levels</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-xs text-white/50 mb-1">Master Eject</div>
-                    <div className="text-2xl font-bold text-red-400">${pipeline.verification.masterEject}</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-xs text-white/50 mb-1">Call Wall</div>
-                    <div className="text-2xl font-bold text-green-400">${pipeline.verification.callWall}</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-xs text-white/50 mb-1">Key Gamma Strike</div>
-                    <div className="text-2xl font-bold text-blue-400">${pipeline.verification.keyGammaStrike}</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-3">
-                    <div className="text-xs text-white/50 mb-1">Hedge Wall</div>
-                    <div className="text-2xl font-bold text-yellow-400">${pipeline.verification.hedgeWall}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <div className="text-xs text-white/40">
-                Source: {pipeline.verification.source}
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Daily Report Pipeline */}
-        {pipeline && (
-          <div>
-            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4 flex items-center gap-2">
-              📊 Daily Report Pipeline
-              <Badge 
-                variant="outline" 
-                className={`text-xs ${
-                  pipeline.summary.blocked > 0 
-                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                    : pipeline.summary.complete === pipeline.summary.total
-                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                }`}
-              >
-                {pipeline.summary.complete}/{pipeline.summary.total} Complete
-              </Badge>
-            </h2>
-            <Card className="bg-white/5 border-white/10 overflow-hidden">
-              <div className="divide-y divide-white/10">
-                {pipeline.steps.map((step, i) => {
-                  let statusIcon = <Clock className="h-5 w-5 text-yellow-400" />;
-                  let statusColor = "text-yellow-400";
-                  
-                  if (step.status === "complete") {
-                    statusIcon = <CheckCircle2 className="h-5 w-5 text-green-400" />;
-                    statusColor = "text-green-400";
-                  } else if (step.status === "incomplete" || step.status === "stale" || step.status === "out-of-sync" || step.status === "blocked") {
-                    statusIcon = <AlertCircle className="h-5 w-5 text-red-400" />;
-                    statusColor = "text-red-400";
-                  }
-
-                  return (
-                    <div key={step.id} className="p-4 flex items-center gap-4">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="text-2xl">{i === 0 ? '📸' : i === 1 ? '📝' : i === 2 ? '🔑' : i === 3 ? '🚨' : '✅'}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-white">{step.name}</span>
-                            {statusIcon}
-                          </div>
-                          <div className="text-xs text-white/50">{step.details}</div>
-                          {step.timestamp && (
-                            <div className="text-xs text-white/30 mt-1">
-                              {new Date(step.timestamp).toLocaleString([], { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                hour: 'numeric', 
-                                minute: '2-digit' 
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-xs font-medium ${statusColor} uppercase`}>
-                          {step.status === "out-of-sync" ? "Out of Sync" : step.status}
-                        </div>
-                        <div className="text-xs text-white/40 mt-1">{step.expectedTime}</div>
-                      </div>
+        {/* Agents */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">👥 Agent Status & Tasks</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {data && Object.entries(data.agents).map(([id, agent]) => (
+              <div key={id} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{agent.emoji}</span>
+                    <div>
+                      <div className="font-semibold text-white">{agent.role}</div>
+                      <div className="text-sm text-gray-400">{id}</div>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* The Desk */}
-        <div>
-          <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4">👥 The Desk</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {data.roles.map((role) => (
-              <Card key={role.id} className="bg-white/5 border-white/10 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xl">{role.emoji}</span>
-                  <span className="font-medium text-white text-sm">{role.name}</span>
-                  <Badge 
-                    variant="outline" 
-                    className={`text-[10px] ml-auto ${
-                      role.status === 'active' 
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                    }`}
-                  >
-                    {role.status}
-                  </Badge>
+                  </div>
+                  <div className={`w-3 h-3 rounded-full ${agent.status === "online" ? "bg-green-400" : "bg-gray-600"}`} />
                 </div>
-                
-                <div className="space-y-2">
-                  <div className="text-xs text-white/40 uppercase">To Do</div>
-                  {role.todo.length > 0 ? (
+
+                {agent.todayScheduled && agent.todayScheduled.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-gray-400 mb-2">Today</div>
                     <div className="space-y-1">
-                      {role.todo.map((item, i) => (
-                        <div key={i} className="text-xs bg-white/5 rounded px-2 py-1 flex items-center gap-2">
-                          {item.time && <span className="text-blue-400 font-mono">{item.time}</span>}
-                          <span className="text-white/70">{item.name}</span>
-                          {item.priority && (
-                            <span className="text-red-400 text-[10px] ml-auto">{item.priority}</span>
-                          )}
+                      {agent.todayScheduled.map((task, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm">
+                          <span className="font-mono text-gray-500 text-xs">{formatTime(task.time)}</span>
+                          <span
+                            className="flex-1 text-gray-300 cursor-pointer hover:text-blue-300 underline decoration-dotted"
+                            onClick={() => showTaskDetails(task.job)}
+                          >
+                            {task.job}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${task.status === "completed" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>
+                            {task.status}
+                          </span>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-xs text-white/30">No items</div>
-                  )}
-                  
-                  <div className="text-xs text-white/40 uppercase pt-2">Blockers</div>
-                  {role.blockers.length > 0 ? (
+                  </div>
+                )}
+
+                {agent.weeklyScheduled && agent.weeklyScheduled.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-400 mb-2">Weekly</div>
                     <div className="space-y-1">
-                      {role.blockers.map((item, i) => (
-                        <div key={i} className="text-xs bg-red-500/10 border-l-2 border-red-500 rounded px-2 py-1 text-white/70">
-                          {item.name}
+                      {agent.weeklyScheduled.map((task, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm">
+                          <span className="font-mono text-gray-500 text-xs">{task.day.slice(0,3)} {formatTime(task.time)}</span>
+                          <span
+                            className="flex-1 text-gray-300 cursor-pointer hover:text-blue-300 underline decoration-dotted"
+                            onClick={() => showTaskDetails(task.job)}
+                          >
+                            {task.job}
+                          </span>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-xs text-white/30">None</div>
-                  )}
-                </div>
-              </Card>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Scheduled Jobs */}
+        {/* Completed Tasks */}
+        {data?.completedTaskLog && data.completedTaskLog.length > 0 && (
           <div>
-            <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4">
-              ⏰ Scheduled Jobs <span className="text-blue-400">({allJobs.length})</span>
-            </h2>
-            <Card className="bg-white/5 border-white/10 overflow-hidden max-h-80 overflow-y-auto">
-              <div className="divide-y divide-white/10">
-                {allJobs.map((job, i) => (
-                  <div key={i} className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-4 w-4 text-white/40" />
-                      <span className="text-sm text-white">{job.id}</span>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">✅ Completed Task Log</h2>
+              <div className="flex gap-2 text-sm">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-white/5 border border-white/10 rounded disabled:opacity-50"
+                >
+                  ← Prev
+                </button>
+                <span className="px-3 py-1 text-gray-400">
+                  Page {currentPage} of {Math.ceil(data.completedTaskLog.length / tasksPerPage)}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(Math.ceil(data.completedTaskLog.length / tasksPerPage), currentPage + 1))}
+                  disabled={currentPage === Math.ceil(data.completedTaskLog.length / tasksPerPage)}
+                  className="px-3 py-1 bg-white/5 border border-white/10 rounded disabled:opacity-50"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {data.completedTaskLog
+                .slice((currentPage - 1) * tasksPerPage, currentPage * tasksPerPage)
+                .map((task, idx) => (
+                  <div key={idx} className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="text-gray-400">{formatTimestamp(task.completedAt)}</div>
+                      <div className="text-blue-400">{task.agent}</div>
+                      <div
+                        className="text-white cursor-pointer hover:text-blue-300 underline decoration-dotted"
+                        onClick={() => showTaskDetails(task.taskName)}
+                      >
+                        {task.taskName}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-xs text-white/60 font-mono">{job.time}</span>
-                    </div>
+                    <div className="text-green-400">✓</div>
                   </div>
                 ))}
-              </div>
-            </Card>
-          </div>
-
-          {/* Activity + Quick Links */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4">📜 Recent Activity</h2>
-              <Card className="bg-white/5 border-white/10 p-4">
-                <div className="space-y-3">
-                  {data.activity.map((item, i) => (
-                    <div key={i} className="flex gap-3">
-                      <div className={`mt-0.5 ${item.type === 'success' ? 'text-green-400' : item.type === 'error' ? 'text-red-400' : 'text-blue-400'}`}>
-                        {item.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : 
-                         item.type === 'error' ? <AlertCircle className="h-4 w-4" /> : 
-                         <Activity className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm text-white">{item.message}</div>
-                        <div className="text-xs text-white/30">
-                          {new Date(item.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
             </div>
+          </div>
+        )}
+      </div>
 
-            <div>
-              <h2 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-4">Quick Links</h2>
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/admin/reports">
-                  <Card className="bg-white/5 border-white/10 p-3 hover:bg-white/10 transition-colors">
-                    <div className="flex items-center gap-2 text-white/80">
-                      <Zap className="h-4 w-4" />
-                      <span className="text-sm">Upload Report</span>
-                    </div>
-                  </Card>
-                </Link>
-                <Link href="/catalysts">
-                  <Card className="bg-white/5 border-white/10 p-3 hover:bg-white/10 transition-colors">
-                    <div className="flex items-center gap-2 text-white/80">
-                      <Activity className="h-4 w-4" />
-                      <span className="text-sm">Catalysts</span>
-                    </div>
-                  </Card>
-                </Link>
+      {/* Task Modal */}
+      {selectedTask && selectedTaskData && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeTaskModal}>
+          <div className="bg-gray-800 border border-blue-500/30 rounded-xl max-w-3xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-gray-800 border-b border-white/10 p-6 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-blue-400">{selectedTaskData.name}</h3>
+              <button onClick={closeTaskModal} className="w-9 h-9 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 text-2xl">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <div className="text-xs uppercase text-gray-400 font-semibold mb-2">Agent</div>
+                <div className="text-gray-200">{selectedTaskData.agent}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-gray-400 font-semibold mb-2">Schedule</div>
+                <div className="text-gray-200">{selectedTaskData.schedule}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-gray-400 font-semibold mb-2">Status</div>
+                <div className="text-gray-200">{selectedTaskData.enabled ? "✅ Enabled" : "❌ Disabled"}</div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-gray-400 font-semibold mb-2">Instructions</div>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4 text-gray-200 whitespace-pre-wrap font-mono text-sm">
+                  {selectedTaskData.instructions}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      )}
+
+      <div className="fixed bottom-4 right-4 text-xs text-gray-500 flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        Auto-refresh: 5s • Last: {formatTimestamp(data?.lastUpdated)}
+      </div>
     </div>
   );
 }
