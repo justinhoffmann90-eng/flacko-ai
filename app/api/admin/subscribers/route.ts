@@ -1,29 +1,32 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
+    // First check if user is logged in and is admin
     const supabase = await createClient();
-
-    // Check auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized - Please log in" }, { status: 401 });
     }
 
-    // Check if user is admin
-    const { data: userData } = await supabase
+    // Check if user is admin using regular client
+    const { data: userData, error: userError } = await supabase
       .from("users")
       .select("is_admin")
       .eq("id", user.id)
       .single();
 
-    if (!userData?.is_admin) {
-      return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
+    if (userError || !userData?.is_admin) {
+      return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
     }
 
-    // Fetch all non-admin users
-    const { data: usersData, error: usersError } = await supabase
+    // Now use service client to fetch all data (bypasses RLS)
+    const serviceClient = await createServiceClient();
+
+    // Fetch all non-admin users using service client
+    const { data: usersData, error: usersError } = await serviceClient
       .from("users")
       .select("id, email, x_handle, discord_user_id, discord_username, created_at")
       .eq("is_admin", false)
@@ -34,8 +37,8 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to load users" }, { status: 500 });
     }
 
-    // Fetch all subscriptions
-    const { data: subsData } = await supabase
+    // Fetch all subscriptions using service client
+    const { data: subsData } = await serviceClient
       .from("subscriptions")
       .select("id, user_id, status, stripe_subscription_id, current_period_end");
 
