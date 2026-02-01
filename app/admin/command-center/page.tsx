@@ -167,13 +167,43 @@ Identify which user emails bounced
 If "mailbox full" - contact user via alternative method
 If "invalid email" - update user record in Supabase
 After resolution, resend welcome email`,
-          copyPrompt: `Please investigate ${details.emailsBounced} bounced email(s):
+          copyPrompt: `**CRITICAL: ${details.emailsBounced} bounced emails detected**
 
+Context:
+- Service: Resend transactional email
+- Time window: Last 24 hours
+- Impact: New subscribers not receiving welcome emails
+- Data available: ${details.emailsSent24h} sent, ${details.emailsDelivered} delivered, ${details.emailsBounced} bounced
+
+Your task:
 1. Query Resend API for bounced emails in the last 24 hours
-2. Identify the bounce reason (mailbox full, invalid address, etc.)
-3. For each bounced email, determine the appropriate action
-4. Update user records in Supabase if needed
-5. Resend welcome emails to resolved addresses`
+   - Use Resend API key from environment
+   - Filter by status: "bounced"
+   - Get bounce reason codes (hard bounce, soft bounce, mailbox full, invalid)
+
+2. For each bounced email:
+   - Log the email address and bounce reason
+   - Check Supabase users table for user details
+   - Determine bounce type:
+     * Hard bounce (invalid address) → Mark email as invalid in DB
+     * Soft bounce (temporary) → Retry after 2 hours
+     * Mailbox full → Contact via Discord if connected
+
+3. Take action based on findings:
+   - Invalid emails: Update user record, send Discord notification if connected
+   - Temporary issues: Schedule retry
+   - Systemic issues: Alert me if >5 emails have same pattern
+
+4. Generate summary report:
+   - List of affected users
+   - Bounce reasons breakdown
+   - Actions taken
+   - Recommended follow-ups
+
+Files to check:
+- ~/Flacko_AI/flacko-ai/.env.local (Resend API key)
+- Database: public.users table
+- Scripts: ~/clawd/scripts/subscriber-health-check.sh`
         });
       }
     }
@@ -189,7 +219,31 @@ After resolution, resend welcome email`,
           resolution: `Check Resend dashboard for bounce reason
 Update user email if invalid
 Resend welcome email after fix`,
-          copyPrompt: `Please check the bounced email(s) and take appropriate action.`
+          copyPrompt: `**PRIORITY: ${details.emailsBounced} bounced email(s)**
+
+Context:
+- Recent signups: ${details.recentSignups} in last 24h
+- Email delivery rate: ${details.emailDelivery}
+- Bounced: ${details.emailsBounced} (low volume, but needs attention)
+
+Task:
+1. Access Resend dashboard or use API to get bounce details
+2. Identify the specific email(s) and bounce reason
+3. Check user record in Supabase:
+   - Is the email typo'd? (common: gmail → gmial)
+   - Is it a temporary issue?
+4. If invalid email:
+   - Search for user in Discord by username
+   - Send DM asking for correct email
+   - Update Supabase once confirmed
+5. If temporary issue:
+   - Schedule re-send in 2 hours
+   - Monitor for success
+6. Document findings in ~/clawd/logs/email-issues.md
+
+API endpoints:
+- Resend: GET /emails?status=bounced&limit=10
+- Supabase: users table filtered by email`
         });
       }
       if (details.discordRate < 50) {
@@ -202,7 +256,54 @@ Resend welcome email after fix`,
 Check for API rate limits
 Verify webhook configurations
 Monitor connection logs`,
-          copyPrompt: `Discord connection rate is at ${details.discordRate}%. Please investigate and resolve.`
+          copyPrompt: `**PRIORITY: Discord connection rate at ${details.discordRate}%**
+
+Context:
+- Signups (7 days): ${details.signups7d}
+- Discord connected: ~${Math.round(details.signups7d * details.discordRate / 100)} users
+- Password set rate: ${details.passwordRate}% (for comparison)
+- Expected rate: >70% for healthy onboarding
+
+Problem indicators:
+- Bot offline? Check if Discord bot is responding
+- OAuth flow broken? Test Discord OAuth locally
+- Webhook issues? Check Supabase webhooks firing correctly
+- User friction? Maybe CTA unclear in onboarding flow
+
+Investigation steps:
+1. Test Discord OAuth flow:
+   - Try connecting your own test account
+   - Check for error messages in browser console
+   - Verify redirect URIs match in Discord app settings
+
+2. Check Discord bot status:
+   - Visit Discord Developer Portal
+   - Confirm bot token is valid
+   - Check bot has proper permissions (roles, channels)
+
+3. Review recent user feedback:
+   - Check #support channel in Discord
+   - Look for reports of connection issues
+   - Review Telegram messages from clawdbot
+
+4. Analyze onboarding flow:
+   - Check database for users stuck at Discord connection step
+   - Query: SELECT * FROM users WHERE discord_username IS NULL AND created_at > NOW() - INTERVAL '7 days'
+
+5. If technical issue found:
+   - Fix immediately
+   - Document in ~/clawd/logs/discord-issues.md
+   - Send announcement in Discord about fix
+
+6. If user experience issue:
+   - Draft improved copy for Discord CTA
+   - A/B test with next cohort
+   - Monitor improvement
+
+Files to check:
+- Discord bot config: ~/.clawdbot/clawdbot.json
+- OAuth settings: Supabase Auth providers
+- User flow: ~/Flacko_AI/flacko-ai/app/(auth)/signup/page.tsx`
         });
       }
       const passwordRate = details.passwordRate || 100;
@@ -216,7 +317,74 @@ Monitor connection logs`,
 Check email delivery of password reset links
 Reach out to users who haven't set passwords
 Consider sending reminder emails`,
-          copyPrompt: `Password set rate is ${passwordRate}%. Please investigate why users aren't setting passwords.`
+          copyPrompt: `**PRIORITY: Password set rate at ${passwordRate}%**
+
+Context:
+- Signups (7 days): ${details.signups7d}
+- Users without passwords: ~${Math.round(details.signups7d * (100 - passwordRate) / 100)}
+- Expected rate: >95% for healthy onboarding
+- Related metrics:
+  * Email delivery: ${details.emailDelivery}
+  * Discord rate: ${details.discordRate}%
+
+This is unusual and needs investigation.
+
+Possible causes:
+1. Email delivery issue (password reset emails not arriving)
+2. Broken reset password link
+3. Confusing UX in signup flow
+4. Email going to spam
+5. User abandonment (signed up but lost interest)
+
+Investigation plan:
+1. Test password reset flow yourself:
+   - Create test account
+   - Request password reset
+   - Check email delivery time
+   - Verify link works and UX is clear
+
+2. Check email logs in Resend:
+   - Are password reset emails being sent?
+   - What's the open rate?
+   - Any bounces or spam reports?
+
+3. Query database for users without passwords:
+   \`\`\`sql
+   SELECT id, email, created_at, discord_username
+   FROM public.users
+   WHERE encrypted_password IS NULL
+   AND created_at > NOW() - INTERVAL '7 days'
+   ORDER BY created_at DESC
+   \`\`\`
+
+4. For each user without password:
+   - Check if they connected Discord (engaged but forgot password)
+   - Check Stripe events (paid but can't access)
+   - Send personalized follow-up via Discord or email
+
+5. If systemic issue found:
+   - Fix immediately (broken link, email template, etc.)
+   - Bulk re-send password reset emails to affected users
+   - Send apology message explaining the issue
+
+6. If user friction/abandonment:
+   - Review signup flow UX
+   - Consider auto-generating temp passwords
+   - Add "Set Password" reminder in Discord welcome message
+
+7. Document findings and actions taken in:
+   ~/clawd/logs/onboarding-issues.md
+
+API/Database access needed:
+- Resend API for email logs
+- Supabase DB for user queries
+- Discord API for DM outreach
+
+Report back with:
+- Root cause identified
+- Number of affected users
+- Actions taken
+- Recommended process improvements`
         });
       }
     }
@@ -245,34 +413,52 @@ Consider sending reminder emails`,
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-gray-400 hover:text-gray-100">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
-            <h1 className="text-3xl font-bold text-blue-400">🎯 Live Command Center</h1>
-          </div>
-          <div className="text-right text-sm text-gray-400">
-            <div className="text-2xl font-bold text-blue-400">
-              {new Date().toLocaleTimeString("en-US", {
-                timeZone: "America/Chicago",
-                hour12: true,
-                hour: "numeric",
-                minute: "2-digit",
-              })}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+      {/* Navigation Bar */}
+      <nav className="bg-black/20 border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-6">
+              <Link href="/admin" className="text-gray-400 hover:text-gray-100">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div className="text-lg font-bold text-blue-400">Command Center</div>
+              <div className="hidden md:flex items-center gap-1 text-sm">
+                <a href={`file://${process.env.HOME}/clawd/dashboard/workflow.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                  Workflow
+                </a>
+                <a href={`file://${process.env.HOME}/clawd/dashboard/roles.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                  Roles
+                </a>
+                <a href={`file://${process.env.HOME}/clawd/dashboard/flow.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                  Flow
+                </a>
+                <a href={`file://${process.env.HOME}/clawd/dashboard/report.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                  Reports
+                </a>
+                <a href={`file://${process.env.HOME}/clawd/dashboard/catalysts.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                  Catalysts
+                </a>
+                <a href={`file://${process.env.HOME}/clawd/dashboard/daily-wins.html`} className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">
+                  Daily Wins
+                </a>
+              </div>
             </div>
-            <div>
-              {new Date().toLocaleDateString("en-US", {
-                timeZone: "America/Chicago",
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
+            <div className="text-right text-sm text-gray-400">
+              <div className="text-lg font-bold text-blue-400">
+                {new Date().toLocaleTimeString("en-US", {
+                  timeZone: "America/Chicago",
+                  hour12: true,
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </div>
             </div>
           </div>
         </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8">
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -503,6 +689,48 @@ Consider sending reminder emails`,
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Review Queue */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">📋 Review Queue</h2>
+          {data?.reviewQueue && data.reviewQueue.length > 0 ? (
+            <div className="space-y-3">
+              {data.reviewQueue.map((item: any, idx: number) => (
+                <div key={idx} className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="text-yellow-400 font-semibold text-sm mb-1">{item.agent}</div>
+                      <div className="text-white text-lg mb-1">{item.taskName || item.type}</div>
+                      <div className="text-gray-400 text-sm">
+                        Created: {formatTimestamp(item.createdAt || item.timestamp)}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1 text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30">
+                        Approve
+                      </button>
+                      <button className="px-3 py-1 text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded hover:bg-yellow-500/30">
+                        Revise
+                      </button>
+                      <button className="px-3 py-1 text-xs bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30">
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                  {item.filePath && (
+                    <div className="text-xs text-gray-500 font-mono mt-2">
+                      {item.filePath}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white/5 border border-white/10 rounded-lg p-8 text-center text-gray-400">
+              No items pending review
+            </div>
+          )}
         </div>
 
         {/* Completed Tasks */}
