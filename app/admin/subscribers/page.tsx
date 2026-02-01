@@ -1,12 +1,10 @@
-export const dynamic = 'force-dynamic';
+"use client";
 
-import { createServiceClient } from "@/lib/supabase/server";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Trash2, RefreshCw } from "lucide-react";
 
 interface UserRow {
   id: string;
@@ -15,63 +13,72 @@ interface UserRow {
   discord_user_id: string | null;
   discord_username: string | null;
   created_at: string;
+  subscription?: {
+    status: string;
+    stripe_subscription_id: string | null;
+    current_period_end: string | null;
+  };
 }
 
-interface SubscriptionRow {
-  id: string;
-  user_id: string;
-  status: string;
-  stripe_subscription_id: string | null;
-  current_period_end: string | null;
-}
+export default function AdminSubscribersPage() {
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-export default async function AdminSubscribersPage() {
-  const supabase = await createServiceClient();
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-  // Fetch all non-admin users
-  const { data: usersData, error: usersError } = await supabase
-    .from("users")
-    .select("id, email, x_handle, discord_user_id, discord_username, created_at")
-    .eq("is_admin", false)
-    .order("created_at", { ascending: false });
-
-  if (usersError) {
-    return (
-      <div className="p-8">
-        <p className="text-red-500">Error loading users: {usersError.message}</p>
-      </div>
-    );
-  }
-
-  // Fetch all subscriptions
-  const { data: subsData } = await supabase
-    .from("subscriptions")
-    .select("id, user_id, status, stripe_subscription_id, current_period_end");
-
-  const users = (usersData || []) as UserRow[];
-  const subscriptions = (subsData || []) as SubscriptionRow[];
-
-  // Create a map of user_id -> subscription
-  const subsByUser = new Map<string, SubscriptionRow>();
-  for (const sub of subscriptions) {
-    // Keep the most recent/active subscription per user
-    const existing = subsByUser.get(sub.user_id);
-    if (!existing || sub.status === 'active' || sub.status === 'comped') {
-      subsByUser.set(sub.user_id, sub);
+  async function loadUsers() {
+    try {
+      const response = await fetch("/api/admin/subscribers");
+      if (!response.ok) throw new Error("Failed to load users");
+      const data = await response.json();
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error("Error loading users:", error);
+    } finally {
+      setLoading(false);
     }
   }
 
-  const getSubscriptionStatus = (userId: string) => {
-    const sub = subsByUser.get(userId);
-    if (!sub) return { status: "none", label: "No subscription" };
-    return { status: sub.status, label: sub.status };
-  };
+  async function deleteUser(userId: string, email: string) {
+    if (!confirm(`Are you sure you want to delete ${email}?\n\nThis will:\n- Delete the user account\n- Cancel their subscription\n- Remove all their data\n\nThis action cannot be undone.`)) {
+      return;
+    }
 
-  const getStatusColor = (status: string) => {
+    setDeleting(userId);
+    try {
+      const response = await fetch(`/api/admin/subscribers/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to delete user");
+      }
+
+      // Remove from UI
+      setUsers(users.filter(u => u.id !== userId));
+    } catch (error: any) {
+      alert(`Error deleting user: ${error.message}`);
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  function getStatusColor(status?: string): "green" | "yellow" | "red" | "secondary" {
     switch (status) {
       case "active":
       case "comped":
-        return "green";
       case "trialing":
         return "green";
       case "past_due":
@@ -82,31 +89,36 @@ export default async function AdminSubscribersPage() {
       default:
         return "secondary";
     }
-  };
+  }
 
   // Count stats
   const totalUsers = users.length;
   const discordLinked = users.filter(u => u.discord_user_id).length;
-  const activeSubscriptions = users.filter(u => {
-    const sub = subsByUser.get(u.id);
-    return sub && ["active", "comped", "trialing"].includes(sub.status);
-  }).length;
+  const activeSubscriptions = users.filter(u =>
+    u.subscription && ["active", "comped", "trialing"].includes(u.subscription.status)
+  ).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/admin">
-            <Button variant="ghost" size="sm" className="mb-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
-            </Button>
-          </Link>
           <h1 className="text-3xl font-bold">Subscribers</h1>
           <p className="text-muted-foreground mt-2">
             {totalUsers} total • {activeSubscriptions} active • {discordLinked} Discord linked
           </p>
         </div>
+        <Button onClick={loadUsers} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       <Card>
@@ -120,19 +132,20 @@ export default async function AdminSubscribersPage() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4">Email</th>
                   <th className="text-left py-3 px-4">Handle</th>
-                  <th className="text-left py-3 px-4">Stripe</th>
+                  <th className="text-left py-3 px-4">Status</th>
                   <th className="text-left py-3 px-4">Discord</th>
                   <th className="text-left py-3 px-4">Joined</th>
+                  <th className="text-left py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => {
-                  const subInfo = getSubscriptionStatus(user.id);
-                  const hasIssues = !user.discord_user_id || subInfo.status === "none" || subInfo.status === "past_due";
-                  
+                  const status = user.subscription?.status || "none";
+                  const hasIssues = !user.discord_user_id || status === "none" || status === "past_due";
+
                   return (
-                    <tr 
-                      key={user.id} 
+                    <tr
+                      key={user.id}
                       className={`border-b hover:bg-muted/50 ${hasIssues ? "bg-yellow-500/5" : ""}`}
                     >
                       <td className="py-3 px-4">
@@ -142,8 +155,8 @@ export default async function AdminSubscribersPage() {
                         {user.x_handle || "—"}
                       </td>
                       <td className="py-3 px-4">
-                        <Badge variant={getStatusColor(subInfo.status) as "green" | "yellow" | "red" | "secondary"}>
-                          {subInfo.label}
+                        <Badge variant={getStatusColor(status)}>
+                          {status}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">
@@ -158,6 +171,21 @@ export default async function AdminSubscribersPage() {
                       </td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">
                         {formatDate(user.created_at)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteUser(user.id, user.email)}
+                          disabled={deleting === user.id}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        >
+                          {deleting === user.id ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </td>
                     </tr>
                   );
