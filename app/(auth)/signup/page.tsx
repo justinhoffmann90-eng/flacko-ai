@@ -108,7 +108,7 @@ export default function SignupPage() {
 
       <Card>
         <form onSubmit={handleSignup} autoComplete="on">
-          <CardContent className="space-y-3 pt-4">
+          <CardContent className="space-y-4 pt-5">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
