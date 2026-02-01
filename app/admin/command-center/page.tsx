@@ -457,40 +457,6 @@ Report back with:
 
       <div className="relative max-w-7xl mx-auto p-4 md:p-8 mb-8">
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Link
-            href="/admin/reports"
-            className="relative bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-6 hover:from-purple-500/20 hover:to-blue-500/20 transition-all group overflow-hidden shadow-lg shadow-purple-500/10"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-            <div className="relative flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/20">
-                <FileText className="w-6 h-6 text-purple-300" />
-              </div>
-              <div className="flex-1">
-                <div className="text-lg font-semibold text-white mb-1">Upload New Report</div>
-                <div className="text-sm text-gray-400">Publish today's daily analysis</div>
-              </div>
-            </div>
-          </Link>
-          <Link
-            href="/admin/subscribers"
-            className="relative bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-6 hover:from-blue-500/20 hover:to-cyan-500/20 transition-all group overflow-hidden shadow-lg shadow-blue-500/10"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-            <div className="relative flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/30 to-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/20">
-                <Users className="w-6 h-6 text-blue-300" />
-              </div>
-              <div className="flex-1">
-                <div className="text-lg font-semibold text-white mb-1">Manage Subscribers</div>
-                <div className="text-sm text-gray-400">View and manage subscriber accounts</div>
-              </div>
-            </div>
-          </Link>
-        </div>
-
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="relative bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl p-4 shadow-lg shadow-green-500/5 overflow-hidden group hover:border-green-500/30 transition-all">
