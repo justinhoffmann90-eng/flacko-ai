@@ -26,6 +26,7 @@ interface RolesData {
 export default function RolesPage() {
   const [data, setData] = useState<RolesData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -34,12 +35,16 @@ export default function RolesPage() {
   async function loadData() {
     try {
       const res = await fetch("/api/admin/dashboard/roles");
-      if (!res.ok) throw new Error("Failed to load");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to load");
+      }
       const rolesData = await res.json();
       setData(rolesData);
       setLoading(false);
-    } catch (error) {
-      console.error("Error loading roles:", error);
+    } catch (err: any) {
+      console.error("Error loading roles:", err);
+      setError(err.message);
       setLoading(false);
     }
   }
@@ -49,6 +54,23 @@ export default function RolesPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 flex items-center justify-center">
         <div className="text-center">
           <p>Loading roles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-400 mb-4">Error loading roles</div>
+          <div className="text-gray-400 text-sm">{error}</div>
+          <button
+            onClick={() => { setError(null); setLoading(true); loadData(); }}
+            className="mt-4 px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -76,7 +98,11 @@ export default function RolesPage() {
         </p>
 
         <div className="space-y-6">
-          {data?.roles && data.roles.map((role) => (
+          {!data?.roles || data.roles.length === 0 ? (
+            <div className="bg-white/5 border border-white/10 rounded-lg p-8 text-center text-gray-400">
+              No roles found
+            </div>
+          ) : data.roles.map((role) => (
             <div key={role.id} className="bg-white/5 border border-white/10 rounded-lg p-6">
               <div className="flex items-start gap-4 mb-4">
                 <div className="text-4xl">{role.emoji}</div>
