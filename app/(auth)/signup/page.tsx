@@ -100,10 +100,9 @@ export default function SignupPage() {
       <div className="text-center text-sm text-muted-foreground mb-2">
         Leverage <span className="text-emerald-500 font-semibold">$800/mo</span> in institutional data & tools
       </div>
-      <div className="text-center text-[13px] text-muted-foreground/70 mb-1">
+      <div className="text-center text-[13px] text-muted-foreground/70 leading-relaxed mb-4">
         <span className="text-muted-foreground">FS Insight</span> <span className="text-muted-foreground/50">(Macro & Technical)</span> · <span className="text-muted-foreground">SpotGamma</span> <span className="text-muted-foreground/50">(Alpha, HIRO)</span>
-      </div>
-      <div className="text-center text-[13px] text-muted-foreground/70 mb-4">
+        <br />
         <span className="text-muted-foreground">AI Agents & Infra</span> <span className="text-muted-foreground/50">(Claude Max, Grok, M4 Mini)</span>
       </div>
 
