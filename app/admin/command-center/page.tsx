@@ -15,11 +15,18 @@ interface Agent {
     time: string;
     job: string;
     status: string;
+    days?: string;
   }>;
   weeklyScheduled?: Array<{
-    day: string;
     time: string;
     job: string;
+    status: string;
+  }>;
+  nightlyScheduled?: Array<{
+    time: string;
+    job: string;
+    status: string;
+    note?: string;
   }>;
   todayCompleted?: string[];
 }
@@ -107,6 +114,11 @@ export default function CommandCenterPage() {
     // Handle recurring format: "Every 2h" or "Every 30m"
     if (time24.startsWith("Every ")) {
       return time24; // Already human-readable
+    }
+
+    // Handle already-formatted times: "7:00 AM", "Monday 6:00 AM", "10:00 PM - 5:00 AM"
+    if (time24.includes("AM") || time24.includes("PM") || time24.includes("-")) {
+      return time24;
     }
 
     // Handle standard time format: "14:30"
@@ -681,6 +693,7 @@ Report back with:
                             onClick={() => showTaskDetails(task.job)}
                           >
                             {task.job}
+                            {task.days && <span className="text-xs text-gray-500 ml-2">({task.days})</span>}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded ${task.status === "completed" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>
                             {task.status}
@@ -692,18 +705,42 @@ Report back with:
                 )}
 
                 {agent.weeklyScheduled && agent.weeklyScheduled.length > 0 && (
-                  <div>
+                  <div className="mb-3">
                     <div className="text-xs font-semibold text-gray-400 mb-2">Weekly</div>
                     <div className="space-y-1">
                       {agent.weeklyScheduled.map((task, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-sm">
-                          <span className="font-mono text-gray-500 text-xs">{task.day.slice(0,3)} {formatTime(task.time)}</span>
+                          <span className="font-mono text-gray-500 text-xs w-32">{formatTime(task.time)}</span>
                           <span
                             className="flex-1 text-gray-300 cursor-pointer hover:text-blue-300 underline decoration-dotted"
                             onClick={() => showTaskDetails(task.job)}
                           >
                             {task.job}
                           </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {agent.nightlyScheduled && agent.nightlyScheduled.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-400 mb-2">Nightly</div>
+                    <div className="space-y-1">
+                      {agent.nightlyScheduled.map((task, idx) => (
+                        <div key={idx} className="flex flex-col gap-1 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-gray-500 text-xs w-32">{formatTime(task.time)}</span>
+                            <span
+                              className="flex-1 text-gray-300 cursor-pointer hover:text-blue-300 underline decoration-dotted"
+                              onClick={() => showTaskDetails(task.job)}
+                            >
+                              {task.job}
+                            </span>
+                          </div>
+                          {task.note && (
+                            <span className="text-xs text-gray-500 ml-34">{task.note}</span>
+                          )}
                         </div>
                       ))}
                     </div>
