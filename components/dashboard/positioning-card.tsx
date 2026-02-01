@@ -94,13 +94,17 @@ export function PositioningCard({
           <p className="font-bold mt-1 text-sm">{posture || '—'}</p>
         </div>
       </div>
-      {cashAvailable && (
-        <div className="mt-3 pt-3 border-t text-center">
+      <div className="mt-3 pt-3 border-t text-center">
+        {cashAvailable ? (
           <Link href="/settings" className="text-xs text-muted-foreground hover:text-primary">
             Based on ${cashAvailable.toLocaleString()} cash available →
           </Link>
-        </div>
-      )}
+        ) : (
+          <Link href="/settings" className="text-xs text-primary hover:text-primary/80 font-medium">
+            Set cash available to see bullet sizes →
+          </Link>
+        )}
+      </div>
     </Card>
   );
 }
