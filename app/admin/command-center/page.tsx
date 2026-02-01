@@ -819,7 +819,7 @@ Report back with:
               </div>
             </div>
             <div className="space-y-2">
-              {data.completedTaskLog
+              {(data.completedTaskLog || [])
                 .slice((currentPage - 1) * tasksPerPage, currentPage * tasksPerPage)
                 .map((task, idx) => (
                   <div key={idx} className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 flex items-center justify-between">
