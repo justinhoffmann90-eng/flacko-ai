@@ -24,68 +24,20 @@ export default function ResetPasswordPage() {
 
   const initializeAuth = useCallback(async () => {
     try {
-      const hash = window.location.hash;
-      
-      // Debug: log what we're working with
-      console.log("Hash present:", !!hash, hash.length);
-      
-      // Check for error in hash first
-      if (hash.includes("error=")) {
-        const hashParams = new URLSearchParams(hash.substring(1));
-        const errorDesc = hashParams.get("error_description") || "Link is invalid or expired";
-        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
-        setDebugInfo("Error in URL hash");
-        setPageState("error");
-        return;
-      }
-
-      // Check for tokens in hash
-      if (hash.includes("access_token=")) {
-        const hashParams = new URLSearchParams(hash.substring(1));
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-
-        console.log("Tokens found:", !!accessToken, !!refreshToken);
-
-        if (accessToken && refreshToken) {
-          // Set session with extracted tokens - SSR client will sync to cookies
-          const { data, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (sessionError) {
-            console.error("setSession error:", sessionError);
-            setError(`Failed to verify: ${sessionError.message}`);
-            setDebugInfo(`setSession failed: ${sessionError.message}`);
-            setPageState("error");
-            return;
-          }
-
-          if (data.session) {
-            console.log("Session established for:", data.session.user.email);
-            setUserEmail(data.session.user.email || "");
-            // Clear the hash from URL for cleaner UX
-            window.history.replaceState(null, "", "/reset-password");
-            setPageState("form");
-            return;
-          }
-        }
-      }
-
-      // No hash tokens - check for existing session
+      // Since we're now going through /api/auth/callback first,
+      // we should have a valid session already
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        console.log("Existing session found");
+        console.log("Session found for:", session.user.email);
         setUserEmail(session.user.email || "");
         setPageState("form");
         return;
       }
 
-      // No session, no tokens - invalid state
+      // No session - they accessed this page directly without a valid link
       setError("No valid session found. Please request a new password link.");
-      setDebugInfo("No hash tokens and no existing session");
+      setDebugInfo("No active session - link may have expired");
       setPageState("error");
       
     } catch (err) {
