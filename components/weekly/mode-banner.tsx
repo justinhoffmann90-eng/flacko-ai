@@ -4,6 +4,7 @@ import { TrafficLightMode } from "@/types/weekly-review";
 
 interface ModeBannerProps {
   mode: TrafficLightMode;
+  modeTrend?: string; // e.g., "Stabilizing", "Bounce Encouraging"
   guidance: string;
   dailyCap: number;
 }
@@ -31,16 +32,17 @@ const modeConfig: Record<TrafficLightMode, { emoji: string; gradient: string; te
   },
 };
 
-export function ModeBanner({ mode, guidance, dailyCap }: ModeBannerProps) {
+export function ModeBanner({ mode, modeTrend, guidance, dailyCap }: ModeBannerProps) {
   const config = modeConfig[mode];
 
   return (
     <div className={`bg-gradient-to-r ${config.gradient} rounded-xl p-4 sm:p-6 text-center`}>
       <h2 className={`text-xl sm:text-2xl font-bold ${config.textColor}`}>
         {config.emoji} {mode.toUpperCase()} MODE
+        {modeTrend && <span className="font-normal"> — {modeTrend}</span>}
       </h2>
       <p className={`text-sm mt-2 ${config.textColor} opacity-90`}>
-        {guidance || `${dailyCap}% daily cap`}
+        {guidance} — {dailyCap}% daily cap
       </p>
     </div>
   );

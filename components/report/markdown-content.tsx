@@ -176,39 +176,39 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             <thead className="bg-slate-700">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-[11px] uppercase tracking-wider text-slate-200">
+            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-[11px] md:text-xs lg:text-sm uppercase tracking-wider text-slate-200">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border/50 px-3 py-2 align-top">{children}</td>
+            <td className="border border-border/50 px-3 py-2 align-top text-sm md:text-base lg:text-lg">{children}</td>
           ),
           tr: ({ children }) => (
             <tr className="even:bg-muted/20 hover:bg-muted/40 transition-colors">{children}</tr>
           ),
           // Headers - cleaner typography
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg font-semibold mt-8 mb-3 text-foreground flex items-center gap-2">{children}</h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mt-8 mb-3 text-foreground flex items-center gap-2">{children}</h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-base font-semibold mt-5 mb-2 text-foreground/90">{children}</h3>
+            <h3 className="text-base md:text-lg lg:text-xl font-semibold mt-5 mb-2 text-foreground/90">{children}</h3>
           ),
           // Paragraphs
           p: ({ children }) => (
-            <p className="mb-4 leading-relaxed text-foreground/80 text-[15px]">{children}</p>
+            <p className="mb-4 leading-relaxed text-foreground/80 text-[15px] md:text-base lg:text-lg">{children}</p>
           ),
           // Lists
           ul: ({ children }) => (
-            <ul className="mb-4 ml-6 space-y-2 list-disc">{children}</ul>
+            <ul className="mb-4 ml-6 space-y-2 list-disc text-base md:text-lg lg:text-xl">{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-4 ml-6 space-y-4 list-decimal">{children}</ol>
+            <ol className="mb-4 ml-6 space-y-4 list-decimal text-base md:text-lg lg:text-xl">{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="text-foreground/90 pl-1">{children}</li>
+            <li className="text-foreground/90 pl-1 text-base md:text-lg lg:text-xl">{children}</li>
           ),
           // Emphasis
           strong: ({ children }) => (

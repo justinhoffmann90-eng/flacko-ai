@@ -95,8 +95,19 @@ export async function GET(request: Request) {
     if (hasSubscriptionAccess(subscription)) {
       const roleResult = await addRoleToMember(discordUser.id);
       if (!roleResult.success) {
-        console.error("Discord role add error:", roleResult.error);
+        console.error(`Discord role add failed for user ${user.id} (${discordUser.username}):`, roleResult.error);
+        // Log to database for debugging
+        await serviceSupabase.from("discord_alert_log").insert({
+          user_id: user.id,
+          event_type: "role_assignment_failed_on_link",
+          status: "error",
+          error_message: roleResult.error || "Unknown error adding role during Discord link",
+        });
+      } else {
+        console.log(`Discord role added for user ${user.id} (${discordUser.username}) on link`);
       }
+    } else {
+      console.log(`User ${user.id} linked Discord but has no active subscription - skipping role`);
     }
 
     return NextResponse.redirect(`${origin}/settings?discord_linked=true`);

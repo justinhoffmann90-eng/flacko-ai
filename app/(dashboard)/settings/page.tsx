@@ -41,6 +41,13 @@ export default function SettingsPage() {
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [emailNewReports, setEmailNewReports] = useState(true);
   
+  // Password change state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  
   // Discord state
   const [discord, setDiscord] = useState<DiscordInfo | null>(null);
 
@@ -155,15 +162,62 @@ export default function SettingsPage() {
     router.push("/login");
   };
 
+  const [billingLoading, setBillingLoading] = useState(false);
+
   const handleManageBilling = async () => {
+    setBillingLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/user/billing-portal", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        if (data.error === "No subscription found") {
+          setError("No active subscription found. Please contact support if you believe this is an error.");
+        } else {
+          setError(`Billing error: ${data.error}`);
+        }
       }
     } catch (err) {
-      setError("Failed to open billing portal");
+      setError("Failed to open billing portal. Please try again.");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        setPasswordError(error.message);
+        return;
+      }
+
+      setPasswordSuccess(true);
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setTimeout(() => setPasswordSuccess(false), 5000);
+    } catch (err) {
+      setPasswordError("Failed to update password");
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -276,6 +330,60 @@ export default function SettingsPage() {
           {saving ? "Saving..." : "Save Settings"}
         </Button>
 
+        {/* Change Password */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Change Password</CardTitle>
+            <CardDescription>Update your account password</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {passwordSuccess && (
+              <Alert variant="success">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>Password updated successfully!</AlertDescription>
+              </Alert>
+            )}
+            {passwordError && (
+              <Alert variant="destructive">
+                <AlertDescription>{passwordError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+              <Input
+                id="confirmNewPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters
+              </p>
+            </div>
+            <Button 
+              onClick={handleChangePassword} 
+              variant="outline"
+              className="w-full" 
+              disabled={passwordSaving || !newPassword || !confirmNewPassword}
+            >
+              {passwordSaving ? "Updating..." : "Update Password"}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Discord */}
         <Card>
           <CardHeader>
@@ -345,9 +453,10 @@ export default function SettingsPage() {
               variant="outline"
               className="w-full"
               onClick={handleManageBilling}
+              disabled={billingLoading}
             >
               <CreditCard className="h-4 w-4 mr-2" />
-              Manage Billing
+              {billingLoading ? "Loading..." : "Manage Billing"}
             </Button>
           </CardContent>
         </Card>

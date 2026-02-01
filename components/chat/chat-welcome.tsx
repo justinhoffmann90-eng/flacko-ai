@@ -85,12 +85,12 @@ export function ChatWelcome({ onSuggestionClick }: ChatWelcomeProps) {
         {/* Header */}
         <div className="text-center mb-6">
           <div className="flex justify-center mb-3">
-            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
-              <Bot className="h-7 w-7 text-primary" />
+            <div className="h-14 w-14 md:h-16 md:w-16 lg:h-20 lg:w-20 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
+              <Bot className="h-7 w-7 md:h-9 md:w-9 lg:h-10 lg:w-10 text-primary" />
             </div>
           </div>
-          <h3 className="font-bold text-xl mb-1">Flacko AI Assistant</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="font-bold text-xl md:text-2xl lg:text-3xl mb-1">Flacko AI Assistant</h3>
+          <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
             Your personal guide to today&apos;s report
           </p>
         </div>

@@ -42,7 +42,30 @@ export async function POST(request: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
         const priceTier = parseInt(session.metadata?.price_tier || "1");
-        const lockedPriceCents = parseInt(session.metadata?.locked_price_cents || "2999");
+        
+        // Get actual price from Stripe subscription (includes coupon discounts)
+        let lockedPriceCents = parseInt(session.metadata?.locked_price_cents || "2999");
+        
+        if (session.subscription) {
+          try {
+            const subscription = await getStripe().subscriptions.retrieve(
+              session.subscription as string,
+              { expand: ['discount'] }
+            );
+            const basePrice = subscription.items.data[0]?.price?.unit_amount || lockedPriceCents;
+            const couponPercent = subscription.discount?.coupon?.percent_off || 0;
+            
+            // Calculate actual price after discount
+            if (couponPercent > 0) {
+              lockedPriceCents = Math.round(basePrice * (1 - couponPercent / 100));
+              console.log(`Applied ${couponPercent}% discount: $${basePrice/100} -> $${lockedPriceCents/100}`);
+            } else {
+              lockedPriceCents = basePrice;
+            }
+          } catch (e) {
+            console.error("Failed to fetch subscription for price calculation:", e);
+          }
+        }
 
         if (userId) {
           // Create or update subscription
@@ -73,6 +96,7 @@ export async function POST(request: Request) {
           if (customerEmail) {
             try {
               // Generate the magic link
+              console.log(`[EMAIL] Generating password link for ${customerEmail}...`);
               const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
                 type: "recovery",
                 email: customerEmail,
@@ -82,12 +106,35 @@ export async function POST(request: Request) {
               });
               
               if (linkError) {
-                console.error("Failed to generate password link:", linkError, "for email:", customerEmail);
+                console.error(`[EMAIL ERROR] Failed to generate password link for ${customerEmail}:`, linkError);
+                // Log to database
+                await supabase.from("email_send_log").insert({
+                  user_id: userId,
+                  email: customerEmail,
+                  type: "password_setup",
+                  status: "link_generation_failed",
+                  error_message: JSON.stringify(linkError),
+                  metadata: { session_id: session.id }
+                });
+                // Alert via Telegram
+                try {
+                  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      chat_id: process.env.TELEGRAM_CHAT_ID,
+                      text: `🚨 **Password Link Generation Failed**\n\nUser: ${customerEmail}\nSession: ${session.id}\nError: ${JSON.stringify(linkError)}`,
+                      parse_mode: 'Markdown'
+                    })
+                  });
+                } catch (telegramError) {
+                  console.error('Failed to send Telegram alert:', telegramError);
+                }
               } else if (linkData?.properties?.action_link) {
-                console.log("Generated password link for:", customerEmail);
+                console.log(`[EMAIL] Generated password link for ${customerEmail}, sending email...`);
                 // Send email via Resend
                 const { resend, EMAIL_FROM } = await import("@/lib/resend/client");
-                await resend.emails.send({
+                const emailResult = await resend.emails.send({
                   from: EMAIL_FROM,
                   to: customerEmail,
                   subject: "Set Your Password | Flacko AI",
@@ -143,22 +190,113 @@ export async function POST(request: Request) {
 </html>
                   `,
                 });
-                console.log("Password setup email sent to:", customerEmail);
+                
+                if (emailResult.error) {
+                  console.error(`[EMAIL ERROR] Resend returned error for ${customerEmail}:`, emailResult.error);
+                  // Log failure to database
+                  await supabase.from("email_send_log").insert({
+                    user_id: userId,
+                    email: customerEmail,
+                    type: "password_setup",
+                    status: "send_failed",
+                    error_message: JSON.stringify(emailResult.error),
+                    metadata: { session_id: session.id }
+                  });
+                  // Alert via Telegram
+                  try {
+                    await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        chat_id: process.env.TELEGRAM_CHAT_ID,
+                        text: `🚨 **Password Email Send Failed**\n\nUser: ${customerEmail}\nSession: ${session.id}\nResend Error: ${JSON.stringify(emailResult.error)}`,
+                        parse_mode: 'Markdown'
+                      })
+                    });
+                  } catch (telegramError) {
+                    console.error('Failed to send Telegram alert:', telegramError);
+                  }
+                } else {
+                  console.log(`[EMAIL SUCCESS] Password setup email sent to ${customerEmail}, Resend ID: ${emailResult.data?.id}`);
+                  // Log success to database
+                  await supabase.from("email_send_log").insert({
+                    user_id: userId,
+                    email: customerEmail,
+                    type: "password_setup",
+                    status: "sent",
+                    resend_id: emailResult.data?.id,
+                    metadata: { session_id: session.id }
+                  });
+                }
               }
             } catch (e) {
-              console.error("Failed to send password setup email:", e);
+              const errorMsg = e instanceof Error ? e.message : String(e);
+              console.error(`[EMAIL EXCEPTION] Failed to send password setup email to ${customerEmail}:`, e);
+              // Log exception to database
+              await supabase.from("email_send_log").insert({
+                user_id: userId,
+                email: customerEmail,
+                type: "password_setup",
+                status: "exception",
+                error_message: errorMsg,
+                metadata: { session_id: session.id }
+              });
+              // Alert via Telegram
+              try {
+                await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: process.env.TELEGRAM_CHAT_ID,
+                    text: `🚨 **Password Email Exception**\n\nUser: ${customerEmail}\nSession: ${session.id}\nError: ${errorMsg}`,
+                    parse_mode: 'Markdown'
+                  })
+                });
+              } catch (telegramError) {
+                console.error('Failed to send Telegram alert:', telegramError);
+              }
+            }
+          } else {
+            console.error(`[EMAIL ERROR] No customer email found for user ${userId}, session ${session.id}`);
+            // Alert via Telegram
+            try {
+              await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: process.env.TELEGRAM_CHAT_ID,
+                  text: `🚨 **No Email Found for Signup**\n\nUser ID: ${userId}\nSession: ${session.id}\n\nStripe checkout completed but no email address available.`,
+                  parse_mode: 'Markdown'
+                })
+              });
+            } catch (telegramError) {
+              console.error('Failed to send Telegram alert:', telegramError);
             }
           }
 
           // Add Discord subscriber role if user has linked Discord
           const { data: userData } = await supabase
             .from("users")
-            .select("discord_user_id")
+            .select("discord_user_id, email")
             .eq("id", userId)
             .single();
 
           if (userData?.discord_user_id) {
-            await addRoleToMember(userData.discord_user_id);
+            const result = await addRoleToMember(userData.discord_user_id);
+            if (!result.success) {
+              console.error(`Failed to add Discord role for user ${userId} (${userData.email}):`, result.error);
+              // Log to database for debugging
+              await supabase.from("discord_alert_log").insert({
+                user_id: userId,
+                event_type: "role_assignment_failed",
+                status: "error",
+                error_message: result.error || "Unknown error adding role",
+              });
+            } else {
+              console.log(`Discord role added for user ${userId} (${userData.email})`);
+            }
+          } else {
+            console.log(`User ${userId} has no Discord linked - skipping role assignment`);
           }
         }
         break;

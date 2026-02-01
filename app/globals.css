@@ -346,3 +346,173 @@ html, body {
 .eject-warning {
   animation: warning-pulse 2s ease-in-out infinite;
 }
+
+/* ===== DESKTOP ENHANCEMENT ===== */
+/* Larger fonts, spacing, and components on desktop */
+
+@media (min-width: 768px) {
+  /* Base font size bump */
+  html {
+    font-size: 17px;
+  }
+  
+  /* Larger body text */
+  body {
+    @apply text-base;
+  }
+  
+  /* Cards get more padding */
+  .glass-card {
+    @apply p-8;
+  }
+  
+  /* Markdown content sizing */
+  .markdown-content {
+    @apply text-base;
+  }
+  
+  .markdown-content table {
+    @apply text-[15px];
+  }
+  
+  .markdown-content td,
+  .markdown-content th {
+    @apply py-3 px-4;
+  }
+  
+  .markdown-content h2 {
+    @apply text-xl;
+  }
+  
+  .markdown-content h3 {
+    @apply text-lg;
+  }
+  
+  .markdown-content li {
+    @apply text-base;
+  }
+  
+  .markdown-content td li {
+    @apply text-sm;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Larger base on big screens */
+  html {
+    font-size: 18px;
+  }
+  
+  /* Even more generous spacing */
+  .markdown-content td,
+  .markdown-content th {
+    @apply py-4 px-5;
+  }
+  
+  .markdown-content table {
+    @apply text-base;
+  }
+  
+  .markdown-content h2 {
+    @apply text-2xl;
+  }
+  
+  .markdown-content h2:first-of-type {
+    @apply text-2xl py-4 px-6;
+  }
+}
+
+/* NProgress - Top loading bar */
+#nprogress {
+  pointer-events: none;
+}
+
+#nprogress .bar {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+  position: fixed;
+  z-index: 9999;
+  top: env(safe-area-inset-top, 0);
+  left: 0;
+  width: 100%;
+  height: 3px;
+}
+
+#nprogress .peg {
+  display: block;
+  position: absolute;
+  right: 0px;
+  width: 100px;
+  height: 100%;
+  box-shadow: 0 0 10px #f97316, 0 0 5px #f97316;
+  opacity: 1;
+  transform: rotate(3deg) translate(0px, -4px);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Press states - satisfying tap feedback */
+.press-scale {
+  transition: transform 0.1s ease;
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* Lighter press for smaller elements */
+.press-scale-sm {
+  transition: transform 0.1s ease;
+}
+.press-scale-sm:active {
+  transform: scale(0.98);
+}
+
+/* Mode-tinted UI colors */
+:root {
+  --mode-tint: 0 0% 100%;
+  --mode-accent: 0 0% 50%;
+}
+
+[data-mode="green"] {
+  --mode-tint: 142 76% 95%;
+  --mode-accent: 142 76% 36%;
+}
+
+[data-mode="yellow"] {
+  --mode-tint: 48 96% 95%;
+  --mode-accent: 48 96% 50%;
+}
+
+[data-mode="orange"] {
+  --mode-tint: 25 95% 95%;
+  --mode-accent: 25 95% 53%;
+}
+
+[data-mode="red"] {
+  --mode-tint: 0 84% 95%;
+  --mode-accent: 0 84% 60%;
+}
+
+/* Mode-aware backgrounds */
+.mode-tint-bg {
+  background-color: hsl(var(--mode-tint) / 0.1);
+}
+
+.mode-accent-text {
+  color: hsl(var(--mode-accent));
+}
+
+.mode-accent-border {
+  border-color: hsl(var(--mode-accent) / 0.3);
+}
+
+/* Smooth mode transitions */
+[data-mode] {
+  transition: --mode-tint 0.3s ease, --mode-accent 0.3s ease;
+}

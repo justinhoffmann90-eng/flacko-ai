@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { haptic } from "@/lib/haptics";
 import {
   Home,
   FileText,
@@ -105,14 +106,15 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => haptic('light')}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full space-y-1.5 pt-2 transition-colors",
+                "flex flex-col items-center justify-center w-full h-full space-y-1.5 pt-2 transition-all press-scale-sm",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className="h-6 w-6" />
+              <item.icon className={cn("h-6 w-6 transition-transform", isActive && "scale-110")} />
               <span className="text-xs">{item.label}</span>
             </Link>
           );

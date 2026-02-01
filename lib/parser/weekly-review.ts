@@ -11,6 +11,7 @@ import {
   ThesisStatus,
   GammaShifts,
   ParsedWeeklyReview,
+  Catalyst,
 } from "@/types/weekly-review";
 import matter from "gray-matter";
 
@@ -20,8 +21,10 @@ interface WeeklyFrontmatter {
   week_start?: string;
   week_end?: string;
   mode?: string;
+  mode_trend?: string;
   mode_guidance?: string;
   daily_cap_pct?: number;
+  current_price?: number;
 
   // Candle data
   open?: number;
@@ -121,8 +124,10 @@ function extractWeeklyData(
 
   // Mode
   const mode = fm?.mode ? parseMode(fm.mode) : extractModeFromMarkdown(markdown);
+  const modeTrend = fm?.mode_trend || extractModeTrend(markdown);
   const modeGuidance = fm?.mode_guidance || extractModeGuidance(markdown, mode);
   const dailyCapPct = fm?.daily_cap_pct || getModeDefaultCap(mode);
+  const currentPrice = fm?.current_price || extractCurrentPrice(markdown);
 
   // Candle data
   const candle = extractCandle(markdown, fm, warnings);
@@ -145,6 +150,12 @@ function extractWeeklyData(
   const key_levels = extractLevels(markdown, fm);
   const scenarios = extractScenarios(markdown, fm);
 
+  // Catalysts
+  const catalysts = extractCatalysts(markdown);
+  
+  // Flacko AI's Take / "So What"
+  const flacko_take = extractFlackoTake(markdown);
+
   // Optional gamma
   const gamma_shifts = extractGammaShifts(markdown);
 
@@ -152,8 +163,10 @@ function extractWeeklyData(
     week_start: weekDates.start,
     week_end: weekDates.end,
     mode,
+    mode_trend: modeTrend,
     mode_guidance: modeGuidance,
     daily_cap_pct: dailyCapPct,
+    current_price: currentPrice,
     candle,
     monthly,
     weekly,
@@ -165,6 +178,8 @@ function extractWeeklyData(
     looking_ahead,
     key_levels,
     scenarios,
+    catalysts,
+    flacko_take,
     gamma_shifts,
   };
 }
@@ -653,6 +668,89 @@ function extractGammaShifts(markdown: string): GammaShifts | undefined {
     put_wall: putWall || { start: 0, end: 0 },
     interpretation: interpMatch?.[1] || "",
   };
+}
+
+function extractModeTrend(markdown: string): string | undefined {
+  // Look for pattern: "🟠 ORANGE — Bounce Encouraging" or "MODE — Description"
+  const trendPattern = /(?:GREEN|YELLOW|ORANGE|RED)\s*(?:MODE)?\s*[—-]\s*([^,\n]+)/i;
+  const match = markdown.match(trendPattern);
+  if (match) {
+    return match[1].trim();
+  }
+  return undefined;
+}
+
+function extractCurrentPrice(markdown: string): number | undefined {
+  // Look for "Current price: $429.64" or similar
+  const pricePattern = /Current\s*(?:Price)?[:\s]*\$?([\d.]+)/i;
+  const match = markdown.match(pricePattern);
+  if (match) {
+    return parseFloat(match[1]);
+  }
+  return undefined;
+}
+
+function extractCatalysts(markdown: string): Catalyst[] {
+  const catalysts: Catalyst[] = [];
+  
+  // Look for catalyst calendar section
+  const sectionPattern = /Catalyst\s*Calendar[\s\S]*?(?=##|---|\n\n\n|$)/i;
+  const sectionMatch = markdown.match(sectionPattern);
+  
+  if (!sectionMatch) return catalysts;
+  
+  const section = sectionMatch[0];
+  
+  // Extract from markdown table: | Date | Event | Impact |
+  const tableRowPattern = /\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^|]*)\s*\|/g;
+  let match;
+  let isHeader = true;
+  
+  while ((match = tableRowPattern.exec(section)) !== null) {
+    // Skip header row
+    if (isHeader) {
+      isHeader = false;
+      continue;
+    }
+    // Skip separator row
+    if (match[1].includes('-')) continue;
+    
+    const date = match[1].trim();
+    const event = match[2].trim();
+    const impact = match[3]?.trim() || undefined;
+    
+    if (date && event && !date.toLowerCase().includes('date')) {
+      catalysts.push({ date, event, impact });
+    }
+  }
+  
+  return catalysts;
+}
+
+function extractFlackoTake(markdown: string): string | undefined {
+  // Look for "The 'So What'" or "Flacko AI's Take" section
+  const patterns = [
+    /##\s*💡\s*The\s*["']?So\s*What["']?\s*[—-]?\s*Flacko\s*AI['']?s?\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
+    /##\s*Flacko\s*AI['']?s?\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
+    /##\s*The\s*["']?So\s*What["']?[\s\S]*?(?=##|---\s*\n\*|$)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = markdown.match(pattern);
+    if (match) {
+      // Clean up the content - remove the header
+      const content = match[0]
+        .replace(/^##[^\n]+\n+/, '') // Remove header
+        .replace(/---\s*$/, '') // Remove trailing separator
+        .trim();
+      
+      if (content.length > 50) { // Make sure we have substantial content
+        return content;
+      }
+    }
+  }
+  
+  return undefined;
 }
 
 export function validateWeeklyReview(data: WeeklyReviewData): string[] {

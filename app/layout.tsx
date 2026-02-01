@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,6 +46,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans antialiased min-h-screen`}>
+        <Suspense fallback={null}>
+          <ProgressBar />
+        </Suspense>
         <Providers>{children}</Providers>
       </body>
     </html>

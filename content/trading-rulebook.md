@@ -80,11 +80,13 @@ Pre-defined exit level (lower of Weekly 21 EMA or Put Wall). Daily close below =
 ## Indicator Quick Reference
 
 ### BX-Trender
-- Green bars = buying pressure
-- Red bars = selling pressure
-- HH (bars rising) = momentum increasing
-- LH (bars shrinking) = momentum fading
-- LL (bars deepening) = selling increasing
+Four distinct states based on structure:
+- **Light Green (HH)** = Strong bullish - making higher highs
+- **Dark Green (LH)** = Weakening bullish - no longer making new highs (warning)
+- **Light Red (HL)** = Weakening bearish - potential upside turnaround
+- **Dark Red (LL)** = Strong bearish - making lower lows
+
+**Key insight:** The signal is in the TRANSITION. Dark Red → Light Red is bullish. Light Green → Dark Green is a warning.
 
 ### SMI (Stochastic Momentum Index)
 - Oversold (<-40) = bounce potential
@@ -103,12 +105,12 @@ Pre-defined exit level (lower of Weekly 21 EMA or Put Wall). Daily close below =
 ## Mode Change Triggers
 
 **To Upgrade (toward GREEN):**
-- Weekly BX-Trender flips to HH pattern
+- Weekly BX-Trender shifts to Light Green (HH) - or Dark Red → Light Red (HL) as early signal
 - Price reclaims key EMAs
 - Structure holds (higher low confirmed)
 
 **To Downgrade (toward RED):**
-- Weekly BX-Trender shows LL pattern
+- Weekly BX-Trender shifts to Dark Red (LL) - or Light Green → Dark Green (LH) as early warning
 - Price loses key EMAs
 - Structure breaks (lower low confirmed)
 

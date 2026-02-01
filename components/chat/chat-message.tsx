@@ -24,9 +24,9 @@ export function ChatMessage({ role, content, timestamp, isLoading }: ChatMessage
         )}
       >
         {isUser ? (
-          <User className="h-4 w-4 text-primary-foreground" />
+          <User className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-primary-foreground" />
         ) : (
-          <Bot className="h-4 w-4" />
+          <Bot className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" />
         )}
       </div>
 
@@ -44,7 +44,7 @@ export function ChatMessage({ role, content, timestamp, isLoading }: ChatMessage
             <div className="h-2 w-2 bg-current rounded-full animate-bounce opacity-60 [animation-delay:0.2s]" />
           </div>
         ) : (
-          <div className={cn("prose prose-sm max-w-none", isUser ? "prose-invert" : "prose-invert")}>
+          <div className={cn("prose prose-sm md:prose-base lg:prose-lg max-w-none", isUser ? "prose-invert" : "prose-invert")}>
             <ReactMarkdown
               components={{
                 p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,

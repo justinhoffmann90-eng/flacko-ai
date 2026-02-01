@@ -55,16 +55,21 @@ export function ChatInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none min-h-[40px] max-h-[120px]"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck="false"
+          data-form-type="other"
+          className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-lg lg:text-xl ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none min-h-[40px] md:min-h-[48px] lg:min-h-[56px] max-h-[120px]"
         />
       </div>
       <Button
         type="submit"
         size="icon"
         disabled={disabled || !input.trim()}
-        className="h-10 w-10 shrink-0"
+        className="h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 shrink-0"
       >
-        <Send className="h-4 w-4" />
+        <Send className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" />
       </Button>
     </form>
   );
