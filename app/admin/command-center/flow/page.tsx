@@ -319,7 +319,7 @@ export default function InformationFlowPage() {
                 <div className="bg-yellow-500/10 border-l-2 border-yellow-500 rounded p-2 text-xs text-yellow-200">
                   <div className="font-semibold mb-1">🔍 Health Check (Every Heartbeat):</div>
                   <div>Check Supabase system_config → alert_system_status.last_run</div>
-                  <div>If stale (>15 min) during market hours → ALERT JUSTIN IMMEDIATELY</div>
+                  <div>If stale (&gt;15 min) during market hours → ALERT JUSTIN IMMEDIATELY</div>
                 </div>
               </div>
             </Card>

@@ -184,7 +184,7 @@ export default function DocsPage() {
                 <li>• Bounce detection and alerting</li>
                 <li>• Discord connection rate monitoring</li>
                 <li>• Password set rate tracking</li>
-                <li>• P0 alerts for critical issues (>2 bounced emails)</li>
+                <li>• P0 alerts for critical issues (&gt;2 bounced emails)</li>
                 <li>• P1 alerts for warnings (low Discord rate, low password rate)</li>
               </ul>
             </div>
