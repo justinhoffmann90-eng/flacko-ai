@@ -105,7 +105,7 @@ export default function SignupPage() {
         <span className="text-muted-foreground">FS Insight</span> <span className="text-muted-foreground/50">(Macro & Technical)</span> · <span className="text-muted-foreground">SpotGamma</span> <span className="text-muted-foreground/50">(Alpha, HIRO)</span>
       </div>
       <div className="text-center text-[13px] text-muted-foreground/70 mb-4">
-        <span className="text-muted-foreground">AI Infra</span> <span className="text-muted-foreground/50">(Claude Max, Mac Mini)</span>
+        <span className="text-muted-foreground">AI Agents & Infra</span> <span className="text-muted-foreground/50">(Claude Max, Grok, M4 Mini)</span>
       </div>
 
       <Card>
