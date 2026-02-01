@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export async function DELETE(
   request: Request,
   { params }: { params: { userId: string } }
 ) {
   try {
+    // Check auth with regular client
     const supabase = await createClient();
-
-    // Check auth
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -25,10 +25,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
     }
 
+    // Use service client for admin operations
+    const serviceClient = await createServiceClient();
     const userId = params.userId;
 
     // Get user's subscription to cancel it in Stripe if needed
-    const { data: subscription } = await supabase
+    const { data: subscription } = await serviceClient
       .from("subscriptions")
       .select("stripe_subscription_id")
       .eq("user_id", userId)
@@ -45,17 +47,17 @@ export async function DELETE(
       }
     }
 
-    // Delete related data (cascading deletes should handle most of this)
+    // Delete related data using service client (cascading deletes should handle most of this)
     // But explicitly delete some tables to be sure
-    await supabase.from("subscriptions").delete().eq("user_id", userId);
-    await supabase.from("user_settings").delete().eq("user_id", userId);
-    await supabase.from("report_alerts").delete().eq("user_id", userId);
-    await supabase.from("chat_sessions").delete().eq("user_id", userId);
-    await supabase.from("chat_usage").delete().eq("user_id", userId);
-    await supabase.from("notifications").delete().eq("user_id", userId);
+    await serviceClient.from("subscriptions").delete().eq("user_id", userId);
+    await serviceClient.from("user_settings").delete().eq("user_id", userId);
+    await serviceClient.from("report_alerts").delete().eq("user_id", userId);
+    await serviceClient.from("chat_sessions").delete().eq("user_id", userId);
+    await serviceClient.from("chat_usage").delete().eq("user_id", userId);
+    await serviceClient.from("notifications").delete().eq("user_id", userId);
 
-    // Delete from auth.users (this will cascade to public.users)
-    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+    // Delete from auth.users using service client (this will cascade to public.users)
+    const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       console.error("Error deleting user:", deleteError);
