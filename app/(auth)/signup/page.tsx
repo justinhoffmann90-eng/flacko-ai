@@ -71,9 +71,9 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
+    <div className="w-full max-w-md mx-auto space-y-4">
       {/* Hero */}
-      <div className="text-center space-y-3">
+      <div className="text-center space-y-2">
         <h1 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
           Flacko AI
         </h1>
@@ -86,7 +86,7 @@ export default function SignupPage() {
       </div>
 
       {/* Pricing - larger */}
-      <div className="text-center space-y-2 py-2">
+      <div className="text-center space-y-1">
         <div className="flex items-center justify-center gap-3">
           <span className="text-xl text-muted-foreground line-through">$39.99</span>
           <span className="text-sm bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-medium">🔥 LAUNCH PROMOTION</span>
@@ -97,10 +97,10 @@ export default function SignupPage() {
       </div>
 
       {/* Value Leverage */}
-      <div className="text-center text-sm text-muted-foreground mb-2">
+      <div className="text-center text-sm text-muted-foreground mb-1">
         You'll leverage <span className="text-emerald-500 font-semibold">$800/mo</span> in institutional data & tools that power our system:
       </div>
-      <div className="text-center text-[13px] text-muted-foreground/70 leading-relaxed mb-4">
+      <div className="text-center text-[13px] text-muted-foreground/70 leading-relaxed mb-3">
         <span className="text-muted-foreground">FS Insight</span> <span className="text-muted-foreground/50">(Macro & Technical)</span> · <span className="text-muted-foreground">SpotGamma</span> <span className="text-muted-foreground/50">(Alpha, HIRO)</span>
         <br />
         <span className="text-muted-foreground">AI Agents & Infra</span> <span className="text-muted-foreground/50">(Claude Max, Grok, M4 Mini)</span>
@@ -108,7 +108,7 @@ export default function SignupPage() {
 
       <Card>
         <form onSubmit={handleSignup} autoComplete="on">
-          <CardContent className="space-y-4 pt-6">
+          <CardContent className="space-y-3 pt-4">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
