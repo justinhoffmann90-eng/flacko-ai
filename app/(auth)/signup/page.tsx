@@ -89,12 +89,11 @@ export default function SignupPage() {
       <div className="text-center space-y-2 py-2">
         <div className="flex items-center justify-center gap-3">
           <span className="text-xl text-muted-foreground line-through">$39.99</span>
-          <span className="text-sm bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-medium">🔥 LAUNCH</span>
+          <span className="text-sm bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-medium">🔥 LAUNCH PROMOTION</span>
         </div>
         <div className="text-4xl font-bold">
           $29.99<span className="text-xl text-muted-foreground font-normal">/month</span>
         </div>
-        <p className="text-sm text-muted-foreground">Cancel anytime</p>
       </div>
 
       {/* Value Leverage */}
