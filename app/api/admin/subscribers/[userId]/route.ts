@@ -47,25 +47,51 @@ export async function DELETE(
       }
     }
 
-    // Delete related data using service client (cascading deletes should handle most of this)
-    // But explicitly delete some tables to be sure
-    await serviceClient.from("subscriptions").delete().eq("user_id", userId);
-    await serviceClient.from("user_settings").delete().eq("user_id", userId);
-    await serviceClient.from("report_alerts").delete().eq("user_id", userId);
-    await serviceClient.from("chat_sessions").delete().eq("user_id", userId);
-    await serviceClient.from("chat_usage").delete().eq("user_id", userId);
-    await serviceClient.from("notifications").delete().eq("user_id", userId);
+    // Delete related data using service client
+    // Must delete in order due to foreign key constraints
+    console.log(`Deleting user ${userId}...`);
 
-    // Delete from auth.users using service client (this will cascade to public.users)
+    // Delete all related records first
+    const deleteOps = [
+      serviceClient.from("chat_messages").delete().eq("session_id", userId),
+      serviceClient.from("chat_sessions").delete().eq("user_id", userId),
+      serviceClient.from("chat_usage").delete().eq("user_id", userId),
+      serviceClient.from("report_alerts").delete().eq("user_id", userId),
+      serviceClient.from("notifications").delete().eq("user_id", userId),
+      serviceClient.from("user_settings").delete().eq("user_id", userId),
+      serviceClient.from("subscriptions").delete().eq("user_id", userId),
+    ];
+
+    for (const op of deleteOps) {
+      const { error } = await op;
+      if (error) {
+        console.error("Error deleting related data:", error);
+        // Continue anyway
+      }
+    }
+
+    // Delete from public.users explicitly
+    const { error: publicUserError } = await serviceClient
+      .from("users")
+      .delete()
+      .eq("id", userId);
+
+    if (publicUserError) {
+      console.error("Error deleting from public.users:", publicUserError);
+    }
+
+    // Delete from auth.users last
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
 
     if (deleteError) {
-      console.error("Error deleting user:", deleteError);
+      console.error("Error deleting from auth.users:", deleteError);
       return NextResponse.json(
         { error: `Failed to delete user: ${deleteError.message}` },
         { status: 500 }
       );
     }
+
+    console.log(`Successfully deleted user ${userId}`);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
