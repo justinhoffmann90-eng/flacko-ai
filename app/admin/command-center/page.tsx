@@ -8,6 +8,7 @@ interface Agent {
   role: string;
   emoji: string;
   status: string;
+  description?: string;
   lastHeartbeat: string | null;
   currentTask: string | null;
   tasksCompleted: number;
@@ -680,6 +681,12 @@ Report back with:
                   </div>
                   <div className={`w-3 h-3 rounded-full ${agent.status === "online" ? "bg-green-400" : "bg-gray-600"}`} />
                 </div>
+
+                {agent.description && (
+                  <div className="mb-4 pb-4 border-b border-white/10">
+                    <p className="text-sm text-gray-400 leading-relaxed">{agent.description}</p>
+                  </div>
+                )}
 
                 {agent.todayScheduled && agent.todayScheduled.length > 0 && (
                   <div className="mb-3">
