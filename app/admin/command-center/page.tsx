@@ -66,6 +66,8 @@ export default function CommandCenterPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
+  const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
+  const [resolvedAlerts, setResolvedAlerts] = useState<Set<string>>(new Set());
 
   const tasksPerPage = 20;
 
@@ -130,16 +132,96 @@ export default function CommandCenterPage() {
   }
 
   async function resolveAlert(alertId: string) {
-    try {
-      await fetch("/api/admin/command-center/resolve-alert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alertId }),
-      });
-      loadData();
-    } catch (error) {
-      console.error("Error resolving alert:", error);
+    setResolvedAlerts(prev => new Set([...prev, alertId]));
+  }
+
+  function toggleAlert(alertId: string) {
+    setExpandedAlerts(prev => {
+      const next = new Set(prev);
+      if (next.has(alertId)) {
+        next.delete(alertId);
+      } else {
+        next.add(alertId);
+      }
+      return next;
+    });
+  }
+
+  function generateAlerts() {
+    const alerts: Array<{id: string, level: string, msg: string, color: string, resolution: string, copyPrompt: string}> = [];
+
+    if (!data?.systemHealth?.subscriberOnboarding?.details) return alerts;
+
+    const details = data.systemHealth.subscriberOnboarding.details;
+
+    // P0 Alerts
+    if (details.p0Alerts > 0) {
+      if (details.emailsBounced > 2) {
+        alerts.push({
+          id: 'p0-bounced-emails',
+          level: 'P0',
+          msg: `${details.emailsBounced} emails failed to send`,
+          color: '#f87171',
+          resolution: `Check Resend dashboard for specific bounce reasons
+Identify which user emails bounced
+If "mailbox full" - contact user via alternative method
+If "invalid email" - update user record in Supabase
+After resolution, resend welcome email`,
+          copyPrompt: `Please investigate ${details.emailsBounced} bounced email(s):
+
+1. Query Resend API for bounced emails in the last 24 hours
+2. Identify the bounce reason (mailbox full, invalid address, etc.)
+3. For each bounced email, determine the appropriate action
+4. Update user records in Supabase if needed
+5. Resend welcome emails to resolved addresses`
+        });
+      }
     }
+
+    // P1 Alerts
+    if (details.p1Alerts > 0) {
+      if (details.emailsBounced > 0 && details.emailsBounced <= 2) {
+        alerts.push({
+          id: 'p1-bounced-emails',
+          level: 'P1',
+          msg: `${details.emailsBounced} email(s) bounced`,
+          color: '#fbbf24',
+          resolution: `Check Resend dashboard for bounce reason
+Update user email if invalid
+Resend welcome email after fix`,
+          copyPrompt: `Please check the bounced email(s) and take appropriate action.`
+        });
+      }
+      if (details.discordRate < 50) {
+        alerts.push({
+          id: 'p1-discord-rate',
+          level: 'P1',
+          msg: `Discord connection rate low (${details.discordRate}%)`,
+          color: '#fbbf24',
+          resolution: `Review Discord bot status
+Check for API rate limits
+Verify webhook configurations
+Monitor connection logs`,
+          copyPrompt: `Discord connection rate is at ${details.discordRate}%. Please investigate and resolve.`
+        });
+      }
+      const passwordRate = details.passwordRate || 100;
+      if (passwordRate < 80) {
+        alerts.push({
+          id: 'p1-password-rate',
+          level: 'P1',
+          msg: `Password set rate below 80% (${passwordRate}%)`,
+          color: '#fbbf24',
+          resolution: `Review signup flow for issues
+Check email delivery of password reset links
+Reach out to users who haven't set passwords
+Consider sending reminder emails`,
+          copyPrompt: `Password set rate is ${passwordRate}%. Please investigate why users aren't setting passwords.`
+        });
+      }
+    }
+
+    return alerts.filter(alert => !resolvedAlerts.has(alert.id));
   }
 
   const selectedTaskData = selectedTask && taskInfo
@@ -222,6 +304,80 @@ export default function CommandCenterPage() {
         {data?.systemHealth && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">🏥 System Health</h2>
+
+            {/* Active Alerts */}
+            {(() => {
+              const alerts = generateAlerts();
+              return alerts.length > 0 && (
+                <div className="mb-6 bg-white/5 border border-white/10 rounded-lg p-4">
+                  <div className="text-gray-400 font-semibold mb-3 text-sm">Active Alerts</div>
+                  <div className="space-y-2">
+                    {alerts.map(alert => (
+                      <div key={alert.id} className="bg-white/5 rounded border-l-2" style={{ borderColor: alert.color }}>
+                        <div
+                          className="p-3 cursor-pointer hover:bg-white/5"
+                          onClick={() => toggleAlert(alert.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="font-bold min-w-[30px]" style={{ color: alert.color }}>
+                              {alert.level}
+                            </span>
+                            <span className="flex-1 text-gray-200">{alert.msg}</span>
+                            <button
+                              className="px-2 py-1 text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                resolveAlert(alert.id);
+                              }}
+                            >
+                              Resolved
+                            </button>
+                            <span className="text-gray-500 text-xs">
+                              {expandedAlerts.has(alert.id) ? '▲' : '▼'}
+                            </span>
+                          </div>
+                        </div>
+                        {expandedAlerts.has(alert.id) && (
+                          <div className="px-3 pb-3 space-y-3">
+                            <div className="bg-black/30 rounded p-3">
+                              <div className="text-blue-400 font-semibold text-xs mb-2 uppercase tracking-wide">
+                                Resolution Steps:
+                              </div>
+                              <div className="text-gray-300 text-xs space-y-1">
+                                {alert.resolution.split('\n').map((step, idx) => (
+                                  <div key={idx} className="pl-3 relative">
+                                    <span className="absolute left-0">→</span>
+                                    {step}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="relative bg-black/30 rounded p-3">
+                              <button
+                                className="absolute top-2 right-2 px-2 py-1 text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded hover:bg-blue-500/30"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(alert.copyPrompt);
+                                }}
+                              >
+                                Copy
+                              </button>
+                              <div className="text-blue-400 font-semibold text-xs mb-2 uppercase tracking-wide">
+                                Claude Prompt:
+                              </div>
+                              <div className="text-gray-300 text-xs whitespace-pre-wrap pr-16">
+                                {alert.copyPrompt}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Health Status Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {Object.entries(data.systemHealth).map(([key, health]: [string, any]) => (
                 <div
