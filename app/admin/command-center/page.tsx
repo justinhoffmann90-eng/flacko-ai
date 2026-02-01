@@ -413,29 +413,35 @@ Report back with:
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+    <div className="min-h-screen bg-black text-gray-100">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-blue-900/20 pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
+
       {/* Navigation Bar */}
-      <nav className="bg-black/20 border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm">
+      <nav className="relative bg-black/40 border-b border-purple-500/20 sticky top-0 z-50 backdrop-blur-xl shadow-lg shadow-purple-500/5">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="text-lg font-bold text-blue-400">Command Center</div>
+            <div className="text-lg font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              Command Center
+            </div>
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-1 text-sm">
-                <Link href="/admin/reports" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                <Link href="/admin/reports" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Upload Report
                 </Link>
-                <Link href="/admin/subscribers" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                <Link href="/admin/subscribers" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Subscribers
                 </Link>
-                <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Roles
                 </Link>
-                <Link href="/admin/dashboard/docs" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                <Link href="/admin/dashboard/docs" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Docs
                 </Link>
               </div>
               <div className="text-right text-sm text-gray-400">
-                <div className="text-lg font-bold text-blue-400">
+                <div className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                   {new Date().toLocaleTimeString("en-US", {
                     timeZone: "America/Chicago",
                     hour12: true,
@@ -449,17 +455,18 @@ Report back with:
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8">
+      <div className="relative max-w-7xl mx-auto p-4 md:p-8 mb-8">
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <Link
             href="/admin/reports"
-            className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6 hover:bg-blue-500/20 transition-colors group"
+            className="relative bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-xl p-6 hover:from-purple-500/20 hover:to-blue-500/20 transition-all group overflow-hidden shadow-lg shadow-purple-500/10"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
-                <FileText className="w-6 h-6 text-blue-400" />
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-purple-500/20">
+                <FileText className="w-6 h-6 text-purple-300" />
               </div>
               <div className="flex-1">
                 <div className="text-lg font-semibold text-white mb-1">Upload New Report</div>
@@ -469,11 +476,12 @@ Report back with:
           </Link>
           <Link
             href="/admin/subscribers"
-            className="bg-green-500/10 border border-green-500/30 rounded-lg p-6 hover:bg-green-500/20 transition-colors group"
+            className="relative bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl p-6 hover:from-blue-500/20 hover:to-cyan-500/20 transition-all group overflow-hidden shadow-lg shadow-blue-500/10"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                <Users className="w-6 h-6 text-green-400" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <div className="relative flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/30 to-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/20">
+                <Users className="w-6 h-6 text-blue-300" />
               </div>
               <div className="flex-1">
                 <div className="text-lg font-semibold text-white mb-1">Manage Subscribers</div>
@@ -485,26 +493,42 @@ Report back with:
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Agents Online</div>
-            <div className="text-2xl font-bold text-green-400">{onlineAgents}/{totalAgents}</div>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Tasks Today</div>
-            <div className="text-2xl font-bold text-blue-400">
-              {data?.dailyStats?.totalCompleted || 0}/{data?.dailyStats?.totalScheduled || 0}
+          <div className="relative bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl p-4 shadow-lg shadow-green-500/5 overflow-hidden group hover:border-green-500/30 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-gray-400 text-sm mb-1">Agents Online</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                {onlineAgents}/{totalAgents}
+              </div>
             </div>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Review Queue</div>
-            <div className="text-2xl font-bold text-yellow-400">{data?.reviewQueue?.length || 0}</div>
+          <div className="relative bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 shadow-lg shadow-blue-500/5 overflow-hidden group hover:border-blue-500/30 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-gray-400 text-sm mb-1">Tasks Today</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                {data?.dailyStats?.totalCompleted || 0}/{data?.dailyStats?.totalScheduled || 0}
+              </div>
+            </div>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">System Health</div>
-            <div className="text-2xl font-bold text-green-400">
-              {data?.systemHealth && Object.values(data.systemHealth).some((s: any) => s.status === "warning" || s.status === "error")
-                ? "Issues"
-                : "Healthy"}
+          <div className="relative bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-xl p-4 shadow-lg shadow-yellow-500/5 overflow-hidden group hover:border-yellow-500/30 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-gray-400 text-sm mb-1">Review Queue</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                {data?.reviewQueue?.length || 0}
+              </div>
+            </div>
+          </div>
+          <div className="relative bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-4 shadow-lg shadow-purple-500/5 overflow-hidden group hover:border-purple-500/30 transition-all">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="text-gray-400 text-sm mb-1">System Health</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                {data?.systemHealth && Object.values(data.systemHealth).some((s: any) => s.status === "warning" || s.status === "error")
+                  ? "Issues"
+                  : "Healthy"}
+              </div>
             </div>
           </div>
         </div>
