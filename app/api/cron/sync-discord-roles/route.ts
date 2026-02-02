@@ -50,6 +50,7 @@ export async function GET(request: Request) {
 
     let successCount = 0;
     let errorCount = 0;
+    const errorSamples: string[] = [];
 
     // Attempt to add role for each user
     // Discord API will return success if role already assigned (idempotent)
@@ -69,22 +70,38 @@ export async function GET(request: Request) {
           // Only log if it's not "Unknown Member" (user hasn't joined yet)
           if (!result.error?.includes("Unknown Member")) {
             errorCount++;
+            if (errorSamples.length < 3) {
+              errorSamples.push(`${user.email}: ${result.error}`);
+            }
             console.error(`Failed to add role for user ${user.id}:`, result.error);
           }
           // Unknown Member is expected - they'll get role on next run after joining
         }
       } catch (error: any) {
         errorCount++;
+        if (errorSamples.length < 3) {
+          errorSamples.push(`${user.email}: ${error.message}`);
+        }
         console.error(`Failed to add role for user ${user.id}:`, error);
       }
     }
 
+    // Collect error details for debugging
+    const errorDetails: string[] = [];
+    
     return NextResponse.json({
       message: "Discord role sync completed",
       total: activeSubscribers.length,
       success: successCount,
       errors: errorCount,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      // Debug: show first 3 error messages
+      debug: {
+        botTokenSet: !!process.env.DISCORD_BOT_TOKEN,
+        guildIdSet: !!process.env.DISCORD_GUILD_ID,
+        roleIdSet: !!process.env.DISCORD_SUBSCRIBER_ROLE_ID,
+        errorSamples,
+      }
     });
 
   } catch (error) {
