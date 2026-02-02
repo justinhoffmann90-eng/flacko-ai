@@ -187,22 +187,53 @@ export async function POST(request: Request) {
     }
 
     // Create alerts for all active subscribers
-    const { data: subscribers } = await serviceSupabase
+    const { data: subscribers, error: subsError } = await serviceSupabase
       .from("subscriptions")
       .select("user_id")
       .in("status", ["active", "comped"]);
 
-    if (subscribers && extracted_data.alerts) {
+    if (subsError) {
+      console.error("❌ Failed to fetch subscribers:", subsError);
+      // Alert via Telegram
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+      if (botToken && chatId) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `🚨 <b>ALERT CREATION FAILED</b>\n\nCould not fetch subscribers:\n${subsError.message}\n\nNo alerts were created for this report!`,
+            parse_mode: "HTML",
+          }),
+        }).catch(e => console.error("Telegram alert failed:", e));
+      }
+    }
+
+    console.log(`📊 Found ${subscribers?.length || 0} active subscribers for alerts`);
+
+    if (subscribers && subscribers.length > 0 && extracted_data.alerts) {
       const alertInserts = [];
+      let skippedCount = 0;
+      
       for (const sub of subscribers) {
-        // Check if user has alerts enabled
-        const { data: settings } = await serviceSupabase
+        // Check if user has alerts enabled - use maybeSingle to handle missing rows gracefully
+        const { data: settings, error: settingsError } = await serviceSupabase
           .from("user_settings")
           .select("alerts_enabled")
           .eq("user_id", sub.user_id)
-          .single();
+          .maybeSingle();
 
-        if (settings?.alerts_enabled !== false) {
+        if (settingsError) {
+          console.error(`Failed to fetch settings for user ${sub.user_id}:`, settingsError);
+          // Continue with next user instead of breaking
+          continue;
+        }
+
+        // Default to true if no settings row exists or alerts_enabled is not explicitly false
+        const alertsEnabled = settings?.alerts_enabled !== false;
+        
+        if (alertsEnabled) {
           for (const alert of extracted_data.alerts) {
             alertInserts.push({
               report_id: report.id,
@@ -214,11 +245,50 @@ export async function POST(request: Request) {
               reason: alert.reason,
             });
           }
+        } else {
+          skippedCount++;
         }
       }
 
+      console.log(`📝 Prepared ${alertInserts.length} alerts for ${subscribers.length - skippedCount} users (${skippedCount} skipped - alerts disabled)`);
+
       if (alertInserts.length > 0) {
-        await serviceSupabase.from("report_alerts").insert(alertInserts);
+        const { error: insertError } = await serviceSupabase.from("report_alerts").insert(alertInserts);
+        if (insertError) {
+          console.error("❌ Failed to insert alerts:", insertError);
+          // Alert via Telegram
+          const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+          if (botToken && chatId) {
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `🚨 <b>ALERT INSERT FAILED</b>\n\nPrepared ${alertInserts.length} alerts but insert failed:\n${insertError.message}`,
+                parse_mode: "HTML",
+              }),
+            }).catch(e => console.error("Telegram alert failed:", e));
+          }
+        } else {
+          console.log(`✅ Successfully inserted ${alertInserts.length} alerts`);
+        }
+      }
+    } else if (!subscribers || subscribers.length === 0) {
+      console.error("⚠️ No subscribers found - this is likely a bug!");
+      // Alert via Telegram
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+      if (botToken && chatId) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `🚨 <b>NO SUBSCRIBERS FOUND</b>\n\nReport uploaded but 0 subscribers returned from database.\n\nThis is likely a bug - check SUPABASE_SERVICE_ROLE_KEY in Vercel!`,
+            parse_mode: "HTML",
+          }),
+        }).catch(e => console.error("Telegram alert failed:", e));
       }
     }
 
