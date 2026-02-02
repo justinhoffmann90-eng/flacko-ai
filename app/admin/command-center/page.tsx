@@ -629,6 +629,11 @@ Report back with:
                   <div className="text-xs text-gray-400 mb-2">
                     Last check: {formatTimestamp(health.lastCheck)}
                   </div>
+                  {health.description && (
+                    <div className="text-xs text-gray-400 mb-2">
+                      {health.description}
+                    </div>
+                  )}
                   {health.details && (
                     <div className="text-xs text-gray-300 space-y-1">
                       {health.emailDelivery && <div>Email: {health.emailDelivery}</div>}
