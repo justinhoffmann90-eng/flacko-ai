@@ -10,6 +10,12 @@ const priorityStyles: Record<string, "red" | "orange" | "yellow"> = {
   P2: "yellow",
 };
 
+const effortStyles: Record<string, string> = {
+  quick: "bg-green-500/20 text-green-300 border-green-500/30",
+  medium: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  large: "bg-red-500/20 text-red-300 border-red-500/30",
+};
+
 const statusStyles: Record<string, string> = {
   backlog: "bg-gray-500/20 text-gray-300 border-gray-500/30",
   "in-progress": "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -98,9 +104,12 @@ export default function AdminBacklogPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {backlogItems.map((item) => (
             <div key={item.id} className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={priorityStyles[item.priority]}>{item.priority}</Badge>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${effortStyles[item.effort]}`}>
+                    {item.effort}
+                  </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${statusStyles[item.status]}`}>
                     {item.status.replace("-", " ")}
                   </span>
@@ -121,6 +130,49 @@ export default function AdminBacklogPage() {
                 <h2 className="text-xl font-semibold text-white">{item.title}</h2>
                 <p className="text-gray-400 mt-2 leading-relaxed">{item.description}</p>
               </div>
+
+              <div className="bg-black/30 border border-white/10 rounded-lg p-4">
+                <div className="text-xs uppercase tracking-wide text-gray-400">Value Proposition</div>
+                <p className="text-gray-200 mt-2 leading-relaxed">{item.valueProposition}</p>
+              </div>
+
+              {item.sourceUrl && (
+                <div className="text-sm">
+                  <a
+                    href={item.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-400 hover:text-blue-300"
+                  >
+                    View Source
+                  </a>
+                  {item.sourceAuthor && <span className="text-gray-400 ml-2">{item.sourceAuthor}</span>}
+                </div>
+              )}
+
+              {item.techHighlights && item.techHighlights.length > 0 && (
+                <details className="bg-black/20 border border-white/10 rounded-lg p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-white">
+                    Technical Highlights
+                  </summary>
+                  <ul className="mt-3 list-disc list-inside text-sm text-gray-300 space-y-1">
+                    {item.techHighlights.map((highlight) => (
+                      <li key={highlight}>{highlight}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+
+              {item.nextActions && item.nextActions.length > 0 && (
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-gray-400">Next Actions</div>
+                  <ul className="mt-2 list-disc list-inside text-sm text-gray-300 space-y-1">
+                    {item.nextActions.map((action) => (
+                      <li key={action}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>

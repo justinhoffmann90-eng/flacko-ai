@@ -491,6 +491,9 @@ export default function UpdatesPage() {
                 <Link href="/admin/command-center/updates" className="px-3 py-2 rounded bg-white/10 text-white">
                   Updates
                 </Link>
+                <Link href="/admin/backlog" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
+                  Backlog
+                </Link>
                 <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded hover:bg-white/5 text-gray-300 hover:text-white">
                   Roles
                 </Link>

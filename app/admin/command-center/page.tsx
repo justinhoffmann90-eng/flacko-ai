@@ -469,6 +469,9 @@ Report back with:
                 <Link href="/admin/command-center/updates" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Updates
                 </Link>
+                <Link href="/admin/backlog" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
+                  Backlog
+                </Link>
                 <Link href="/admin/dashboard/roles" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Roles
                 </Link>
