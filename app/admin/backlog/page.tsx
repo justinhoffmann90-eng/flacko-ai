@@ -1,44 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { backlogItems, backloggedItems, codexPriorities, categories, BacklogCategory } from "./data";
-import { Badge } from "@/components/ui/badge";
-
-const priorityStyles: Record<string, "red" | "orange" | "yellow"> = {
-  P0: "red",
-  P1: "orange",
-  P2: "yellow",
-};
-
-const effortStyles: Record<string, string> = {
-  quick: "bg-green-500/20 text-green-300 border-green-500/30",
-  medium: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  large: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
-const statusStyles: Record<string, string> = {
-  backlog: "bg-gray-500/20 text-gray-300 border-gray-500/30",
-  "in-progress": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  done: "bg-green-500/20 text-green-400 border-green-500/30",
-};
-
-const categoryColors: Record<BacklogCategory, string> = {
-  growth: "border-purple-500/30 bg-purple-500/5",
-  workflow: "border-yellow-500/30 bg-yellow-500/5",
-  platform: "border-blue-500/30 bg-blue-500/5",
-};
+import {
+  categories,
+  goal1Strong,
+  goal1Weak,
+  goal2Strong,
+  goal2Weak,
+  goal3Strong,
+  goal3Weak,
+  backlogStorage,
+  codexPriorities,
+  allStrongItems,
+  allWeakItems,
+} from "./data";
 
 export default function AdminBacklogPage() {
-  const total = backlogItems.length;
-  const p0Count = backlogItems.filter((item) => item.priority === "P0").length;
-  const inProgress = backlogItems.filter((item) => item.status === "in-progress").length;
-  const done = backlogItems.filter((item) => item.status === "done").length;
-
-  const itemsByCategory = {
-    growth: backlogItems.filter((item) => item.category === "growth"),
-    workflow: backlogItems.filter((item) => item.category === "workflow"),
-    platform: backlogItems.filter((item) => item.category === "platform"),
-  };
+  const goal1Total = goal1Strong.length + goal1Weak.length;
+  const goal2Total = goal2Strong.length + goal2Weak.length;
+  const goal3Total = goal3Strong.length + goal3Weak.length;
+  const totalActive = allStrongItems.length;
+  const totalBacklogged = allWeakItems.length;
+  const totalEvaluated = totalActive + totalBacklogged;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
@@ -87,159 +70,259 @@ export default function AdminBacklogPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8 space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold text-white mb-3">Flacko AI Product Backlog v3</h1>
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-2">Flacko AI Product Backlog v3</h1>
           <p className="text-gray-400 text-lg">
-            Critically Analyzed + Enhanced
-          </p>
-          <p className="text-gray-500 text-sm mt-1">
-            Generated: February 2, 2026 — Each item assessed for strength. Weak ideas moved to storage. Better ideas added.
+            Critically Analyzed + Enhanced with Better Ideas | February 2, 2026
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wide">Active Items</div>
-            <div className="text-2xl font-bold text-white mt-1">{total}</div>
+        {/* Goal 1: Grow Subscribers */}
+        <div className="space-y-4">
+          <div className="bg-green-900/20 border-2 border-green-700/40 rounded-xl p-6">
+            <h2 className="text-3xl font-bold text-green-400 mb-2">
+              🎯 GOAL 1: Grow Subscribers
+            </h2>
           </div>
-          <div className="bg-white/5 border border-red-500/20 rounded-lg p-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wide">P0 Priority</div>
-            <div className="text-2xl font-bold text-red-400 mt-1">{p0Count}</div>
-          </div>
-          <div className="bg-white/5 border border-blue-500/20 rounded-lg p-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wide">In Progress</div>
-            <div className="text-2xl font-bold text-blue-400 mt-1">{inProgress}</div>
-          </div>
-          <div className="bg-white/5 border border-green-500/20 rounded-lg p-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wide">Done</div>
-            <div className="text-2xl font-bold text-green-400 mt-1">{done}</div>
-          </div>
-        </div>
 
-        {/* Category Sections */}
-        {(Object.keys(categories) as BacklogCategory[]).map((categoryKey) => {
-          const category = categories[categoryKey];
-          const items = itemsByCategory[categoryKey];
-          
-          return (
-            <div key={categoryKey} className="space-y-4">
-              {/* Category Header */}
-              <div className={`border rounded-xl p-6 ${categoryColors[categoryKey]}`}>
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  {category.emoji} {category.title}
-                </h2>
-                <p className="text-gray-400">{category.description}</p>
-                <div className="mt-4 flex gap-4 text-sm">
-                  <span className="text-gray-300">
-                    <strong className="text-white">{items.length}</strong> items
-                  </span>
-                  <span className="text-gray-300">
-                    <strong className="text-red-400">{items.filter(i => i.priority === "P0").length}</strong> P0
-                  </span>
-                  <span className="text-gray-300">
-                    <strong className="text-green-400">{items.filter(i => i.status === "done").length}</strong> done
-                  </span>
-                </div>
-              </div>
-
-              {/* Items Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/20 transition-colors"
-                  >
-                    {/* Header Row */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={priorityStyles[item.priority]}>{item.priority}</Badge>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${effortStyles[item.effort]}`}>
-                        {item.effort}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${statusStyles[item.status]}`}>
-                        {item.status.replace("-", " ")}
-                      </span>
-                      {item.isNew && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">
-                          NEW
+          {/* Strong Items */}
+          <div>
+            <h3 className="text-xl font-semibold text-white mb-3">✅ STRONG IDEAS (Keep & Prioritize)</h3>
+            <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-800 border-b border-white/10">
+                    <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
+                    <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {goal1Strong.map((item, idx) => (
+                    <tr key={item.id} className={idx % 2 === 0 ? "bg-white/5" : ""}>
+                      <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{item.title}</span>
+                          {item.isNew && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={item.stars === 5 ? "text-green-400 font-bold" : "text-yellow-400 font-bold"}>
+                          {item.rating}
                         </span>
-                      )}
-                      <span className="text-yellow-400 text-sm ml-auto">{item.rating}</span>
-                    </div>
-
-                    {/* Title & Description */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                      <p className="text-gray-400 mt-1 text-sm leading-relaxed">{item.description}</p>
-                    </div>
-
-                    {/* Assessment */}
-                    <div className="bg-black/30 border border-white/10 rounded-lg p-3">
-                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Why Strong</div>
-                      <p className="text-gray-200 text-sm">{item.assessment}</p>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs px-2 py-0.5 rounded-full bg-black/30 border border-white/10 text-gray-400"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          );
-        })}
+          </div>
 
-        {/* Codex Overnight Priority Section */}
-        <div className="border border-cyan-500/30 bg-cyan-500/5 rounded-xl p-6">
-          <h2 className="text-2xl font-bold text-white mb-2">🤖 Codex Overnight Priority</h2>
-          <p className="text-gray-400 mb-4">Build these 4 (enables highest-impact items)</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {codexPriorities.map((item) => (
-              <div key={item.id} className="bg-black/30 border border-cyan-500/20 rounded-lg p-4">
-                <div className="text-cyan-400 font-semibold">{item.id}. {item.title}</div>
-                <div className="text-gray-400 text-sm mt-1">→ {item.enablesWhat}</div>
+          {/* Weak Items */}
+          <div className="bg-yellow-900/20 border-l-4 border-yellow-600 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-yellow-400 mb-3">⚠️ MOVED TO BACKLOG</h3>
+            <div className="space-y-2">
+              {goal1Weak.map((item) => (
+                <div key={item.id} className="text-gray-300">
+                  • <span className="font-semibold text-orange-400">{item.title}</span> — {item.reason}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Goal 2: Streamline Workflows */}
+        <div className="space-y-4">
+          <div className="bg-orange-900/20 border-2 border-orange-700/40 rounded-xl p-6">
+            <h2 className="text-3xl font-bold text-orange-400 mb-2">
+              ⚡ GOAL 2: Streamline Workflows
+            </h2>
+          </div>
+
+          {/* Strong Items */}
+          <div>
+            <h3 className="text-xl font-semibold text-white mb-3">✅ STRONG IDEAS (Keep & Prioritize)</h3>
+            <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-800 border-b border-white/10">
+                    <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
+                    <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {goal2Strong.map((item, idx) => (
+                    <tr key={item.id} className={idx % 2 === 0 ? "bg-white/5" : ""}>
+                      <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{item.title}</span>
+                          {item.isNew && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={item.stars === 5 ? "text-green-400 font-bold" : item.stars === 4 ? "text-lime-400 font-bold" : "text-yellow-400 font-bold"}>
+                          {item.rating}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Weak Items */}
+          <div className="bg-yellow-900/20 border-l-4 border-yellow-600 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-yellow-400 mb-3">⚠️ MOVED TO BACKLOG</h3>
+            <div className="space-y-2">
+              {goal2Weak.map((item) => (
+                <div key={item.id} className="text-gray-300">
+                  • <span className="font-semibold text-orange-400">{item.title}</span> — {item.reason}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Goal 3: Platform Excellence */}
+        <div className="space-y-4">
+          <div className="bg-blue-900/20 border-2 border-blue-700/40 rounded-xl p-6">
+            <h2 className="text-3xl font-bold text-blue-400 mb-2">
+              🏗️ GOAL 3: Platform Excellence
+            </h2>
+          </div>
+
+          {/* Strong Items */}
+          <div>
+            <h3 className="text-xl font-semibold text-white mb-3">✅ STRONG IDEAS (Keep & Prioritize)</h3>
+            <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-800 border-b border-white/10">
+                    <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
+                    <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {goal3Strong.map((item, idx) => (
+                    <tr key={item.id} className={idx % 2 === 0 ? "bg-white/5" : ""}>
+                      <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{item.title}</span>
+                          {item.isNew && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={item.stars === 5 ? "text-green-400 font-bold" : item.stars === 4 ? "text-lime-400 font-bold" : "text-yellow-400 font-bold"}>
+                          {item.rating}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Weak Items */}
+          <div className="bg-yellow-900/20 border-l-4 border-yellow-600 rounded-lg p-6">
+            <h3 className="text-lg font-bold text-yellow-400 mb-3">⚠️ MOVED TO BACKLOG</h3>
+            <div className="space-y-2">
+              {goal3Weak.map((item) => (
+                <div key={item.id} className="text-gray-300">
+                  • <span className="font-semibold text-orange-400">{item.title}</span> — {item.reason}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Backlog Storage */}
+        <div className="bg-gray-700/20 border border-gray-600/40 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-gray-300 mb-4">🗄️ BACKLOG (Future Consideration)</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {backlogStorage.map((item) => (
+              <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                <div className="font-semibold text-white">{item.title}</div>
+                <div className="text-sm text-gray-400">{item.reason}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Backlogged Section */}
-        <div className="border border-gray-500/30 bg-gray-500/5 rounded-xl p-6">
-          <h2 className="text-2xl font-bold text-white mb-2">🗄️ Backlog (Storage / Future Consideration)</h2>
-          <p className="text-gray-400 mb-4">Not bad ideas — just not priority now</p>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Item</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Original Goal</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Why Backlogged</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Rating</th>
-                </tr>
-              </thead>
+        {/* Codex Overnight Priority */}
+        <div className="bg-cyan-900/20 border-2 border-cyan-600/40 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-cyan-400 mb-4">🤖 Codex Overnight Priority</h2>
+          <ol className="space-y-3">
+            {codexPriorities.map((item) => (
+              <li key={item.id} className="bg-black/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-cyan-400 font-bold text-lg">{item.id}.</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-white">{item.title}</div>
+                    <div className="text-sm text-gray-400 mt-1">{item.enables}</div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Final Summary */}
+        <div className="bg-gray-800/40 border border-gray-600/40 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-white mb-4">📊 Final Summary</h2>
+          <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
               <tbody>
-                {backloggedItems.map((item) => (
-                  <tr key={item.id} className="border-b border-white/5 hover:bg-white/5">
-                    <td className="py-3 px-4 text-sm text-white">{item.title}</td>
-                    <td className="py-3 px-4 text-sm text-gray-400">{item.originalGoal}</td>
-                    <td className="py-3 px-4 text-sm text-gray-400">{item.whyBacklogged}</td>
-                    <td className="py-3 px-4 text-sm text-yellow-400">{item.rating}</td>
-                  </tr>
-                ))}
+                <tr className="border-b border-white/10">
+                  <td className="px-4 py-3 font-semibold text-white">Goal 1: Grow Subscribers</td>
+                  <td className="px-4 py-3 text-gray-300">{goal1Total} items ({goal1Strong.length} strong, {goal1Weak.length} backlogged)</td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="px-4 py-3 font-semibold text-white">Goal 2: Streamline Workflows</td>
+                  <td className="px-4 py-3 text-gray-300">{goal2Total} items ({goal2Strong.length} strong, {goal2Weak.length} backlogged)</td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="px-4 py-3 font-semibold text-white">Goal 3: Platform Excellence</td>
+                  <td className="px-4 py-3 text-gray-300">{goal3Total} items ({goal3Strong.length} strong, {goal3Weak.length} backlogged)</td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="px-4 py-3 font-semibold text-white">Backlog Storage</td>
+                  <td className="px-4 py-3 text-gray-300">{backlogStorage.length} items for future consideration</td>
+                </tr>
+                <tr>
+                  <td colSpan={2} className="px-4 py-4 font-bold text-white text-lg">
+                    Total: {totalActive} active items | {totalBacklogged} backlogged | {totalEvaluated} evaluated
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <div className="mt-4 text-sm text-gray-500">
-            <em>Active items: {total} | Backlogged: {backloggedItems.length} | Total evaluated: {total + backloggedItems.length}</em>
-          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center text-sm text-gray-400 border-t border-white/10 pt-6">
+          <strong>Key Insight:</strong> Original backlog was missing critical funnel pieces (lead magnet, accuracy proof, testimonials).
+          <br />
+          New items fill gaps that directly convert followers → subscribers → paying members.
         </div>
       </div>
     </div>
