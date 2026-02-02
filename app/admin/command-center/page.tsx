@@ -514,7 +514,7 @@ Report back with:
             <div className="relative">
               <div className="text-gray-400 text-sm mb-1">System Health</div>
               <div className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                {data?.systemHealth && Object.values(data.systemHealth).some((s: any) => s.status === "warning" || s.status === "error")
+                {data?.systemHealth && Object.values(data.systemHealth).some((s: any) => s?.status === "warning" || s?.status === "error")
                   ? "Issues"
                   : "Healthy"}
               </div>
@@ -615,7 +615,7 @@ Report back with:
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </div>
                     <div className={`w-3 h-3 rounded-full ${
-                      health.status === "online" || health.status === "healthy" ? "bg-green-400" :
+                      health.status === "online" || health.status === "healthy" || health.status === "operational" ? "bg-green-400" :
                       health.status === "warning" ? "bg-yellow-400" :
                       "bg-red-400"
                     }`} />
