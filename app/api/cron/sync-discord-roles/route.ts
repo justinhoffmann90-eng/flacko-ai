@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { addRoleToMember } from "@/lib/discord/bot";
 
+// Disable Vercel caching - this must run fresh every time
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * Cron job: Sync Discord roles for all active subscribers
  * Runs every 2 minutes to catch users who just joined Discord
