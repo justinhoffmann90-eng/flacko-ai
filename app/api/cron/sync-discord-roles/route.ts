@@ -84,6 +84,9 @@ export async function GET(request: Request) {
         }
         console.error(`Failed to add role for user ${user.id}:`, error);
       }
+      
+      // Rate limit protection: 500ms delay between Discord API calls
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     // Collect error details for debugging

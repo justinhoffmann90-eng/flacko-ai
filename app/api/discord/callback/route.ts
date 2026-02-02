@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     });
 
     if (!userResponse.ok) {
-      return NextResponse.redirect(`${APP_URL}/settings?discord_error=user_failed`);
+      return NextResponse.redirect(`${origin}/settings?discord_error=user_failed`);
     }
 
     const discordUser = await userResponse.json() as { id: string; username: string };
