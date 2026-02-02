@@ -123,6 +123,11 @@ export default function CommandCenterPage() {
       return time24; // Already human-readable
     }
 
+    // Handle special formats that should pass through as-is
+    if (time24 === "Multiple times" || time24.startsWith("Multiple")) {
+      return time24;
+    }
+
     // Handle already-formatted times: "7:00 AM", "Monday 6:00 AM", "10:00 PM - 5:00 AM"
     if (time24.includes("AM") || time24.includes("PM") || time24.includes("-")) {
       return time24;
@@ -130,7 +135,9 @@ export default function CommandCenterPage() {
 
     // Handle standard time format: "14:30"
     const [hours, minutes] = time24.split(":");
+    if (!hours || !minutes) return time24; // Fallback for unknown formats
     const h = parseInt(hours);
+    if (isNaN(h)) return time24; // Fallback for non-numeric
     const ampm = h >= 12 ? "PM" : "AM";
     const h12 = h % 12 || 12;
     return `${h12}:${minutes} ${ampm}`;
