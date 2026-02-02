@@ -365,16 +365,27 @@ export async function GET(request: Request) {
       });
     }
 
-    // Send email alerts to users who have email_alerts enabled
+    // Send email alerts to ALL active subscribers with email_alerts enabled
+    // This ensures new subscribers get alerts even if they joined after report upload
+    const { data: allSubscribers } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .in("status", ["active", "comped"]);
+
+    console.log(`📧 Checking email alerts for ${allSubscribers?.length || 0} active subscribers`);
+
+    // Build the alerts array once (same for all users)
+    const alertsToSend = Array.from(uniqueAlerts.values());
+
     let emailsSent = 0;
     let emailsFailed = 0;
-    for (const userId of userIds) {
+    for (const sub of allSubscribers || []) {
       // Check if user has email_alerts enabled (defaults to true if not set)
       const { data: settings } = await supabase
         .from("user_settings")
         .select("email_alerts")
-        .eq("user_id", userId)
-        .single();
+        .eq("user_id", sub.user_id)
+        .maybeSingle();
 
       // Default to true if no settings or email_alerts not explicitly set
       const emailAlertsEnabled = settings?.email_alerts !== false;
@@ -387,23 +398,12 @@ export async function GET(request: Request) {
       const { data: userData } = await supabase
         .from("users")
         .select("email")
-        .eq("id", userId)
+        .eq("id", sub.user_id)
         .single();
 
       if (!userData?.email) {
         continue;
       }
-
-      // Get this user's triggered alerts
-      const userAlerts = triggeredAlerts
-        .filter((a) => a.user_id === userId)
-        .map((a) => ({
-          type: a.type as "upside" | "downside",
-          level_name: a.level_name,
-          price: a.price,
-          action: a.action,
-          reason: a.reason || "",
-        }));
 
       try {
         // Build key levels from report data
@@ -417,7 +417,7 @@ export async function GET(request: Request) {
 
         const html = getAlertEmailHtml({
           userName: userData.email.split("@")[0],
-          alerts: userAlerts,
+          alerts: alertsToSend,
           currentPrice,
           mode: extractedData?.mode?.current || "yellow",
           reportDate: report.report_date,
@@ -428,7 +428,7 @@ export async function GET(request: Request) {
         await resend.emails.send({
           from: EMAIL_FROM,
           to: userData.email,
-          subject: `🚨 TSLA Alert: $${currentPrice.toFixed(2)} - ${userAlerts.map(a => a.level_name).join(", ")}`,
+          subject: `🚨 TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
           html,
         });
 
@@ -439,6 +439,8 @@ export async function GET(request: Request) {
         console.error(`Failed to send email to ${userData.email}:`, emailError);
       }
     }
+
+    console.log(`📧 Sent email alerts to ${emailsSent} subscribers`);
 
     // ALERT if email delivery had failures
     if (emailsFailed > 0) {
