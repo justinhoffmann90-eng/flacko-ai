@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { backlogItems } from "./data";
+import { backlogItems, categories, BacklogCategory } from "./data";
 import { Badge } from "@/components/ui/badge";
 
 const priorityStyles: Record<string, "red" | "orange" | "yellow"> = {
@@ -22,11 +22,23 @@ const statusStyles: Record<string, string> = {
   done: "bg-green-500/20 text-green-400 border-green-500/30",
 };
 
+const categoryColors: Record<BacklogCategory, string> = {
+  growth: "border-purple-500/30 bg-purple-500/5",
+  workflow: "border-yellow-500/30 bg-yellow-500/5",
+  platform: "border-blue-500/30 bg-blue-500/5",
+};
+
 export default function AdminBacklogPage() {
   const total = backlogItems.length;
   const p0Count = backlogItems.filter((item) => item.priority === "P0").length;
   const inProgress = backlogItems.filter((item) => item.status === "in-progress").length;
   const done = backlogItems.filter((item) => item.status === "done").length;
+
+  const itemsByCategory = {
+    growth: backlogItems.filter((item) => item.category === "growth"),
+    workflow: backlogItems.filter((item) => item.category === "workflow"),
+    platform: backlogItems.filter((item) => item.category === "platform"),
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
@@ -76,12 +88,13 @@ export default function AdminBacklogPage() {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8 space-y-8">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-3">Product Backlog</h1>
+          <h1 className="text-4xl font-bold text-white mb-3">Product Backlog v3</h1>
           <p className="text-gray-400 text-lg">
-            Prioritized roadmap items for Flacko AI operations, analytics, and delivery improvements.
+            Critically analyzed and prioritized. Weak ideas moved to storage. Strong ideas enhanced.
           </p>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/5 border border-white/10 rounded-lg p-4">
             <div className="text-xs text-gray-400 uppercase tracking-wide">Total Items</div>
@@ -101,80 +114,107 @@ export default function AdminBacklogPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {backlogItems.map((item) => (
-            <div key={item.id} className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={priorityStyles[item.priority]}>{item.priority}</Badge>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${effortStyles[item.effort]}`}>
-                    {item.effort}
+        {/* Category Sections */}
+        {(Object.keys(categories) as BacklogCategory[]).map((categoryKey) => {
+          const category = categories[categoryKey];
+          const items = itemsByCategory[categoryKey];
+          
+          return (
+            <div key={categoryKey} className="space-y-4">
+              {/* Category Header */}
+              <div className={`border rounded-xl p-6 ${categoryColors[categoryKey]}`}>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  {category.emoji} {category.title}
+                </h2>
+                <p className="text-gray-400">{category.description}</p>
+                <div className="mt-4 flex gap-4 text-sm">
+                  <span className="text-gray-300">
+                    <strong className="text-white">{items.length}</strong> items
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${statusStyles[item.status]}`}>
-                    {item.status.replace("-", " ")}
+                  <span className="text-gray-300">
+                    <strong className="text-red-400">{items.filter(i => i.priority === "P0").length}</strong> P0
+                  </span>
+                  <span className="text-gray-300">
+                    <strong className="text-green-400">{items.filter(i => i.status === "done").length}</strong> done
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {item.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-2 py-0.5 rounded-full bg-black/30 border border-white/10 text-gray-300"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              <div>
-                <h2 className="text-xl font-semibold text-white">{item.title}</h2>
-                <p className="text-gray-400 mt-2 leading-relaxed">{item.description}</p>
-              </div>
-
-              <div className="bg-black/30 border border-white/10 rounded-lg p-4">
-                <div className="text-xs uppercase tracking-wide text-gray-400">Value Proposition</div>
-                <p className="text-gray-200 mt-2 leading-relaxed">{item.valueProposition}</p>
-              </div>
-
-              {item.sourceUrl && (
-                <div className="text-sm">
-                  <a
-                    href={item.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-400 hover:text-blue-300"
+              {/* Items Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-3 hover:border-white/20 transition-colors"
                   >
-                    View Source
-                  </a>
-                  {item.sourceAuthor && <span className="text-gray-400 ml-2">{item.sourceAuthor}</span>}
-                </div>
-              )}
+                    {/* Header Row */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={priorityStyles[item.priority]}>{item.priority}</Badge>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${effortStyles[item.effort]}`}>
+                        {item.effort}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${statusStyles[item.status]}`}>
+                        {item.status.replace("-", " ")}
+                      </span>
+                      {item.isNew && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          NEW
+                        </span>
+                      )}
+                    </div>
 
-              {item.techHighlights && item.techHighlights.length > 0 && (
-                <details className="bg-black/20 border border-white/10 rounded-lg p-4">
-                  <summary className="cursor-pointer text-sm font-semibold text-white">
-                    Technical Highlights
-                  </summary>
-                  <ul className="mt-3 list-disc list-inside text-sm text-gray-300 space-y-1">
-                    {item.techHighlights.map((highlight) => (
-                      <li key={highlight}>{highlight}</li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+                    {/* Title & Description */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                      <p className="text-gray-400 mt-1 text-sm leading-relaxed">{item.description}</p>
+                    </div>
 
-              {item.nextActions && item.nextActions.length > 0 && (
-                <div>
-                  <div className="text-xs uppercase tracking-wide text-gray-400">Next Actions</div>
-                  <ul className="mt-2 list-disc list-inside text-sm text-gray-300 space-y-1">
-                    {item.nextActions.map((action) => (
-                      <li key={action}>{action}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                    {/* Assessment */}
+                    <div className="bg-black/30 border border-white/10 rounded-lg p-3">
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Assessment</div>
+                      <p className="text-gray-200 text-sm">{item.assessment}</p>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2">
+                      {item.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-xs px-2 py-0.5 rounded-full bg-black/30 border border-white/10 text-gray-400"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          );
+        })}
+
+        {/* Codex Priorities Section */}
+        <div className="border border-cyan-500/30 bg-cyan-500/5 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-white mb-2">🤖 Codex Overnight Priority</h2>
+          <p className="text-gray-400 mb-4">Build these 4 (enables highest-impact items)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="text-cyan-400 font-semibold">1. Daily Mode Card Generator</div>
+              <div className="text-gray-400 text-sm mt-1">Enables daily X presence</div>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="text-cyan-400 font-semibold">2. Accuracy Comparison Generator</div>
+              <div className="text-gray-400 text-sm mt-1">Enables proof content</div>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="text-cyan-400 font-semibold">3. Report-to-Tweet Pipeline</div>
+              <div className="text-gray-400 text-sm mt-1">Eliminates blank page problem</div>
+            </div>
+            <div className="bg-black/30 rounded-lg p-4">
+              <div className="text-cyan-400 font-semibold">4. Weekly Report Template</div>
+              <div className="text-gray-400 text-sm mt-1">Unblocks Sunday workflow</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
