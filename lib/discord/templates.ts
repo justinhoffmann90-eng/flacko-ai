@@ -156,11 +156,14 @@ export function getNewReportDiscordMessage({
   const modeEmoji = getColorEmoji(mode);
   const modeInfo = modeGuidance[mode] || modeGuidance.yellow;
 
-  const upsideAlerts = alerts.filter((a) => a.type === "upside");
-  const downsideAlerts = alerts.filter((a) => a.type === "downside");
+  // Categorize alerts by price relative to current price (not by stored type)
+  // This ensures levels above current = upside, below current = downside
+  const upsideAlerts = alerts.filter((a) => a.price > closePrice);
+  const downsideAlerts = alerts.filter((a) => a.price <= closePrice);
 
   // Build description - APPROVED FORMAT
-  let description = `📊 **TSLA Daily Report — ${reportDate}**\n\n`;
+  // NOTE: Title already shows "New TSLA Daily Report", don't duplicate
+  let description = `📊 **${reportDate}**\n\n`;
 
   // Mode header with summary
   description += `${modeEmoji} **${mode.toUpperCase()} MODE** — ${modeInfo.cap}\n`;
