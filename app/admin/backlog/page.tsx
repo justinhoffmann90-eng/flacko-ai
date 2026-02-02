@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { backlogItems, categories, BacklogCategory } from "./data";
+import { backlogItems, backloggedItems, codexPriorities, categories, BacklogCategory } from "./data";
 import { Badge } from "@/components/ui/badge";
 
 const priorityStyles: Record<string, "red" | "orange" | "yellow"> = {
@@ -88,16 +88,19 @@ export default function AdminBacklogPage() {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 mb-8 space-y-8">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-3">Product Backlog v3</h1>
+          <h1 className="text-4xl font-bold text-white mb-3">Flacko AI Product Backlog v3</h1>
           <p className="text-gray-400 text-lg">
-            Critically analyzed and prioritized. Weak ideas moved to storage. Strong ideas enhanced.
+            Critically Analyzed + Enhanced
+          </p>
+          <p className="text-gray-500 text-sm mt-1">
+            Generated: February 2, 2026 — Each item assessed for strength. Weak ideas moved to storage. Better ideas added.
           </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wide">Total Items</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide">Active Items</div>
             <div className="text-2xl font-bold text-white mt-1">{total}</div>
           </div>
           <div className="bg-white/5 border border-red-500/20 rounded-lg p-4">
@@ -157,10 +160,11 @@ export default function AdminBacklogPage() {
                         {item.status.replace("-", " ")}
                       </span>
                       {item.isNew && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">
                           NEW
                         </span>
                       )}
+                      <span className="text-yellow-400 text-sm ml-auto">{item.rating}</span>
                     </div>
 
                     {/* Title & Description */}
@@ -171,7 +175,7 @@ export default function AdminBacklogPage() {
 
                     {/* Assessment */}
                     <div className="bg-black/30 border border-white/10 rounded-lg p-3">
-                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Assessment</div>
+                      <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Why Strong</div>
                       <p className="text-gray-200 text-sm">{item.assessment}</p>
                     </div>
 
@@ -193,31 +197,51 @@ export default function AdminBacklogPage() {
           );
         })}
 
-        {/* Codex Priorities Section */}
+        {/* Codex Overnight Priority Section */}
         <div className="border border-cyan-500/30 bg-cyan-500/5 rounded-xl p-6">
           <h2 className="text-2xl font-bold text-white mb-2">🤖 Codex Overnight Priority</h2>
           <p className="text-gray-400 mb-4">Build these 4 (enables highest-impact items)</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-black/30 rounded-lg p-4">
-              <div className="text-cyan-400 font-semibold">1. Daily Mode Card Generator</div>
-              <div className="text-gray-400 text-sm mt-1">Enables daily X presence</div>
-            </div>
-            <div className="bg-black/30 rounded-lg p-4">
-              <div className="text-cyan-400 font-semibold">2. Accuracy Comparison Generator</div>
-              <div className="text-gray-400 text-sm mt-1">Enables proof content</div>
-            </div>
-            <div className="bg-black/30 rounded-lg p-4">
-              <div className="text-cyan-400 font-semibold">3. Report-to-Tweet Pipeline</div>
-              <div className="text-gray-400 text-sm mt-1">Eliminates blank page problem</div>
-            </div>
-            <div className="bg-black/30 rounded-lg p-4">
-              <div className="text-cyan-400 font-semibold">4. Weekly Report Template</div>
-              <div className="text-gray-400 text-sm mt-1">Unblocks Sunday workflow</div>
-            </div>
+            {codexPriorities.map((item) => (
+              <div key={item.id} className="bg-black/30 border border-cyan-500/20 rounded-lg p-4">
+                <div className="text-cyan-400 font-semibold">{item.id}. {item.title}</div>
+                <div className="text-gray-400 text-sm mt-1">→ {item.enablesWhat}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Backlogged Section */}
+        <div className="border border-gray-500/30 bg-gray-500/5 rounded-xl p-6">
+          <h2 className="text-2xl font-bold text-white mb-2">🗄️ Backlog (Storage / Future Consideration)</h2>
+          <p className="text-gray-400 mb-4">Not bad ideas — just not priority now</p>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Item</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Original Goal</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Why Backlogged</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-300">Rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {backloggedItems.map((item) => (
+                  <tr key={item.id} className="border-b border-white/5 hover:bg-white/5">
+                    <td className="py-3 px-4 text-sm text-white">{item.title}</td>
+                    <td className="py-3 px-4 text-sm text-gray-400">{item.originalGoal}</td>
+                    <td className="py-3 px-4 text-sm text-gray-400">{item.whyBacklogged}</td>
+                    <td className="py-3 px-4 text-sm text-yellow-400">{item.rating}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 text-sm text-gray-500">
+            <em>Active items: {total} | Backlogged: {backloggedItems.length} | Total evaluated: {total + backloggedItems.length}</em>
           </div>
         </div>
       </div>
     </div>
   );
 }
-// Force rebuild Mon Feb  2 16:38:50 CST 2026

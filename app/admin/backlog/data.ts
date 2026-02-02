@@ -13,29 +13,38 @@ export interface BacklogItem {
   dateAdded: string;
   effort: "quick" | "medium" | "large";
   assessment: string;
+  rating: string;
   isNew?: boolean;
+}
+
+export interface BackloggedItem {
+  id: string;
+  title: string;
+  originalGoal: string;
+  whyBacklogged: string;
+  rating: string;
 }
 
 export const categories = {
   growth: {
     emoji: "🎯",
-    title: "Grow Subscribers",
+    title: "GOAL 1: Grow Subscribers",
     description: "Convert X impressions → followers → email signups → paying members",
   },
   workflow: {
     emoji: "⚡",
-    title: "Streamline Workflows",
+    title: "GOAL 2: Streamline Workflows",
     description: "Automate repetitive tasks → free up Justin's time for high-leverage work",
   },
   platform: {
     emoji: "🏗️",
-    title: "Platform Excellence",
+    title: "GOAL 3: Platform Excellence",
     description: "Flawless operations + features that create massive subscriber value",
   },
 };
 
 export const backlogItems: BacklogItem[] = [
-  // ============ GOAL 1: GROW SUBSCRIBERS ============
+  // ============ GOAL 1: GROW SUBSCRIBERS (12 items) ============
   {
     id: "daily-mode-card",
     priority: "P0",
@@ -46,6 +55,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Automation", "X"],
     dateAdded: "2026-02-02",
     effort: "quick",
+    rating: "⭐⭐⭐⭐⭐",
     assessment: "Compounds daily. Zero-effort once templated. Becomes ritual. Brand building 101.",
   },
   {
@@ -58,6 +68,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "FOMO", "X"],
     dateAdded: "2026-02-02",
     effort: "quick",
+    rating: "⭐⭐⭐⭐⭐",
     assessment: "FOMO is the strongest conversion driver. 'Subscribers got this 30 min ago' = immediate value proof.",
   },
   {
@@ -70,6 +81,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Proof", "X"],
     dateAdded: "2026-02-02",
     effort: "quick",
+    rating: "⭐⭐⭐⭐⭐",
     assessment: "Proof beats promises. Screenshot predictions vs results. Undeniable credibility.",
   },
   {
@@ -82,6 +94,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Transparency", "X"],
     dateAdded: "2026-02-02",
     effort: "medium",
+    rating: "⭐⭐⭐⭐⭐",
     assessment: "Radical transparency is RARE. Showing losses builds more trust than hiding them. Differentiator.",
   },
   {
@@ -94,7 +107,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Email", "Lead Gen", "Funnel"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "MISSING FROM CURRENT STRATEGY. This is the funnel gap.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "MISSING FROM CURRENT STRATEGY. Exchange email for free daily key levels. Builds list. Nurtures to paid. This is the funnel gap.",
     isNew: true,
   },
   {
@@ -107,11 +121,12 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Education", "X"],
     dateAdded: "2026-02-02",
     effort: "medium",
+    rating: "⭐⭐⭐⭐",
     assessment: "Captures search traffic ('why did TSLA drop'). Positions as expert, not reactor. Evergreen.",
   },
   {
     id: "public-accuracy-dashboard",
-    priority: "P1",
+    priority: "P0",
     title: "Public Accuracy Dashboard Link",
     description: "Every post links to flacko.ai/accuracy showing historical track record. Social proof at scale.",
     status: "backlog",
@@ -119,19 +134,21 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Website", "Proof", "Trust"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Don't trust me, check the numbers.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "Every post links to flacko.ai/accuracy showing historical track record. Social proof at scale. 'Don't trust me, check the numbers.'",
     isNew: true,
   },
   {
     id: "pre-earnings-playbook",
     priority: "P1",
-    title: "Pre-Earnings Playbook Posts",
+    title: "Pre-Earnings Playbook",
     description: "3-5 days before ER: historical moves, gamma setup, scenarios. Peak attention.",
     status: "backlog",
     category: "growth",
     tags: ["Content", "Earnings", "X"],
     dateAdded: "2026-02-02",
     effort: "large",
+    rating: "⭐⭐⭐⭐",
     assessment: "Peak attention moments. Only 4x/year but MASSIVE reach. Worth the effort.",
   },
   {
@@ -144,7 +161,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Engagement", "X"],
     dateAdded: "2026-02-02",
     effort: "quick",
-    assessment: "Drives comments, shares framework.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Engagement bait that educates. 'TSLA at $430, HIRO +800M. You: A) Buy B) Wait C) Sell' — drives comments, shares framework.",
     isNew: true,
   },
   {
@@ -157,6 +175,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Bold", "X"],
     dateAdded: "2026-02-02",
     effort: "medium",
+    rating: "⭐⭐⭐⭐",
     assessment: "High risk/reward. When right = viral. When wrong = own it = trust. Use sparingly.",
   },
   {
@@ -169,7 +188,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Social Proof", "X"],
     dateAdded: "2026-02-02",
     effort: "quick",
-    assessment: "Real people, real results.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Screenshot subscriber wins. 'Member caught the $424 bounce using our levels.' Real people, real results.",
     isNew: true,
   },
   {
@@ -182,11 +202,12 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Content", "Transparency", "X"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Nobody does this.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "When a call is WRONG, publicly break down why. Counter-intuitive but builds massive trust. Nobody does this.",
     isNew: true,
   },
 
-  // ============ GOAL 2: STREAMLINE WORKFLOWS ============
+  // ============ GOAL 2: STREAMLINE WORKFLOWS (7 items) ============
   {
     id: "weekly-report-template",
     priority: "P0",
@@ -197,6 +218,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Template", "Reports", "Blocking"],
     dateAdded: "2026-02-02",
     effort: "medium",
+    rating: "⭐⭐⭐⭐⭐",
     assessment: "BLOCKING. Can't do Sunday workflow without it. Immediate unblock.",
   },
   {
@@ -209,7 +231,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Automation", "Design", "Pipeline"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Enables #1 growth item.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "Input: report JSON → Output: branded PNG. Post in 30 seconds. Enables #1 growth item.",
   },
   {
     id: "accuracy-comparison-generator",
@@ -221,11 +244,12 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Automation", "Design", "Pipeline"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Enables accuracy posts without manual work.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "Input: predictions + actuals → Output: before/after image. Enables accuracy posts without manual work.",
   },
   {
     id: "report-to-tweet-pipeline",
-    priority: "P1",
+    priority: "P0",
     title: "Report-to-Tweet Pipeline",
     description: "Auto-generate 3-5 tweet drafts from each daily report. Pick best, post. Eliminates blank page problem.",
     status: "backlog",
@@ -233,7 +257,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Automation", "Content", "AI"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Eliminates blank page problem.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "NEW. Auto-generate 3-5 tweet drafts from each daily report. Pick best, post. Eliminates blank page problem.",
     isNew: true,
   },
   {
@@ -246,7 +271,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Automation", "Screenshots", "Cron"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "No manual intervention.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Capture TradingView/SpotGamma at market open, noon, close automatically. No manual intervention.",
     isNew: true,
   },
   {
@@ -259,7 +285,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Dashboard", "Planning", "Content"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Never miss a scheduled post.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Visual calendar: what posts when. Never miss a scheduled post. See gaps. Plan ahead.",
     isNew: true,
   },
   {
@@ -272,11 +299,12 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Automation", "Publishing", "UX"],
     dateAdded: "2026-02-02",
     effort: "large",
-    assessment: "No copy-paste. No manual webhook calls.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Approve → auto-posts to X/Discord. No copy-paste. No manual webhook calls.",
     isNew: true,
   },
 
-  // ============ GOAL 3: PLATFORM EXCELLENCE ============
+  // ============ GOAL 3: PLATFORM EXCELLENCE (7 items) ============
   {
     id: "email-notifications-backend",
     priority: "P0",
@@ -287,6 +315,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Email", "Alerts", "Backend"],
     dateAdded: "2026-02-02",
     effort: "large",
+    rating: "⭐⭐⭐⭐⭐",
     assessment: "Member-requested. Not everyone watches Discord. Direct delivery = direct value.",
   },
   {
@@ -299,7 +328,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Analytics", "Alerts", "Trust"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Proves system works.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "NEW. System auto-tracks which price alerts hit. Display hit rate. Proves system works.",
     isNew: true,
   },
   {
@@ -312,7 +342,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Website", "Trust", "Marketing"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "Marketing + transparency.",
+    rating: "⭐⭐⭐⭐⭐",
+    assessment: "NEW. flacko.ai/accuracy — historical track record anyone can verify. Marketing + transparency.",
     isNew: true,
   },
   {
@@ -325,6 +356,7 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Discord", "Community", "Feedback"],
     dateAdded: "2026-02-02",
     effort: "quick",
+    rating: "⭐⭐⭐⭐",
     assessment: "10-minute setup. Immediate feedback loop. Know what subscribers actually want.",
   },
   {
@@ -337,7 +369,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Mobile", "Alerts", "Engagement"],
     dateAdded: "2026-02-02",
     effort: "large",
-    assessment: "Higher engagement than email.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Beyond email. Instant alerts to phone. Higher engagement than email.",
     isNew: true,
   },
   {
@@ -350,7 +383,8 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Dashboard", "Personalization", "Analytics"],
     dateAdded: "2026-02-02",
     effort: "large",
-    assessment: "Personalized value proof.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Personalized: their alerts, which ones hit, their accuracy following the system.",
     isNew: true,
   },
   {
@@ -363,7 +397,154 @@ export const backlogItems: BacklogItem[] = [
     tags: ["Data", "Reports", "SpotGamma"],
     dateAdded: "2026-02-02",
     effort: "medium",
-    assessment: "More data = more value.",
+    rating: "⭐⭐⭐⭐",
+    assessment: "Specific: Add Equity Hub levels, FlowPatrol insights to daily reports. More data = more value.",
     isNew: true,
+  },
+];
+
+// Backlogged items (weak ideas moved to storage)
+export const backloggedItems: BackloggedItem[] = [
+  {
+    id: "monday-preview-posts",
+    title: "Monday Preview Posts",
+    originalGoal: "Growth",
+    whyBacklogged: "Routine but not growth driver. Doesn't convert, just maintains.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "gamma-strike-rejection-posts",
+    title: "Gamma Strike Rejection Posts",
+    originalGoal: "Growth",
+    whyBacklogged: "Situational. Can't force precision moments. Opportunistic only.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "quote-tweet-news",
+    title: "Quote Tweet the News",
+    originalGoal: "Growth",
+    whyBacklogged: "Everyone does this. Not differentiated. Low conversion.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "hiro-alert-delay-system",
+    title: "HIRO Alert Delay System",
+    originalGoal: "Workflow",
+    whyBacklogged: "Over-engineered. Just post manually with delay or use scheduling.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "catalyst-calendar-visual",
+    title: "Catalyst Calendar Visual",
+    originalGoal: "Workflow",
+    whyBacklogged: "Catalyst posts were cut from Goal 1. No need for generator.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "ai-video-content-pipeline",
+    title: "AI Video Content Pipeline",
+    originalGoal: "Workflow",
+    whyBacklogged: "High effort, unproven ROI. Cool idea but not MVP priority.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "weekly-flow-digest-format",
+    title: "Weekly Flow Digest Format",
+    originalGoal: "Workflow",
+    whyBacklogged: "Vague. What even is this? Not defined enough to build.",
+    rating: "⭐",
+  },
+  {
+    id: "tradingagents-review",
+    title: "TradingAgents Review",
+    originalGoal: "Platform",
+    whyBacklogged: "Research project, not feature. Interesting but doesn't ship value.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "education-hub-outline",
+    title: "Education Hub Outline",
+    originalGoal: "Platform",
+    whyBacklogged: "Nice-to-have. New members need alerts working first, education second.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "paper-trading-bot",
+    title: "Paper Trading Bot",
+    originalGoal: "Platform",
+    whyBacklogged: "Complex build for marketing asset. Simpler ways to prove system works (accuracy page).",
+    rating: "⭐⭐",
+  },
+  {
+    id: "discord-knowledge-bot",
+    title: "Discord Knowledge Bot",
+    originalGoal: "Platform",
+    whyBacklogged: "High effort. You don't have enough support volume to justify this yet.",
+    rating: "⭐⭐",
+  },
+  {
+    id: "gamma-explainer-series",
+    title: "Gamma Explainer Series",
+    originalGoal: "(Cut v2)",
+    whyBacklogged: "High effort, low conversion",
+    rating: "⭐⭐",
+  },
+  {
+    id: "monthly-state-of-tsla",
+    title: "Monthly State of TSLA",
+    originalGoal: "(Cut v2)",
+    whyBacklogged: "Not differentiated",
+    rating: "⭐⭐",
+  },
+  {
+    id: "hiro-swing-visualization",
+    title: "HIRO Swing Visualization",
+    originalGoal: "(Cut v2)",
+    whyBacklogged: "Too niche",
+    rating: "⭐⭐",
+  },
+  {
+    id: "tradingview-table-export",
+    title: "TradingView Table Export",
+    originalGoal: "(Cut v2)",
+    whyBacklogged: "Nice-to-have",
+    rating: "⭐⭐",
+  },
+  {
+    id: "qmd-local-search",
+    title: "QMD Local Search",
+    originalGoal: "(Cut v2)",
+    whyBacklogged: "Internal tooling",
+    rating: "⭐⭐",
+  },
+  {
+    id: "export-claude-kb",
+    title: "Export Claude KB",
+    originalGoal: "(Cut v2)",
+    whyBacklogged: "Maintenance task",
+    rating: "⭐⭐",
+  },
+];
+
+export const codexPriorities = [
+  {
+    id: 1,
+    title: "Daily Mode Card Generator",
+    enablesWhat: "Enables daily X presence",
+  },
+  {
+    id: 2,
+    title: "Accuracy Comparison Generator",
+    enablesWhat: "Enables proof content",
+  },
+  {
+    id: 3,
+    title: "Report-to-Tweet Pipeline",
+    enablesWhat: "Eliminates blank page problem",
+  },
+  {
+    id: 4,
+    title: "Weekly Report Template",
+    enablesWhat: "Unblocks Sunday workflow",
   },
 ];
