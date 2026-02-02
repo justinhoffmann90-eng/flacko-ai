@@ -64,6 +64,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Alert debug endpoint (uses Bearer token auth like cron)
+  if (request.nextUrl.pathname.startsWith("/api/alerts/debug")) {
+    return supabaseResponse;
+  }
+
   // Command center API should be accessible (data is not sensitive)
   if (request.nextUrl.pathname.startsWith("/api/command-center")) {
     return supabaseResponse;
