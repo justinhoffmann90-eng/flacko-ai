@@ -18,6 +18,12 @@ interface Agent {
     status: string;
     days?: string;
   }>;
+  tomorrowScheduled?: Array<{
+    time: string;
+    job: string;
+    status: string;
+    days?: string;
+  }>;
   weeklyScheduled?: Array<{
     time: string;
     job: string;
@@ -704,6 +710,29 @@ Report back with:
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded ${task.status === "completed" ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>
                             {task.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {agent.tomorrowScheduled && agent.tomorrowScheduled.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-gray-400 mb-2">Tomorrow</div>
+                    <div className="space-y-1">
+                      {agent.tomorrowScheduled.map((task, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm">
+                          <span className="font-mono text-gray-500 text-xs">{formatTime(task.time)}</span>
+                          <span
+                            className="flex-1 text-gray-300 cursor-pointer hover:text-blue-300 underline decoration-dotted"
+                            onClick={() => showTaskDetails(task.job)}
+                          >
+                            {task.job}
+                            {task.days && <span className="text-xs text-gray-500 ml-2">({task.days})</span>}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">
+                            tomorrow
                           </span>
                         </div>
                       ))}
