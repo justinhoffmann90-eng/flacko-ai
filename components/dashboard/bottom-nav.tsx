@@ -10,7 +10,7 @@ import {
   FileText,
   MessageSquare,
   Calendar,
-  GraduationCap,
+  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
@@ -35,10 +35,9 @@ const navItems = [
     icon: Calendar,
   },
   {
-    href: "/learn",
-    label: "Learn",
-    icon: GraduationCap,
-    comingSoon: true,
+    href: "/backlog",
+    label: "Backlog",
+    icon: ClipboardList,
   },
 ];
 
