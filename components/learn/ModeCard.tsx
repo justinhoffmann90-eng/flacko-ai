@@ -8,12 +8,12 @@ interface ModeCardProps {
 export function ModeCard({ label, cap, description, color }: ModeCardProps) {
   return (
     <div
-      className="rounded-xl border p-5 bg-background/60"
+      className="rounded-xl border p-4 sm:p-5 bg-background/60"
       style={{ borderColor: color }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
-        <h3 className="text-lg font-semibold" style={{ color }}>
+        <h3 className="text-base sm:text-lg font-semibold" style={{ color }}>
           {label}
         </h3>
       </div>

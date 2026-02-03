@@ -47,25 +47,25 @@ export default function LearnTopicPage({ params }: { params: { slug: string } })
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="container mx-auto px-4 py-10 sm:py-12">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-primary">Flacko AI Education</p>
-            <h1 className="mt-2 text-3xl md:text-4xl font-bold">{topic.title}</h1>
+            <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-bold">{topic.title}</h1>
             {topic.description ? (
-              <p className="mt-3 text-lg text-muted-foreground">{topic.description}</p>
+              <p className="mt-3 text-base sm:text-lg text-muted-foreground">{topic.description}</p>
             ) : null}
             {topic.readingTime ? (
               <p className="mt-2 text-sm text-muted-foreground">{topic.readingTime} read</p>
             ) : null}
           </div>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full sm:w-auto h-11">
             <Link href="/learn">Back to Hub</Link>
           </Button>
         </div>
 
         {params.slug === "modes" ? (
-          <div className="mb-10 grid gap-4 md:grid-cols-2">
+          <div className="mb-10 grid gap-4 sm:grid-cols-2">
             {modeCards.map((card) => (
               <ModeCard key={card.label} {...card} />
             ))}
@@ -94,6 +94,13 @@ export default function LearnTopicPage({ params }: { params: { slug: string } })
               ),
               li: ({ children }) => (
                 <li className="text-base">{children}</li>
+              ),
+              img: ({ src, alt }) => (
+                <img
+                  src={src ?? ""}
+                  alt={alt ?? ""}
+                  className="mt-4 w-full h-auto rounded-lg border border-border/40"
+                />
               ),
               a: ({ children, href }) => (
                 <a className="text-primary underline" href={href}>

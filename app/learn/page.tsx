@@ -51,15 +51,15 @@ const topics = [
 export default function LearnHubPage() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-10 sm:py-16">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">Flacko AI Education Hub</p>
-          <h1 className="mt-4 text-3xl md:text-4xl font-bold">Master the system. Trade with confidence.</h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <h1 className="mt-4 text-2xl sm:text-3xl md:text-4xl font-bold">Master the system. Trade with confidence.</h1>
+          <p className="mt-4 text-base sm:text-lg text-muted-foreground">
             Everything you need to understand modes, levels, alerts, and daily reports — distilled into short, actionable lessons.
           </p>
           <div className="mt-6">
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto h-11">
               <Link href="/learn/modes">
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
