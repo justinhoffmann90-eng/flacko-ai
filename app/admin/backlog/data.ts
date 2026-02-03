@@ -103,7 +103,7 @@ export const goal1Strong: BacklogItem[] = [
     rank: 5,
     title: "Public Accuracy Dashboard",
     description: "Every post links to flacko.ai/accuracy. Social proof at scale.",
-    assessment: "Every post links to flacko.ai/accuracy. Social proof at scale. "Don't trust me, check the numbers."",
+    assessment: "Every post links to flacko.ai/accuracy. Social proof at scale. \"Don't trust me, check the numbers.\"",
     rating: "★★★★★",
     stars: 5,
     status: "strong",
