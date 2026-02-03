@@ -1,7 +1,8 @@
 "use client";
-// REBUILD: v3 backlog fix - Feb 2, 2026 6:59pm CT
+// REBUILD: v4 with tech specs - Feb 2, 2026 7:30pm CT
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   categories,
   goal1Strong,
@@ -14,7 +15,200 @@ import {
   codexPriorities,
   allStrongItems,
   allWeakItems,
+  BacklogItem,
+  TechSpec,
 } from "./data";
+
+function TechSpecPanel({ spec, itemId }: { spec: TechSpec; itemId: string }) {
+  return (
+    <div className="bg-gray-900/80 border border-cyan-500/30 rounded-lg p-6 mt-4 space-y-6">
+      <div className="flex items-center gap-2 text-cyan-400 font-bold text-lg">
+        <span>📋</span>
+        <span>Technical Specification</span>
+        <span className="text-xs bg-cyan-500/20 px-2 py-1 rounded">ID: {itemId}</span>
+      </div>
+
+      {/* Overview */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Overview</h4>
+        <p className="text-gray-200">{spec.overview}</p>
+      </div>
+
+      {/* Inputs */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Inputs</h4>
+        <ul className="list-disc list-inside space-y-1 text-gray-300">
+          {spec.inputs.map((input, i) => (
+            <li key={i} className="text-sm">{input}</li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Outputs */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Outputs</h4>
+        <ul className="list-disc list-inside space-y-1 text-gray-300">
+          {spec.outputs.map((output, i) => (
+            <li key={i} className="text-sm">{output}</li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Implementation Steps */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Implementation Steps</h4>
+        <ol className="space-y-2">
+          {spec.implementation.map((step, i) => (
+            <li key={i} className="text-sm text-gray-300 bg-black/30 rounded px-3 py-2 font-mono">
+              {step}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Data Flow */}
+      {spec.dataFlow && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Data Flow</h4>
+          <div className="text-sm text-cyan-300 bg-black/40 rounded px-4 py-3 font-mono">
+            {spec.dataFlow}
+          </div>
+        </div>
+      )}
+
+      {/* API Endpoints */}
+      {spec.apiEndpoints && spec.apiEndpoints.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">API Endpoints</h4>
+          <div className="space-y-2">
+            {spec.apiEndpoints.map((endpoint, i) => (
+              <div key={i} className="text-sm text-green-300 bg-black/40 rounded px-4 py-2 font-mono">
+                {endpoint}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Components */}
+      {spec.components && spec.components.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Components</h4>
+          <div className="space-y-1">
+            {spec.components.map((comp, i) => (
+              <div key={i} className="text-sm text-purple-300 bg-black/40 rounded px-4 py-2 font-mono">
+                {comp}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dependencies */}
+      {spec.dependencies && spec.dependencies.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Dependencies</h4>
+          <div className="flex flex-wrap gap-2">
+            {spec.dependencies.map((dep, i) => (
+              <span key={i} className="text-xs bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full">
+                {dep}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Acceptance Criteria */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Acceptance Criteria</h4>
+        <ul className="space-y-2">
+          {spec.acceptanceCriteria.map((criterion, i) => (
+            <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+              <span className="text-green-400 mt-0.5">✓</span>
+              <span>{criterion}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function BacklogItemRow({ item, idx, expanded, onToggle }: { 
+  item: BacklogItem; 
+  idx: number; 
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasTechSpec = item.techSpec && item.techSpec.overview !== "Same as 'Public Accuracy Dashboard' in Goal 1. Single implementation serves both growth and platform goals.";
+  
+  return (
+    <>
+      <tr 
+        className={`${idx % 2 === 0 ? "bg-white/5" : ""} ${hasTechSpec ? "cursor-pointer hover:bg-white/10" : ""}`}
+        onClick={hasTechSpec ? onToggle : undefined}
+      >
+        <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">{item.title}</span>
+            {item.isNew && (
+              <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
+            )}
+            {hasTechSpec && (
+              <span className="text-xs px-2 py-0.5 rounded bg-cyan-500/30 text-cyan-300 border border-cyan-500/30">
+                {expanded ? "▼ SPEC" : "▶ SPEC"}
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="px-4 py-3 text-center">
+          <span className={item.stars === 5 ? "text-green-400 font-bold" : item.stars === 4 ? "text-lime-400 font-bold" : "text-yellow-400 font-bold"}>
+            {item.rating}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
+      </tr>
+      {expanded && item.techSpec && (
+        <tr>
+          <td colSpan={4} className="px-4 pb-4">
+            <TechSpecPanel spec={item.techSpec} itemId={item.id} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function BacklogTable({ items, categoryColor }: { items: BacklogItem[]; categoryColor: string }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-800 border-b border-white/10">
+            <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
+            <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
+            <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
+            <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, idx) => (
+            <BacklogItemRow 
+              key={item.id} 
+              item={item} 
+              idx={idx}
+              expanded={expandedId === item.id}
+              onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function AdminBacklogPage() {
   const goal1Total = goal1Strong.length + goal1Weak.length;
@@ -23,6 +217,7 @@ export default function AdminBacklogPage() {
   const totalActive = allStrongItems.length;
   const totalBacklogged = allWeakItems.length;
   const totalEvaluated = totalActive + totalBacklogged;
+  const itemsWithSpecs = allStrongItems.filter(i => i.techSpec).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
@@ -77,6 +272,12 @@ export default function AdminBacklogPage() {
           <p className="text-gray-400 text-lg">
             Critically Analyzed + Enhanced with Better Ideas | February 2, 2026
           </p>
+          <div className="mt-4 inline-flex items-center gap-2 bg-cyan-500/20 border border-cyan-500/30 rounded-lg px-4 py-2">
+            <span className="text-cyan-400">📋</span>
+            <span className="text-cyan-300 text-sm">
+              <strong>{itemsWithSpecs}</strong> items have detailed tech specs — click <span className="bg-cyan-500/30 px-1.5 py-0.5 rounded text-xs">▶ SPEC</span> to expand
+            </span>
+          </div>
         </div>
 
         {/* Goal 1: Grow Subscribers */}
@@ -87,44 +288,10 @@ export default function AdminBacklogPage() {
             </h2>
           </div>
 
-          {/* Strong Items */}
           <div>
             <h3 className="text-xl font-semibold text-white mb-3">✅ STRONG IDEAS (Keep & Prioritize)</h3>
-            <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-800 border-b border-white/10">
-                    <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
-                    <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
-                    <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
-                    <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {goal1Strong.map((item, idx) => (
-                    <tr key={item.id} className={idx % 2 === 0 ? "bg-white/5" : ""}>
-                      <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{item.title}</span>
-                          {item.isNew && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={item.stars === 5 ? "text-green-400 font-bold" : "text-yellow-400 font-bold"}>
-                          {item.rating}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <BacklogTable items={goal1Strong} categoryColor="green" />
           </div>
-
         </div>
 
         {/* Goal 2: Streamline Workflows */}
@@ -135,44 +302,10 @@ export default function AdminBacklogPage() {
             </h2>
           </div>
 
-          {/* Strong Items */}
           <div>
             <h3 className="text-xl font-semibold text-white mb-3">✅ STRONG IDEAS (Keep & Prioritize)</h3>
-            <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-800 border-b border-white/10">
-                    <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
-                    <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
-                    <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
-                    <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {goal2Strong.map((item, idx) => (
-                    <tr key={item.id} className={idx % 2 === 0 ? "bg-white/5" : ""}>
-                      <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{item.title}</span>
-                          {item.isNew && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={item.stars === 5 ? "text-green-400 font-bold" : item.stars === 4 ? "text-lime-400 font-bold" : "text-yellow-400 font-bold"}>
-                          {item.rating}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <BacklogTable items={goal2Strong} categoryColor="orange" />
           </div>
-
         </div>
 
         {/* Goal 3: Platform Excellence */}
@@ -183,44 +316,10 @@ export default function AdminBacklogPage() {
             </h2>
           </div>
 
-          {/* Strong Items */}
           <div>
             <h3 className="text-xl font-semibold text-white mb-3">✅ STRONG IDEAS (Keep & Prioritize)</h3>
-            <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-800 border-b border-white/10">
-                    <th className="px-4 py-3 text-left font-semibold text-white w-12">#</th>
-                    <th className="px-4 py-3 text-left font-semibold text-white">Item</th>
-                    <th className="px-4 py-3 text-center font-semibold text-white w-24">Rating</th>
-                    <th className="px-4 py-3 text-left font-semibold text-white">Why Strong</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {goal3Strong.map((item, idx) => (
-                    <tr key={item.id} className={idx % 2 === 0 ? "bg-white/5" : ""}>
-                      <td className="px-4 py-3 font-bold text-center">{item.rank}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{item.title}</span>
-                          {item.isNew && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white">NEW</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={item.stars === 5 ? "text-green-400 font-bold" : item.stars === 4 ? "text-lime-400 font-bold" : "text-yellow-400 font-bold"}>
-                          {item.rating}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300">{item.assessment}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <BacklogTable items={goal3Strong} categoryColor="blue" />
           </div>
-
         </div>
 
         {/* Backlog Storage */}
@@ -240,6 +339,9 @@ export default function AdminBacklogPage() {
         {/* Codex Overnight Priority */}
         <div className="bg-cyan-900/20 border-2 border-cyan-600/40 rounded-xl p-6">
           <h2 className="text-2xl font-bold text-cyan-400 mb-4">🤖 Codex Overnight Priority</h2>
+          <p className="text-gray-400 text-sm mb-4">
+            These items have full tech specs above. Codex should reference the ▶ SPEC sections for implementation details.
+          </p>
           <ol className="space-y-3">
             {codexPriorities.map((item) => (
               <li key={item.id} className="bg-black/30 rounded-lg p-4">
@@ -277,6 +379,10 @@ export default function AdminBacklogPage() {
                   <td className="px-4 py-3 font-semibold text-white">Backlog Storage</td>
                   <td className="px-4 py-3 text-gray-300">{backlogStorage.length} items for future consideration</td>
                 </tr>
+                <tr className="border-b border-white/10 bg-cyan-500/10">
+                  <td className="px-4 py-3 font-semibold text-cyan-400">Items with Tech Specs</td>
+                  <td className="px-4 py-3 text-cyan-300">{itemsWithSpecs} detailed specifications for Codex</td>
+                </tr>
                 <tr>
                   <td colSpan={2} className="px-4 py-4 font-bold text-white text-lg">
                     Total: {totalActive} active items | {totalBacklogged} backlogged | {totalEvaluated} evaluated
@@ -297,4 +403,3 @@ export default function AdminBacklogPage() {
     </div>
   );
 }
-// Trigger redeploy Mon Feb  2 19:10:40 CST 2026
