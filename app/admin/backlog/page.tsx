@@ -125,17 +125,6 @@ export default function AdminBacklogPage() {
             </div>
           </div>
 
-          {/* Weak Items */}
-          <div className="bg-yellow-900/20 border-l-4 border-yellow-600 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-yellow-400 mb-3">⚠️ MOVED TO BACKLOG</h3>
-            <div className="space-y-2">
-              {goal1Weak.map((item) => (
-                <div key={item.id} className="text-gray-300">
-                  • <span className="font-semibold text-orange-400">{item.title}</span> — {item.reason}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Goal 2: Streamline Workflows */}
@@ -184,17 +173,6 @@ export default function AdminBacklogPage() {
             </div>
           </div>
 
-          {/* Weak Items */}
-          <div className="bg-yellow-900/20 border-l-4 border-yellow-600 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-yellow-400 mb-3">⚠️ MOVED TO BACKLOG</h3>
-            <div className="space-y-2">
-              {goal2Weak.map((item) => (
-                <div key={item.id} className="text-gray-300">
-                  • <span className="font-semibold text-orange-400">{item.title}</span> — {item.reason}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Goal 3: Platform Excellence */}
@@ -243,17 +221,6 @@ export default function AdminBacklogPage() {
             </div>
           </div>
 
-          {/* Weak Items */}
-          <div className="bg-yellow-900/20 border-l-4 border-yellow-600 rounded-lg p-6">
-            <h3 className="text-lg font-bold text-yellow-400 mb-3">⚠️ MOVED TO BACKLOG</h3>
-            <div className="space-y-2">
-              {goal3Weak.map((item) => (
-                <div key={item.id} className="text-gray-300">
-                  • <span className="font-semibold text-orange-400">{item.title}</span> — {item.reason}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Backlog Storage */}
@@ -261,9 +228,10 @@ export default function AdminBacklogPage() {
           <h2 className="text-2xl font-bold text-gray-300 mb-4">🗄️ BACKLOG (Future Consideration)</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {backlogStorage.map((item) => (
-              <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg p-3">
+              <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-1">
                 <div className="font-semibold text-white">{item.title}</div>
-                <div className="text-sm text-gray-400">{item.reason}</div>
+                <div className="text-sm text-gray-300">{item.description}</div>
+                <div className="text-sm text-gray-400">Why backlogged: {item.reason}</div>
               </div>
             ))}
           </div>

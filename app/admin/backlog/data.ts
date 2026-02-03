@@ -25,6 +25,7 @@ export interface WeakItem {
 export interface BacklogStorageItem {
   id: string;
   title: string;
+  description: string;
   reason: string;
 }
 
@@ -376,23 +377,42 @@ export const goal3Weak: WeakItem[] = [
 
 // ============ BACKLOG (Future Consideration) ============
 export const backlogStorage: BacklogStorageItem[] = [
-  { id: "b1", title: "Monday Preview Posts", reason: "Maintains, doesn't grow" },
-  { id: "b2", title: "Gamma Strike Posts", reason: "Opportunistic only" },
-  { id: "b3", title: "Quote Tweet News", reason: "Undifferentiated" },
-  { id: "b4", title: "HIRO Delay System", reason: "Over-engineered" },
-  { id: "b5", title: "Catalyst Visual", reason: "Parent cut" },
-  { id: "b6", title: "AI Video Pipeline", reason: "High effort, unproven" },
-  { id: "b7", title: "Weekly Flow Digest", reason: "Too vague" },
-  { id: "b8", title: "TradingAgents Review", reason: "Research only" },
-  { id: "b9", title: "Education Hub", reason: "Not priority" },
-  { id: "b10", title: "Paper Trading Bot", reason: "Complex" },
-  { id: "b11", title: "Discord Knowledge Bot", reason: "Low volume" },
-  { id: "b12", title: "Gamma Explainer Series", reason: "Low conversion" },
-  { id: "b13", title: "Monthly State of TSLA", reason: "Not differentiated" },
-  { id: "b14", title: "HIRO Swing Visualization", reason: "Too niche" },
-  { id: "b15", title: "TradingView Export", reason: "Nice-to-have" },
-  { id: "b16", title: "QMD Local Search", reason: "Internal only" },
-  { id: "b17", title: "Export Claude KB", reason: "Maintenance" },
+  {
+    id: "b12",
+    title: "Gamma Explainer Series",
+    description: "Educational thread series explaining gamma mechanics and how they affect TSLA price action.",
+    reason: "High effort, low conversion — better focus on proof-based content first.",
+  },
+  {
+    id: "b13",
+    title: "Monthly State of TSLA",
+    description: "Monthly macro-style recap of TSLA trend, catalysts, and positioning.",
+    reason: "Not differentiated vs broader market commentary — low ROI for now.",
+  },
+  {
+    id: "b14",
+    title: "HIRO Swing Visualization",
+    description: "Visual map of HIRO swing signals over time with price overlays.",
+    reason: "Too niche for current audience; limited growth impact.",
+  },
+  {
+    id: "b15",
+    title: "TradingView Table Export",
+    description: "Automated export of key TradingView indicator tables into report format.",
+    reason: "Nice-to-have; not a core driver of value.",
+  },
+  {
+    id: "b16",
+    title: "QMD Local Search",
+    description: "Local semantic search over past reports, journals, and system docs.",
+    reason: "Internal tooling only; not subscriber-facing.",
+  },
+  {
+    id: "b17",
+    title: "Export Claude KB",
+    description: "Periodic export of Claude knowledge base for backup/portability.",
+    reason: "Maintenance task; not urgent.",
+  },
 ];
 
 // ============ CODEX OVERNIGHT PRIORITY ============
