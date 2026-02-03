@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { generateMorningTweet, generateEODTweet } from "@/lib/content/tweetTextGenerator";
+import { generateMorningTweet, generateEODTweet, generateModeTweet } from "@/lib/content/tweetTextGenerator";
 import { format } from "date-fns";
+
+const MODE_DAILY_CAP: Record<string, number> = {
+  GREEN: 25,
+  YELLOW: 15,
+  ORANGE: 10,
+  RED: 5,
+};
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +53,13 @@ export async function GET(request: Request) {
     // Prepare morning card data
     const mode = extracted.mode?.current || "YELLOW";
     const modeEmoji = getModeEmoji(mode);
-    const dailyCap = extracted.mode?.daily_cap || "15";
+    const modeKey = String(mode).toUpperCase();
+    const dailyCapValue =
+      extracted.position?.daily_cap_pct ||
+      extracted.mode?.daily_cap ||
+      MODE_DAILY_CAP[modeKey] ||
+      15;
+    const dailyCap = String(dailyCapValue);
     
     // Extract key levels for morning card
     const levels = extracted.alerts || [];
@@ -71,6 +84,16 @@ export async function GET(request: Request) {
       date,
       mode,
       modeEmoji,
+      modeCard: {
+        status: "ready",
+        imageUrl: `/api/cards/mode?date=${date}`,
+        tweetText: generateModeTweet({
+          date,
+          mode,
+          dailyCap: dailyCapValue,
+          levels: extracted.key_levels || {},
+        }),
+      },
       morningCard: {
         status: "ready",
         imageUrl: `/api/content/preview?type=daily-mode-card&date=${date}`,

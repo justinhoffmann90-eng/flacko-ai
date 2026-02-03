@@ -7,6 +7,11 @@ interface ContentHubData {
   date: string;
   mode: string;
   modeEmoji: string;
+  modeCard: {
+    status: "ready" | "pending" | "error";
+    imageUrl: string;
+    tweetText: string;
+  };
   morningCard: {
     status: "ready" | "pending" | "error";
     imageUrl: string;
@@ -46,6 +51,7 @@ export default function ContentHubPage() {
   const [data, setData] = useState<ContentHubData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedMode, setCopiedMode] = useState(false);
   const [copiedMorning, setCopiedMorning] = useState(false);
   const [copiedEOD, setCopiedEOD] = useState(false);
 
@@ -74,9 +80,12 @@ export default function ContentHubPage() {
     }
   };
 
-  const handleCopyTweet = (text: string, type: "morning" | "eod") => {
+  const handleCopyTweet = (text: string, type: "mode" | "morning" | "eod") => {
     navigator.clipboard.writeText(text);
-    if (type === "morning") {
+    if (type === "mode") {
+      setCopiedMode(true);
+      setTimeout(() => setCopiedMode(false), 2000);
+    } else if (type === "morning") {
       setCopiedMorning(true);
       setTimeout(() => setCopiedMorning(false), 2000);
     } else {
@@ -178,6 +187,68 @@ export default function ContentHubPage() {
 
         {data && (
           <div className="space-y-6">
+            {/* Daily Mode Card */}
+            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+              <div className="p-6 border-b border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold">Daily Mode Card</h2>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {data.modeCard.status === "ready" && "✅ Ready"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Preview */}
+                <div className="mb-4">
+                  <img
+                    src={data.modeCard.imageUrl}
+                    className="w-full max-h-[400px] object-contain border border-gray-700 rounded-lg bg-gray-950"
+                    alt="Daily Mode Card Preview"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mb-4">
+                  <a
+                    href={data.modeCard.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+                  >
+                    Open Full Size
+                  </a>
+                  <a
+                    href={data.modeCard.imageUrl}
+                    download={`tsla-mode-${selectedDate}.png`}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
+                  >
+                    Download PNG
+                  </a>
+                </div>
+
+                {/* Tweet Text */}
+                <div>
+                  <div className="text-sm font-medium text-gray-400 mb-2">Tweet Text:</div>
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">{data.modeCard.tweetText}</pre>
+                    <button
+                      onClick={() => handleCopyTweet(data.modeCard.tweetText, "mode")}
+                      className={`absolute top-3 right-3 px-3 py-1 rounded text-xs font-medium ${
+                        copiedMode
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                      }`}
+                    >
+                      {copiedMode ? "✓ Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Morning Card */}
             <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
               <div className="p-6 border-b border-gray-800">

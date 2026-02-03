@@ -33,6 +33,18 @@ interface EODTweetData {
   };
 }
 
+interface ModeTweetData {
+  date: string;
+  mode: string;
+  dailyCap: string | number;
+  levels: {
+    call_wall?: number | null;
+    gamma_strike?: number | null;
+    hedge_wall?: number | null;
+    put_wall?: number | null;
+  };
+}
+
 /**
  * Generate morning levels tweet text.
  */
@@ -114,6 +126,31 @@ export function generateEODTweet(data: EODTweetData): string {
   
   tweet += `\n\nTrack record: flacko.ai/accuracy ⚔️`;
   
+  return tweet;
+}
+
+function formatModePrice(value?: number | null) {
+  if (!value || Number.isNaN(value)) return "—";
+  return `$${value.toFixed(2)}`;
+}
+
+export function generateModeTweet(data: ModeTweetData): string {
+  const dateFormatted = format(parseISO(data.date), "MMM d");
+  const modeUpper = data.mode.toUpperCase();
+  const dailyCapText = String(data.dailyCap).includes("%")
+    ? String(data.dailyCap)
+    : `${data.dailyCap}%`;
+
+  let tweet = `🎯 TSLA Mode — ${dateFormatted}\n\n`;
+  tweet += `Mode: ${modeUpper}\n\n`;
+  tweet += `Key Levels:\n`;
+  tweet += `• Call Wall: ${formatModePrice(data.levels.call_wall)}\n`;
+  tweet += `• Gamma Strike: ${formatModePrice(data.levels.gamma_strike)}\n`;
+  tweet += `• Hedge Wall: ${formatModePrice(data.levels.hedge_wall)}\n`;
+  tweet += `• Put Wall: ${formatModePrice(data.levels.put_wall)}\n`;
+  tweet += `\nDaily Cap: ${dailyCapText}\n\n`;
+  tweet += `Full report → flacko.ai\n\n$TSLA`;
+
   return tweet;
 }
 
