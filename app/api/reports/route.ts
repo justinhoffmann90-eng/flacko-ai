@@ -253,7 +253,12 @@ export async function POST(request: Request) {
       console.log(`📝 Prepared ${alertInserts.length} alerts for ${subscribers.length - skippedCount} users (${skippedCount} skipped - alerts disabled)`);
 
       if (alertInserts.length > 0) {
-        const { error: insertError } = await serviceSupabase.from("report_alerts").insert(alertInserts);
+        const { error: insertError } = await serviceSupabase
+          .from("report_alerts")
+          .upsert(alertInserts, {
+            onConflict: "report_id,user_id,price,type",
+            ignoreDuplicates: false // Update existing records on conflict
+          });
         if (insertError) {
           console.error("❌ Failed to insert alerts:", insertError);
           // Alert via Telegram
