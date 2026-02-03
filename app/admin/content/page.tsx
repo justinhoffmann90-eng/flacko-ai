@@ -1,246 +1,338 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 
-type ContentType = "daily-mode-card" | "hiro-recap" | "forecast-vs-actual" | "weekly-scorecard";
-
-interface GeneratedContent {
-  type: ContentType;
+interface ContentHubData {
   date: string;
-  text?: string;
-  html?: string;
-  imageUrl?: string;
-  data?: Record<string, unknown>;
-  status: "generating" | "ready" | "error";
-  error?: string;
+  mode: string;
+  modeEmoji: string;
+  morningCard: {
+    status: "ready" | "pending" | "error";
+    imageUrl: string;
+    tweetText: string;
+    levels: {
+      R1?: number;
+      R2?: number;
+      S1?: number;
+      S2?: number;
+    };
+  };
+  eodCard: {
+    status: "ready" | "pending" | "generating" | "not_available";
+    imageUrl: string | null;
+    tweetText: string | null;
+    accuracy: {
+      total: number;
+      hit: number;
+      percentage: number;
+      details: Array<{
+        level: string;
+        price: number;
+        status: string;
+        actual: number | null;
+      }>;
+    } | null;
+  };
+  tweetDrafts: Array<{
+    id: string;
+    text: string;
+    status: string;
+  }>;
 }
 
-export default function ContentManagementPage() {
-  const [selectedType, setSelectedType] = useState<ContentType>("daily-mode-card");
+export default function ContentHubPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [content, setContent] = useState<GeneratedContent | null>(null);
+  const [data, setData] = useState<ContentHubData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copiedMorning, setCopiedMorning] = useState(false);
+  const [copiedEOD, setCopiedEOD] = useState(false);
 
-  const contentTypes = [
-    { id: "daily-mode-card", name: "Daily Mode Card", icon: "🎯" },
-    { id: "hiro-recap", name: "HIRO EOD Recap", icon: "📊" },
-    { id: "forecast-vs-actual", name: "Forecast vs Actual", icon: "🎯" },
-    { id: "weekly-scorecard", name: "Weekly Scorecard", icon: "📈" },
-  ];
+  useEffect(() => {
+    loadContent();
+  }, [selectedDate]);
 
-  const handleGenerate = async () => {
+  const loadContent = async () => {
     setLoading(true);
-    setContent({ type: selectedType, date: selectedDate, status: "generating" });
+    setError(null);
 
     try {
-      const response = await fetch(`/api/content/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: selectedType, date: selectedDate }),
-      });
-
-      const data = await response.json();
-
+      const response = await fetch(`/api/content/hub?date=${selectedDate}`);
+      
       if (!response.ok) {
-        throw new Error(data.error || "Generation failed");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to load content");
       }
 
-      setContent({
-        type: selectedType,
-        date: selectedDate,
-        text: data.text,
-        html: data.html,
-        imageUrl: data.imageUrl,
-        data: data.data,
-        status: "ready",
-      });
-    } catch (error) {
-      setContent({
-        type: selectedType,
-        date: selectedDate,
-        status: "error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      const contentData = await response.json();
+      setData(contentData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopyHtml = () => {
-    if (content?.html) {
-      navigator.clipboard.writeText(content.html);
-      alert("HTML copied to clipboard!");
+  const handleCopyTweet = (text: string, type: "morning" | "eod") => {
+    navigator.clipboard.writeText(text);
+    if (type === "morning") {
+      setCopiedMorning(true);
+      setTimeout(() => setCopiedMorning(false), 2000);
+    } else {
+      setCopiedEOD(true);
+      setTimeout(() => setCopiedEOD(false), 2000);
     }
   };
 
-  const handleOpenPreview = () => {
-    if (content?.html) {
-      const blob = new Blob([content.html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+  const handleGenerateEOD = async () => {
+    if (!data) return;
+
+    setData({
+      ...data,
+      eodCard: {
+        ...data.eodCard,
+        status: "generating"
+      }
+    });
+
+    try {
+      const response = await fetch("/api/content/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "eod-accuracy-card", date: selectedDate }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate EOD card");
+      }
+
+      // Reload content
+      await loadContent();
+    } catch (err) {
+      console.error("EOD generation error:", err);
+      if (data) {
+        setData({
+          ...data,
+          eodCard: {
+            ...data.eodCard,
+            status: "error" as any
+          }
+        });
+      }
     }
   };
+
+  if (loading && !data) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-20">
+            <div className="text-gray-400">Loading content hub...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+            <div className="text-red-400 font-medium">Error</div>
+            <div className="text-red-300 text-sm mt-1">{error}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Content Management</h1>
-
-        {/* Type Selector */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {contentTypes.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => setSelectedType(type.id as ContentType)}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                selectedType === type.id
-                  ? "border-purple-500 bg-purple-500/10"
-                  : "border-gray-700 hover:border-gray-600"
-              }`}
-            >
-              <div className="text-2xl mb-2">{type.icon}</div>
-              <div className="text-sm font-medium">{type.name}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* Date Selector */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Date</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg"
-          />
-        </div>
-
-        {/* Generate Button */}
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 rounded-lg font-medium transition-colors mb-8"
-        >
-          {loading ? "Generating..." : "Generate"}
-        </button>
-
-        {/* Preview Area */}
-        {content && (
-          <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Preview</h2>
-              <div className="flex gap-2">
-                {content.html && (
-                  <>
-                    <button
-                      onClick={handleOpenPreview}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
-                    >
-                      Open in New Tab
-                    </button>
-                    <button
-                      onClick={handleCopyHtml}
-                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm"
-                    >
-                      Copy HTML
-                    </button>
-                  </>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold">📊 Daily Content Hub</h1>
+              <div className="flex items-center gap-4 mt-2 text-sm">
+                <span className="text-gray-400">
+                  {format(new Date(selectedDate), "EEEE, MMM d, yyyy")}
+                </span>
+                {data && (
+                  <span className="text-gray-400">
+                    Mode: {data.modeEmoji} <span className="font-bold">{data.mode}</span>
+                  </span>
                 )}
-                {content.imageUrl && (
+              </div>
+            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100"
+            />
+          </div>
+        </div>
+
+        {data && (
+          <div className="space-y-6">
+            {/* Morning Card */}
+            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+              <div className="p-6 border-b border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold">Morning Levels Card</h2>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {data.morningCard.status === "ready" && "✅ Ready"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Preview */}
+                <div className="mb-4">
+                  <iframe
+                    src={data.morningCard.imageUrl}
+                    className="w-full h-[400px] border border-gray-700 rounded-lg bg-gray-950"
+                    title="Morning Card Preview"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mb-4">
                   <a
-                    href={content.imageUrl}
-                    download
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm"
+                    href={data.morningCard.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
                   >
-                    Download Image
+                    Open Full Size
                   </a>
+                  <a
+                    href={data.morningCard.imageUrl}
+                    download={`tsla-levels-${selectedDate}.html`}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
+                  >
+                    Download HTML
+                  </a>
+                </div>
+
+                {/* Tweet Text */}
+                <div>
+                  <div className="text-sm font-medium text-gray-400 mb-2">Tweet Text:</div>
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">{data.morningCard.tweetText}</pre>
+                    <button
+                      onClick={() => handleCopyTweet(data.morningCard.tweetText, "morning")}
+                      className={`absolute top-3 right-3 px-3 py-1 rounded text-xs font-medium ${
+                        copiedMorning
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                      }`}
+                    >
+                      {copiedMorning ? "✓ Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* EOD Accuracy Card */}
+            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+              <div className="p-6 border-b border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold">EOD Accuracy Card</h2>
+                    <div className="text-sm text-gray-400 mt-1">
+                      {data.eodCard.status === "ready" && "✅ Ready"}
+                      {data.eodCard.status === "pending" && "⏳ Generates at 4pm CT"}
+                      {data.eodCard.status === "generating" && "🔄 Generating..."}
+                    </div>
+                  </div>
+                  {data.eodCard.status === "pending" && (
+                    <button
+                      onClick={handleGenerateEOD}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium"
+                    >
+                      Generate Now
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6">
+                {data.eodCard.status === "ready" && data.eodCard.imageUrl ? (
+                  <>
+                    {/* Preview */}
+                    <div className="mb-4">
+                      <iframe
+                        src={data.eodCard.imageUrl}
+                        className="w-full h-[500px] border border-gray-700 rounded-lg bg-gray-950"
+                        title="EOD Card Preview"
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 mb-4">
+                      <a
+                        href={data.eodCard.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+                      >
+                        Open Full Size
+                      </a>
+                      <a
+                        href={data.eodCard.imageUrl}
+                        download={`tsla-accuracy-${selectedDate}.html`}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium"
+                      >
+                        Download HTML
+                      </a>
+                    </div>
+
+                    {/* Tweet Text */}
+                    {data.eodCard.tweetText && (
+                      <div>
+                        <div className="text-sm font-medium text-gray-400 mb-2">Tweet Text:</div>
+                        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative">
+                          <pre className="whitespace-pre-wrap text-sm font-mono">{data.eodCard.tweetText}</pre>
+                          <button
+                            onClick={() => handleCopyTweet(data.eodCard.tweetText!, "eod")}
+                            className={`absolute top-3 right-3 px-3 py-1 rounded text-xs font-medium ${
+                              copiedEOD
+                                ? "bg-green-600 text-white"
+                                : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            }`}
+                          >
+                            {copiedEOD ? "✓ Copied!" : "Copy"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center py-20 text-gray-500">
+                    {data.eodCard.status === "pending" && "EOD card will be available after market close"}
+                    {data.eodCard.status === "generating" && "Generating card..."}
+                  </div>
                 )}
               </div>
             </div>
 
-            {content.status === "generating" && (
-              <div className="text-gray-400 flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                </svg>
-                Generating content...
-              </div>
-            )}
-
-            {content.status === "error" && (
-              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
-                <div className="text-red-400 font-medium">Error</div>
-                <div className="text-red-300 text-sm mt-1">{content.error}</div>
-              </div>
-            )}
-
-            {content.status === "ready" && (
-              <div className="space-y-4">
-                {/* Data Summary */}
-                {content.data && (
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <div className="text-sm text-gray-400 mb-2">Extracted Data</div>
-                    {content.data.dateUsed && content.data.dateUsed !== content.date && (
-                      <div className="mb-3 px-3 py-2 bg-yellow-900/30 border border-yellow-700 rounded text-yellow-300 text-sm">
-                        ℹ️ Using report from {String(content.data.dateUsed)} (requested date not found)
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      {content.data.mode && (
-                        <div>
-                          <span className="text-gray-500">Mode:</span>{" "}
-                          <span className="font-medium">{String(content.data.mode)}</span>
-                        </div>
-                      )}
-                      {content.data.dailyCap && (
-                        <div>
-                          <span className="text-gray-500">Daily Cap:</span>{" "}
-                          <span className="font-medium">{String(content.data.dailyCap)}%</span>
-                        </div>
-                      )}
-                      {content.data.levels && (
-                        <div>
-                          <span className="text-gray-500">Levels:</span>{" "}
-                          <span className="font-medium">{(content.data.levels as unknown[]).length}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* HTML Preview */}
-                {content.html && (
-                  <div className="border border-gray-700 rounded-lg overflow-hidden">
-                    <div className="bg-gray-800 px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
-                      HTML Preview (click "Open in New Tab" for full view)
-                    </div>
-                    <iframe
-                      srcDoc={content.html}
-                      className="w-full h-[500px] bg-gray-950"
-                      title="Content Preview"
-                    />
-                  </div>
-                )}
-
-                {/* Image Preview */}
-                {content.imageUrl && (
-                  <div>
-                    <img
-                      src={content.imageUrl}
-                      alt="Generated content"
-                      className="max-w-full rounded-lg border border-gray-700"
-                    />
-                  </div>
-                )}
-
-                {/* Text Preview */}
-                {content.text && !content.html && (
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <pre className="whitespace-pre-wrap text-sm">{content.text}</pre>
-                  </div>
-                )}
+            {/* Tweet Drafts (placeholder for future) */}
+            {data.tweetDrafts && data.tweetDrafts.length > 0 && (
+              <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+                <div className="p-6 border-b border-gray-800">
+                  <h2 className="text-xl font-bold">Tweet Drafts</h2>
+                  <div className="text-sm text-gray-400 mt-1">{data.tweetDrafts.length} ready</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-gray-500 text-sm">Coming soon...</div>
+                </div>
               </div>
             )}
           </div>

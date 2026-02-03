@@ -4,6 +4,7 @@ import { generateDailyModeCard } from "@/lib/content/daily-mode-card";
 import { generateHiroRecap } from "@/lib/content/hiro-recap";
 import { generateForecastVsActual } from "@/lib/content/forecast-vs-actual";
 import { generateWeeklyScorecard } from "@/lib/content/weekly-scorecard";
+import { generateEODAccuracyCard } from "@/lib/content/eod-accuracy-card";
 
 export async function POST(request: Request) {
   try {
@@ -39,6 +40,9 @@ export async function POST(request: Request) {
     switch (type) {
       case "daily-mode-card":
         result = await generateDailyModeCard(date);
+        break;
+      case "eod-accuracy-card":
+        result = await generateEODAccuracyCard(date);
         break;
       case "hiro-recap":
         result = await generateHiroRecap(date);
