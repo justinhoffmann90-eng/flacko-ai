@@ -24,7 +24,8 @@ function cleanContent(raw: string): string {
   cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*\n/m, '');
   
   // Remove "TSLA Daily Report — Supporting Analysis" header (appears mid-document)
-  cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*[—–-]\s*Supporting Analysis\s*\n/gm, '\n---\n\n## 📋 Supporting Analysis\n');
+  // Using unicode escape for em-dash to ensure proper matching
+  cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*[\u2014\u2013\-]\s*Supporting Analysis\s*$/gm, '\n---\n\n## 📋 Supporting Analysis');
   
   // Remove the date line that follows (e.g., "## Thursday, January 29, 2026")
   cleaned = cleaned.replace(/^##\s*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+\w+\s+\d{1,2},?\s+\d{4}\s*\n/gm, '');
