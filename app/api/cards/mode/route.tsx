@@ -49,8 +49,53 @@ export async function GET(request: Request) {
   const posture =
     extracted?.positioning?.posture ||
     extracted?.position?.current_stance ||
+    extracted?.flacko_take?.what_id_do ||
     "See report for details";
-  const levels = extracted?.key_levels || {};
+  
+  // Try multiple sources for key levels
+  let levels = extracted?.key_levels || {};
+  
+  // If key_levels is empty, try to extract from spotgamma_context
+  if (!levels.gamma_strike && !levels.put_wall && !levels.call_wall && !levels.hedge_wall) {
+    const spotgamma = extracted?.spotgamma_context || {};
+    levels = {
+      gamma_strike: spotgamma.key_gamma_strike || spotgamma.gamma_strike || extracted?.key_gamma_strike,
+      put_wall: spotgamma.put_wall,
+      call_wall: spotgamma.call_wall,
+      hedge_wall: spotgamma.hedge_wall,
+    };
+  }
+  
+  // Also check alerts array for SpotGamma levels
+  const alerts = extracted?.alerts || [];
+  if (!levels.gamma_strike) {
+    const gammaAlert = alerts.find((a: any) => 
+      a.name?.toLowerCase().includes('gamma strike') || 
+      a.confluence?.toLowerCase().includes('gamma strike')
+    );
+    if (gammaAlert) levels.gamma_strike = gammaAlert.price;
+  }
+  if (!levels.put_wall) {
+    const putAlert = alerts.find((a: any) => 
+      a.name?.toLowerCase().includes('put wall') ||
+      a.confluence?.toLowerCase().includes('put wall')
+    );
+    if (putAlert) levels.put_wall = putAlert.price;
+  }
+  if (!levels.hedge_wall) {
+    const hedgeAlert = alerts.find((a: any) => 
+      a.name?.toLowerCase().includes('hedge wall') ||
+      a.confluence?.toLowerCase().includes('hedge wall')
+    );
+    if (hedgeAlert) levels.hedge_wall = hedgeAlert.price;
+  }
+  if (!levels.call_wall) {
+    const callAlert = alerts.find((a: any) => 
+      a.name?.toLowerCase().includes('call wall') ||
+      a.confluence?.toLowerCase().includes('call wall')
+    );
+    if (callAlert) levels.call_wall = callAlert.price;
+  }
 
   return new ImageResponse(
     (
