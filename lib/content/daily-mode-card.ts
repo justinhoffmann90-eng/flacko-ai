@@ -310,15 +310,30 @@ export async function generateDailyModeCard(date: string): Promise<DailyModeCard
     const { createServiceClient } = await import("@/lib/supabase/server");
     const supabase = await createServiceClient();
 
-    // Get report from database
-    const { data: report, error: reportError } = await supabase
+    // Try to get report for specific date
+    let { data: report, error: reportError } = await supabase
       .from("reports")
       .select("markdown_content, report_date")
       .eq("report_date", date)
       .single();
 
+    let dateUsed = date;
+
+    // If not found, fallback to latest report
     if (reportError || !report?.markdown_content) {
-      return { error: `Report not found for ${date}` };
+      const { data: latestReport, error: latestError } = await supabase
+        .from("reports")
+        .select("markdown_content, report_date")
+        .order("report_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (latestError || !latestReport?.markdown_content) {
+        return { error: `Report not found for ${date} and no latest report available` };
+      }
+
+      report = latestReport;
+      dateUsed = latestReport.report_date;
     }
 
     // Parse report content
@@ -332,7 +347,7 @@ export async function generateDailyModeCard(date: string): Promise<DailyModeCard
     const levels = selectKeyLevels(parsed);
 
     // Generate HTML
-    const html = generateHTML(parsed, levels, date);
+    const html = generateHTML(parsed, levels, dateUsed);
 
     return {
       html,
@@ -340,7 +355,8 @@ export async function generateDailyModeCard(date: string): Promise<DailyModeCard
         mode: parsed.mode,
         modeClass: parsed.modeClass,
         dailyCap: parsed.dailyCap,
-        date,
+        date: dateUsed,
+        dateUsed,
         levels,
         take: parsed.take
       }

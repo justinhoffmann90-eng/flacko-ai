@@ -56,6 +56,11 @@ export async function POST(request: Request) {
         );
     }
 
+    // Return error status if generator returned an error
+    if (result.error) {
+      return NextResponse.json(result, { status: 400 });
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("Content generation error:", error);

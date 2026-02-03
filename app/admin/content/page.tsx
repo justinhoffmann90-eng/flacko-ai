@@ -182,6 +182,11 @@ export default function ContentManagementPage() {
                 {content.data && (
                   <div className="bg-gray-800 p-4 rounded-lg">
                     <div className="text-sm text-gray-400 mb-2">Extracted Data</div>
+                    {content.data.dateUsed && content.data.dateUsed !== content.date && (
+                      <div className="mb-3 px-3 py-2 bg-yellow-900/30 border border-yellow-700 rounded text-yellow-300 text-sm">
+                        ℹ️ Using report from {String(content.data.dateUsed)} (requested date not found)
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       {content.data.mode && (
                         <div>
