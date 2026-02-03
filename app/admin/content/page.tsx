@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 
 type ContentType = "daily-mode-card" | "hiro-recap" | "forecast-vs-actual" | "weekly-scorecard";
@@ -9,7 +9,9 @@ interface GeneratedContent {
   type: ContentType;
   date: string;
   text?: string;
+  html?: string;
   imageUrl?: string;
+  data?: Record<string, unknown>;
   status: "generating" | "ready" | "error";
   error?: string;
 }
@@ -48,7 +50,9 @@ export default function ContentManagementPage() {
         type: selectedType,
         date: selectedDate,
         text: data.text,
+        html: data.html,
         imageUrl: data.imageUrl,
+        data: data.data,
         status: "ready",
       });
     } catch (error) {
@@ -63,10 +67,18 @@ export default function ContentManagementPage() {
     }
   };
 
-  const handleCopy = () => {
-    if (content?.text) {
-      navigator.clipboard.writeText(content.text);
-      alert("Copied to clipboard!");
+  const handleCopyHtml = () => {
+    if (content?.html) {
+      navigator.clipboard.writeText(content.html);
+      alert("HTML copied to clipboard!");
+    }
+  };
+
+  const handleOpenPreview = () => {
+    if (content?.html) {
+      const blob = new Blob([content.html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
     }
   };
 
@@ -119,13 +131,21 @@ export default function ContentManagementPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Preview</h2>
               <div className="flex gap-2">
-                {content.text && (
-                  <button
-                    onClick={handleCopy}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
-                  >
-                    Copy Text
-                  </button>
+                {content.html && (
+                  <>
+                    <button
+                      onClick={handleOpenPreview}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
+                    >
+                      Open in New Tab
+                    </button>
+                    <button
+                      onClick={handleCopyHtml}
+                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm"
+                    >
+                      Copy HTML
+                    </button>
+                  </>
                 )}
                 {content.imageUrl && (
                   <a
@@ -140,15 +160,66 @@ export default function ContentManagementPage() {
             </div>
 
             {content.status === "generating" && (
-              <div className="text-gray-400">Generating content...</div>
+              <div className="text-gray-400 flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                Generating content...
+              </div>
             )}
 
             {content.status === "error" && (
-              <div className="text-red-400">Error: {content.error}</div>
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                <div className="text-red-400 font-medium">Error</div>
+                <div className="text-red-300 text-sm mt-1">{content.error}</div>
+              </div>
             )}
 
             {content.status === "ready" && (
               <div className="space-y-4">
+                {/* Data Summary */}
+                {content.data && (
+                  <div className="bg-gray-800 p-4 rounded-lg">
+                    <div className="text-sm text-gray-400 mb-2">Extracted Data</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      {content.data.mode && (
+                        <div>
+                          <span className="text-gray-500">Mode:</span>{" "}
+                          <span className="font-medium">{String(content.data.mode)}</span>
+                        </div>
+                      )}
+                      {content.data.dailyCap && (
+                        <div>
+                          <span className="text-gray-500">Daily Cap:</span>{" "}
+                          <span className="font-medium">{String(content.data.dailyCap)}%</span>
+                        </div>
+                      )}
+                      {content.data.levels && (
+                        <div>
+                          <span className="text-gray-500">Levels:</span>{" "}
+                          <span className="font-medium">{(content.data.levels as unknown[]).length}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* HTML Preview */}
+                {content.html && (
+                  <div className="border border-gray-700 rounded-lg overflow-hidden">
+                    <div className="bg-gray-800 px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
+                      HTML Preview (click "Open in New Tab" for full view)
+                    </div>
+                    <iframe
+                      srcDoc={content.html}
+                      className="w-full h-[500px] bg-gray-950"
+                      title="Content Preview"
+                    />
+                  </div>
+                )}
+
+                {/* Image Preview */}
                 {content.imageUrl && (
                   <div>
                     <img
@@ -158,7 +229,9 @@ export default function ContentManagementPage() {
                     />
                   </div>
                 )}
-                {content.text && (
+
+                {/* Text Preview */}
+                {content.text && !content.html && (
                   <div className="bg-gray-800 p-4 rounded-lg">
                     <pre className="whitespace-pre-wrap text-sm">{content.text}</pre>
                   </div>
