@@ -76,6 +76,7 @@ export async function createCheckoutSession({
     customer_email: email,
     mode: "subscription",
     payment_method_types: ["card"],
+    allow_promotion_codes: true, // Enable promo code field
     line_items: [
       {
         price: priceId,
