@@ -62,7 +62,7 @@ export default function AdminReportsPage() {
     try {
       const res = await fetch("/api/reports/parse", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({ markdown }),
       });
 
@@ -92,7 +92,7 @@ export default function AdminReportsPage() {
     try {
       const res = await fetch("/api/reports", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({ markdown }),
       });
 
