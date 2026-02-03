@@ -45,6 +45,23 @@ interface ModeTweetData {
   };
 }
 
+interface ForecastTweetData {
+  date: string;
+  accuracy: {
+    held: number;
+    notTested: number;
+    total: number;
+    percentage: number;
+  };
+  results: Array<{
+    name: string;
+    price: number;
+    type: "resistance" | "support";
+    status: "held" | "broken" | "not_tested";
+    actualPrice: number | null;
+  }>;
+}
+
 /**
  * Generate morning levels tweet text.
  */
@@ -126,6 +143,36 @@ export function generateEODTweet(data: EODTweetData): string {
   
   tweet += `\n\nTrack record: flacko.ai/accuracy ⚔️`;
   
+  return tweet;
+}
+
+export function generateForecastTweet(data: ForecastTweetData): string {
+  const dateFormatted = format(parseISO(data.date), "MMM d");
+
+  const lines = data.results.map((result) => {
+    const icon = result.status === "held" ? "✅" : result.status === "broken" ? "❌" : "➖";
+    const actual = result.actualPrice !== null ? `$${result.actualPrice.toFixed(2)}` : "not tested";
+    const label = result.type === "resistance" ? "High" : "Low";
+    const statusText = result.status === "held"
+      ? "held"
+      : result.status === "broken"
+        ? "broke"
+        : "not tested";
+
+    if (result.status === "not_tested") {
+      return `${icon} ${result.name} $${result.price.toFixed(2)} → ${statusText}`;
+    }
+
+    return `${icon} ${result.name} $${result.price.toFixed(2)} → ${label} ${actual} (${statusText})`;
+  });
+
+  const accurateCount = data.accuracy.held + data.accuracy.notTested;
+
+  let tweet = `Morning forecast vs reality — ${dateFormatted}\n\n`;
+  tweet += `${lines.join("\n")}\n\n`;
+  tweet += `${accurateCount}/${data.accuracy.total} levels accurate (${data.accuracy.percentage.toFixed(0)}%)\n\n`;
+  tweet += `Full track record → flacko.ai/accuracy\n\n$TSLA`;
+
   return tweet;
 }
 
