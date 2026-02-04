@@ -16,6 +16,7 @@ import {
   Target,
   TrendingUp,
   TrafficCone,
+  Brain,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -26,105 +27,129 @@ export const metadata: Metadata = {
 export const dynamic = "force-static";
 export const revalidate = 3600;
 
-const coreTopics = [
+const lessonGroups = [
   {
-    title: "Modes",
-    description: "The risk dial that controls your position sizing.",
-    time: "5 min",
-    href: "/learn/modes",
-    icon: <TrafficCone className="h-5 w-5" />,
-    badge: "Start here",
+    title: "Flacko Philosophy",
+    description: "The mindset and system behind every trade.",
+    lessons: [
+      {
+        title: "Modes",
+        description: "The risk dial that controls your position sizing.",
+        time: "5 min",
+        href: "/learn/modes",
+        icon: <TrafficCone className="h-5 w-5" />,
+        badge: "Start here",
+      },
+      {
+        title: "Why Structure Matters",
+        description: "Trade with a plan, not emotions.",
+        time: "4 min",
+        href: "/learn/why-structure-matters",
+        icon: <Brain className="h-5 w-5" />,
+      },
+      {
+        title: "Position Sizing",
+        description: "Scale in smart — size based on mode and conviction.",
+        time: "6 min",
+        href: "/learn/position-sizing",
+        icon: <Gauge className="h-5 w-5" />,
+      },
+      {
+        title: "Master Eject",
+        description: "The exit level that protects your capital.",
+        time: "4 min",
+        href: "/learn/master-eject",
+        icon: <Shield className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    title: "Levels",
-    description: "Call Wall, Put Wall, Gamma Strike — key reaction zones.",
-    time: "8 min",
-    href: "/learn/levels",
-    icon: <Layers className="h-5 w-5" />,
-    badge: "Core",
+    title: "SpotGamma & Options Flow",
+    description: "How dealer positioning creates support and resistance.",
+    lessons: [
+      {
+        title: "What is Gamma?",
+        description: "How dealer hedging moves the market.",
+        time: "6 min",
+        href: "/learn/what-is-gamma",
+        icon: <TrendingUp className="h-5 w-5" />,
+      },
+      {
+        title: "Levels",
+        description: "Call Wall, Put Wall, Gamma Strike — key zones.",
+        time: "8 min",
+        href: "/learn/levels",
+        icon: <Layers className="h-5 w-5" />,
+      },
+      {
+        title: "Dealer Positioning",
+        description: "Read the options flow and market structure.",
+        time: "7 min",
+        href: "/learn/dealer-positioning",
+        icon: <BookOpen className="h-5 w-5" />,
+      },
+      {
+        title: "HIRO",
+        description: "Real-time hedging pressure and what it signals.",
+        time: "8 min",
+        href: "/learn/hiro",
+        icon: <LineChart className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    title: "Alerts",
-    description: "How alerts fire and what to do when price hits.",
-    time: "3 min",
-    href: "/learn/alerts",
-    icon: <Bell className="h-5 w-5" />,
-    badge: "Action",
+    title: "Technical Indicators",
+    description: "The chart patterns and EMAs that define trend.",
+    lessons: [
+      {
+        title: "Weekly EMAs",
+        description: "The 9/13/21 EMAs that define trend structure.",
+        time: "6 min",
+        href: "/learn/weekly-emas",
+        icon: <TrendingUp className="h-5 w-5" />,
+      },
+      {
+        title: "Slow Zone",
+        description: "When momentum stalls — patience over action.",
+        time: "5 min",
+        href: "/learn/slow-zone",
+        icon: <Sparkles className="h-5 w-5" />,
+      },
+      {
+        title: "Scenarios",
+        description: "Bull, base, bear — how probabilities shape bias.",
+        time: "5 min",
+        href: "/learn/scenarios",
+        icon: <Target className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    title: "Reports",
-    description: "Read the daily report and extract the edge.",
-    time: "10 min",
-    href: "/learn/reports",
-    icon: <FileText className="h-5 w-5" />,
-    badge: "Routine",
-  },
-  {
-    title: "Scenarios",
-    description: "Bull, base, bear — how probabilities shape bias.",
-    time: "5 min",
-    href: "/learn/scenarios",
-    icon: <Target className="h-5 w-5" />,
-    badge: "Decision",
-  },
-];
-
-const advancedTopics = [
-  {
-    title: "What is Gamma?",
-    description: "How dealer hedging creates support and resistance.",
-    time: "6 min",
-    href: "/learn/what-is-gamma",
-    icon: <TrendingUp className="h-5 w-5" />,
-  },
-  {
-    title: "Dealer Positioning",
-    description: "Read the options flow and understand market structure.",
-    time: "7 min",
-    href: "/learn/dealer-positioning",
-    icon: <BookOpen className="h-5 w-5" />,
-  },
-  {
-    title: "HIRO",
-    description: "Real-time hedging pressure and what it signals.",
-    time: "8 min",
-    href: "/learn/hiro",
-    icon: <LineChart className="h-5 w-5" />,
-  },
-  {
-    title: "Position Sizing",
-    description: "Scale in smart — how to size based on mode and conviction.",
-    time: "6 min",
-    href: "/learn/position-sizing",
-    icon: <Gauge className="h-5 w-5" />,
-  },
-  {
-    title: "Master Eject",
-    description: "The exit level that protects your capital.",
-    time: "4 min",
-    href: "/learn/master-eject",
-    icon: <Shield className="h-5 w-5" />,
-  },
-  {
-    title: "Slow Zone",
-    description: "When momentum stalls — patience over action.",
-    time: "5 min",
-    href: "/learn/slow-zone",
-    icon: <Sparkles className="h-5 w-5" />,
-  },
-  {
-    title: "Weekly EMAs",
-    description: "The 9/13/21 EMAs that define trend structure.",
-    time: "6 min",
-    href: "/learn/weekly-emas",
-    icon: <TrendingUp className="h-5 w-5" />,
-  },
-  {
-    title: "Weekly Review",
-    description: "How to analyze the week and prepare for the next.",
-    time: "7 min",
-    href: "/learn/weekly-review",
-    icon: <FileText className="h-5 w-5" />,
+    title: "Using Flacko AI",
+    description: "Get the most out of reports, alerts, and reviews.",
+    lessons: [
+      {
+        title: "Reports",
+        description: "Read the daily report and extract the edge.",
+        time: "10 min",
+        href: "/learn/reports",
+        icon: <FileText className="h-5 w-5" />,
+      },
+      {
+        title: "Alerts",
+        description: "How alerts fire and what to do when price hits.",
+        time: "3 min",
+        href: "/learn/alerts",
+        icon: <Bell className="h-5 w-5" />,
+      },
+      {
+        title: "Weekly Review",
+        description: "Analyze the week and prepare for the next.",
+        time: "7 min",
+        href: "/learn/weekly-review",
+        icon: <FileText className="h-5 w-5" />,
+      },
+    ],
   },
 ];
 
@@ -185,31 +210,19 @@ export default function LearnHubPage() {
       </div>
 
       <div className="container mx-auto px-4 pb-16">
-        {/* Core Topics */}
-        <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Foundations</p>
-          <h2 className="mt-3 text-2xl font-semibold sm:text-3xl">Start here</h2>
-          <p className="mt-2 text-sm text-muted-foreground">The core concepts that power the system.</p>
-        </div>
+        {/* Lesson Groups */}
+        {lessonGroups.map((group, groupIdx) => (
+          <div key={group.title} className={groupIdx === 0 ? "mt-4" : "mt-16"}>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">{group.title}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{group.description}</p>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {coreTopics.map((topic) => (
-            <TopicCard key={topic.title} {...topic} />
-          ))}
-        </div>
-
-        {/* Advanced Topics */}
-        <div className="mt-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Go deeper</p>
-          <h2 className="mt-3 text-2xl font-semibold sm:text-3xl">Advanced concepts</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Level up your understanding of market structure.</p>
-        </div>
-
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {advancedTopics.map((topic) => (
-            <TopicCard key={topic.title} {...topic} />
-          ))}
-        </div>
+            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {group.lessons.map((lesson) => (
+                <TopicCard key={lesson.title} {...lesson} />
+              ))}
+            </div>
+          </div>
+        ))}
 
         {/* CTA */}
         <div className="mt-16 max-w-2xl mx-auto text-center">
