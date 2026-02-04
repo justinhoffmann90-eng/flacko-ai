@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Flacko AI - TSLA Trading Operating System",
-  description: "One system. Every scenario covered. Daily reports, price alerts, and a system that tells you when to pay attention.",
+  title: "flacko ai — the tsla operating system",
+  description: "one system. every scenario covered. daily reports, price alerts, and a system that tells you when to pay attention.",
   keywords: ["TSLA", "trading", "swing trading", "stock analysis", "trading alerts", "operating system"],
   manifest: "/manifest.json",
   themeColor: "#0a0a0a",
