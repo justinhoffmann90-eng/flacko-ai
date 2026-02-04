@@ -54,11 +54,45 @@ async function embedText(text: string): Promise<number[]> {
   return data.data[0]?.embedding || [];
 }
 
+// Fetch live market data from Yahoo Finance
+async function getLiveMarketData(): Promise<string> {
+  try {
+    const tickers = ["TSLA", "^VIX", "QQQ"];
+    const results = await Promise.all(tickers.map(async (ticker) => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m&range=1d`;
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const meta = data.chart?.result?.[0]?.meta;
+      if (!meta) return null;
+      const price = meta.regularMarketPrice;
+      const prevClose = meta.chartPreviousClose || meta.previousClose;
+      const changePct = ((price - prevClose) / prevClose) * 100;
+      const name = ticker === "^VIX" ? "VIX" : ticker;
+      const prefix = ticker === "^VIX" ? "" : "$";
+      return `${name}: ${prefix}${price.toFixed(2)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)`;
+    }));
+    const valid = results.filter(Boolean);
+    if (valid.length === 0) return "";
+    const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+    return `\n\n[LIVE MARKET DATA as of ${now} CT]\n${valid.join(" | ")}\nUSE THESE CURRENT PRICES when answering about today's market.`;
+  } catch (error) {
+    console.error("[LIVE DATA ERROR]", error);
+    return "";
+  }
+}
+
 async function queryKnowledge(question: string, userId: string, username: string): Promise<string> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
   // Get today's date in Chicago timezone (CT)
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  
+  // Fetch live market data
+  const liveData = await getLiveMarketData();
+  console.log("[LIVE DATA]", liveData || "(none)");
   
   const embedding = await embedText(question);
   
@@ -89,7 +123,7 @@ async function queryKnowledge(question: string, userId: string, username: string
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   const context = (chunks || []).map((c: any, i: number) => `[${i+1}] (${c.source} ${c.source_date || ""}) ${c.content}`).join("\n\n");
   
-  const prompt = `${BOBBY_AXELROD_PROMPT}\n\nTODAY'S DATE: ${today}\nALWAYS prioritize data from today's date (${today}) when answering about current conditions, mode, or outlook.\n\n---\nKNOWLEDGE BASE:\n${context || "No specific context."}\n---\n\nUser: "${question}"\n\nRespond as Bobby Axelrod (vary your style):`;
+  const prompt = `${BOBBY_AXELROD_PROMPT}\n\nTODAY'S DATE: ${today}\nALWAYS prioritize data from today's date (${today}) when answering about current conditions, mode, or outlook.${liveData}\n\n---\nKNOWLEDGE BASE:\n${context || "No specific context."}\n---\n\nUser: "${question}"\n\nRespond as Bobby Axelrod (vary your style):`;
   
   const result = await model.generateContent(prompt);
   const answer = result.response.text().trim();
