@@ -86,8 +86,7 @@ async function getRecentHiroMessages(client: Client): Promise<string> {
     // Format messages, prioritizing today's
     const hiroUpdates: string[] = [];
     messages.forEach((msg: any) => {
-      if (msg.author.bot && msg.embeds.length > 0) {
-        const embed = msg.embeds[0];
+      if (msg.author.bot) {
         const msgDate = msg.createdAt.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
         const msgTime = msg.createdAt.toLocaleTimeString('en-US', { 
           timeZone: 'America/Chicago', 
@@ -96,11 +95,19 @@ async function getRecentHiroMessages(client: Client): Promise<string> {
         });
         const isToday = msgDate === today;
         
-        let content = embed.description || "";
-        if (embed.fields) {
-          embed.fields.forEach((f: any) => {
-            content += `\n${f.name}: ${f.value}`;
-          });
+        // Try embeds first, then fall back to message content
+        let content = "";
+        if (msg.embeds && msg.embeds.length > 0) {
+          const embed = msg.embeds[0];
+          content = embed.description || "";
+          if (embed.fields) {
+            embed.fields.forEach((f: any) => {
+              content += `\n${f.name}: ${f.value}`;
+            });
+          }
+        } else if (msg.content) {
+          // HIRO bot uses plain text, not embeds
+          content = msg.content;
         }
         
         if (content) {
