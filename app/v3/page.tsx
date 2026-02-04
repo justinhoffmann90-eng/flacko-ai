@@ -49,7 +49,7 @@ export default function LandingPageV3() {
             <span className="text-xs text-zinc-500 hidden sm:block">operational status: live</span>
             <Link href="/signup">
               <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
-                install os
+                install the operating system
               </Button>
             </Link>
           </div>
@@ -75,24 +75,24 @@ export default function LandingPageV3() {
         <div className="max-w-2xl mx-auto text-center relative z-10">
           <p className="text-xs text-zinc-500 mb-4 tracking-widest uppercase">battlefield command intelligence</p>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
-            the tsla trading <span className="text-zinc-400">operating system.</span>
+            the tsla <span className="text-zinc-400">operating system.</span>
           </h1>
           <p className="text-lg sm:text-xl text-zinc-300 mb-4">
-            flacko uses ai agents to simulate battlefield market conditions using options dealer flow and technical structure —
-            delivering clear scenarios, key levels, and risk signals before they happen.
+            flacko uses ai agents to model market structure, dealer positioning, and probabilistic scenarios — surfacing key levels and context for disciplined execution.
           </p>
+          <p className="text-sm text-zinc-400 mb-2">probability first. clarity always.</p>
           <p className="text-sm text-zinc-400 mb-8">
-            designed to help traders manage volatility, avoid emotional decisions, and execute with probabilistic clarity.
+            designed for disciplined traders who prioritize structure, probability, and execution clarity.
           </p>
 
           <div className="flex justify-center mb-4">
             <Link href="/signup">
               <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-                install the flacko operating system
+                install the operating system
               </Button>
             </Link>
           </div>
-          <p className="text-xs text-zinc-500">daily war briefings + alerts + intelligence review</p>
+          <p className="text-xs text-zinc-500">daily war briefings + context alerts + intelligence review</p>
         </div>
       </section>
 
@@ -110,6 +110,33 @@ export default function LandingPageV3() {
             <span className="opacity-60">fs insight</span>
             <span className="opacity-60">bloomberg</span>
             <span className="opacity-60">wsj</span>
+          </div>
+        </div>
+      </section>
+
+      {/* value */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-2">value framework</h2>
+          <p className="text-center text-zinc-500 mb-10">structured outcomes for disciplined execution</p>
+
+          <div className="grid md:grid-cols-2 gap-6 text-left">
+            <div className="bg-zinc-900/60 rounded-xl p-5 border border-zinc-800">
+              <h3 className="font-semibold text-lg mb-2">context over noise</h3>
+              <p className="text-sm text-zinc-500">understand what structure says, not how it feels.</p>
+            </div>
+            <div className="bg-zinc-900/60 rounded-xl p-5 border border-zinc-800">
+              <h3 className="font-semibold text-lg mb-2">probability mapping</h3>
+              <p className="text-sm text-zinc-500">scenarios, not blind guesses.</p>
+            </div>
+            <div className="bg-zinc-900/60 rounded-xl p-5 border border-zinc-800">
+              <h3 className="font-semibold text-lg mb-2">positioning awareness</h3>
+              <p className="text-sm text-zinc-500">dealer flow + regime intersections that shape context.</p>
+            </div>
+            <div className="bg-zinc-900/60 rounded-xl p-5 border border-zinc-800">
+              <h3 className="font-semibold text-lg mb-2">disciplined execution frameworks</h3>
+              <p className="text-sm text-zinc-500">rules and thresholds that keep decision-making tight.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -247,7 +274,7 @@ export default function LandingPageV3() {
       <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">what you get</h2>
-          <p className="text-center text-zinc-500 mb-10">battlefield tools to keep discipline under fire</p>
+          <p className="text-center text-zinc-500 mb-10">decision clarity tools for disciplined execution</p>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-zinc-900/60 rounded-xl p-6 border border-zinc-800">
@@ -256,13 +283,12 @@ export default function LandingPageV3() {
                   <FileText className="w-5 h-5 text-cyan-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">daily war briefings</h3>
-                  <p className="text-xs text-zinc-500">pre-market intel</p>
+                  <h3 className="font-semibold text-lg">structure maps</h3>
+                  <p className="text-xs text-zinc-500">daily war briefings</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                ai-generated daily reports outlining market scenarios, key price levels, and directional probabilities using
-                dealer flow and technical confirmation.
+                ai-generated structure maps before market opens.
               </p>
             </div>
 
@@ -272,13 +298,12 @@ export default function LandingPageV3() {
                   <Bell className="w-5 h-5 text-emerald-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">real-time alerts</h3>
-                  <p className="text-xs text-zinc-500">defensive lines breached</p>
+                  <h3 className="font-semibold text-lg">scenario frameworks</h3>
+                  <p className="text-xs text-zinc-500">bullish / neutral / defensive</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                alerts triggered when price interacts with critical positioning levels, volatility regimes, or structural
-                breakdowns.
+                defined paths with invalidation points so you know what breaks the scenario.
               </p>
             </div>
 
@@ -288,12 +313,12 @@ export default function LandingPageV3() {
                   <Crosshair className="w-5 h-5 text-blue-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">scenario mapping</h3>
-                  <p className="text-xs text-zinc-500">routes to victory or retreat</p>
+                  <h3 className="font-semibold text-lg">context alert engine</h3>
+                  <p className="text-xs text-zinc-500">positional thresholds hit</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                clear bullish and bearish pathways so traders know what invalidates their thesis before risk appears.
+                context alerts when price meets high-impact positional thresholds.
               </p>
             </div>
 
@@ -303,13 +328,12 @@ export default function LandingPageV3() {
                   <Calendar className="w-5 h-5 text-purple-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">weekly intelligence review</h3>
-                  <p className="text-xs text-zinc-500">command recalibration</p>
+                  <h3 className="font-semibold text-lg">weekly intelligence</h3>
+                  <p className="text-xs text-zinc-500">regime recalibration</p>
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                deep-dive reports analyzing macro catalysts, positioning changes, and structural shifts shaping upcoming price
-                behavior.
+                structural shifts + regime updates you can act on.
               </p>
             </div>
           </div>
@@ -319,17 +343,17 @@ export default function LandingPageV3() {
       {/* differentiation */}
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4">not alerts. not signal chasing. a decision framework.</h2>
+          <h2 className="text-2xl font-bold mb-4">not context alerts. not chat commentary. a decision framework.</h2>
           <p className="text-zinc-400 mb-6">
-            flacko is not trade alerts. flacko is not signal chasing. flacko is a decision framework.
+            flacko is not context alerts. flacko is not chat commentary. flacko is a decision framework.
           </p>
           <div className="text-left inline-block">
             <p className="text-sm text-zinc-500 mb-3">it combines:</p>
             <ul className="space-y-2 text-sm text-zinc-300">
               <li>• options dealer flow</li>
-              <li>• volatility regime analysis</li>
-              <li>• multi-timeframe technical confirmation</li>
-              <li>• ai-driven scenario simulation</li>
+              <li>• volatility regime modeled structure</li>
+              <li>• multi-timeframe structure confirmation</li>
+              <li>• ai-driven probabilistic scenario simulation</li>
             </ul>
             <p className="text-sm text-zinc-400 mt-4">to model how markets behave — not just how they look.</p>
           </div>
@@ -341,12 +365,10 @@ export default function LandingPageV3() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-4">the operating system positioning</h2>
           <p className="text-zinc-400 mb-4">
-            flacko functions as a trading operating system. instead of guessing market direction, traders follow structured
-            protocols based on positioning, probability, and scenario confirmation.
+            flacko is a trading operating system — not reactive pings, not chat commentary — a structured framework for probabilistic decision context.
           </p>
           <p className="text-sm text-zinc-500">
-            as the system evolves, flacko continuously updates its logic, thresholds, and scenario models — improving decision
-            clarity over time.
+            as the system evolves, flacko recalibrates scenario logic, probability thresholds, and model structure — giving you a living decision architecture, not static content.
           </p>
         </div>
       </section>
@@ -355,7 +377,7 @@ export default function LandingPageV3() {
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-2 text-center">regime command panel</h2>
-          <p className="text-center text-zinc-500 mb-10">signal posture before the airstrike lands</p>
+          <p className="text-center text-zinc-500 mb-10">context posture before the airstrike lands</p>
 
           <div className="mb-8">
             <div className="h-2 rounded-full bg-gradient-to-r from-emerald-400 via-yellow-400 via-orange-400 to-red-500 mb-3"></div>
@@ -423,7 +445,7 @@ export default function LandingPageV3() {
 
           <div className="mt-8 bg-zinc-900/50 rounded-xl p-5 border border-zinc-800 text-center">
             <p className="text-sm text-zinc-400">
-              mode is determined by technical structure + dealer positioning. no single indicator controls the decision.
+              mode is determined by technical structure + dealer positioning. no single regime framework controls the decision.
             </p>
           </div>
         </div>
@@ -451,7 +473,7 @@ export default function LandingPageV3() {
             join <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">flacko ai</span>
           </h2>
           <p className="text-sm text-zinc-500 mb-6">
-            tsla trading intelligence. daily briefings, key levels, and alerts that cut through the noise.
+            tsla trading intelligence. daily briefings, key levels, and context alerts that cut through the noise.
           </p>
 
           <div className="bg-gradient-to-br from-cyan-500/10 to-emerald-500/10 border border-cyan-500/30 rounded-2xl p-6 mb-6 relative overflow-hidden">
@@ -482,7 +504,7 @@ export default function LandingPageV3() {
             <div className="space-y-3 text-sm text-zinc-300">
               {[
                 "daily tsla reports before market open",
-                "real-time alerts via discord and email",
+                "context alerts via discord and email",
                 "mode and tier system for risk management",
                 "key levels from spotgamma flow data",
                 "private discord community",
@@ -499,7 +521,7 @@ export default function LandingPageV3() {
 
           <Link href="/signup" className="block">
             <Button className="w-full bg-gradient-to-r from-cyan-400 to-emerald-400 text-black hover:opacity-90">
-              lock in founder pricing →
+              access structured context →
             </Button>
           </Link>
 
@@ -548,16 +570,16 @@ export default function LandingPageV3() {
       {/* cta + onboarding */}
       <section className="py-16 px-6 border-t border-zinc-900">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4">deploy flacko trading protocols</h2>
-          <p className="text-zinc-400 mb-6">no experience with dealer flow required. flacko translates institutional positioning into clear, actionable market context.</p>
+          <h2 className="text-2xl font-bold mb-4">install the operating system</h2>
+          <p className="text-zinc-400 mb-6">no experience with dealer flow required. flacko translates institutional positioning into clear structured context.</p>
           <Link href="/signup">
             <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
-              enter the command os
+              access structured context
             </Button>
           </Link>
           <p className="text-xs text-zinc-500 mt-4">
             flacko does not provide financial advice or guaranteed outcomes. it provides structured market intelligence designed to
-            support informed decision making.
+            support informed decision context and disciplined execution.
           </p>
         </div>
       </section>
@@ -568,19 +590,19 @@ export default function LandingPageV3() {
           <h2 className="text-2xl font-bold mb-8 text-center">faq</h2>
           <FAQItem
             question="how is the report created?"
-            answer="the system combines a trained framework built on years of tsla-specific trading philosophy with real-time data feeds. each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from spotgamma. the ai synthesizes all of this into a single daily read on regime, levels, and positioning. it is a systematic process that runs the same way every day."
+            answer="the system combines a trained framework built on years of tsla-specific trading philosophy with real-time data feeds. each report pulls from multi-timeframe modeled structure, momentum and trend regime frameworks, market structure modeling, and institutional options flow data from spotgamma. the ai synthesizes all of this into a single daily read on regime, levels, and positioning. it is a systematic process that runs the same way every day."
           />
           <FAQItem
             question="how is the regime mode determined?"
-            answer="the mode is determined by confluence of multiple indicators: market structure, momentum regime, weekly ema hierarchy (9/13/21), dealer positioning from spotgamma, and real-time hiro flow data. no single indicator controls the decision — we look for alignment across technicals and flow."
+            answer="the mode is determined by confluence of multiple regime frameworks: market structure, momentum regime, weekly ema hierarchy (9/13/21), dealer positioning from spotgamma, and real-time hiro flow data. no single regime framework controls the decision — we look for alignment across modeled structure and flow."
           />
           <FAQItem
-            question="what kind of alerts do i receive?"
-            answer="price alerts when tsla hits key levels from the daily report, mode shift notifications when conditions change, and options flow updates throughout the day. each alert includes context on what it means and what to do."
+            question="what kind of context alerts do i receive?"
+            answer="context alerts when tsla hits key levels from the daily report, mode shift notifications when conditions change, and options flow updates throughout the day. each context alert includes context on what it means and what to do."
           />
           <FAQItem
             question="is this only for tsla?"
-            answer="yes, the daily reports and levels are tsla-specific. broader market context is monitored so tsla is not analyzed in a vacuum."
+            answer="yes, the daily reports and levels are tsla-specific. broader market context is monitored so tsla is not modeled in a vacuum."
           />
         </div>
       </section>
