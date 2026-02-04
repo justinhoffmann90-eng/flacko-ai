@@ -12,7 +12,6 @@ export interface KnowledgeChunkInput {
 }
 
 const DEFAULT_CHUNK_TOKENS = 500;
-const DEFAULT_REPORT_DAYS = 30;
 
 function normalizeText(text: string) {
   return text.replace(/\s+/g, " ").trim();
@@ -75,7 +74,7 @@ function buildLearnDocuments(): KnowledgeChunkInput[] {
 }
 
 export async function indexKnowledgeBase({
-  days = DEFAULT_REPORT_DAYS,
+  days,
   reset = false,
 }: {
   days?: number;
