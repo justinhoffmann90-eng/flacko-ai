@@ -122,17 +122,24 @@ function buildKeyLevelTweet(date: string, extracted: any): string | null {
 
 function buildHiroTweet(date: string, extracted: any): string | null {
   const hiro = extracted?.hiro;
-  if (!hiro) return null;
+  if (!hiro || hiro.reading === undefined) return null;
 
-  const reading = hiro.reading ?? hiro.value ?? null;
-  const context = hiro.context || hiro.interpretation || "institutional flow being monitored";
+  const reading = hiro.reading;
+  
+  // Generate context based on reading value
+  let context: string;
+  if (reading > 200) {
+    context = "strongly positive — institutions adding significant long exposure";
+  } else if (reading > 0) {
+    context = "positive — institutions leaning bullish";
+  } else if (reading > -200) {
+    context = "slightly negative — institutions cautious";
+  } else {
+    context = "deeply negative — institutions actively hedging/selling";
+  }
 
-  if (reading === null) return null;
-
-  // Format reading (could be number or string)
-  const readingStr = typeof reading === 'number' 
-    ? `${reading > 0 ? '+' : ''}${reading}%`
-    : String(reading);
+  // Format reading in millions
+  const readingStr = `${reading > 0 ? '+' : ''}${reading}M`;
 
   const data: TemplateData = {
     hiro_reading: readingStr,
@@ -143,23 +150,23 @@ function buildHiroTweet(date: string, extracted: any): string | null {
 }
 
 function buildScenarioTweet(date: string, extracted: any): string | null {
-  const scenarios = extracted?.scenarios;
-  if (!scenarios) return null;
-
-  const bull = scenarios.bull || {};
-  const base = scenarios.base || {};
-  const bear = scenarios.bear || {};
-
-  // Need at least base case
-  if (!base.trigger && !base.target && !bull.trigger && !bear.trigger) return null;
+  const keyLevels = extracted?.key_levels || {};
+  const positioning = extracted?.positioning || {};
+  
+  // Build scenarios from key levels
+  const gammaStrike = keyLevels.gamma_strike;
+  const callWall = keyLevels.call_wall;
+  const putWall = keyLevels.put_wall;
+  
+  if (!gammaStrike) return null;
 
   const data: TemplateData = {
-    bull_trigger: bull.trigger || "break above resistance",
-    bull_target: bull.target || "continuation higher",
-    base_trigger: base.trigger || "hold key levels",
-    base_target: base.target || "range-bound action",
-    bear_trigger: bear.trigger || "break below support",
-    bear_target: bear.target || "test lower levels",
+    bull_trigger: callWall ? `reclaim $${Number(callWall).toFixed(0)}` : `break above $${Number(gammaStrike).toFixed(0)} with volume`,
+    bull_target: "positive gamma regime, smoother trends",
+    base_trigger: `hold $${Number(gammaStrike).toFixed(0)} gamma strike`,
+    base_target: "choppy action between key levels",
+    bear_trigger: putWall ? `lose $${Number(putWall).toFixed(0)}` : `break below $${Number(gammaStrike).toFixed(0)}`,
+    bear_target: "negative gamma, volatile selloff",
   };
 
   return renderTemplate("scenario", data);
