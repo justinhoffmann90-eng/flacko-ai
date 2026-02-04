@@ -1,15 +1,18 @@
 /**
  * Tweet Text Generator
  * 
- * Generates ready-to-post tweet text in @ssj100trunks voice.
+ * TWO VOICES:
  * 
- * STYLE RULES:
- * - Always lowercase
- * - Short punchy sentences
- * - White space between ideas
- * - Fun metaphors for complex concepts
- * - Make reader feel smarter
- * - Leave them wanting more
+ * 1. @smdcapital / Flacko AI (Content Hub) - PROFESSIONAL
+ *    - Clean, insightful, data-driven
+ *    - Minimal metaphors - let the data speak
+ *    - Professional but not boring
+ *    - Focus on accuracy and structure
+ * 
+ * 2. @ssj100trunks (Trunks) - PERSONALITY
+ *    - Lowercase, punchy, fun metaphors
+ *    - More playful and experimental
+ *    - Used in educational threads
  */
 
 import { format, parseISO } from "date-fns";
@@ -181,12 +184,11 @@ function getResistanceAction(): string {
 }
 
 /**
- * Generate morning levels tweet in trunks voice.
+ * Generate morning levels tweet - CLEAN PROFESSIONAL STYLE for @smdcapital
  */
 export function generateMorningTweet(data: MorningTweetData): string {
-  const dateFormatted = format(parseISO(data.date), "MMM d").toLowerCase();
+  const dateFormatted = format(parseISO(data.date), "MMM d");
   const modeUpper = data.mode.toUpperCase();
-  const modeMeta = getModeMeta(modeUpper);
   
   // Find key resistance and support levels
   const resistanceLevels = data.levels
@@ -200,35 +202,33 @@ export function generateMorningTweet(data: MorningTweetData): string {
     .slice(0, 2);
   
   const r1 = resistanceLevels[0];
+  const r2 = resistanceLevels[1];
   const s1 = supportLevels[0];
+  const s2 = supportLevels[1];
   
-  let tweet = `tsla levels — ${dateFormatted}\n\n`;
-  tweet += `${data.modeEmoji} ${modeUpper.toLowerCase()} mode\n`;
-  tweet += `${modeMeta}\n\n`;
+  let tweet = `$TSLA Levels — ${dateFormatted}\n\n`;
+  tweet += `${data.modeEmoji} ${modeUpper} Mode | ${data.dailyCap}% daily cap\n\n`;
   
-  if (r1) {
-    tweet += `ceiling: $${r1.price} (${r1.name.toLowerCase()})\n`;
-  }
-  if (s1) {
-    tweet += `floor: $${s1.price} (${s1.name.toLowerCase()})\n`;
-  }
+  if (r1) tweet += `R1: $${r1.price}\n`;
+  if (r2) tweet += `R2: $${r2.price}\n`;
+  if (s1) tweet += `S1: $${s1.price}\n`;
+  if (s2) tweet += `S2: $${s2.price}\n`;
   
-  tweet += `\ndaily cap: ${data.dailyCap}%\n\n`;
-  tweet += `full playbook → flacko.ai`;
+  tweet += `\nFull report → flacko.ai`;
   
   return tweet;
 }
 
 /**
- * Generate EOD accuracy tweet in trunks voice.
+ * Generate EOD accuracy tweet - CLEAN PROFESSIONAL STYLE for @smdcapital
  */
 export function generateEODTweet(data: EODTweetData): string {
-  const dateFormatted = format(parseISO(data.date), "MMM d").toLowerCase();
+  const dateFormatted = format(parseISO(data.date), "MMM d");
   
   // Find best call (hit level with smallest distance)
   const hitLevels = data.results.filter(r => r.status === "hit");
   
-  let tweet = `tsla accuracy check — ${dateFormatted}\n\n`;
+  let tweet = `$TSLA Accuracy — ${dateFormatted}\n\n`;
   
   if (hitLevels.length > 0) {
     const bestHit = hitLevels.sort((a, b) => 
@@ -236,90 +236,46 @@ export function generateEODTweet(data: EODTweetData): string {
     )[0];
     
     const isSupport = bestHit.type === "support";
+    const levelType = isSupport ? "support" : "resistance";
+    const priceType = isSupport ? "Low" : "High";
     
-    if (isSupport) {
-      tweet += `called $${bestHit.price.toFixed(0)} ${getLevelMeta("put_wall")}.\n`;
-      tweet += `actual low: $${bestHit.actualPrice?.toFixed(2)}\n\n`;
-      tweet += `${getSupportAction()}.\n\n`;
-    } else {
-      tweet += `called $${bestHit.price.toFixed(0)} ${getLevelMeta("call_wall")}.\n`;
-      tweet += `actual high: $${bestHit.actualPrice?.toFixed(2)}\n\n`;
-      tweet += `${getResistanceAction()}.\n\n`;
-    }
+    tweet += `Called $${bestHit.price.toFixed(0)} ${levelType}\n`;
+    tweet += `${priceType}: $${bestHit.actualPrice?.toFixed(2)} ✓\n\n`;
   }
   
   const pct = data.accuracy.percentage;
-  const closers = [
-    "structure > opinion.",
-    "pattern recognition pays.",
-    "levels don't lie.",
-    "same playbook, different day.",
-    "the math keeps mathing.",
-  ];
-  const closer = closers[Math.floor(Math.random() * closers.length)];
-  
-  if (pct >= 80) {
-    tweet += `${pct.toFixed(0)}% accuracy. ${closer}\n\n`;
-  } else if (pct >= 60) {
-    tweet += `${pct.toFixed(0)}% accuracy. solid day.\n\n`;
-  } else {
-    tweet += `${pct.toFixed(0)}% accuracy. chaos won this round.\n\n`;
-  }
-  
-  tweet += `track record → flacko.ai/accuracy`;
+  tweet += `${pct.toFixed(0)}% accuracy today\n\n`;
+  tweet += `Track record → flacko.ai/accuracy`;
   
   return tweet;
 }
 
 /**
- * Generate forecast vs actual tweet in trunks voice.
+ * Generate forecast vs actual tweet - CLEAN PROFESSIONAL STYLE for @smdcapital
  */
 export function generateForecastTweet(data: ForecastTweetData): string {
-  const dateFormatted = format(parseISO(data.date), "MMM d").toLowerCase();
+  const dateFormatted = format(parseISO(data.date), "MMM d");
   
   // Group results
   const held = data.results.filter(r => r.status === "held");
   const broken = data.results.filter(r => r.status === "broken");
   const notTested = data.results.filter(r => r.status === "not_tested");
   
-  let tweet = `morning forecast vs reality — ${dateFormatted}\n\n`;
+  let tweet = `$TSLA Forecast vs Actual — ${dateFormatted}\n\n`;
   
-  // Highlight key results
-  if (held.length > 0) {
-    const bestHold = held[0];
-    const typeWord = bestHold.type === "support" ? "floor" : "ceiling";
-    tweet += `called $${bestHold.price.toFixed(0)} ${typeWord} → held ✅\n`;
+  // Show results cleanly
+  for (const result of data.results.slice(0, 4)) {
+    const icon = result.status === "held" ? "✓" : result.status === "broken" ? "✗" : "—";
+    const type = result.type === "support" ? "S" : "R";
+    tweet += `${icon} ${type}: $${result.price.toFixed(0)}`;
+    if (result.actualPrice && result.status !== "not_tested") {
+      tweet += ` → $${result.actualPrice.toFixed(2)}`;
+    }
+    tweet += `\n`;
   }
   
-  if (broken.length > 0) {
-    const worstBreak = broken[0];
-    const typeWord = worstBreak.type === "support" ? "floor" : "ceiling";
-    tweet += `$${worstBreak.price.toFixed(0)} ${typeWord} → broke ❌\n`;
-  }
-  
-  if (notTested.length > 0 && notTested.length <= 2) {
-    tweet += `${notTested.length} level${notTested.length > 1 ? 's' : ''} not tested\n`;
-  }
-  
-  tweet += `\n`;
-  
-  // Summary with personality
-  const pct = data.accuracy.percentage;
-  if (pct >= 80) {
-    tweet += `${pct.toFixed(0)}% accuracy.\n\n`;
-    tweet += `same patterns. same outcomes.\n`;
-    tweet += `structure doesn't lie.`;
-  } else if (pct >= 60) {
-    tweet += `${pct.toFixed(0)}% accuracy.\n\n`;
-    tweet += `some chaos, but levels mostly held.\n`;
-    tweet += `good enough to stay profitable.`;
-  } else {
-    tweet += `${pct.toFixed(0)}% accuracy.\n\n`;
-    tweet += `wild day broke the playbook.\n`;
-    tweet += `that's why we have modes.`;
-  }
-  
-  tweet += `\n\n$tsla`;
+  tweet += `\n${data.accuracy.percentage.toFixed(0)}% accuracy\n\n`;
+  tweet += `Track record → flacko.ai/accuracy`;
   
   return tweet;
 }
@@ -330,90 +286,88 @@ function formatModePrice(value?: number | null) {
 }
 
 /**
- * Generate mode tweet in trunks voice with metaphors.
+ * Generate mode tweet - CLEAN PROFESSIONAL STYLE for @smdcapital
  */
 export function generateModeTweet(data: ModeTweetData): string {
-  const dateFormatted = format(parseISO(data.date), "MMM d").toLowerCase();
+  const dateFormatted = format(parseISO(data.date), "MMM d");
   const modeUpper = data.mode.toUpperCase();
-  const modeMeta = getModeMeta(modeUpper);
   const dailyCapText = String(data.dailyCap).replace('%', '');
   
-  let tweet = `tsla mode — ${dateFormatted}\n\n`;
-  tweet += `${modeUpper.toLowerCase()} mode.\n`;
-  tweet += `${modeMeta}\n\n`;
+  let tweet = `$TSLA Mode — ${dateFormatted}\n\n`;
+  tweet += `${getModeEmoji(modeUpper)} ${modeUpper} Mode\n`;
+  tweet += `Daily Cap: ${dailyCapText}%\n\n`;
   
-  // Key levels with rotating metaphors
+  // Key levels - clean labels
   if (data.levels.call_wall) {
-    tweet += `${getLevelMeta("call_wall")}: $${data.levels.call_wall.toFixed(0)}\n`;
+    tweet += `Call Wall: $${data.levels.call_wall.toFixed(0)}\n`;
   }
   if (data.levels.gamma_strike) {
-    tweet += `${getLevelMeta("gamma_strike")}: $${data.levels.gamma_strike.toFixed(0)}\n`;
+    tweet += `Gamma Strike: $${data.levels.gamma_strike.toFixed(0)}\n`;
   }
   if (data.levels.put_wall) {
-    tweet += `${getLevelMeta("put_wall")}: $${data.levels.put_wall.toFixed(0)}\n`;
+    tweet += `Put Wall: $${data.levels.put_wall.toFixed(0)}\n`;
   }
   
-  tweet += `\nmax exposure: ${dailyCapText}%\n\n`;
-  tweet += `full report → flacko.ai`;
+  tweet += `\nFull report → flacko.ai`;
   
   return tweet;
 }
 
+function getModeEmoji(mode: string): string {
+  const m = mode.toUpperCase();
+  if (m.includes('GREEN')) return '🟢';
+  if (m.includes('YELLOW')) return '🟡';
+  if (m.includes('ORANGE')) return '🟠';
+  if (m.includes('RED')) return '🔴';
+  return '🟡';
+}
+
 /**
- * Generate alternative tweet variations in trunks voice.
- * Returns 3 different styles for the same content.
+ * Generate alternative tweet variations - CLEAN PROFESSIONAL STYLE for @smdcapital
+ * Returns 3 different approaches for the same content.
  */
 export function generateTweetVariations(data: EODTweetData): string[] {
-  const dateFormatted = format(parseISO(data.date), "MMM d").toLowerCase();
+  const dateFormatted = format(parseISO(data.date), "MMM d");
   const hitLevels = data.results.filter(r => r.status === "hit");
   
   const variations: string[] = [];
   
-  // Variation 1: Story-focused
+  // Variation 1: Highlight best call
   if (hitLevels.length > 0) {
     const bestHit = hitLevels[0];
-    const typeWord = bestHit.type === "support" ? "floor" : "ceiling";
+    const levelType = bestHit.type === "support" ? "support" : "resistance";
     variations.push(
-      `tsla — ${dateFormatted}\n\n` +
-      `morning: "watch $${bestHit.price.toFixed(0)} as ${typeWord}"\n` +
-      `market: tests $${bestHit.actualPrice?.toFixed(2)}, bounces\n\n` +
-      `same script. different day.\n\n` +
-      `${data.accuracy.percentage.toFixed(0)}% accuracy → flacko.ai`
+      `$TSLA — ${dateFormatted}\n\n` +
+      `Called $${bestHit.price.toFixed(0)} ${levelType}\n` +
+      `Actual: $${bestHit.actualPrice?.toFixed(2)} ✓\n\n` +
+      `${data.accuracy.percentage.toFixed(0)}% accuracy today\n\n` +
+      `flacko.ai/accuracy`
     );
   }
   
-  // Variation 2: Minimalist
+  // Variation 2: Stats breakdown
   variations.push(
-    `tsla levels — ${dateFormatted}\n\n` +
-    `✅ ${data.accuracy.hit} held\n` +
-    `❌ ${data.accuracy.broken || 0} broke\n` +
-    `➖ ${data.accuracy.notTested || 0} not tested\n\n` +
-    `${data.accuracy.percentage.toFixed(0)}%\n\n` +
-    `structure works. → flacko.ai`
+    `$TSLA Levels — ${dateFormatted}\n\n` +
+    `✓ ${data.accuracy.hit} held\n` +
+    `✗ ${data.accuracy.broken || 0} broken\n` +
+    `— ${data.accuracy.notTested || 0} not tested\n\n` +
+    `${data.accuracy.percentage.toFixed(0)}% accuracy\n\n` +
+    `flacko.ai`
   );
   
-  // Variation 3: Insight-focused
+  // Variation 3: Simple insight
   if (hitLevels.length > 0) {
     const supportHits = hitLevels.filter(h => h.type === "support");
+    const insight = supportHits.length > 0 
+      ? "Support levels held as expected"
+      : "Resistance levels capped price as expected";
     
-    if (supportHits.length > 0) {
-      variations.push(
-        `tsla — ${dateFormatted}\n\n` +
-        `support held where dealers had to buy.\n\n` +
-        `not magic. not luck.\n` +
-        `just understanding who's forced to do what.\n\n` +
-        `${data.accuracy.percentage.toFixed(0)}% accuracy\n\n` +
-        `track record → flacko.ai/accuracy`
-      );
-    } else {
-      variations.push(
-        `tsla — ${dateFormatted}\n\n` +
-        `resistance capped exactly where dealers hedge.\n\n` +
-        `the ceiling bouncer showed up on schedule.\n\n` +
-        `${data.accuracy.percentage.toFixed(0)}% accuracy\n\n` +
-        `track record → flacko.ai/accuracy`
-      );
-    }
+    variations.push(
+      `$TSLA — ${dateFormatted}\n\n` +
+      `${insight}\n\n` +
+      `${data.accuracy.percentage.toFixed(0)}% accuracy\n\n` +
+      `Track record → flacko.ai/accuracy`
+    );
   }
   
   return variations;
