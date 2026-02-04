@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateTweetDrafts } from "@/lib/tweets/generator";
+import { format } from "date-fns";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -21,7 +22,9 @@ export async function POST() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const drafts = await generateTweetDrafts();
+    // Use today's date by default
+    const today = format(new Date(), "yyyy-MM-dd");
+    const drafts = await generateTweetDrafts(today);
 
     if (drafts.length === 0) {
       return NextResponse.json({ error: "No drafts generated" }, { status: 400 });

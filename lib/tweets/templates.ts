@@ -2,31 +2,34 @@ export type TweetTemplateType = "level" | "mode" | "scenario" | "keyLevel";
 
 export const templates: Record<TweetTemplateType, string[]> = {
   level: [
-    `yesterday's \${level_name} at $\${level_price} \${level_result}.
+    `\${level_name} at $\${level_price} \${level_result}.
 
-called it in the morning report before market open.
+this is where dealer hedging creates a structural pivot.
 
-most traders react to levels after they break.
+above it: bullish regime.
+below it: bearish regime.
 
-the edge is knowing them before.
+know the line before it matters.
 
 $TSLA`,
 
-    `\${level_name} = $\${level_price}.
-
-price \${level_action}: $\${actual_price}.
+    `$\${level_price} = today's \${level_name}.
 
 \${level_emoji} \${level_result}.
 
-not magic. just structure.
+not magic. just math.
+
+dealers hedge options at these prices.
+
+their hedging moves the stock.
 
 $TSLA`,
 
-    `the \${level_name} at $\${level_price} \${level_result}.
+    `the \${level_name} is $\${level_price}.
 
 dealers don't guess these levels.
 
-they're mathematically forced to defend them.
+they're calculated from options positioning.
 
 knowing where = knowing when.
 
@@ -34,13 +37,13 @@ $TSLA`,
   ],
 
   mode: [
-    `\${mode} mode yesterday.
-
-tsla swung \${intraday_move_pct}% intraday.
+    `\${mode} mode today.
 
 max position size: \${daily_cap}%.
 
-small size on volatile days = still in the game today.
+\${mode_reason}
+
+small size on uncertain days = still trading tomorrow.
 
 the best trade is often the smallest one.
 
@@ -50,11 +53,9 @@ $TSLA`,
 
 \${mode_reason}
 
-yesterday's range: \${intraday_move_pct}%.
+traders who ignore the mode get chopped.
 
-traders who ignored the mode got chopped.
-
-traders who respected it kept their capital.
+traders who respect it keep their capital.
 
 system > feelings.
 
@@ -62,47 +63,37 @@ $TSLA`,
 
     `\${mode} mode = \${daily_cap}% max size.
 
-tsla moved \${intraday_move_pct}% intraday.
+the casino sets the rules.
 
-the casino was volatile.
-
-smart players bet small.
+smart players adjust their bets.
 
 $TSLA`,
   ],
 
   scenario: [
-    `morning prediction: \${scenario_prediction}
-
-actual:
-high $\${high}
-low $\${low}
-close $\${close}
-
-not psychic. just pattern recognition.
-
-$TSLA`,
-
-    `\${scenario_name} case played out.
-
-called it at 7am.
-
-range: $\${low} – $\${high}
-close: $\${close}
+    `base case: \${scenario_prediction}
 
 structure tells you what's probable.
 
 price confirms.
 
 $TSLA`,
+
+    `\${scenario_name} scenario in play.
+
+\${scenario_prediction}
+
+watch the levels. they'll tell you which way.
+
+$TSLA`,
   ],
 
   keyLevel: [
-    `\${key_level_name} at $\${key_level_price}.
+    `\${key_level_name} at $\${key_level_price} \${key_level_result}.
 
-price \${key_level_result}.
+this isn't a random line on a chart.
 
-this level isn't random. it's where dealer hedging forces action.
+it's where dealer hedging forces action.
 
 knowing the level = knowing the setup.
 
@@ -110,7 +101,7 @@ $TSLA`,
 
     `\${key_level_name} = $\${key_level_price}.
 
-result: \${key_level_result}.
+\${key_level_result}.
 
 most traders draw lines randomly.
 
@@ -120,7 +111,7 @@ different game.
 
 $TSLA`,
 
-    `yesterday's \${key_level_name} ($\${key_level_price}):
+    `$\${key_level_price} \${key_level_name}:
 
 \${key_level_result}.
 
