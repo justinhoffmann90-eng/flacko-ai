@@ -40,8 +40,9 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.user_id;
+        let userId = session.metadata?.user_id;
         const priceTier = parseInt(session.metadata?.price_tier || "1");
+        const customerEmail = session.customer_email || session.customer_details?.email;
         
         // Get actual price from Stripe subscription (includes coupon discounts)
         let lockedPriceCents = parseInt(session.metadata?.locked_price_cents || "2999");
@@ -64,6 +65,61 @@ export async function POST(request: Request) {
             }
           } catch (e) {
             console.error("Failed to fetch subscription for price calculation:", e);
+          }
+        }
+
+        // NEW FLOW: If no user_id, create user from Stripe email (direct checkout)
+        if (!userId && customerEmail) {
+          console.log(`[DIRECT CHECKOUT] Creating user for ${customerEmail}`);
+          
+          // Check if user already exists
+          const { data: users } = await supabase.auth.admin.listUsers();
+          const existingUser = users?.users?.find(u => u.email === customerEmail);
+          
+          if (existingUser) {
+            userId = existingUser.id;
+            console.log(`[DIRECT CHECKOUT] Found existing user ${userId} for ${customerEmail}`);
+          } else {
+            // Create new user
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+              email: customerEmail,
+              email_confirm: true,
+            });
+            
+            if (authError) {
+              console.error(`[DIRECT CHECKOUT] Failed to create user for ${customerEmail}:`, authError);
+              // Alert via Telegram
+              await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: process.env.TELEGRAM_CHAT_ID,
+                  text: `🚨 **Direct Checkout User Creation Failed**\n\nEmail: ${customerEmail}\nSession: ${session.id}\nError: ${authError.message}`,
+                  parse_mode: 'Markdown'
+                })
+              }).catch(console.error);
+            } else if (authData?.user) {
+              userId = authData.user.id;
+              console.log(`[DIRECT CHECKOUT] Created user ${userId} for ${customerEmail}`);
+              
+              // Create user record
+              await supabase.from("users").insert({
+                id: userId,
+                email: customerEmail,
+                x_handle: "@unknown",
+              });
+            }
+          }
+          
+          // Update subscription metadata with user_id for future webhook events
+          if (userId && session.subscription) {
+            try {
+              await getStripe().subscriptions.update(session.subscription as string, {
+                metadata: { user_id: userId },
+              });
+            } catch (e) {
+              console.error("Failed to update subscription metadata:", e);
+            }
           }
         }
 

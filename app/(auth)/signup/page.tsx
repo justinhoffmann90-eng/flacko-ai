@@ -3,69 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Check } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 
 export default function SignupPage() {
-  const [email, setEmail] = useState("");
-  const [xHandle, setXHandle] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [leadCaptured, setLeadCaptured] = useState(false);
 
-  // Capture lead when user leaves email field
-  const captureLead = async () => {
-    if (!email || leadCaptured || !email.includes("@")) return;
-    setLeadCaptured(true);
-    try {
-      await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, xHandle, source: "signup" }),
-      });
-    } catch {
-      // Silent fail - lead capture is non-critical
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const handleJoin = async () => {
     setLoading(true);
-
-    // Clean up X handle - remove @ if provided
-    const cleanHandle = xHandle.trim().replace(/^@/, "");
-
     try {
-      // Combined signup + checkout in one call
-      const response = await fetch("/api/signup-checkout", {
+      const response = await fetch("/api/create-checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, xHandle: cleanHandle || null }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        if (data.error?.includes("Already subscribed")) {
-          setError("this email already has an active subscription. please sign in.");
-        } else if (data.error?.includes("Failed to create")) {
-          setError("could not create account. please try again.");
-        } else {
-          setError(data.error || "something went wrong. please try again.");
-        }
-        setLoading(false);
-        return;
-      }
-
+      
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        setLoading(false);
+        alert(data.error || "Something went wrong. Please try again.");
       }
     } catch {
-      setError("something went wrong. please try again.");
       setLoading(false);
+      alert("Something went wrong. Please try again.");
     }
   };
 
@@ -118,7 +77,7 @@ export default function SignupPage() {
             "spotgamma dealer flow — see what institutions see",
             "mode system — attack vs defend",
             "trade alongside disciplined tsla investors",
-            "$500/mo of institutional flow data — included",
+            "$700/mo of institutional flow data — included",
             "private discord — execute with the gang",
           ].map((item) => (
             <div key={item} className="flex items-start gap-2.5 sm:gap-3">
@@ -131,74 +90,26 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Value Leverage */}
-      <div className="text-center px-2">
-        <div className="text-[13px] sm:text-sm text-zinc-400 mb-1.5 sm:mb-2">
-          you'll leverage <span className="text-emerald-400 font-semibold">$800/mo</span> in institutional data & tools:
-        </div>
-        <div className="text-[11px] sm:text-[12px] text-zinc-500 leading-relaxed">
-          <span className="text-zinc-400">fs insight</span> <span className="text-zinc-600">(macro & technical)</span> · <span className="text-zinc-400">spotgamma</span> <span className="text-zinc-600">(alpha, hiro)</span>
-          <br />
-          <span className="text-zinc-400">ai agents & infra</span> <span className="text-zinc-600">(claude max, grok, m4 mini)</span>
-        </div>
-      </div>
-
-      {/* Signup Form */}
-      <div className="bg-zinc-900/50 rounded-xl p-4 sm:p-5 border border-zinc-800">
-        <form onSubmit={handleSignup} autoComplete="on" className="space-y-3 sm:space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="email" className="text-zinc-300 text-sm">email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={captureLead}
-              required
-              autoComplete="email"
-              autoFocus
-              disabled={loading}
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 h-10 sm:h-11"
-            />
-          </div>
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="xHandle" className="text-zinc-300 text-sm">x (twitter) username <span className="text-zinc-500 font-normal">(optional)</span></Label>
-            <Input
-              id="xHandle"
-              name="xHandle"
-              type="text"
-              placeholder="@yourhandle"
-              value={xHandle}
-              onChange={(e) => setXHandle(e.target.value)}
-              disabled={loading}
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 h-10 sm:h-11"
-            />
-          </div>
-          <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 h-10 sm:h-11 text-sm sm:text-base font-medium" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                redirecting...
-              </>
-            ) : (
-              "join the gang ⚔️"
-            )}
-          </Button>
-        </form>
-      </div>
+      {/* Join Button */}
+      <Button 
+        onClick={handleJoin}
+        className="w-full bg-white text-black hover:bg-zinc-200 h-11 sm:h-12 text-sm sm:text-base font-medium" 
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            redirecting to checkout...
+          </>
+        ) : (
+          "join the gang ⚔️"
+        )}
+      </Button>
 
       {/* Price Tier Ladder */}
       <div>
         <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-zinc-600 mb-2.5 sm:mb-3 text-center">
-          price increases every 50 members
+          lock in your price — increases every 50 members
         </p>
         <div className="space-y-1.5 sm:space-y-2">
           {[
@@ -235,13 +146,22 @@ export default function SignupPage() {
             </div>
           ))}
         </div>
+        <p className="text-xs text-zinc-500 text-center mt-3">
+          your rate stays locked forever — price only increases for new members
+        </p>
       </div>
 
-      <p className="text-[10px] sm:text-xs text-zinc-500 text-center pb-2">
-        by subscribing, you agree to our{" "}
-        <Link href="/terms" className="underline hover:text-zinc-300">terms</Link> and{" "}
-        <Link href="/privacy" className="underline hover:text-zinc-300">privacy policy</Link>
-      </p>
+      <div className="text-center space-y-2 pb-2">
+        <p className="text-[10px] sm:text-xs text-zinc-500">
+          by subscribing, you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-zinc-300">terms</Link> and{" "}
+          <Link href="/privacy" className="underline hover:text-zinc-300">privacy policy</Link>
+        </p>
+        <p className="text-[10px] sm:text-xs text-zinc-600">
+          already a member?{" "}
+          <Link href="/login" className="underline hover:text-zinc-300">sign in</Link>
+        </p>
+      </div>
     </div>
   );
 }
