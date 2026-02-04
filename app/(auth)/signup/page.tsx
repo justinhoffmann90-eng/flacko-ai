@@ -52,7 +52,7 @@ export default function SignupPage() {
           flacko ai
         </p>
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-          count me in ⚔️
+          join the gang ⚔️
         </h1>
         <p className="text-sm text-zinc-400">
           daily war briefings, price alerts, and a system that tells you when to pay attention.
