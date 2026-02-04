@@ -71,6 +71,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Debug endpoints (temporary)
+  if (request.nextUrl.pathname.startsWith("/api/debug")) {
+    return supabaseResponse;
+  }
+
   // Alert debug endpoint (uses Bearer token auth like cron)
   if (request.nextUrl.pathname.startsWith("/api/alerts/debug")) {
     return supabaseResponse;
