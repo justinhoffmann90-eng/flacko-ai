@@ -22,9 +22,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Use Chicago timezone for today's date
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-    console.log(`[Tweet Generate] Using date: ${today}, UTC now: ${new Date().toISOString()}`);
+    // Use Chicago timezone for today's date - reliable method
+    const formatter = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'America/Chicago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const today = formatter.format(new Date());
+    console.log(`[Tweet Generate] Chicago date: ${today}`);
     const drafts = await generateTweetDrafts(today);
 
     if (drafts.length === 0) {

@@ -13,10 +13,19 @@ interface TemplateData {
 
 const MAX_TWEET_LENGTH = 4000; // X premium allows longer posts
 
+function getChicagoDate(): string {
+  const formatter = new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'America/Chicago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  return formatter.format(new Date());
+}
+
 export async function generateTweetDrafts(date?: string): Promise<TweetDraftInput[]> {
-  // Use Chicago timezone for "today"
-  const targetDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  console.log(`[Tweet Generator] Target date: ${targetDate}, input date: ${date}`);
+  const targetDate = date || getChicagoDate();
+  console.log(`[Tweet Generator] Target date: ${targetDate}`);
   const supabase = await createServiceClient();
 
   const { data: report, error: reportError } = await supabase
