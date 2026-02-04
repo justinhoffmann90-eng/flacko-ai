@@ -726,11 +726,13 @@ export default function LandingPageV4() {
             <p className="text-[11px] uppercase tracking-widest text-zinc-500 mb-4">what you get</p>
             <div className="space-y-3 text-sm text-zinc-300">
               {[
-                "daily tsla reports before market open",
-                "price alerts via discord and email",
-                "mode and tier system for risk management",
-                "key levels from spotgamma flow data",
-                "private discord community",
+                "daily war briefings before you wake up",
+                "get pinged at key levels — with exactly what to do",
+                "spotgamma dealer flow — see what institutions see",
+                "mode system — attack vs defend",
+                "trade alongside disciplined tsla investors",
+                "$500/mo of institutional flow data — included",
+                "private discord — execute with the gang",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
                   <span className="w-5 h-5 rounded-full bg-white text-black text-xs flex items-center justify-center flex-shrink-0">
