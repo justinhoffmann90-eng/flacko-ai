@@ -21,21 +21,20 @@ export async function POST() {
   try {
     const stripe = getStripe();
     
-    // Use explicit URLs to avoid any env var issues
-    const baseUrl = "https://www.flacko.ai";
+    // Use same URL format as working signup-checkout endpoint
+    const baseUrl = "https://flacko.ai";
     
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
+      allow_promotion_codes: true,
       line_items: [
         {
           price: PRICE_ID,
           quantity: 1,
         },
       ],
-      // Let Stripe collect the email - no customer_email means they enter it
-      customer_creation: "always",
-      // Metadata for webhook
+      // Metadata for webhook to create user
       metadata: {
         source: "direct_checkout",
         price_tier: "1",
@@ -47,9 +46,8 @@ export async function POST() {
           price_tier: "1",
         },
       },
-      success_url: baseUrl + "/welcome?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: baseUrl + "/signup?canceled=true",
-      allow_promotion_codes: true,
+      success_url: `${baseUrl}/welcome`,
+      cancel_url: `${baseUrl}/signup?canceled=true`,
     });
 
     if (!session.url) {
