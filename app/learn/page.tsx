@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Bell,
   BookOpen,
+  Brain,
   ChevronRight,
   FileText,
   Gauge,
@@ -16,7 +17,7 @@ import {
   Target,
   TrendingUp,
   TrafficCone,
-  Brain,
+  Zap,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -29,8 +30,8 @@ export const revalidate = 3600;
 
 const lessonGroups = [
   {
-    title: "Flacko Philosophy",
-    description: "The mindset and system behind every trade.",
+    title: "Using Flacko AI",
+    description: "How to use the system day-to-day.",
     lessons: [
       {
         title: "Modes",
@@ -41,6 +42,33 @@ const lessonGroups = [
         badge: "Start here",
       },
       {
+        title: "Reports",
+        description: "Read the daily report and extract the edge.",
+        time: "10 min",
+        href: "/learn/reports",
+        icon: <FileText className="h-5 w-5" />,
+      },
+      {
+        title: "Alerts",
+        description: "How alerts fire and what to do when price hits.",
+        time: "3 min",
+        href: "/learn/alerts",
+        icon: <Bell className="h-5 w-5" />,
+      },
+      {
+        title: "Weekly Review",
+        description: "Analyze the week and prepare for the next.",
+        time: "7 min",
+        href: "/learn/weekly-review",
+        icon: <FileText className="h-5 w-5" />,
+      },
+    ],
+  },
+  {
+    title: "Flacko Philosophy",
+    description: "The rationale and logic behind the operating system.",
+    lessons: [
+      {
         title: "Why Structure Matters",
         description: "Trade with a plan, not emotions.",
         time: "4 min",
@@ -49,17 +77,24 @@ const lessonGroups = [
       },
       {
         title: "Position Sizing",
-        description: "Scale in smart — size based on mode and conviction.",
+        description: "Why we size based on mode and conviction.",
         time: "6 min",
         href: "/learn/position-sizing",
         icon: <Gauge className="h-5 w-5" />,
       },
       {
         title: "Master Eject",
-        description: "The exit level that protects your capital.",
+        description: "Why capital protection comes first.",
         time: "4 min",
         href: "/learn/master-eject",
         icon: <Shield className="h-5 w-5" />,
+      },
+      {
+        title: "Scenarios",
+        description: "Why we think in probabilities, not predictions.",
+        time: "5 min",
+        href: "/learn/scenarios",
+        icon: <Target className="h-5 w-5" />,
       },
     ],
   },
@@ -75,10 +110,31 @@ const lessonGroups = [
         icon: <TrendingUp className="h-5 w-5" />,
       },
       {
-        title: "Levels",
-        description: "Call Wall, Put Wall, Gamma Strike — key zones.",
-        time: "8 min",
-        href: "/learn/levels",
+        title: "Gamma Strike",
+        description: "The highest gamma level — where reactions are strongest.",
+        time: "4 min",
+        href: "/learn/gamma-strike",
+        icon: <Zap className="h-5 w-5" />,
+      },
+      {
+        title: "Call Wall",
+        description: "The upside magnet where hedging creates resistance.",
+        time: "3 min",
+        href: "/learn/call-wall",
+        icon: <TrendingUp className="h-5 w-5" />,
+      },
+      {
+        title: "Put Wall",
+        description: "The downside floor where hedging creates support.",
+        time: "3 min",
+        href: "/learn/put-wall",
+        icon: <TrendingUp className="h-5 w-5" />,
+      },
+      {
+        title: "Hedge Wall",
+        description: "Where institutional hedging creates a ceiling.",
+        time: "3 min",
+        href: "/learn/hedge-wall",
         icon: <Layers className="h-5 w-5" />,
       },
       {
@@ -114,40 +170,6 @@ const lessonGroups = [
         time: "5 min",
         href: "/learn/slow-zone",
         icon: <Sparkles className="h-5 w-5" />,
-      },
-      {
-        title: "Scenarios",
-        description: "Bull, base, bear — how probabilities shape bias.",
-        time: "5 min",
-        href: "/learn/scenarios",
-        icon: <Target className="h-5 w-5" />,
-      },
-    ],
-  },
-  {
-    title: "Using Flacko AI",
-    description: "Get the most out of reports, alerts, and reviews.",
-    lessons: [
-      {
-        title: "Reports",
-        description: "Read the daily report and extract the edge.",
-        time: "10 min",
-        href: "/learn/reports",
-        icon: <FileText className="h-5 w-5" />,
-      },
-      {
-        title: "Alerts",
-        description: "How alerts fire and what to do when price hits.",
-        time: "3 min",
-        href: "/learn/alerts",
-        icon: <Bell className="h-5 w-5" />,
-      },
-      {
-        title: "Weekly Review",
-        description: "Analyze the week and prepare for the next.",
-        time: "7 min",
-        href: "/learn/weekly-review",
-        icon: <FileText className="h-5 w-5" />,
       },
     ],
   },
