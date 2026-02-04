@@ -1,7 +1,45 @@
 import { ExtractedReportData, ParsedReportData, ReportAlert, TrafficLightMode, TierSignal, TierSignals, Positioning, LevelMapEntry } from "@/types";
 import matter from "gray-matter";
 
-export const PARSER_VERSION = "3.5.0"; // v3.5 tier naming (long/medium/short/hourly) + pause_zone + HIRO data
+export const PARSER_VERSION = "3.5.1"; // v3.5.1 clearer action language (no "X% of cap" math)
+
+/**
+ * Transform action text to be clearer for subscribers
+ * Converts "Nibble 10% of cap" → "Starter position only" etc.
+ * The "X% of cap" language creates confusing math (10% of 10% daily cap = 1%)
+ */
+function clarifyActionText(action: string | null): string | null {
+  if (!action) return action;
+  
+  const lower = action.toLowerCase();
+  
+  // Nibble patterns → "Starter position only"
+  if (lower.includes('nibble') && lower.includes('% of cap')) {
+    return 'Starter position only';
+  }
+  if (lower.includes('nibble') && lower.includes('cap')) {
+    return 'Starter position only';
+  }
+  
+  // Trim patterns → keep but simplify if needed
+  if (lower.includes('trim') && lower.includes('% of cap')) {
+    // Extract the percentage for trim
+    const match = action.match(/trim\s*(\d+)%/i);
+    if (match) {
+      return `Trim ${match[1]}%`;
+    }
+  }
+  
+  // Add patterns → "Add to position"
+  if (lower.includes('add') && lower.includes('% of cap')) {
+    const match = action.match(/add\s*(\d+)%/i);
+    if (match) {
+      return `Add ${match[1]}% to position`;
+    }
+  }
+  
+  return action;
+}
 
 // Interface for level in frontmatter (v3.1)
 interface FrontmatterLevel {
@@ -662,7 +700,7 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type,
       level_name: isMasterEject ? "Master Eject ⚠️" : level.name,
       price: level.price,
-      action: isMasterEject ? "EXIT ALL if daily close below" : level.action,
+      action: isMasterEject ? "EXIT ALL if daily close below" : clarifyActionText(level.action) || level.action,
       reason,
     });
   }
