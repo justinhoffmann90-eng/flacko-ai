@@ -1,16 +1,27 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Lazy-load Stripe to avoid build-time errors
+let _stripe: Stripe | null = null;
 
-// Price IDs
+function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is not set");
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY.trim());
+  }
+  return _stripe;
+}
+
+// Price ID - LIVE MODE
 const FOUNDER_PRICE_ID = "price_1SuK6dRNdSDJbZbl4uNc0EkH"; // $29.99/mo
 
 export async function POST() {
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.flacko.ai";
     
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [
