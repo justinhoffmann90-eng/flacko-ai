@@ -14,25 +14,28 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
-// Price ID - LIVE MODE
-const FOUNDER_PRICE_ID = "price_1SuK6dRNdSDJbZbl4uNc0EkH"; // $29.99/mo
+// Price ID - LIVE MODE (same as lib/stripe/server.ts)
+const PRICE_ID = "price_1SuK6dRNdSDJbZbl4uNc0EkH"; // $29.99/mo
 
 export async function POST() {
   try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.flacko.ai";
+    const stripe = getStripe();
     
-    const session = await getStripe().checkout.sessions.create({
+    // Use explicit URLs to avoid any env var issues
+    const baseUrl = "https://www.flacko.ai";
+    
+    const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [
         {
-          price: FOUNDER_PRICE_ID,
+          price: PRICE_ID,
           quantity: 1,
         },
       ],
-      // Let Stripe collect the email
+      // Let Stripe collect the email - no customer_email means they enter it
       customer_creation: "always",
-      // Metadata for webhook to identify this is a new signup
+      // Metadata for webhook
       metadata: {
         source: "direct_checkout",
         price_tier: "1",
@@ -44,11 +47,15 @@ export async function POST() {
           price_tier: "1",
         },
       },
-      success_url: `${appUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/signup?canceled=true`,
-      // Allow promotion codes
+      success_url: baseUrl + "/welcome?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: baseUrl + "/signup?canceled=true",
       allow_promotion_codes: true,
     });
+
+    if (!session.url) {
+      console.error("Stripe session created but no URL returned:", session);
+      return NextResponse.json({ error: "Stripe did not return a checkout URL" }, { status: 500 });
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
