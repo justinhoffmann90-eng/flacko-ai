@@ -43,7 +43,7 @@ export default function LandingPageV4() {
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
           <span className="font-semibold text-zinc-200">flacko ai</span>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-zinc-400 hidden sm:block">47 of 50 spots claimed</span>
+            <span className="text-sm text-zinc-400 hidden sm:block">39 of 50 spots claimed</span>
             <Link href="/signup">
               <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
                 join the gang ⚔️
@@ -731,7 +731,7 @@ export default function LandingPageV4() {
                 "spotgamma dealer flow — see what institutions see",
                 "mode system — attack vs defend",
                 "trade alongside disciplined tsla investors",
-                "$500/mo of institutional flow data — included",
+                "$700/mo of institutional flow data — included",
                 "private discord — execute with the gang",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
@@ -752,7 +752,7 @@ export default function LandingPageV4() {
 
           {/* Price Tier Ladder */}
           <p className="text-[11px] uppercase tracking-widest text-zinc-600 mt-8 mb-4 text-center">
-            price increases every 50 members
+            lock in your price — increases every 50 members
           </p>
 
           <div className="space-y-2">
@@ -790,6 +790,10 @@ export default function LandingPageV4() {
               </div>
             ))}
           </div>
+          
+          <p className="text-xs text-zinc-500 text-center mt-3">
+            your rate stays locked forever — price only increases for new members
+          </p>
         </div>
       </section>
 
