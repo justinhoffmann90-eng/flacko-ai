@@ -138,8 +138,11 @@ function buildHiroTweet(date: string, extracted: any): string | null {
     context = "deeply negative — institutions actively hedging/selling";
   }
 
-  // Format reading in millions
-  const readingStr = `${reading > 0 ? '+' : ''}${reading}M`;
+  // Format reading in millions (it's a dollar value, not percentage)
+  const absReading = Math.abs(reading);
+  const readingStr = reading >= 0 
+    ? `+$${absReading}M` 
+    : `-$${absReading}M`;
 
   const data: TemplateData = {
     hiro_reading: readingStr,
