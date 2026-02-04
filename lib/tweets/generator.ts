@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import { createServiceClient } from "@/lib/supabase/server";
 import { templates, type TweetTemplateType } from "./templates";
 
@@ -15,7 +14,8 @@ interface TemplateData {
 const MAX_TWEET_LENGTH = 4000; // X premium allows longer posts
 
 export async function generateTweetDrafts(date?: string): Promise<TweetDraftInput[]> {
-  const targetDate = date || format(new Date(), "yyyy-MM-dd");
+  // Use Chicago timezone for "today"
+  const targetDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
   const supabase = await createServiceClient();
 
   const { data: report, error: reportError } = await supabase

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateTweetDrafts } from "@/lib/tweets/generator";
-import { format } from "date-fns";
 
 export async function POST(request: Request) {
   try {
@@ -22,8 +21,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Use today's date by default
-    const today = format(new Date(), "yyyy-MM-dd");
+    // Use Chicago timezone for today's date
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     const drafts = await generateTweetDrafts(today);
 
     if (drafts.length === 0) {
