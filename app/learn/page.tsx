@@ -7,13 +7,14 @@ import {
   ArrowRight,
   Bell,
   CheckCircle2,
+  ChevronRight,
   FileText,
+  Gauge,
   Layers,
+  LineChart,
   Sparkles,
   Target,
   TrafficCone,
-  TrendingUp,
-  Wand2,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -104,7 +105,7 @@ const modeCaps = {
   {
     id: "levels",
     title: "Key Levels (Call/Put Walls)",
-    summary: "Map the battlefield before the bell — where dealers are hedged and price reacts.",
+    summary: "Map the battlefield before the open — where dealers are hedged and price reacts.",
     bullets: [
       "Gamma Strike = highest reaction zone.",
       "Call Wall = upside magnet until it breaks.",
@@ -135,90 +136,56 @@ if (canTrade) executePlan();`,
   },
 ];
 
+const systemFlow = [
+  { label: "Market Data", sublabel: "Options flow, gamma levels, technicals", icon: LineChart },
+  { label: "Daily Report", sublabel: "Analysis synthesized pre-market", icon: FileText },
+  { label: "Mode + Cap", sublabel: "Risk dial sets your position size", icon: Gauge },
+  { label: "Price Alerts", sublabel: "Triggers when levels hit", icon: Bell },
+];
+
 export default function LearnHubPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="container relative mx-auto px-4 py-12 sm:py-16">
-          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Education Hub</p>
-              <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-                Master TSLA trading with a repeatable, risk-first system.
-              </h1>
-              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                Learn how modes, levels, alerts, and scenarios connect — so every trade has a plan, a cap, and a reason.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button asChild className="h-11 px-6">
-                  <Link href="/learn/modes">
-                    Start the system <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" className="h-11 px-6">
-                  <Link href="/reports">See daily reports</Link>
-                </Button>
-              </div>
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                {[
-                  { title: "Risk Framework", desc: "Know your size before the open." },
-                  { title: "Level Mastery", desc: "React to price with confidence." },
-                  { title: "Execution", desc: "Actionable alerts, no guesswork." },
-                ].map((item) => (
-                  <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Education Hub</p>
+            <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
+              Master TSLA trading with a repeatable, risk-first system.
+            </h1>
+            <p className="mt-4 text-base text-muted-foreground sm:text-lg max-w-2xl mx-auto">
+              Learn how modes, levels, alerts, and scenarios connect — so every trade has a plan, a cap, and a reason.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button asChild className="h-11 px-6">
+                <Link href="/learn/modes">
+                  Start the system <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-11 px-6">
+                <Link href="/pricing">Get full access</Link>
+              </Button>
             </div>
+          </div>
 
-            <div className="relative">
-              <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6 shadow-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                    <TrendingUp className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">TSLA Edge Stack</p>
-                    <p className="text-xs text-muted-foreground">Mode → Levels → Alerts → Scenarios</p>
-                  </div>
-                </div>
-                <div className="mt-6 space-y-4">
-                  {[
-                    { label: "Mode Set", value: "Green (25% cap)" },
-                    { label: "Key Level", value: "Gamma Strike" },
-                    { label: "Alert Plan", value: "Fade rips above strike" },
-                  ].map((row) => (
-                    <div key={row.label} className="flex items-center justify-between rounded-xl border border-white/5 bg-black/20 px-4 py-3">
-                      <span className="text-xs text-muted-foreground">{row.label}</span>
-                      <span className="text-xs font-semibold text-foreground">{row.value}</span>
+          {/* System Flow Visualization */}
+          <div className="mt-12 max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0">
+              {systemFlow.map((step, idx) => (
+                <div key={step.label} className="flex items-center">
+                  <div className="flex flex-col items-center text-center px-4 py-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary mb-2">
+                      <step.icon className="h-6 w-6" />
                     </div>
-                  ))}
-                </div>
-                <div className="mt-6 rounded-2xl border border-primary/30 bg-primary/10 p-4">
-                  <div className="flex items-center gap-3">
-                    <Wand2 className="h-4 w-4 text-primary" />
-                    <p className="text-xs font-semibold text-primary">What you’ll unlock</p>
+                    <p className="text-sm font-semibold text-foreground">{step.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{step.sublabel}</p>
                   </div>
-                  <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
-                      Fast daily prep in under 5 minutes.
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
-                      A playbook for every alert trigger.
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
-                      Higher conviction entries with defined risk.
-                    </li>
-                  </ul>
+                  {idx < systemFlow.length - 1 && (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground hidden sm:block flex-shrink-0" />
+                  )}
                 </div>
-              </div>
-              <div className="absolute -bottom-10 -right-10 hidden h-32 w-32 rounded-full bg-primary/10 lg:block" />
+              ))}
             </div>
           </div>
         </div>
@@ -240,102 +207,64 @@ export default function LearnHubPage() {
           ))}
         </div>
 
-        <div className="mt-14 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Deep dives</p>
-                <h3 className="mt-3 text-2xl font-semibold">Learn the system step-by-step</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Tap a section to expand the playbook and key concepts.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {learningSections.map((section) => (
-                <details
-                  key={section.id}
-                  className="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-primary/40"
-                >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-foreground">
-                    <span>{section.title}</span>
-                    <span className="text-xs text-primary">View</span>
-                  </summary>
-                  <div className="mt-4 space-y-4 text-sm text-muted-foreground">
-                    <p>{section.summary}</p>
-                    <ul className="space-y-2">
-                      {section.bullets.map((bullet) => (
-                        <li key={bullet} className="flex gap-2">
-                          <CheckCircle2 className="mt-1 h-4 w-4 text-primary" />
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 text-xs text-primary">
-                      {section.callout}
-                    </div>
-                    <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/60 p-4 text-xs text-white/80">
-                      <code>{section.code}</code>
-                    </pre>
-                    <Button asChild variant="outline" className="h-9">
-                      <Link href={section.href}>
-                        Go to {section.title} <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
-                  </div>
-                </details>
-              ))}
+        <div className="mt-14">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Deep dives</p>
+              <h3 className="mt-3 text-2xl font-semibold">Learn the system step-by-step</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Tap a section to expand the playbook and key concepts.</p>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Knowledge check</p>
-              <h4 className="mt-3 text-xl font-semibold">Quick quiz</h4>
-              <p className="mt-2 text-sm text-muted-foreground">
-                What does the Call Wall represent?
-              </p>
-              <div className="mt-4 grid gap-2">
-                {[
-                  "Maximum daily loss cap",
-                  "Dealer hedging magnet level",
-                  "The primary resistance line",
-                ].map((answer) => (
-                  <Button key={answer} variant="outline" className="h-10 justify-start text-left">
-                    {answer}
-                  </Button>
-                ))}
-              </div>
-              <p className="mt-4 text-xs text-muted-foreground">Answer to unlock the next topic.</p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Next up</p>
-              <h4 className="mt-3 text-xl font-semibold">Continue your path</h4>
-              <div className="mt-4 space-y-3">
-                {[
-                  { title: "Modes → Levels", desc: "Learn how risk informs your map." },
-                  { title: "Levels → Alerts", desc: "Turn levels into action." },
-                ].map((item) => (
-                  <div key={item.title} className="rounded-xl border border-white/10 bg-black/30 p-4">
-                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+          <div className="mt-6 space-y-4 max-w-3xl">
+            {learningSections.map((section) => (
+              <details
+                key={section.id}
+                className="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-primary/40"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-foreground">
+                  <span>{section.title}</span>
+                  <span className="text-xs text-primary">View</span>
+                </summary>
+                <div className="mt-4 space-y-4 text-sm text-muted-foreground">
+                  <p>{section.summary}</p>
+                  <ul className="space-y-2">
+                    {section.bullets.map((bullet) => (
+                      <li key={bullet} className="flex gap-2">
+                        <CheckCircle2 className="mt-1 h-4 w-4 text-primary" />
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 text-xs text-primary">
+                    {section.callout}
                   </div>
-                ))}
-              </div>
-              <Button asChild className="mt-5 h-10 w-full">
-                <Link href="/learn/levels">Continue learning</Link>
-              </Button>
-            </div>
+                  <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/60 p-4 text-xs text-white/80">
+                    <code>{section.code}</code>
+                  </pre>
+                  <Button asChild variant="outline" className="h-9">
+                    <Link href={section.href}>
+                      Go to {section.title} <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
 
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
-              <p className="text-sm font-semibold text-primary">Bookmark your progress</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Log in to save your spot and resume the next time you visit the hub.
-              </p>
-              <Button asChild variant="outline" className="mt-4 h-10">
-                <Link href="/login">Sign in to save</Link>
-              </Button>
-            </div>
+        {/* Simple CTA */}
+        <div className="mt-16 max-w-2xl mx-auto text-center">
+          <div className="rounded-2xl border border-primary/30 bg-primary/10 p-8">
+            <h3 className="text-xl font-semibold">Ready to trade with an edge?</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Get daily reports, real-time alerts, and the full system.
+            </p>
+            <Button asChild className="mt-4 h-11 px-8">
+              <Link href="/pricing">
+                View plans <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
