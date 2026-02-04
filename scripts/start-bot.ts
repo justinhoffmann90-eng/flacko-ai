@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const RATE_LIMIT_MS = 15_000;
 const ASK_CHANNEL_ID = "1468414857815523459";
-const HIRO_CHANNEL_ID = "1465366203131236423";
+const HIRO_CHANNEL_ID = "1465366178099630292";
 
 // Cache for HIRO messages (refresh every 5 minutes)
 let hiroCache: { messages: string; timestamp: number } | null = null;
