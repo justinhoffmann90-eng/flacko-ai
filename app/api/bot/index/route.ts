@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const url = new URL(request.url);
     const reset = url.searchParams.get("reset") === "1";
 
-    let days = 30;
+    let days: number | undefined;
     try {
       const body = (await request.json()) as { days?: number };
       if (body?.days && Number.isFinite(body.days)) {

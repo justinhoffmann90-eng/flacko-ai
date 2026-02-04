@@ -73,6 +73,30 @@ function buildLearnDocuments(): KnowledgeChunkInput[] {
   return documents;
 }
 
+function buildRulebookDocuments(): KnowledgeChunkInput[] {
+  const primaryPath = path.join(process.cwd(), "content", "rulebook.md");
+  const fallbackPath = path.join(process.cwd(), "content", "trading-rulebook.md");
+  const filePath = fs.existsSync(primaryPath)
+    ? primaryPath
+    : fs.existsSync(fallbackPath)
+      ? fallbackPath
+      : null;
+
+  if (!filePath) return [];
+
+  const fileContents = fs.readFileSync(filePath, "utf8");
+  const { data, content } = matter(fileContents);
+  const title = (data as { title?: string }).title || "Rulebook";
+
+  return [
+    {
+      content: `# ${title}\n\n${content}`,
+      source: "rulebook",
+      source_date: null,
+    },
+  ];
+}
+
 export async function indexKnowledgeBase({
   days,
   reset = false,
@@ -97,15 +121,19 @@ export async function indexKnowledgeBase({
     }
   }
 
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const cutoffDate = cutoff.toISOString().slice(0, 10);
-
-  const { data: reports, error: reportsError } = await supabase
+  const reportQuery = supabase
     .from("reports")
     .select("markdown_content, report_date")
-    .gte("report_date", cutoffDate)
     .order("report_date", { ascending: false });
+
+  if (days && Number.isFinite(days)) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffDate = cutoff.toISOString().slice(0, 10);
+    reportQuery.gte("report_date", cutoffDate);
+  }
+
+  const { data: reports, error: reportsError } = await reportQuery;
 
   if (reportsError) {
     throw new Error(`Failed to load reports: ${reportsError.message}`);
@@ -119,8 +147,50 @@ export async function indexKnowledgeBase({
       source_date: report.report_date as string,
     }));
 
+  const { data: weeklyReviews, error: weeklyError } = await supabase
+    .from("weekly_reviews")
+    .select("raw_markdown, week_end")
+    .order("week_end", { ascending: false });
+
+  if (weeklyError) {
+    throw new Error(`Failed to load weekly reviews: ${weeklyError.message}`);
+  }
+
+  const weeklyDocs: KnowledgeChunkInput[] = (weeklyReviews || [])
+    .filter((review) => review.raw_markdown)
+    .map((review) => ({
+      content: review.raw_markdown as string,
+      source: "weekly-review",
+      source_date: review.week_end as string,
+    }));
+
+  const { data: discordLogs, error: discordError } = await supabase
+    .from("discord_alert_log")
+    .select("message_preview, channel_name, created_at")
+    .in("channel_name", ["fs-insight", "tesla-research"])
+    .order("created_at", { ascending: false });
+
+  if (discordError) {
+    throw new Error(`Failed to load Discord logs: ${discordError.message}`);
+  }
+
+  const discordDocs: KnowledgeChunkInput[] = (discordLogs || [])
+    .filter((log) => log.message_preview)
+    .map((log) => ({
+      content: log.message_preview as string,
+      source: `discord/${log.channel_name}`,
+      source_date: log.created_at ? String(log.created_at).slice(0, 10) : null,
+    }));
+
   const learnDocs = buildLearnDocuments();
-  const allDocs = [...reportDocs, ...learnDocs];
+  const rulebookDocs = buildRulebookDocuments();
+  const allDocs = [
+    ...reportDocs,
+    ...weeklyDocs,
+    ...discordDocs,
+    ...rulebookDocs,
+    ...learnDocs,
+  ];
 
   const chunks: KnowledgeChunkInput[] = [];
   for (const doc of allDocs) {
@@ -165,6 +235,9 @@ export async function indexKnowledgeBase({
 
   return {
     reportCount: reportDocs.length,
+    weeklyCount: weeklyDocs.length,
+    discordCount: discordDocs.length,
+    rulebookCount: rulebookDocs.length,
     learnCount: learnDocs.length,
     chunkCount: rows.length,
   };

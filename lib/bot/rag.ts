@@ -1,14 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BOBBY_AXELROD_PROMPT } from "@/lib/bot/personality";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const OPENAI_EMBEDDING_MODEL = "text-embedding-ada-002";
-const DEFAULT_ANTHROPIC_MODEL =
-  process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022";
 
 export interface RagChunk {
   id: string;
@@ -75,6 +72,10 @@ export async function generateAnswer(
   question: string,
   chunks: RagChunk[]
 ): Promise<string> {
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    throw new Error("GOOGLE_AI_API_KEY is not set");
+  }
+
   const context = chunks
     .map((chunk, index) => {
       const sourceTag = chunk.source_date
@@ -85,18 +86,10 @@ export async function generateAnswer(
     .join("\n\n");
 
   const userPrompt = `Context:\n${context || "No relevant context found."}\n\nQuestion: ${question}\n\nAnswer in 2-4 sentences. No financial advice.`;
+  const fullPrompt = `${BOBBY_AXELROD_PROMPT}\n\n${userPrompt}`;
 
-  const response = await anthropic.messages.create({
-    model: DEFAULT_ANTHROPIC_MODEL,
-    max_tokens: 320,
-    system: BOBBY_AXELROD_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  });
-
-  const message = response.content
-    .map((block) => (block.type === "text" ? block.text : ""))
-    .join("")
-    .trim();
+  const result = await model.generateContent(fullPrompt);
+  const message = result.response.text().trim();
 
   return message || "I don't know based on the data I have.";
 }

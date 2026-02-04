@@ -21,7 +21,7 @@ export function startDiscordBot() {
 
   const rateLimit = new Map<string, number>();
   const allowedChannelId = process.env.DISCORD_ASK_CHANNEL_ID;
-  const allowedChannelName = process.env.DISCORD_ASK_CHANNEL || "ask-flacko";
+  const allowedChannelName = process.env.DISCORD_ASK_CHANNEL || "ask-axelrod";
 
   client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
