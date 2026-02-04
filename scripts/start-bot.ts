@@ -57,24 +57,33 @@ async function embedText(text: string): Promise<number[]> {
 async function queryKnowledge(question: string, userId: string, username: string): Promise<string> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-  // Get today's date for context
-  const today = new Date().toISOString().split('T')[0];
+  // Get today's date in Chicago timezone (CT)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
   
   const embedding = await embedText(question);
-  // Get more chunks to have recent and relevant
-  const { data: allChunks, error } = await supabase.rpc("match_chunks", { query_embedding: embedding, match_count: 12 });
+  
+  // Get more chunks from semantic search
+  const { data: searchChunks, error } = await supabase.rpc("match_chunks", { query_embedding: embedding, match_count: 20 });
   if (error) throw new Error(`Supabase error: ${error.message}`);
   
-  // Prioritize recent reports - sort by date desc, then take top 6
-  const chunks = (allChunks || [])
-    .sort((a: any, b: any) => {
-      // Reports with today's date get priority
-      if (a.source_date === today && b.source_date !== today) return -1;
-      if (b.source_date === today && a.source_date !== today) return 1;
-      // Then sort by date descending
-      return (b.source_date || '').localeCompare(a.source_date || '');
-    })
-    .slice(0, 6);
+  // ALSO directly fetch today's report chunks (bypass buggy ivfflat index)
+  const { data: todayChunks } = await supabase
+    .from("knowledge_chunks")
+    .select("id, content, source, source_date")
+    .eq("source_date", today)
+    .limit(4);
+  
+  // Merge: today's chunks first (with high similarity), then search results
+  const todayChunksWithSim = (todayChunks || []).map((c: any) => ({ ...c, similarity: 0.95 }));
+  const allChunks = [...todayChunksWithSim, ...(searchChunks || [])];
+  
+  // Dedupe by id and take top 6
+  const seen = new Set();
+  const chunks = allChunks.filter((c: any) => {
+    if (seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
+  }).slice(0, 6);
   
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
