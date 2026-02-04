@@ -1,4 +1,4 @@
-export type TweetTemplateType = "level" | "mode" | "scenario" | "keyLevel";
+export type TweetTemplateType = "level" | "mode" | "scenario" | "keyLevel" | "hiro";
 
 export const templates: Record<TweetTemplateType, string[]> = {
   level: [
@@ -39,7 +39,9 @@ $TSLA`,
   mode: [
     `\${mode} mode today — \${daily_cap}% max position size.
 
-why? \${mode_reason}
+current posture: \${posture}
+
+why \${mode}? \${mode_reason}
 
 the mode system exists because:
 • volatility isn't constant
@@ -52,6 +54,7 @@ traders who respect it compound.
 $TSLA`,
 
     `\${mode} mode = \${daily_cap}% max size.
+posture: \${posture}
 
 \${mode_reason}
 
@@ -119,6 +122,73 @@ price history shows where buyers showed up before.
 dealer positioning shows where they'll have to show up today.
 
 past vs present. hope vs math.
+
+$TSLA`,
+  ],
+
+  hiro: [
+    `hiro reading: \${hiro_reading}
+
+\${hiro_context}
+
+what is hiro?
+
+it tracks real-time institutional hedging flow.
+• positive = institutions adding long exposure
+• negative = institutions reducing/hedging
+
+retail watches price.
+smart money watches flow.
+
+hiro shows you what smart money is actually doing — not what they're saying.
+
+$TSLA`,
+
+    `institutional flow check: \${hiro_reading}
+
+\${hiro_context}
+
+hiro = hedge impact real-time oracle
+
+it measures whether institutions are:
+• buying protection (bearish signal)
+• adding exposure (bullish signal)
+• neutral (waiting)
+
+price tells you what happened.
+flow tells you what's happening.
+
+$TSLA`,
+  ],
+
+  scenario: [
+    `today's scenarios:
+
+🐂 bull case: \${bull_trigger} → \${bull_target}
+📊 base case: \${base_trigger} → \${base_target}
+🐻 bear case: \${bear_trigger} → \${bear_target}
+
+how to use this:
+
+don't predict which scenario plays out.
+identify the triggers, then react.
+
+the market will tell you which path it's taking.
+your job is to listen.
+
+$TSLA`,
+
+    `the setup for today:
+
+bull trigger: \${bull_trigger}
+base case: \${base_trigger}
+bear trigger: \${bear_trigger}
+
+most traders pick a direction and hope.
+structure traders wait for confirmation.
+
+hope is not a strategy.
+levels are.
 
 $TSLA`,
   ],
