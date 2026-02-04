@@ -75,7 +75,6 @@ export default function ContentHubPage() {
   const [tweetDraftsLoading, setTweetDraftsLoading] = useState(false);
   const [tweetDraftsError, setTweetDraftsError] = useState<string | null>(null);
   const [copiedDraftId, setCopiedDraftId] = useState<string | null>(null);
-  const [generatingDrafts, setGeneratingDrafts] = useState(false);
 
   useEffect(() => {
     loadContent();
@@ -177,24 +176,6 @@ export default function ContentHubPage() {
       setTweetDraftsError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setTweetDraftsLoading(false);
-    }
-  };
-
-  const handleGenerateTweetDrafts = async () => {
-    setGeneratingDrafts(true);
-    setTweetDraftsError(null);
-
-    try {
-      const response = await fetch("/api/tweets/generate", { method: "POST" });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate drafts");
-      }
-      await loadTweetDrafts();
-    } catch (err) {
-      setTweetDraftsError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setGeneratingDrafts(false);
     }
   };
 
@@ -495,15 +476,15 @@ export default function ContentHubPage() {
                     </div>
                   </div>
                   <button
-                    onClick={handleGenerateTweetDrafts}
-                    disabled={generatingDrafts}
+                    onClick={loadTweetDrafts}
+                    disabled={tweetDraftsLoading}
                     className={`w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium ${
-                      generatingDrafts
+                      tweetDraftsLoading
                         ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                        : "bg-indigo-600 hover:bg-indigo-700"
+                        : "bg-gray-700 hover:bg-gray-600"
                     }`}
                   >
-                    {generatingDrafts ? "Generating..." : "Generate Drafts"}
+                    {tweetDraftsLoading ? "Loading..." : "↻ Refresh"}
                   </button>
                 </div>
               </div>
