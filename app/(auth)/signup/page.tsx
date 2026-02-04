@@ -97,7 +97,7 @@ export default function SignupPage() {
           <span className="text-xs text-zinc-600 line-through">$39.99</span>
         </div>
 
-        <div className="mb-4">
+        <div>
           <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
             <div className="h-full bg-white w-[94%] rounded-full" />
           </div>
@@ -105,16 +105,6 @@ export default function SignupPage() {
             <span>47 of 50 claimed</span>
             <span>next tier: $39.99/mo</span>
           </div>
-        </div>
-
-        {/* Value Leverage */}
-        <div className="text-sm text-zinc-400 mb-3 pt-3 border-t border-zinc-800">
-          you'll leverage <span className="text-emerald-400 font-semibold">$800/mo</span> in institutional data & tools:
-        </div>
-        <div className="text-[12px] text-zinc-500 leading-relaxed mb-4">
-          <span className="text-zinc-400">fs insight</span> <span className="text-zinc-600">(macro & technical)</span> · <span className="text-zinc-400">spotgamma</span> <span className="text-zinc-600">(alpha, hiro)</span>
-          <br />
-          <span className="text-zinc-400">ai agents & infra</span> <span className="text-zinc-600">(claude max, grok, m4 mini)</span>
         </div>
       </div>
 
@@ -136,6 +126,18 @@ export default function SignupPage() {
               <span>{item}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Value Leverage */}
+      <div className="text-center">
+        <div className="text-sm text-zinc-400 mb-2">
+          you'll leverage <span className="text-emerald-400 font-semibold">$800/mo</span> in institutional data & tools:
+        </div>
+        <div className="text-[12px] text-zinc-500 leading-relaxed">
+          <span className="text-zinc-400">fs insight</span> <span className="text-zinc-600">(macro & technical)</span> · <span className="text-zinc-400">spotgamma</span> <span className="text-zinc-600">(alpha, hiro)</span>
+          <br />
+          <span className="text-zinc-400">ai agents & infra</span> <span className="text-zinc-600">(claude max, grok, m4 mini)</span>
         </div>
       </div>
 
@@ -188,12 +190,6 @@ export default function SignupPage() {
               "join the gang ⚔️"
             )}
           </Button>
-          <p className="text-sm text-zinc-500 text-center">
-            already have an account?{" "}
-            <Link href="/login" className="text-white hover:underline">
-              sign in
-            </Link>
-          </p>
         </form>
       </div>
 
