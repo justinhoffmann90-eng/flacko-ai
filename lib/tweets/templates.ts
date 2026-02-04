@@ -2,122 +2,123 @@ export type TweetTemplateType = "level" | "mode" | "scenario" | "keyLevel";
 
 export const templates: Record<TweetTemplateType, string[]> = {
   level: [
-    `\${level_name} at $\${level_price} \${level_result}.
+    `today's gamma strike: $\${level_price}
 
-this is where dealer hedging creates a structural pivot.
+this is the line that changes everything.
 
-above it: bullish regime.
-below it: bearish regime.
+above it:
+• positive gamma regime
+• trends are smooth
+• dips get bought
+• the casino is calm
 
-know the line before it matters.
+below it:
+• negative gamma regime
+• moves are violent
+• nothing holds
+• the casino is chaos
 
-$TSLA`,
-
-    `$\${level_price} = today's \${level_name}.
-
-\${level_emoji} \${level_result}.
-
-not magic. just math.
-
-dealers hedge options at these prices.
-
-their hedging moves the stock.
+same stock. completely different game depending on which side you're on.
 
 $TSLA`,
 
-    `the \${level_name} is $\${level_price}.
+    `$\${level_price} gamma strike — here's why it matters:
 
-dealers don't guess these levels.
+dealers hedge options by buying/selling stock.
 
-they're calculated from options positioning.
+above gamma strike = they buy dips (stabilizing)
+below gamma strike = they sell into weakness (amplifying)
 
-knowing where = knowing when.
+this is why tsla can trend smoothly for days, then suddenly move 5% in an hour.
+
+it's not random. it's regime change.
 
 $TSLA`,
   ],
 
   mode: [
-    `\${mode} mode today.
+    `\${mode} mode today — \${daily_cap}% max position size.
 
-max position size: \${daily_cap}%.
+why? \${mode_reason}
 
-\${mode_reason}
+the mode system exists because:
+• volatility isn't constant
+• position sizing should match conditions
+• surviving bad days matters more than maximizing good ones
 
-small size on uncertain days = still trading tomorrow.
-
-the best trade is often the smallest one.
-
-$TSLA`,
-
-    `why \${mode} mode?
-
-\${mode_reason}
-
-traders who ignore the mode get chopped.
-
-traders who respect it keep their capital.
-
-system > feelings.
+traders who ignore this blow up.
+traders who respect it compound.
 
 $TSLA`,
 
     `\${mode} mode = \${daily_cap}% max size.
 
-the casino sets the rules.
+\${mode_reason}
 
-smart players adjust their bets.
+here's what most traders get wrong:
+
+they size positions based on conviction.
+they should size based on conditions.
+
+high conviction + wrong conditions = blown account.
+modest conviction + right sizing = still trading tomorrow.
 
 $TSLA`,
   ],
 
   scenario: [
-    `base case: \${scenario_prediction}
+    `today's setup: \${scenario_prediction}
 
-structure tells you what's probable.
+how to use this:
 
-price confirms.
+1. identify the trigger level
+2. wait for price to reach it
+3. watch for confirmation (or rejection)
+4. act accordingly
 
-$TSLA`,
-
-    `\${scenario_name} scenario in play.
-
-\${scenario_prediction}
-
-watch the levels. they'll tell you which way.
+most traders guess. structure traders wait for the market to show its hand.
 
 $TSLA`,
   ],
 
   keyLevel: [
-    `\${key_level_name} at $\${key_level_price} \${key_level_result}.
+    `\${key_level_name}: $\${key_level_price}
 
-this isn't a random line on a chart.
+why this level matters:
 
-it's where dealer hedging forces action.
+dealers are short options at this strike.
+to hedge, they must buy/sell stock as price approaches.
 
-knowing the level = knowing the setup.
+this creates mechanical support or resistance — not hope, not patterns, just math.
 
-$TSLA`,
-
-    `\${key_level_name} = $\${key_level_price}.
-
-\${key_level_result}.
-
-most traders draw lines randomly.
-
-these levels are calculated from options flow.
-
-different game.
+when everyone's watching the same chart patterns, edge comes from seeing what they can't.
 
 $TSLA`,
 
-    `$\${key_level_price} \${key_level_name}:
+    `$\${key_level_price} \${key_level_name} — the level to watch today.
 
-\${key_level_result}.
+here's how dealer hedging works:
 
-the casino has rules.
+1. traders buy options at a strike
+2. dealers sell those options
+3. to stay neutral, dealers hedge with stock
+4. as price moves toward the strike, hedging intensifies
+5. this creates support/resistance
 
-learn them or get played by them.
+it's not magic. it's market mechanics.
+
+$TSLA`,
+
+    `\${key_level_name} at $\${key_level_price}
+
+most traders draw support/resistance from price history.
+
+these levels come from options positioning — where dealers are forced to act.
+
+price history shows where buyers showed up before.
+dealer positioning shows where they'll have to show up today.
+
+past vs present. hope vs math.
 
 $TSLA`,
   ],

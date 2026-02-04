@@ -12,7 +12,7 @@ interface TemplateData {
   [key: string]: string | number;
 }
 
-const MAX_TWEET_LENGTH = 280;
+const MAX_TWEET_LENGTH = 4000; // X premium allows longer posts
 
 export async function generateTweetDrafts(date?: string): Promise<TweetDraftInput[]> {
   const targetDate = date || format(new Date(), "yyyy-MM-dd");
