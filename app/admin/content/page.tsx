@@ -63,9 +63,9 @@ interface TweetDraft {
 }
 
 export default function ContentHubPage() {
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // null = load latest
   const [data, setData] = useState<ContentHubData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start loading immediately
   const [error, setError] = useState<string | null>(null);
   const [copiedMode, setCopiedMode] = useState(false);
   const [copiedMorning, setCopiedMorning] = useState(false);
@@ -77,19 +77,21 @@ export default function ContentHubPage() {
   const [copiedDraftId, setCopiedDraftId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadContent();
+    loadContent(selectedDate);
   }, [selectedDate]);
 
   useEffect(() => {
     loadTweetDrafts();
   }, []);
 
-  const loadContent = async () => {
+  const loadContent = async (date?: string | null) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/content/hub?date=${selectedDate}`);
+      // If no date specified, API will return latest report
+      const url = date ? `/api/content/hub?date=${date}` : `/api/content/hub`;
+      const response = await fetch(url);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -98,6 +100,11 @@ export default function ContentHubPage() {
 
       const contentData = await response.json();
       setData(contentData);
+      
+      // If we loaded without a date, update selectedDate from response
+      if (!date && contentData.date) {
+        setSelectedDate(contentData.date);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

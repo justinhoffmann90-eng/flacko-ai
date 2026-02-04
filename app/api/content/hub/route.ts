@@ -31,21 +31,44 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date") || format(new Date(), "yyyy-MM-dd");
+    const requestedDate = searchParams.get("date");
 
     const serviceSupabase = await createServiceClient();
 
-    // Get report for the date
-    const { data: report, error: reportError } = await serviceSupabase
-      .from("reports")
-      .select("extracted_data, report_date")
-      .eq("report_date", date)
-      .single();
+    let report;
+    let date: string;
 
-    if (reportError || !report) {
-      return NextResponse.json({
-        error: `Report not found for ${date}`,
-      }, { status: 404 });
+    if (requestedDate) {
+      // Specific date requested - fetch that exact report
+      const { data, error } = await serviceSupabase
+        .from("reports")
+        .select("extracted_data, report_date")
+        .eq("report_date", requestedDate)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json({
+          error: `Report not found for ${requestedDate}`,
+        }, { status: 404 });
+      }
+      report = data;
+      date = requestedDate;
+    } else {
+      // No date specified - get the LATEST report
+      const { data, error } = await serviceSupabase
+        .from("reports")
+        .select("extracted_data, report_date")
+        .order("report_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json({
+          error: "No reports found",
+        }, { status: 404 });
+      }
+      report = data;
+      date = data.report_date;
     }
 
     const extracted = report.extracted_data as any;
