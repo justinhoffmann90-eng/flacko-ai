@@ -1,58 +1,103 @@
 ---
-title: "What is Gamma Exposure? (And Why It Moves TSLA)"
-description: "The invisible force behind Tesla's biggest moves — explained simply."
-readingTime: "4 min"
-order: 1
+title: "What is Gamma?"
+description: "How dealer hedging creates support and resistance in the market."
+readingTime: "6 min"
 ---
 
-## The force you can't see
+## The Simple Version
 
-Every time TSLA rips 8% or dumps 6% in a single day, people scramble for explanations. Elon tweeted. Macro shifted. Analysts upgraded.
+**Gamma** measures how fast options dealers need to adjust their hedges when price moves.
 
-But there's something else moving price that most traders never see: **gamma exposure**.
-
-## What gamma actually is
-
-Gamma is a measure of how much market makers (the big institutions that provide liquidity) need to buy or sell stock to hedge their options positions.
-
-Here's the simple version:
-
-- **Positive gamma**: Dealers buy when price rises, sell when it falls. This *dampens* moves and creates stability.
-- **Negative gamma**: Dealers sell when price falls, buy when it rises. This *amplifies* moves and creates chaos.
-
-When TSLA is in positive gamma territory, moves tend to be smoother. When it's in negative gamma, volatility explodes.
-
-## Why TSLA is different
-
-Tesla has the most active options market of any single stock. Billions of dollars in options flow every week. This makes gamma effects *massive* compared to other stocks.
-
-That 5% intraday swing? It wasn't just news. It was dealers forced to hedge, amplifying the move in real-time.
-
-## The levels that matter
-
-Gamma exposure isn't uniform across all prices. It clusters around specific strike prices — creating invisible walls and magnets:
-
-- **Gamma Strike**: The price where gamma flips from positive to negative. A critical pivot.
-- **Put Wall**: Heavy put open interest creates downside support — dealers buy here.
-- **Call Wall**: Heavy call open interest creates upside resistance — dealers sell here.
-- **Hedge Wall**: Where dealers have the most hedging to do.
-
-These aren't arbitrary lines. They're structural features of the market that repeat day after day.
-
-## What most traders miss
-
-Most traders look at charts and draw trendlines. They watch moving averages. They read news.
-
-What they miss: the structural landscape created by options positioning. Price doesn't move randomly — it moves *through* a terrain shaped by dealer hedging flows.
-
-When you know the terrain, you stop being surprised.
+Think of it like a rubber band:
+- **High gamma** = tight rubber band (small moves cause big reactions)
+- **Low gamma** = loose rubber band (price moves freely)
 
 ---
 
-## The structure doesn't lie
+## Why Dealers Hedge
 
-This is what Flacko AI tracks. Every day, we map the gamma landscape and tell you exactly where the key levels are, what mode to trade in, and what to watch for.
+When you buy an option, a market maker sells it to you. They don't want the risk, so they **hedge**.
 
-No guessing. No hoping. Just structure.
+| You Buy | Dealer Does | Effect |
+|---------|-------------|--------|
+| Calls | Buys shares | Pushes price up |
+| Puts | Sells shares | Pushes price down |
 
-**Get the daily intel →** [Sign up](/signup)
+This hedging creates **predictable behavior** at certain price levels.
+
+---
+
+## Positive vs Negative Gamma
+
+| Regime | Dealer Behavior | Market Feel |
+|--------|-----------------|-------------|
+| **Positive Gamma** | Buy dips, sell rips | Calm, mean-reverting |
+| **Negative Gamma** | Sell dips, buy rips | Volatile, trending |
+
+### Positive Gamma (Above Gamma Strike)
+```
+Price drops → Dealers buy → Stabilizes price
+Price rises → Dealers sell → Caps the move
+```
+**Result:** Choppy, range-bound action
+
+### Negative Gamma (Below Gamma Strike)
+```
+Price drops → Dealers sell → Accelerates drop
+Price rises → Dealers buy → Accelerates rise
+```
+**Result:** Trending, volatile moves
+
+---
+
+## The Gamma Flip
+
+The **Gamma Strike** (or Vol Trigger) is where gamma flips from positive to negative.
+
+| Position | What Happens |
+|----------|--------------|
+| **Above Gamma Strike** | Dealers stabilize moves |
+| **Below Gamma Strike** | Dealers amplify moves |
+
+This is why the Gamma Strike is the most important level to know.
+
+---
+
+## Visual Example
+
+```
+$450 ────────── Call Wall (upside magnet)
+       │
+$430 ────────── Gamma Strike (regime flip)
+       │
+       │  ← POSITIVE GAMMA (calm)
+       │
+$420 ──┼────────────────────────────
+       │
+       │  ← NEGATIVE GAMMA (volatile)
+       │
+$400 ────────── Put Wall (downside floor)
+```
+
+---
+
+## Key Takeaways
+
+| Concept | Remember |
+|---------|----------|
+| **Gamma** | How fast dealers hedge |
+| **Positive gamma** | Dealers fight the move (stable) |
+| **Negative gamma** | Dealers fuel the move (volatile) |
+| **Gamma Strike** | Where behavior flips |
+
+---
+
+## How to Use This
+
+1. **Know where Gamma Strike is** — Check the daily report
+2. **Trade the regime** — Fade moves in positive gamma, ride trends in negative gamma
+3. **Expect volatility below** — Size smaller when in negative gamma
+
+---
+
+*Gamma is the invisible hand. Once you see it, you can't unsee it.*

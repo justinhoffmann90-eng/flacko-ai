@@ -1,145 +1,147 @@
 ---
-title: "Weekly EMAs & Trend Structure"
-description: "The 9/21 framework that keeps you on the right side."
-readingTime: "5 min"
-order: 13
+title: "Weekly EMAs"
+description: "The 9/13/21 EMAs that define trend structure on the weekly chart."
+readingTime: "6 min"
 ---
 
-## Why weekly EMAs matter
+## What Are Weekly EMAs?
 
-Daily charts are noisy. You can find a reason to be bullish or bearish on any given day.
+EMAs (Exponential Moving Averages) smooth price action and reveal **trend direction**. We use three on the weekly chart:
 
-Weekly charts cut through the noise. They show you the **actual trend** — the direction that matters over weeks and months, not hours.
-
-<div className="my-8 p-6 bg-zinc-900 rounded-xl border border-zinc-800">
-  <div className="text-center mb-4 text-sm text-zinc-400">The Two EMAs That Matter</div>
-  <div className="grid grid-cols-2 gap-6">
-    <div className="text-center p-4 border border-blue-500/30 rounded-lg">
-      <div className="text-3xl font-bold text-blue-400 mb-2">9 EMA</div>
-      <div className="text-sm text-zinc-400 mb-2">Short-term momentum</div>
-      <div className="text-xs text-zinc-500">Fast-moving. First to react. Early warning signal.</div>
-    </div>
-    <div className="text-center p-4 border border-purple-500/30 rounded-lg">
-      <div className="text-3xl font-bold text-purple-400 mb-2">21 EMA</div>
-      <div className="text-sm text-zinc-400 mb-2">Intermediate trend</div>
-      <div className="text-xs text-zinc-500">Slower. More reliable. The "line in the sand."</div>
-    </div>
-  </div>
-</div>
-
-## Reading the 9/21 structure
-
-**Strong uptrend:**
-- Price above both EMAs
-- 9 EMA above 21 EMA
-- Pullbacks find support at 9 EMA
-
-**Weakening uptrend:**
-- Price drops below 9 EMA
-- Still above 21 EMA
-- Warning sign, not yet broken
-
-**Trend break:**
-- Price below both EMAs
-- 9 EMA crosses below 21 EMA
-- Trend has changed. Adjust positioning.
-
-<div className="my-8 p-6 bg-zinc-900 rounded-xl border border-zinc-800">
-  <div className="text-center mb-4 text-sm text-zinc-400">Trend States</div>
-  <div className="space-y-4">
-    <div className="flex items-center gap-4 p-4 bg-green-500/10 rounded-lg">
-      <div className="text-2xl">📈</div>
-      <div className="flex-1">
-        <div className="font-bold text-green-400">Strong Uptrend</div>
-        <div className="text-sm text-zinc-400">Price → 9 EMA → 21 EMA (stacked bullish)</div>
-      </div>
-      <div className="text-xs text-green-400 bg-green-500/20 px-2 py-1 rounded">BUY DIPS</div>
-    </div>
-    
-    <div className="flex items-center gap-4 p-4 bg-yellow-500/10 rounded-lg">
-      <div className="text-2xl">⚠️</div>
-      <div className="flex-1">
-        <div className="font-bold text-yellow-400">Caution Zone</div>
-        <div className="text-sm text-zinc-400">Price between 9 and 21 EMA</div>
-      </div>
-      <div className="text-xs text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded">REDUCE SIZE</div>
-    </div>
-    
-    <div className="flex items-center gap-4 p-4 bg-red-500/10 rounded-lg">
-      <div className="text-2xl">📉</div>
-      <div className="flex-1">
-        <div className="font-bold text-red-400">Downtrend</div>
-        <div className="text-sm text-zinc-400">21 EMA → 9 EMA → Price (stacked bearish)</div>
-      </div>
-      <div className="text-xs text-red-400 bg-red-500/20 px-2 py-1 rounded">DEFENSIVE</div>
-    </div>
-  </div>
-</div>
-
-## The 21 EMA as the line in the sand
-
-When in doubt, look at the weekly 21 EMA.
-
-**Above it?** The trend is intact. Buy dips. Hold positions. Stay offensive.
-
-**Below it?** The trend is broken or breaking. Reduce size. Get defensive. Wait for reclaim.
-
-This one line answers 80% of "should I be long right now?" questions.
-
-## EMA crosses
-
-When the 9 EMA crosses the 21 EMA, pay attention:
-
-**Bullish cross (9 crosses above 21):**
-- Momentum shifting positive
-- Often marks the start of a new uptrend
-- Confirmation to get more aggressive
-
-**Bearish cross (9 crosses below 21):**
-- Momentum shifting negative  
-- Often marks the start of a downtrend
-- Signal to get defensive
-
-<div className="my-8 p-4 bg-zinc-800 rounded-xl">
-  <div className="text-center text-sm text-zinc-400 mb-4">Weekly EMA Cross Example</div>
-  <div className="flex items-center justify-center gap-2 text-sm">
-    <span className="text-zinc-400">Week 1:</span>
-    <span className="text-blue-400">9 EMA $420</span>
-    <span className="text-zinc-600">|</span>
-    <span className="text-purple-400">21 EMA $415</span>
-    <span className="text-green-400 ml-4">✓ Bullish</span>
-  </div>
-  <div className="flex items-center justify-center gap-2 text-sm mt-2">
-    <span className="text-zinc-400">Week 2:</span>
-    <span className="text-blue-400">9 EMA $412</span>
-    <span className="text-zinc-600">|</span>
-    <span className="text-purple-400">21 EMA $416</span>
-    <span className="text-red-400 ml-4">✗ Bearish cross</span>
-  </div>
-</div>
-
-## How we use EMAs in the mode
-
-Weekly EMAs are a key input to the mode calculation:
-
-- **Price above both EMAs** → Supports green/yellow modes
-- **Price between EMAs** → Caution flag, often yellow/orange
-- **Price below both EMAs** → Strong red mode bias
-
-The EMAs don't override everything, but they anchor the bigger picture.
-
-## Weekly vs daily
-
-Use weekly EMAs for **trend direction** (should I be long at all?).
-
-Use daily levels for **execution** (where do I enter/exit today?).
-
-They work together. Weekly tells you the bias. Daily tells you the levels.
+| EMA | Period | Role |
+|-----|--------|------|
+| **9 EMA** | Short-term | Momentum, first warning |
+| **13 EMA** | Medium-term | Trend confirmation |
+| **21 EMA** | Long-term | Major support/resistance |
 
 ---
 
-## Trend structure in every report
+## How to Read Them
 
-Flacko AI tracks the weekly EMAs and incorporates them into the daily mode. You'll always know whether the bigger picture supports your trades.
+### Bullish Structure
+```
+Price
+  │
+  ├── 9 EMA (above)
+  │
+  ├── 13 EMA (middle)
+  │
+  └── 21 EMA (below)
+```
+All EMAs stacked, price above all = **strong uptrend**
 
-**Trade with the trend →** [Sign up](/signup)
+### Bearish Structure
+```
+  ┌── 21 EMA (above)
+  │
+  ├── 13 EMA (middle)
+  │
+  ├── 9 EMA (below)
+  │
+Price
+```
+All EMAs stacked inverted, price below all = **strong downtrend**
+
+---
+
+## EMA Signals
+
+| Signal | What It Means | Action |
+|--------|---------------|--------|
+| **Price above all EMAs** | Uptrend intact | Lean bullish |
+| **Price below all EMAs** | Downtrend intact | Lean bearish |
+| **Price between EMAs** | Transition/choppy | Reduce size |
+| **9 crosses 13** | Momentum shift | Watch for confirmation |
+| **Price touches 21** | Key support/resistance | High-probability reaction zone |
+
+---
+
+## Each EMA's Role
+
+### 9 EMA — The Speedometer
+| Situation | Meaning |
+|-----------|---------|
+| Price above 9 | Short-term momentum bullish |
+| Price below 9 | Short-term momentum bearish |
+| Price reclaims 9 | Potential bounce starting |
+
+### 13 EMA — The Trend Gauge
+| Situation | Meaning |
+|-----------|---------|
+| Price above 13 | Intermediate trend bullish |
+| Price below 13 | Intermediate trend bearish |
+| 9 above 13 | Bullish alignment |
+| 9 below 13 | Bearish alignment |
+
+### 21 EMA — The Line in the Sand
+| Situation | Meaning |
+|-----------|---------|
+| Price above 21 | Major trend bullish |
+| Price below 21 | Major trend bearish |
+| Price tests 21 | Key reaction zone |
+| Price breaks 21 | Potential trend change |
+
+---
+
+## Using EMAs With the System
+
+| Mode | EMA Position | Confluence |
+|------|--------------|------------|
+| 🟢 GREEN | Above all EMAs | Strong bullish alignment |
+| 🟡 YELLOW | Between EMAs | Trend uncertain |
+| 🟠 ORANGE | Below 9 and 13 | Bearish lean |
+| 🔴 RED | Below all EMAs | Full defensive |
+
+---
+
+## Weekly EMA Zones
+
+```
+$450 ────────────────────────────── Price
+         │
+$440 ────┴── 9 EMA (momentum)
+         │
+$430 ────┴──── 13 EMA (trend)
+         │
+$420 ────┴────── 21 EMA (major support)
+         │
+$410 ────────── Below all = bearish regime
+```
+
+---
+
+## Example
+
+> **Current Setup:**
+> - Price: $425
+> - 9 EMA: $420
+> - 13 EMA: $415
+> - 21 EMA: $410
+> 
+> **Read:** Price above all EMAs = uptrend intact
+> 
+> **Action:** Lean bullish, watch 9 EMA as first support
+
+---
+
+## Common Mistakes
+
+| Mistake | Better Approach |
+|---------|-----------------|
+| Only checking daily EMAs | Weekly EMAs show bigger picture |
+| Ignoring EMA order | Stacking order matters |
+| Fighting the 21 EMA | It's major support/resistance — respect it |
+
+---
+
+## Key Takeaways
+
+| EMA | Remember |
+|-----|----------|
+| **9 EMA** | Momentum — first to react |
+| **13 EMA** | Trend — confirms direction |
+| **21 EMA** | Structure — major level |
+
+---
+
+*The weekly EMAs don't lie. They show you where the trend really is.*

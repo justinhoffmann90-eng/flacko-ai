@@ -1,72 +1,132 @@
 ---
-title: "Dealer Positioning: How Market Makers Move Price"
-description: "They're not your enemy — if you know where they stand."
-readingTime: "4 min"
-order: 2
+title: "Dealer Positioning"
+description: "How to read options flow and understand market structure."
+readingTime: "7 min"
 ---
 
-## The players you're trading against
+## What Is Dealer Positioning?
 
-When you buy TSLA options, someone has to take the other side. That someone is usually a market maker — a large institution that provides liquidity and hedges their exposure in real-time.
-
-These dealers don't have opinions about where TSLA is going. They're not bullish or bearish. They're *neutral* — but their hedging activity moves markets.
-
-## How dealer hedging works
-
-Let's say a trader buys $400 TSLA calls. The dealer who sold those calls now has risk: if TSLA goes up, they lose money.
-
-To stay neutral, the dealer buys TSLA stock to hedge. If TSLA keeps going up, they buy more. If it goes down, they sell.
-
-Multiply this by billions of dollars in options flow, and you get *massive* buying and selling pressure at specific price levels.
-
-## Supportive vs hostile regimes
-
-**Positive gamma (supportive)**
-- Dealers buy dips and sell rips
-- Price moves get absorbed
-- Trends are smoother, less volatile
-- Easier to hold positions
-
-**Negative gamma (hostile)**
-- Dealers sell into weakness, buy into strength
-- Moves accelerate and overshoot
-- Volatility spikes
-- Harder to time entries and exits
-
-Same stock. Same news. Completely different trading environments.
-
-## The levels dealers defend
-
-Dealer positioning clusters around option strikes with high open interest:
-
-- **Put Wall**: Heavy put concentration. Dealers buy stock here to hedge. Acts as support.
-- **Call Wall**: Heavy call concentration. Dealers sell stock here. Acts as resistance.
-- **Gamma Strike**: The flip zone. Above it, dealers are supportive. Below it, they're hostile.
-
-These levels shift as options expire and new positions are opened. What was support yesterday might be gone tomorrow.
-
-## Reading the flow
-
-Beyond static levels, there's real-time flow. When institutions aggressively buy puts, dealers have to sell stock. When call buying spikes, dealers hedge by buying.
-
-This is why TSLA can move 3% in minutes on no news — the flow changed, dealers adjusted, and price followed.
-
-## Why this matters for you
-
-You don't need to trade options to benefit from this. Understanding dealer positioning tells you:
-
-- Where support and resistance actually live (not just trendlines)
-- Whether the environment favors holding or scalping
-- When a move is likely to accelerate vs. reverse
-
-It's the difference between trading with the structure and fighting against it.
+**Dealer positioning** shows where market makers are hedged and how they'll react to price moves. It's the foundation of gamma-based trading.
 
 ---
 
-## See what the dealers see
+## Key Concepts
 
-Flacko AI tracks dealer positioning daily. We show you the key levels, the gamma regime, and what it means for your trades.
+| Term | Definition |
+|------|------------|
+| **Dealers** | Market makers who sell you options |
+| **Hedging** | How dealers offset their risk |
+| **Gamma exposure** | How much dealers must buy/sell when price moves |
+| **Open interest** | Total outstanding contracts at each strike |
 
-Stop flying blind. Know the terrain.
+---
 
-**Join the gang ⚔️** [Sign up](/signup)
+## How Dealers Hedge
+
+| Customer Buys | Dealer Does | Price Effect |
+|---------------|-------------|--------------|
+| Calls | Buys shares | Pushes up |
+| Puts | Sells shares | Pushes down |
+| Call spreads | Partial hedge | Muted effect |
+| Put spreads | Partial hedge | Muted effect |
+
+---
+
+## Reading the Options Chain
+
+| Strike | Call OI | Put OI | Dominant | Implication |
+|--------|---------|--------|----------|-------------|
+| $430 | 50,000 | 10,000 | Calls | Call Wall — resistance |
+| $420 | 30,000 | 35,000 | Balanced | Gamma Strike — reaction zone |
+| $410 | 15,000 | 45,000 | Puts | Put Wall — support |
+
+---
+
+## Positioning Signals
+
+| Signal | What It Means |
+|--------|---------------|
+| **Heavy call OI above price** | Upside magnet, resistance |
+| **Heavy put OI below price** | Downside floor, support |
+| **Call OI increasing** | Market expects upside |
+| **Put OI increasing** | Market hedging downside |
+| **OI concentrated at one strike** | Strong pin potential |
+
+---
+
+## Dealer Gamma Profile
+
+The **gamma profile** shows net dealer exposure across strikes:
+
+```
+Positive Gamma Zone (above $420)
+─────────────────────────────────
+     │ Dealers buy dips
+     │ Dealers sell rips
+     │ = Stabilizing
+─────────────────────────────────
+Gamma Strike ($420)
+─────────────────────────────────
+     │ Dealers sell dips
+     │ Dealers buy rips
+     │ = Amplifying
+─────────────────────────────────
+Negative Gamma Zone (below $420)
+```
+
+---
+
+## How Positioning Changes
+
+| Event | Effect on Positioning |
+|-------|----------------------|
+| **Options expiration** | OI drops, levels reset |
+| **Big price move** | Dealers adjust, levels shift |
+| **New week** | Fresh flow, updated strikes |
+| **Earnings approach** | Put OI increases (hedging) |
+
+---
+
+## Using Positioning in Your Trading
+
+| Positioning | Trading Approach |
+|-------------|------------------|
+| **Strong Call Wall above** | Expect resistance, take profits near |
+| **Strong Put Wall below** | Expect support, look for bounces |
+| **Gamma Strike nearby** | Watch for reaction, high volatility |
+| **Imbalanced OI** | Follow the dominant direction |
+
+---
+
+## Example
+
+> **SpotGamma Data:**
+> - Call Wall: $435 (heavy OI)
+> - Gamma Strike: $420
+> - Put Wall: $400 (heavy OI)
+> - Current price: $418
+> 
+> **Read:**
+> - Just below Gamma Strike = negative gamma territory
+> - Put Wall provides support at $400
+> - Call Wall caps upside at $435
+> 
+> **Implication:**
+> - Expect volatility (negative gamma)
+> - Look for bounce at $400
+> - Fade rallies toward $435
+
+---
+
+## Key Takeaways
+
+| Concept | Remember |
+|---------|----------|
+| **Dealers hedge** | Their actions move price |
+| **OI shows positioning** | High OI = key level |
+| **Gamma profile matters** | Above vs below strike changes behavior |
+| **Positioning shifts** | Check daily, especially after OpEx |
+
+---
+
+*Understand where dealers are positioned, and you understand where price will react.*
