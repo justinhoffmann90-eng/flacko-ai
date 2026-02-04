@@ -66,6 +66,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Bot API endpoints (internal use for indexing/query)
+  if (request.nextUrl.pathname.startsWith("/api/bot")) {
+    return supabaseResponse;
+  }
+
   // Alert debug endpoint (uses Bearer token auth like cron)
   if (request.nextUrl.pathname.startsWith("/api/alerts/debug")) {
     return supabaseResponse;
