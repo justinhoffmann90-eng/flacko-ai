@@ -41,19 +41,17 @@ export async function generateTweetDrafts(): Promise<TweetDraftInput[]> {
 
   const drafts: TweetDraftInput[] = [];
 
-  const levelTweet = buildLevelAccuracyTweet(targetDate, results);
-  if (levelTweet) drafts.push({ date: targetDate, type: "level", content: levelTweet });
-
+  // Generate exactly 3 tweet types: mode, level, keyLevel
   const modeTweet = buildModeRecapTweet(targetDate, extracted, ohlc);
   if (modeTweet) drafts.push({ date: targetDate, type: "mode", content: modeTweet });
 
-  const scenarioTweet = buildScenarioTweet(targetDate, extracted, ohlc);
-  if (scenarioTweet) drafts.push({ date: targetDate, type: "scenario", content: scenarioTweet });
+  const levelTweet = buildLevelAccuracyTweet(targetDate, results);
+  if (levelTweet) drafts.push({ date: targetDate, type: "level", content: levelTweet });
 
   const keyLevelTweet = buildKeyLevelTweet(targetDate, extracted, ohlc);
   if (keyLevelTweet) drafts.push({ date: targetDate, type: "keyLevel", content: keyLevelTweet });
 
-  return drafts;
+  return drafts.slice(0, 3); // Ensure max 3 drafts
 }
 
 function buildLevelAccuracyTweet(date: string, results: LevelResult[]): string | null {

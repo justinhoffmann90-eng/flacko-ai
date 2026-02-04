@@ -28,6 +28,13 @@ export async function POST() {
     }
 
     const serviceSupabase = await createServiceClient();
+
+    // Clear existing pending drafts before inserting new ones
+    await serviceSupabase
+      .from("tweet_drafts")
+      .delete()
+      .eq("status", "pending");
+
     const { error } = await serviceSupabase
       .from("tweet_drafts")
       .insert(

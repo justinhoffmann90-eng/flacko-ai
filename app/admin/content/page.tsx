@@ -179,6 +179,23 @@ export default function ContentHubPage() {
     }
   };
 
+  const refreshTweetDrafts = async () => {
+    setTweetDraftsLoading(true);
+    setTweetDraftsError(null);
+
+    try {
+      const response = await fetch("/api/tweets/generate", { method: "POST" });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to refresh drafts");
+      }
+      await loadTweetDrafts();
+    } catch (err) {
+      setTweetDraftsError(err instanceof Error ? err.message : "Unknown error");
+      setTweetDraftsLoading(false);
+    }
+  };
+
   const handleCopyDraft = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedDraftId(id);
@@ -476,7 +493,7 @@ export default function ContentHubPage() {
                     </div>
                   </div>
                   <button
-                    onClick={loadTweetDrafts}
+                    onClick={refreshTweetDrafts}
                     disabled={tweetDraftsLoading}
                     className={`w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium ${
                       tweetDraftsLoading
@@ -484,7 +501,7 @@ export default function ContentHubPage() {
                         : "bg-gray-700 hover:bg-gray-600"
                     }`}
                   >
-                    {tweetDraftsLoading ? "Loading..." : "↻ Refresh"}
+                    {tweetDraftsLoading ? "Refreshing..." : "↻ Refresh"}
                   </button>
                 </div>
               </div>
