@@ -34,12 +34,19 @@ const lessonGroups = [
     description: "How to use the system day-to-day.",
     lessons: [
       {
+        title: "How to Use Flacko AI",
+        description: "A complete overview of the system and workflow.",
+        time: "5 min",
+        href: "/learn/how-to-use-flacko",
+        icon: <BookOpen className="h-5 w-5" />,
+        badge: "Start here",
+      },
+      {
         title: "Modes",
         description: "The risk dial that controls your position sizing.",
         time: "5 min",
         href: "/learn/modes",
         icon: <TrafficCone className="h-5 w-5" />,
-        badge: "Start here",
       },
       {
         title: "Reports",
@@ -199,7 +206,7 @@ export default function LearnHubPage() {
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button asChild className="h-11 px-6">
-                <Link href="/learn/modes">
+                <Link href="/learn/how-to-use-flacko">
                   Start learning <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
