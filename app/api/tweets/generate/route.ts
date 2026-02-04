@@ -1,3 +1,4 @@
+// Force deploy: 2026-02-03 22:17 CT
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateTweetDrafts } from "@/lib/tweets/generator";
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
 
     // Use Chicago timezone for today's date
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    console.log(`[Tweet Generate] Using date: ${today}, UTC now: ${new Date().toISOString()}`);
     const drafts = await generateTweetDrafts(today);
 
     if (drafts.length === 0) {

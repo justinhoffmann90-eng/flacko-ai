@@ -16,6 +16,7 @@ const MAX_TWEET_LENGTH = 4000; // X premium allows longer posts
 export async function generateTweetDrafts(date?: string): Promise<TweetDraftInput[]> {
   // Use Chicago timezone for "today"
   const targetDate = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  console.log(`[Tweet Generator] Target date: ${targetDate}, input date: ${date}`);
   const supabase = await createServiceClient();
 
   const { data: report, error: reportError } = await supabase
