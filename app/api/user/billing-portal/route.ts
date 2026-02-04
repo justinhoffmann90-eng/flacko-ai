@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { createBillingPortalSession } from "@/lib/stripe/server";
+import { headers } from "next/headers";
 
 export async function POST() {
   try {
@@ -22,14 +23,27 @@ export async function POST() {
       return NextResponse.json({ error: "No subscription found" }, { status: 404 });
     }
 
+    // Build return URL - prefer env var, fall back to request host
+    let returnUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!returnUrl) {
+      const headersList = await headers();
+      const host = headersList.get("host") || "www.flacko.ai";
+      const protocol = host.includes("localhost") ? "http" : "https";
+      returnUrl = `${protocol}://${host}`;
+    }
+
     const session = await createBillingPortalSession({
       customerId: subscription.stripe_customer_id,
-      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
+      returnUrl: `${returnUrl}/settings`,
     });
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Billing portal error:", error);
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error("Error details:", error.message, error.stack);
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
