@@ -22,16 +22,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Use Chicago timezone for today's date - reliable method
-    const formatter = new Intl.DateTimeFormat('en-CA', { 
-      timeZone: 'America/Chicago',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    const today = formatter.format(new Date());
-    console.log(`[Tweet Generate] Chicago date: ${today}`);
-    const drafts = await generateTweetDrafts(today);
+    // Get the latest report date (don't require today's report)
+    const serviceSupabaseForDate = await createServiceClient();
+    const { data: latestReport } = await serviceSupabaseForDate
+      .from("reports")
+      .select("report_date")
+      .order("report_date", { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (!latestReport) {
+      return NextResponse.json({ error: "No reports found" }, { status: 404 });
+    }
+    
+    const targetDate = latestReport.report_date;
+    console.log(`[Tweet Generate] Using latest report date: ${targetDate}`);
+    const drafts = await generateTweetDrafts(targetDate);
 
     if (drafts.length === 0) {
       return NextResponse.json({ error: "No drafts generated" }, { status: 400 });
