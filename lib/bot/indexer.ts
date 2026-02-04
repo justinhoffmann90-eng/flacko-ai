@@ -167,7 +167,7 @@ export async function indexKnowledgeBase({
   const { data: discordLogs, error: discordError } = await supabase
     .from("discord_alert_log")
     .select("message_preview, channel_name, created_at")
-    .in("channel_name", ["fs-insight", "tesla-research"])
+    .in("channel_name", ["fs-insight", "tesla-research", "hiro-intraday"])
     .order("created_at", { ascending: false });
 
   if (discordError) {

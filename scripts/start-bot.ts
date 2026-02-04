@@ -4,6 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 
 const RATE_LIMIT_MS = 15_000;
 const ASK_CHANNEL_ID = "1468414857815523459";
+const HIRO_CHANNEL_ID = "1465366203131236423";
+
+// Cache for HIRO messages (refresh every 5 minutes)
+let hiroCache: { messages: string; timestamp: number } | null = null;
+const HIRO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const BOBBY_AXELROD_PROMPT = `You are Bobby Axelrod — billionaire hedge fund legend from Billions. You built Axe Capital from nothing and you've seen every market trick in the book.
 
@@ -54,6 +59,73 @@ async function embedText(text: string): Promise<number[]> {
   return data.data[0]?.embedding || [];
 }
 
+// Fetch recent HIRO messages from Discord channel
+async function getRecentHiroMessages(client: Client): Promise<string> {
+  try {
+    // Check cache first
+    if (hiroCache && Date.now() - hiroCache.timestamp < HIRO_CACHE_TTL) {
+      return hiroCache.messages;
+    }
+
+    const channel = await client.channels.fetch(HIRO_CHANNEL_ID);
+    if (!channel || !channel.isTextBased()) {
+      console.log("[HIRO] Channel not found or not text-based");
+      return "";
+    }
+
+    // Fetch last 5 messages from HIRO channel
+    const messages = await (channel as any).messages.fetch({ limit: 5 });
+    
+    if (!messages || messages.size === 0) {
+      return "";
+    }
+
+    // Get today's date for filtering
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    
+    // Format messages, prioritizing today's
+    const hiroUpdates: string[] = [];
+    messages.forEach((msg: any) => {
+      if (msg.author.bot && msg.embeds.length > 0) {
+        const embed = msg.embeds[0];
+        const msgDate = msg.createdAt.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+        const msgTime = msg.createdAt.toLocaleTimeString('en-US', { 
+          timeZone: 'America/Chicago', 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        const isToday = msgDate === today;
+        
+        let content = embed.description || "";
+        if (embed.fields) {
+          embed.fields.forEach((f: any) => {
+            content += `\n${f.name}: ${f.value}`;
+          });
+        }
+        
+        if (content) {
+          hiroUpdates.push(`[HIRO ${isToday ? 'TODAY' : msgDate} ${msgTime}] ${content.slice(0, 500)}`);
+        }
+      }
+    });
+
+    if (hiroUpdates.length === 0) {
+      return "";
+    }
+
+    const result = `\n\n[RECENT HIRO INTRADAY ALERTS]\n${hiroUpdates.join("\n\n")}`;
+    
+    // Update cache
+    hiroCache = { messages: result, timestamp: Date.now() };
+    console.log("[HIRO] Fetched", hiroUpdates.length, "messages");
+    
+    return result;
+  } catch (error) {
+    console.error("[HIRO] Error fetching messages:", error);
+    return "";
+  }
+}
+
 // Fetch live market data from Yahoo Finance
 async function getLiveMarketData(): Promise<string> {
   try {
@@ -84,15 +156,19 @@ async function getLiveMarketData(): Promise<string> {
   }
 }
 
-async function queryKnowledge(question: string, userId: string, username: string): Promise<string> {
+async function queryKnowledge(question: string, userId: string, username: string, client: Client): Promise<string> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
   // Get today's date in Chicago timezone (CT)
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
   
-  // Fetch live market data
-  const liveData = await getLiveMarketData();
+  // Fetch live market data and HIRO updates in parallel
+  const [liveData, hiroData] = await Promise.all([
+    getLiveMarketData(),
+    getRecentHiroMessages(client),
+  ]);
   console.log("[LIVE DATA]", liveData || "(none)");
+  console.log("[HIRO DATA]", hiroData ? `${hiroData.length} chars` : "(none)");
   
   const embedding = await embedText(question);
   
@@ -123,7 +199,7 @@ async function queryKnowledge(question: string, userId: string, username: string
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   const context = (chunks || []).map((c: any, i: number) => `[${i+1}] (${c.source} ${c.source_date || ""}) ${c.content}`).join("\n\n");
   
-  const prompt = `${BOBBY_AXELROD_PROMPT}\n\nTODAY'S DATE: ${today}\nALWAYS prioritize data from today's date (${today}) when answering about current conditions, mode, or outlook.${liveData}\n\n---\nKNOWLEDGE BASE:\n${context || "No specific context."}\n---\n\nUser: "${question}"\n\nRespond as Bobby Axelrod (vary your style):`;
+  const prompt = `${BOBBY_AXELROD_PROMPT}\n\nTODAY'S DATE: ${today}\nALWAYS prioritize data from today's date (${today}) when answering about current conditions, mode, or outlook.${liveData}${hiroData}\n\n---\nKNOWLEDGE BASE:\n${context || "No specific context."}\n---\n\nUser: "${question}"\n\nRespond as Bobby Axelrod (vary your style):`;
   
   const result = await model.generateContent(prompt);
   const answer = result.response.text().trim();
@@ -165,7 +241,7 @@ async function main() {
 
     try {
       await message.channel.sendTyping();
-      const answer = await queryKnowledge(message.content, message.author.id, message.author.tag);
+      const answer = await queryKnowledge(message.content, message.author.id, message.author.tag, client);
       console.log(`[ANSWER] ${answer.slice(0, 100)}...`);
       await message.reply(answer.slice(0, 1900));
     } catch (error: any) {
