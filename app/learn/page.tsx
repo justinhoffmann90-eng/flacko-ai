@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { TopicCard } from "@/components/learn/TopicCard";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowRight,
   Bell,
   BookOpen,
   Brain,
@@ -207,7 +206,7 @@ export default function LearnHubPage() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button asChild className="h-11 px-6">
                 <Link href="/learn/how-to-use-flacko">
-                  Start learning <ArrowRight className="ml-2 h-4 w-4" />
+                  Start learning
                 </Link>
               </Button>
               <Button asChild variant="outline" className="h-11 px-6">
@@ -262,7 +261,7 @@ export default function LearnHubPage() {
             </p>
             <Button asChild className="mt-4 h-11 px-8">
               <Link href="/pricing">
-                View plans <ArrowRight className="ml-2 h-4 w-4" />
+                View plans
               </Link>
             </Button>
           </div>
