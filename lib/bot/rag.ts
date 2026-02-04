@@ -114,7 +114,10 @@ export async function generateAnswer(
   // Fetch live market data for current price context
   let liveDataContext = "";
   try {
+    console.log("[RAG] Fetching live market data...");
     const snapshot = await getMarketSnapshot();
+    console.log("[RAG] Market snapshot:", JSON.stringify(snapshot));
+    
     const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
     
     const parts = [];
@@ -130,9 +133,12 @@ export async function generateAnswer(
     
     if (parts.length > 0) {
       liveDataContext = `\n\n[LIVE MARKET DATA as of ${now} CT]\n${parts.join(" | ")}\n(Use these current prices when answering about today's market)`;
+      console.log("[RAG] Live data context added:", liveDataContext);
+    } else {
+      console.warn("[RAG] No live data returned from snapshot");
     }
   } catch (error) {
-    console.error("Failed to fetch live market data:", error);
+    console.error("[RAG] Failed to fetch live market data:", error);
     // Continue without live data
   }
 
