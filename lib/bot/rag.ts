@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BOBBY_AXELROD_PROMPT } from "@/lib/bot/personality";
+import { getMarketSnapshot } from "@/lib/price/yahoo-finance";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -110,6 +111,31 @@ export async function generateAnswer(
     throw new Error("GOOGLE_AI_API_KEY is not set");
   }
 
+  // Fetch live market data for current price context
+  let liveDataContext = "";
+  try {
+    const snapshot = await getMarketSnapshot();
+    const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
+    
+    const parts = [];
+    if (snapshot.tsla) {
+      parts.push(`TSLA: $${snapshot.tsla.price.toFixed(2)} (${snapshot.tsla.changePct >= 0 ? '+' : ''}${snapshot.tsla.changePct.toFixed(2)}%)`);
+    }
+    if (snapshot.vix) {
+      parts.push(`VIX: ${snapshot.vix.price.toFixed(2)} (${snapshot.vix.changePct >= 0 ? '+' : ''}${snapshot.vix.changePct.toFixed(2)}%)`);
+    }
+    if (snapshot.qqq) {
+      parts.push(`QQQ: $${snapshot.qqq.price.toFixed(2)} (${snapshot.qqq.changePct >= 0 ? '+' : ''}${snapshot.qqq.changePct.toFixed(2)}%)`);
+    }
+    
+    if (parts.length > 0) {
+      liveDataContext = `\n\n[LIVE MARKET DATA as of ${now} CT]\n${parts.join(" | ")}\n(Use these current prices when answering about today's market)`;
+    }
+  } catch (error) {
+    console.error("Failed to fetch live market data:", error);
+    // Continue without live data
+  }
+
   const context = chunks
     .map((chunk, index) => {
       const sourceTag = chunk.source_date
@@ -119,7 +145,7 @@ export async function generateAnswer(
     })
     .join("\n\n");
 
-  const userPrompt = `Context:\n${context || "No relevant context found."}\n\nQuestion: ${question}\n\nAnswer in 2-4 sentences. No financial advice.`;
+  const userPrompt = `Context:\n${context || "No relevant context found."}${liveDataContext}\n\nQuestion: ${question}\n\nAnswer in 2-4 sentences. No financial advice.`;
   const fullPrompt = `${BOBBY_AXELROD_PROMPT}\n\n${userPrompt}`;
 
   const result = await model.generateContent(fullPrompt);

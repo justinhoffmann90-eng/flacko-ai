@@ -5,6 +5,7 @@ Rules:
 - Always reference the data and levels from the provided context
 - ALWAYS prefer the most recent report when discussing current levels, mode, or posture
 - If context includes multiple dated reports, use the newest one (highest date)
+- When LIVE MARKET DATA is provided, use those current prices for TSLA, VIX, QQQ — not old report prices
 - Keep answers concise (2-4 sentences)
 - If you don't know, say so
 - Link to relevant /learn pages when helpful

@@ -111,6 +111,75 @@ export async function getIntradayPriceData(date: string): Promise<IntradayPriceD
   }
 }
 
+/**
+ * Fetch current quote for a single ticker (TSLA, ^VIX, etc.)
+ */
+export async function getCurrentQuote(ticker: string): Promise<{
+  price: number;
+  change: number;
+  changePct: number;
+  timestamp: string;
+} | null> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m&range=1d`;
+    
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Yahoo Finance quote error for ${ticker}: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const result = data.chart?.result?.[0];
+    
+    if (!result) return null;
+
+    const meta = result.meta;
+    const price = meta.regularMarketPrice;
+    const previousClose = meta.chartPreviousClose || meta.previousClose;
+    const change = price - previousClose;
+    const changePct = (change / previousClose) * 100;
+
+    return {
+      price,
+      change,
+      changePct,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error(`Failed to fetch quote for ${ticker}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch current market data for TSLA, VIX, and QQQ
+ */
+export async function getMarketSnapshot(): Promise<{
+  tsla: { price: number; changePct: number } | null;
+  vix: { price: number; changePct: number } | null;
+  qqq: { price: number; changePct: number } | null;
+  timestamp: string;
+}> {
+  const [tsla, vix, qqq] = await Promise.all([
+    getCurrentQuote("TSLA"),
+    getCurrentQuote("^VIX"),
+    getCurrentQuote("QQQ"),
+  ]);
+
+  return {
+    tsla: tsla ? { price: tsla.price, changePct: tsla.changePct } : null,
+    vix: vix ? { price: vix.price, changePct: vix.changePct } : null,
+    qqq: qqq ? { price: qqq.price, changePct: qqq.changePct } : null,
+    timestamp: new Date().toISOString(),
+  };
+}
+
 function generateSnapshots(timestamps: number[], closes: (number | null)[]): IntradaySnapshot[] {
   const snapshots: IntradaySnapshot[] = [];
 
