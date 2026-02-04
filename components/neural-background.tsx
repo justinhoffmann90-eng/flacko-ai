@@ -86,7 +86,7 @@ export function NeuralBackground() {
           const distance = Math.sqrt(dx * dx + dy * dy);
 
           if (distance < connectionDistance) {
-            const opacity = (1 - distance / connectionDistance) * 0.15;
+            const opacity = (1 - distance / connectionDistance) * 0.35;
             
             // Create gradient line
             const gradient = ctx.createLinearGradient(node.x, node.y, other.x, other.y);
@@ -109,8 +109,8 @@ export function NeuralBackground() {
           node.x, node.y, 0,
           node.x, node.y, glowRadius
         );
-        glow.addColorStop(0, "rgba(140, 160, 200, 0.3)");
-        glow.addColorStop(0.5, "rgba(100, 130, 180, 0.1)");
+        glow.addColorStop(0, "rgba(140, 160, 200, 0.5)");
+        glow.addColorStop(0.5, "rgba(100, 130, 180, 0.2)");
         glow.addColorStop(1, "rgba(80, 100, 140, 0)");
 
         ctx.beginPath();
@@ -120,7 +120,7 @@ export function NeuralBackground() {
 
         // Draw node core
         ctx.beginPath();
-        ctx.fillStyle = "rgba(160, 180, 220, 0.6)";
+        ctx.fillStyle = "rgba(160, 180, 220, 0.8)";
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
         ctx.fill();
       });
@@ -132,7 +132,7 @@ export function NeuralBackground() {
           pulseNode.x, pulseNode.y, 0,
           pulseNode.x, pulseNode.y, 40
         );
-        pulseGradient.addColorStop(0, "rgba(100, 150, 255, 0.2)");
+        pulseGradient.addColorStop(0, "rgba(100, 150, 255, 0.4)");
         pulseGradient.addColorStop(1, "rgba(100, 150, 255, 0)");
         
         ctx.beginPath();
@@ -158,7 +158,7 @@ export function NeuralBackground() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.7 }}
+      style={{ opacity: 0.9 }}
     />
   );
 }

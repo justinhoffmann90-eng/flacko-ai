@@ -691,8 +691,14 @@ export default function LandingPage() {
       {/* ============================================
           SECTION 8: PRICING + CTA
           ============================================ */}
-      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
-        <div className="max-w-xl mx-auto">
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950 relative overflow-hidden">
+        {/* Neural Network Background */}
+        <div className="absolute inset-0">
+          <NeuralBackground />
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-transparent to-zinc-950" />
+        </div>
+        
+        <div className="max-w-xl mx-auto relative z-10">
           <h2 className="text-2xl font-bold mb-6 text-center">
             install our operating system.
           </h2>
