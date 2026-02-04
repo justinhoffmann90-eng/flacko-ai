@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb } from "lucide-react";
+import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb, Loader2 } from "lucide-react";
 import { NeuralBackground } from "@/components/neural-background";
 import { useState, useEffect } from "react";
 
@@ -27,6 +27,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
 export default function LandingPage() {
   const [showSticky, setShowSticky] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +36,23 @@ export default function LandingPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleDirectCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const response = await fetch("/api/create-checkout", { method: "POST" });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "Something went wrong. Please try again.");
+        setCheckoutLoading(false);
+      }
+    } catch {
+      alert("Something went wrong. Please try again.");
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <main className="bg-black text-zinc-100 min-h-screen">
@@ -703,26 +721,42 @@ export default function LandingPage() {
             install our operating system.
           </h2>
 
-          {/* Founder Tier Card */}
-          <div className="bg-zinc-900/80 border border-zinc-700 rounded-2xl p-6 mb-6 relative overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-1 bg-white" />
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-semibold tracking-widest text-zinc-300 uppercase">⚡ founder tier</span>
-              <span className="text-[11px] font-bold text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-full">11 spots left</span>
-            </div>
-            <div className="flex items-end gap-2 mb-4">
-              <span className="text-4xl font-bold text-white">$29.99</span>
-              <span className="text-sm text-zinc-500">/month</span>
-              <span className="text-xs text-zinc-600 line-through">$39.99</span>
-            </div>
-
-            <div className="mb-4">
-              <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-white w-[78%] rounded-full" />
+          {/* Founder Tier Card - with glow effects */}
+          <div className="relative mb-6">
+            {/* Glow effect behind card */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-2xl blur-xl opacity-50" />
+            
+            <div className="relative bg-zinc-900/90 backdrop-blur-sm border border-zinc-700/50 rounded-2xl p-6 overflow-hidden">
+              {/* Top accent line with glow */}
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-white to-transparent" />
+              <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-white/10 to-transparent" />
+              
+              <div className="flex items-center justify-between mb-4 relative">
+                <span className="text-xs font-semibold tracking-widest text-zinc-300 uppercase flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                  </span>
+                  founder tier
+                </span>
+                <span className="text-[11px] font-bold text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-full border border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.3)]">11 spots left</span>
               </div>
-              <div className="flex justify-between text-[11px] text-zinc-500 mt-2">
-                <span>39 of 50 claimed</span>
-                <span>next tier: $39.99/mo</span>
+              <div className="flex items-end gap-2 mb-4">
+                <span className="text-4xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">$29.99</span>
+                <span className="text-sm text-zinc-500">/month</span>
+                <span className="text-xs text-zinc-600 line-through">$39.99</span>
+              </div>
+
+              <div className="mb-4">
+                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
+                  <div className="h-full bg-gradient-to-r from-white via-white to-zinc-300 w-[78%] rounded-full relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-[shimmer_2s_infinite] -skew-x-12" />
+                  </div>
+                </div>
+                <div className="flex justify-between text-[11px] text-zinc-500 mt-2">
+                  <span>39 of 50 claimed</span>
+                  <span>next tier: $39.99/mo</span>
+                </div>
               </div>
             </div>
           </div>
@@ -750,13 +784,26 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <Link href="/signup" className="block">
-            <Button className="w-full bg-white text-black hover:bg-zinc-200">
-              join the gang ⚔️
+          {/* CTA Button with glow - direct to Stripe */}
+          <div className="relative">
+            <div className="absolute -inset-1 bg-white/30 rounded-xl blur-md" />
+            <Button 
+              onClick={handleDirectCheckout}
+              className="relative w-full bg-white text-black hover:bg-zinc-100 h-12 text-base font-semibold shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.5)]" 
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  redirecting...
+                </>
+              ) : (
+                "count me in ⚔️"
+              )}
             </Button>
-          </Link>
+          </div>
 
-          {/* Price Tier Ladder */}
+          {/* Price Tier Ladder with glowing orbs */}
           <p className="text-[11px] uppercase tracking-widest text-zinc-600 mt-8 mb-4 text-center">
             lock in your price — increases every 50 members
           </p>
@@ -766,28 +813,35 @@ export default function LandingPage() {
               { label: "spots 1-50", price: "$29.99/mo", active: true },
               { label: "spots 51-100", price: "$39.99/mo", active: false },
               { label: "spots 101-150", price: "$49.99/mo", active: false },
-              { label: "spots 151-200", price: "$59.99/mo", active: false },
-              { label: "spots 201+", price: "$69.99/mo", active: false },
+              { label: "spots 151+", price: "$59.99+", active: false },
             ].map((tier) => (
               <div
                 key={tier.label}
-                className={`flex items-center justify-between rounded-lg px-4 py-3 border ${
+                className={`flex items-center justify-between rounded-lg px-4 py-3 border transition-all ${
                   tier.active
-                    ? "bg-zinc-800 border-zinc-600"
-                    : "bg-zinc-900/50 border-zinc-800"
+                    ? "bg-zinc-800/80 border-zinc-600 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                    : "bg-zinc-900/50 border-zinc-800/50"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      tier.active ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" : "bg-zinc-700"
-                    }`}
-                  />
+                  {/* Glowing orb */}
+                  <span className="relative flex items-center justify-center">
+                    {tier.active && (
+                      <span className="absolute w-4 h-4 rounded-full bg-white/30 blur-md animate-pulse" />
+                    )}
+                    <span
+                      className={`relative w-3 h-3 rounded-full ${
+                        tier.active 
+                          ? "bg-gradient-to-br from-white to-zinc-300 shadow-[0_0_12px_rgba(255,255,255,0.8)]" 
+                          : "bg-zinc-700"
+                      }`}
+                    />
+                  </span>
                   <span className={`text-sm ${tier.active ? "text-white font-semibold" : "text-zinc-500"}`}>
                     {tier.label}
                   </span>
                   {tier.active && (
-                    <span className="text-[10px] font-bold bg-white text-black px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-bold bg-gradient-to-r from-white to-zinc-200 text-black px-2 py-0.5 rounded shadow-[0_0_10px_rgba(255,255,255,0.4)]">
                       you are here
                     </span>
                   )}

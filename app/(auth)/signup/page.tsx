@@ -52,7 +52,7 @@ export default function SignupPage() {
           flacko ai
         </p>
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-          join the gang ⚔️
+          count me in ⚔️
         </h1>
         <p className="text-sm text-zinc-400">
           daily war briefings, price alerts, and a system that tells you when to pay attention.
@@ -115,7 +115,7 @@ export default function SignupPage() {
                   redirecting...
                 </>
               ) : (
-                "join the gang ⚔️"
+                "count me in ⚔️"
               )}
             </Button>
           </div>
@@ -204,15 +204,11 @@ export default function SignupPage() {
       </div>
 
       {/* Footer */}
-      <div className="text-center space-y-2 pb-4 relative z-10">
+      <div className="text-center pb-4 relative z-10">
         <p className="text-[10px] text-zinc-500">
           by subscribing, you agree to our{" "}
           <Link href="/terms" className="underline hover:text-zinc-300">terms</Link> and{" "}
           <Link href="/privacy" className="underline hover:text-zinc-300">privacy policy</Link>
-        </p>
-        <p className="text-[10px] text-zinc-600">
-          already a member?{" "}
-          <Link href="/login" className="underline hover:text-zinc-300">sign in</Link>
         </p>
       </div>
 
