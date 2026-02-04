@@ -123,7 +123,7 @@ export async function indexKnowledgeBase({
 
   const reportQuery = supabase
     .from("reports")
-    .select("markdown_content, report_date")
+    .select("raw_markdown, report_date")
     .order("report_date", { ascending: false });
 
   if (days && Number.isFinite(days)) {
@@ -140,9 +140,9 @@ export async function indexKnowledgeBase({
   }
 
   const reportDocs: KnowledgeChunkInput[] = (reports || [])
-    .filter((report) => report.markdown_content)
+    .filter((report) => report.raw_markdown)
     .map((report) => ({
-      content: report.markdown_content as string,
+      content: report.raw_markdown as string,
       source: "report",
       source_date: report.report_date as string,
     }));
