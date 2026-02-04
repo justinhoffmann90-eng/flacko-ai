@@ -315,6 +315,25 @@ export async function POST(request: Request) {
     });
     await sendReportNotification(discordMessage);
 
+    // Auto-refresh Discord bot knowledge base with new report
+    try {
+      const indexUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}/api/bot/index`
+        : "https://www.flacko.ai/api/bot/index";
+      await fetch(indexUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-api-key": process.env.CRON_SECRET || "",
+        },
+        body: JSON.stringify({}),
+      });
+      console.log("✅ Discord bot knowledge base refreshed with new report");
+    } catch (indexError) {
+      console.error("Failed to refresh bot knowledge base:", indexError);
+      // Non-blocking - bot will still work with existing data
+    }
+
     return NextResponse.json({ success: true, report });
   } catch (error) {
     console.error("Report upload error:", error);
