@@ -1,0 +1,142 @@
+---
+title: "How to Read HIRO"
+description: "Dealer flow in one number. Here's what it's telling you."
+readingTime: "5 min"
+order: 9
+---
+
+## What HIRO measures
+
+HIRO (Hedging Impact Real-time Oracle) tracks **net dealer hedging flow** — whether market makers are buying or selling to hedge their options positions.
+
+Think of it as a window into what institutional money is doing *right now*.
+
+<div className="my-8 p-6 bg-zinc-900 rounded-xl border border-zinc-800">
+  <div className="text-center mb-4 text-sm text-zinc-400">HIRO Reading Scale</div>
+  <div className="flex items-center justify-between text-sm">
+    <div className="text-center">
+      <div className="text-2xl mb-1">🔴</div>
+      <div className="font-mono text-red-400">-1B+</div>
+      <div className="text-zinc-500 text-xs">Heavy selling</div>
+    </div>
+    <div className="text-center">
+      <div className="text-2xl mb-1">🟠</div>
+      <div className="font-mono text-orange-400">-500M</div>
+      <div className="text-zinc-500 text-xs">Moderate selling</div>
+    </div>
+    <div className="text-center">
+      <div className="text-2xl mb-1">⚪</div>
+      <div className="font-mono text-zinc-400">0</div>
+      <div className="text-zinc-500 text-xs">Neutral</div>
+    </div>
+    <div className="text-center">
+      <div className="text-2xl mb-1">🟢</div>
+      <div className="font-mono text-green-400">+500M</div>
+      <div className="text-zinc-500 text-xs">Moderate buying</div>
+    </div>
+    <div className="text-center">
+      <div className="text-2xl mb-1">🟢</div>
+      <div className="font-mono text-green-400">+1B+</div>
+      <div className="text-zinc-500 text-xs">Heavy buying</div>
+    </div>
+  </div>
+</div>
+
+## Reading the number
+
+HIRO is expressed in dollar terms (millions/billions):
+
+| Reading | Interpretation |
+|---------|----------------|
+| **+$500M or higher** | Bullish — dealers actively buying to hedge |
+| **+$100M to +$500M** | Leaning bullish — mild accumulation |
+| **-$100M to +$100M** | Neutral — no strong directional pressure |
+| **-$100M to -$500M** | Leaning bearish — mild distribution |
+| **-$500M or lower** | Bearish — dealers actively selling |
+
+## The percentile matters
+
+Raw numbers need context. A -$300M reading might be extreme one week and normal the next.
+
+That's why we include the **30-day percentile**:
+
+<div className="my-8 p-6 bg-zinc-900 rounded-xl border border-zinc-800">
+  <div className="text-center mb-4 text-sm text-zinc-400">HIRO Percentile Guide</div>
+  <div className="space-y-3">
+    <div className="flex items-center gap-4">
+      <div className="w-24 text-right text-sm text-zinc-400">90th+</div>
+      <div className="flex-1 h-4 bg-green-500/30 rounded relative">
+        <div className="absolute inset-y-0 left-0 w-[90%] bg-green-500 rounded"></div>
+      </div>
+      <div className="w-32 text-sm text-green-400">Extremely bullish</div>
+    </div>
+    <div className="flex items-center gap-4">
+      <div className="w-24 text-right text-sm text-zinc-400">70th-90th</div>
+      <div className="flex-1 h-4 bg-green-500/30 rounded relative">
+        <div className="absolute inset-y-0 left-0 w-[70%] bg-green-500/70 rounded"></div>
+      </div>
+      <div className="w-32 text-sm text-green-400/70">Bullish</div>
+    </div>
+    <div className="flex items-center gap-4">
+      <div className="w-24 text-right text-sm text-zinc-400">30th-70th</div>
+      <div className="flex-1 h-4 bg-zinc-500/30 rounded relative">
+        <div className="absolute inset-y-0 left-0 w-[50%] bg-zinc-500 rounded"></div>
+      </div>
+      <div className="w-32 text-sm text-zinc-400">Neutral zone</div>
+    </div>
+    <div className="flex items-center gap-4">
+      <div className="w-24 text-right text-sm text-zinc-400">10th-30th</div>
+      <div className="flex-1 h-4 bg-red-500/30 rounded relative">
+        <div className="absolute inset-y-0 left-0 w-[30%] bg-red-500/70 rounded"></div>
+      </div>
+      <div className="w-32 text-sm text-red-400/70">Bearish</div>
+    </div>
+    <div className="flex items-center gap-4">
+      <div className="w-24 text-right text-sm text-zinc-400">Below 10th</div>
+      <div className="flex-1 h-4 bg-red-500/30 rounded relative">
+        <div className="absolute inset-y-0 left-0 w-[10%] bg-red-500 rounded"></div>
+      </div>
+      <div className="w-32 text-sm text-red-400">Extremely bearish</div>
+    </div>
+  </div>
+</div>
+
+## HIRO vs price action
+
+HIRO tells you what dealers are doing. Price tells you what already happened.
+
+**Confirmation**: HIRO and price moving together. Strong signal.
+- Price up + HIRO bullish = real buying, trend supported
+- Price down + HIRO bearish = real selling, weakness confirmed
+
+**Divergence**: HIRO and price disagreeing. Watch for reversals.
+- Price up + HIRO flat/negative = rally lacks support, caution
+- Price down + HIRO improving = selling exhaustion, watch for bounce
+
+## How we use HIRO
+
+HIRO is one input into the **mode** calculation. It doesn't override levels, but it adds crucial context:
+
+- **Strong HIRO + good levels** = confidence to size up
+- **Weak HIRO + good levels** = still trade, but respect the caution
+- **Strong HIRO + bad levels** = flow is supportive but structure says wait
+- **Weak HIRO + bad levels** = stay defensive
+
+## Intraday HIRO updates
+
+HIRO changes throughout the day as flow comes in. Flacko AI posts updates at:
+- **9:00 AM CT** — Opening read
+- **11:00 AM CT** — Mid-morning update  
+- **1:00 PM CT** — Afternoon read
+
+Big swings during the day can signal shifting sentiment in real-time.
+
+---
+
+## Track dealer flow daily
+
+Every Flacko AI report includes the HIRO reading with percentile context. Plus intraday updates in Discord when flow shifts.
+
+See what the dealers see.
+
+**Get HIRO updates →** [Sign up](/signup)
