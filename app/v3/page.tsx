@@ -1,0 +1,491 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { NeuralBackground } from "@/components/neural-background";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, FileText, Bell, Crosshair, Calendar, Check } from "lucide-react";
+
+function FAQItem({ question, answer }: { question: string; answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="border-b border-zinc-800 py-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <span className="font-medium text-zinc-200">{question}</span>
+        <ChevronDown
+          className={`w-5 h-5 text-zinc-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      {isOpen && <p className="mt-3 text-sm text-zinc-400 leading-relaxed">{answer}</p>}
+    </div>
+  );
+}
+
+export default function LandingPageV3() {
+  const [showSticky, setShowSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowSticky(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <main className="bg-black text-zinc-100 min-h-screen">
+      {/* sticky header */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur border-b border-zinc-800 transition-all duration-300 ${
+          showSticky ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        }`}
+      >
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
+          <span className="font-semibold text-zinc-200">flacko ai</span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-zinc-500 hidden sm:block">operational status: live</span>
+            <Link href="/signup">
+              <Button size="sm" className="bg-white text-black hover:bg-zinc-200">
+                install os
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* sign in */}
+      <div className="absolute top-4 right-6 z-40">
+        <Link href="/login">
+          <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+            sign in
+          </Button>
+        </Link>
+      </div>
+
+      {/* hero */}
+      <section className="pt-24 pb-16 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 -top-24">
+          <NeuralBackground />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black" />
+        </div>
+
+        <div className="max-w-2xl mx-auto text-center relative z-10">
+          <p className="text-xs text-zinc-500 mb-4 tracking-widest uppercase">battlefield command intelligence</p>
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+            the tsla trading <span className="text-zinc-400">operating system.</span>
+          </h1>
+          <p className="text-lg sm:text-xl text-zinc-300 mb-4">
+            flacko uses ai agents to simulate battlefield market conditions using options dealer flow and technical structure —
+            delivering clear scenarios, key levels, and risk signals before they happen.
+          </p>
+          <p className="text-sm text-zinc-400 mb-8">
+            designed to help traders manage volatility, avoid emotional decisions, and execute with probabilistic clarity.
+          </p>
+
+          <div className="flex justify-center mb-4">
+            <Link href="/signup">
+              <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
+                install the flacko operating system
+              </Button>
+            </Link>
+          </div>
+          <p className="text-xs text-zinc-500">daily war briefings + alerts + intelligence review</p>
+        </div>
+      </section>
+
+      {/* sources monitored */}
+      <section className="py-6 px-6 border-t border-zinc-900/50">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-center text-[10px] text-zinc-600 uppercase tracking-widest mb-4">
+            sources monitored
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8 text-zinc-500 text-xs">
+            <span className="opacity-60">tesla</span>
+            <span className="opacity-60">spotgamma</span>
+            <span className="opacity-60">hiro</span>
+            <span className="opacity-60">tradingview</span>
+            <span className="opacity-60">fs insight</span>
+            <span className="opacity-60">bloomberg</span>
+            <span className="opacity-60">wsj</span>
+          </div>
+        </div>
+      </section>
+
+      {/* value prop */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">why most traders get wiped</h2>
+          <p className="text-zinc-400 leading-relaxed">
+            most traders lose money because they react emotionally to price movement.
+            <br />
+            flacko analyzes dealer positioning, technical structure, and volatility regimes to map where odds shift — helping
+            traders know when to lean offensive, defensive, or patient.
+          </p>
+        </div>
+      </section>
+
+      {/* what you get */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">what you get</h2>
+          <p className="text-center text-zinc-500 mb-10">battlefield tools to keep discipline under fire</p>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-zinc-900/60 rounded-xl p-6 border border-zinc-800">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-cyan-300" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">daily war briefings</h3>
+                  <p className="text-xs text-zinc-500">pre-market intel</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400">
+                ai-generated daily reports outlining market scenarios, key price levels, and directional probabilities using
+                dealer flow and technical confirmation.
+              </p>
+            </div>
+
+            <div className="bg-zinc-900/60 rounded-xl p-6 border border-zinc-800">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-emerald-300" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">real-time alerts</h3>
+                  <p className="text-xs text-zinc-500">defensive lines breached</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400">
+                alerts triggered when price interacts with critical positioning levels, volatility regimes, or structural
+                breakdowns.
+              </p>
+            </div>
+
+            <div className="bg-zinc-900/60 rounded-xl p-6 border border-zinc-800">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <Crosshair className="w-5 h-5 text-blue-300" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">scenario mapping</h3>
+                  <p className="text-xs text-zinc-500">routes to victory or retreat</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400">
+                clear bullish and bearish pathways so traders know what invalidates their thesis before risk appears.
+              </p>
+            </div>
+
+            <div className="bg-zinc-900/60 rounded-xl p-6 border border-zinc-800">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">weekly intelligence review</h3>
+                  <p className="text-xs text-zinc-500">command recalibration</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400">
+                deep-dive reports analyzing macro catalysts, positioning changes, and structural shifts shaping upcoming price
+                behavior.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* differentiation */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">not alerts. not signal chasing. a decision framework.</h2>
+          <p className="text-zinc-400 mb-6">
+            flacko is not trade alerts. flacko is not signal chasing. flacko is a decision framework.
+          </p>
+          <div className="text-left inline-block">
+            <p className="text-sm text-zinc-500 mb-3">it combines:</p>
+            <ul className="space-y-2 text-sm text-zinc-300">
+              <li>• options dealer flow</li>
+              <li>• volatility regime analysis</li>
+              <li>• multi-timeframe technical confirmation</li>
+              <li>• ai-driven scenario simulation</li>
+            </ul>
+            <p className="text-sm text-zinc-400 mt-4">to model how markets behave — not just how they look.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* operating system positioning */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">the operating system positioning</h2>
+          <p className="text-zinc-400 mb-4">
+            flacko functions as a trading operating system. instead of guessing market direction, traders follow structured
+            protocols based on positioning, probability, and scenario confirmation.
+          </p>
+          <p className="text-sm text-zinc-500">
+            as the system evolves, flacko continuously updates its logic, thresholds, and scenario models — improving decision
+            clarity over time.
+          </p>
+        </div>
+      </section>
+
+      {/* regime visualization */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">regime command panel</h2>
+          <p className="text-center text-zinc-500 mb-10">signal posture before the airstrike lands</p>
+
+          <div className="mb-8">
+            <div className="h-2 rounded-full bg-gradient-to-r from-emerald-400 via-yellow-400 via-orange-400 to-red-500 mb-3"></div>
+            <div className="flex justify-between text-[10px] text-zinc-500 px-1">
+              <span>offense</span>
+              <span>warning</span>
+              <span>caution</span>
+              <span>defense</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                <h3 className="font-bold text-emerald-300 text-sm">green</h3>
+              </div>
+              <p className="text-[10px] text-zinc-400 mb-2">trend intact, momentum healthy</p>
+              <ul className="space-y-1 text-[10px] text-zinc-300">
+                <li>• daily cap: up to 25%</li>
+                <li>• good to press offense</li>
+                <li>• hold with conviction</li>
+              </ul>
+            </div>
+
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <h3 className="font-bold text-yellow-300 text-sm">yellow</h3>
+              </div>
+              <p className="text-[10px] text-zinc-400 mb-2">warning signs present</p>
+              <ul className="space-y-1 text-[10px] text-zinc-300">
+                <li>• daily cap: &lt;15%</li>
+                <li>• reduce leverage</li>
+                <li>• shift to watch mode</li>
+              </ul>
+            </div>
+
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-orange-400"></div>
+                <h3 className="font-bold text-orange-300 text-sm">orange</h3>
+              </div>
+              <p className="text-[10px] text-zinc-400 mb-2">structure weakening</p>
+              <ul className="space-y-1 text-[10px] text-zinc-300">
+                <li>• daily cap: 10% or less</li>
+                <li>• pause or small probes</li>
+                <li>• prep for potential exit</li>
+              </ul>
+            </div>
+
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <h3 className="font-bold text-red-300 text-sm">red</h3>
+              </div>
+              <p className="text-[10px] text-zinc-400 mb-2">structure broken or at risk</p>
+              <ul className="space-y-1 text-[10px] text-zinc-300">
+                <li>• daily cap: 5% or less</li>
+                <li>• respect master eject</li>
+                <li>• wait for confirmation</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-zinc-900/50 rounded-xl p-5 border border-zinc-800 text-center">
+            <p className="text-sm text-zinc-400">
+              mode is determined by technical structure + dealer positioning. no single indicator controls the decision.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* social proof */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">social proof</h2>
+          <p className="text-zinc-400">
+            built for traders who believe managing risk and probability creates long-term edge.
+            <br />
+            trusted by traders focused on volatility navigation and disciplined execution.
+          </p>
+        </div>
+      </section>
+
+      {/* tiered pricing */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-400 text-black text-[10px] font-bold px-3 py-1 rounded-full mb-4">
+            limited spots
+          </div>
+          <h2 className="text-3xl font-bold mb-2">
+            join <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">flacko ai</span>
+          </h2>
+          <p className="text-sm text-zinc-500 mb-6">
+            tsla trading intelligence. daily briefings, key levels, and alerts that cut through the noise.
+          </p>
+
+          <div className="bg-gradient-to-br from-cyan-500/10 to-emerald-500/10 border border-cyan-500/30 rounded-2xl p-6 mb-6 relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 to-emerald-400" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-semibold tracking-widest text-cyan-300 uppercase">⚡ founder tier</span>
+              <span className="text-[11px] font-bold text-orange-400 bg-orange-500/20 px-2 py-1 rounded-full">3 spots left</span>
+            </div>
+            <div className="flex items-end gap-2 mb-4">
+              <span className="text-4xl font-bold">$29.99</span>
+              <span className="text-sm text-zinc-500">/month</span>
+              <span className="text-xs text-zinc-600 line-through">$39.99</span>
+            </div>
+
+            <div className="mb-4">
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 w-[94%] rounded-full" />
+              </div>
+              <div className="flex justify-between text-[11px] text-zinc-500 mt-2">
+                <span>47 of 50 claimed</span>
+                <span>next tier: $39.99/mo</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/5 rounded-xl p-5 mb-6">
+            <p className="text-[11px] uppercase tracking-widest text-zinc-500 mb-4">what you get</p>
+            <div className="space-y-3 text-sm text-zinc-300">
+              {[
+                "daily tsla reports before market open",
+                "real-time alerts via discord and email",
+                "mode and tier system for risk management",
+                "key levels from spotgamma flow data",
+                "private discord community",
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <span className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 text-black text-xs flex items-center justify-center">
+                    <Check className="w-3 h-3" />
+                  </span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Link href="/signup" className="block">
+            <Button className="w-full bg-gradient-to-r from-cyan-400 to-emerald-400 text-black hover:opacity-90">
+              lock in founder pricing →
+            </Button>
+          </Link>
+
+          <p className="text-[11px] uppercase tracking-widest text-zinc-600 mt-8 mb-4 text-center">
+            price increases every 50 members
+          </p>
+
+          <div className="space-y-2">
+            {[
+              { label: "spots 1-50", price: "$29.99/mo", active: true },
+              { label: "spots 51-100", price: "$39.99/mo" },
+              { label: "spots 101-150", price: "$49.99/mo" },
+              { label: "spots 151-200", price: "$59.99/mo" },
+              { label: "spots 201+", price: "$69.99/mo" },
+            ].map((tier) => (
+              <div
+                key={tier.label}
+                className={`flex items-center justify-between rounded-lg px-4 py-3 border ${
+                  tier.active
+                    ? "bg-gradient-to-br from-cyan-500/15 to-emerald-500/15 border-cyan-400/40"
+                    : "bg-white/5 border-transparent"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      tier.active ? "bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-[0_0_10px_rgba(0,212,255,0.5)]" : "bg-zinc-700"
+                    }`}
+                  />
+                  <span className={`text-sm ${tier.active ? "text-white font-semibold" : "text-zinc-400"}`}>
+                    {tier.label}
+                  </span>
+                  {tier.active && (
+                    <span className="text-[10px] font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 text-black px-2 py-0.5 rounded">
+                      you are here
+                    </span>
+                  )}
+                </div>
+                <span className={`text-sm ${tier.active ? "text-emerald-300" : "text-zinc-500"}`}>{tier.price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* cta + onboarding */}
+      <section className="py-16 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold mb-4">deploy flacko trading protocols</h2>
+          <p className="text-zinc-400 mb-6">no experience with dealer flow required. flacko translates institutional positioning into clear, actionable market context.</p>
+          <Link href="/signup">
+            <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-8">
+              enter the command os
+            </Button>
+          </Link>
+          <p className="text-xs text-zinc-500 mt-4">
+            flacko does not provide financial advice or guaranteed outcomes. it provides structured market intelligence designed to
+            support informed decision making.
+          </p>
+        </div>
+      </section>
+
+      {/* faq */}
+      <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">faq</h2>
+          <FAQItem
+            question="how is the report created?"
+            answer="the system combines a trained framework built on years of tsla-specific trading philosophy with real-time data feeds. each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from spotgamma. the ai synthesizes all of this into a single daily read on regime, levels, and positioning. it is a systematic process that runs the same way every day."
+          />
+          <FAQItem
+            question="how is the regime mode determined?"
+            answer="the mode is determined by confluence of multiple indicators: market structure, momentum regime, weekly ema hierarchy (9/13/21), dealer positioning from spotgamma, and real-time hiro flow data. no single indicator controls the decision — we look for alignment across technicals and flow."
+          />
+          <FAQItem
+            question="what kind of alerts do i receive?"
+            answer="price alerts when tsla hits key levels from the daily report, mode shift notifications when conditions change, and options flow updates throughout the day. each alert includes context on what it means and what to do."
+          />
+          <FAQItem
+            question="is this only for tsla?"
+            answer="yes, the daily reports and levels are tsla-specific. broader market context is monitored so tsla is not analyzed in a vacuum."
+          />
+        </div>
+      </section>
+
+      {/* footer */}
+      <footer className="py-8 px-6 border-t border-zinc-900">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row justify-between items-center text-xs text-zinc-600 gap-4">
+          <span>flacko ai</span>
+          <div className="flex gap-6">
+            <a href="https://x.com/smdcapital" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400">
+              x
+            </a>
+            <a href="/terms" className="hover:text-zinc-400">
+              terms
+            </a>
+            <a href="/privacy" className="hover:text-zinc-400">
+              privacy
+            </a>
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}

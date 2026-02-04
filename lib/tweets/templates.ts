@@ -2,124 +2,171 @@ export type TweetTemplateType = "level" | "mode" | "scenario" | "keyLevel" | "hi
 
 export const templates: Record<TweetTemplateType, string[]> = {
   level: [
-    `today's gamma strike: $\${level_price}
+    `intel update: gamma strike at $\${level_price}
 
-this is the line that changes everything.
+this is the line between two different wars.
 
 above it:
 • positive gamma regime
-• trends are smooth
+• trends run smooth
 • dips get bought
-• the casino is calm
+• controlled expansion
 
 below it:
 • negative gamma regime
-• moves are violent
+• violent swings
 • nothing holds
-• the casino is chaos
+• pure chaos
 
-same stock. completely different game depending on which side you're on.
+same battlefield. completely different rules.
 
 $TSLA`,
 
-    `$\${level_price} gamma strike — here's why it matters:
+    `battlefield update: $\${level_price} gamma strike
+
+why this level runs the show:
 
 dealers hedge options by buying/selling stock.
 
-above gamma strike = they buy dips (stabilizing)
-below gamma strike = they sell into weakness (amplifying)
+above gamma strike = they buy dips (stabilizing force)
+below gamma strike = they sell weakness (amplifying force)
 
-this is why tsla can trend smoothly for days, then suddenly move 5% in an hour.
+this is why tsla trends for days then moves 5% in an hour.
 
-it's not random. it's regime change.
+not random. regime change.
+
+$TSLA`,
+
+    `soldier reminder: gamma strike is $\${level_price}
+
+most traders don't know this level exists.
+
+they watch price candles while the real war happens in dealer positioning.
+
+above this line = offense
+below this line = defense
+
+know where the line is before you deploy capital.
 
 $TSLA`,
   ],
 
   mode: [
-    `\${mode} mode today — \${daily_cap}% max position size.
+    `war room update: \${mode} mode activated
 
-current posture: \${posture}
-
-why \${mode}? \${mode_reason}
-
-the mode system exists because:
-• volatility isn't constant
-• position sizing should match conditions
-• surviving bad days matters more than maximizing good ones
-
-traders who ignore this blow up.
-traders who respect it compound.
-
-$TSLA`,
-
-    `\${mode} mode = \${daily_cap}% max size.
+daily cap: \${daily_cap}%
 posture: \${posture}
 
 \${mode_reason}
 
-here's what most traders get wrong:
+the mode system exists because volatility isn't constant.
 
-they size positions based on conviction.
-they should size based on conditions.
+sizing based on conviction = emotional trading
+sizing based on conditions = survival
 
-high conviction + wrong conditions = blown account.
-modest conviction + right sizing = still trading tomorrow.
+one keeps you in the war. one makes you a casualty.
+
+$TSLA`,
+
+    `trenches report: \${mode} mode — \${daily_cap}% max position
+
+posture: \${posture}
+
+\${mode_reason}
+
+here's what separates survivors from casualties:
+
+recruits size based on how they feel.
+soldiers size based on battlefield conditions.
+
+high conviction + wrong conditions = supply for smarter traders.
+
+$TSLA`,
+
+    `campaign briefing: running \${mode} mode today
+
+\${daily_cap}% position sizing
+\${posture}
+
+\${mode_reason}
+
+most traders blow up not from being wrong.
+they blow up from being wrong with too much size.
+
+respect the conditions or become liquidity.
 
 $TSLA`,
   ],
 
   scenario: [
-    `today's setup: \${scenario_prediction}
+    `intel update: today's battlefield scenarios
 
-how to use this:
+🐂 bull trigger: \${bull_trigger} → target \${bull_target}
+📊 base case: \${base_trigger} → holds \${base_target}
+🐻 bear trigger: \${bear_trigger} → risk to \${bear_target}
 
-1. identify the trigger level
-2. wait for price to reach it
-3. watch for confirmation (or rejection)
-4. act accordingly
+don't predict which path.
+identify triggers. wait for confirmation. then deploy.
 
-most traders guess. structure traders wait for the market to show its hand.
+the market shows its hand to those patient enough to watch.
+
+$TSLA`,
+
+    `trenches report: three scenarios in play
+
+bull case: \${bull_trigger}
+base case: \${base_trigger}
+bear case: \${bear_trigger}
+
+recruits pick a direction and hope.
+soldiers wait for the market to commit first.
+
+hope is not a strategy.
+structure is.
 
 $TSLA`,
   ],
 
   keyLevel: [
-    `\${key_level_name}: $\${key_level_price}
+    `battlefield update: \${key_level_name} at $\${key_level_price}
 
 why this level matters:
 
 dealers are short options at this strike.
-to hedge, they must buy/sell stock as price approaches.
+to stay neutral they must hedge with stock.
 
-this creates mechanical support or resistance — not hope, not patterns, just math.
+as price approaches = hedging intensifies = mechanical support/resistance.
 
-when everyone's watching the same chart patterns, edge comes from seeing what they can't.
+not patterns. not hope. math.
+
+when everyone watches the same charts, edge comes from seeing what they can't.
 
 $TSLA`,
 
-    `$\${key_level_price} \${key_level_name} — the level to watch today.
+    `intel update: $\${key_level_price} \${key_level_name}
 
-here's how dealer hedging works:
+this is a defensive line built by dealer positioning.
 
-1. traders buy options at a strike
+how it works:
+1. traders buy options at strike
 2. dealers sell those options
-3. to stay neutral, dealers hedge with stock
-4. as price moves toward the strike, hedging intensifies
-5. this creates support/resistance
+3. dealers hedge with stock as price moves
+4. creates support/resistance through mechanics
 
-it's not magic. it's market mechanics.
+retail sees price.
+war room sees structure.
 
 $TSLA`,
 
-    `\${key_level_name} at $\${key_level_price}
+    `soldier reminder: watch $\${key_level_price}
 
-most traders draw support/resistance from price history.
+\${key_level_name} — mechanical level from options flow.
 
-these levels come from options positioning — where dealers are forced to act.
+most traders draw lines from price history.
+these lines come from where dealers are forced to act.
 
-price history shows where buyers showed up before.
-dealer positioning shows where they'll have to show up today.
+history = where buyers showed up before
+positioning = where they'll have to show up today
 
 past vs present. hope vs math.
 
@@ -127,68 +174,44 @@ $TSLA`,
   ],
 
   hiro: [
-    `hiro reading: \${hiro_reading}
-
-\${hiro_context}
-
-what is hiro?
-
-it tracks real-time institutional hedging flow.
-• positive = institutions adding long exposure
-• negative = institutions reducing/hedging
-
-retail watches price.
-smart money watches flow.
-
-hiro shows you what smart money is actually doing — not what they're saying.
-
-$TSLA`,
-
-    `institutional flow check: \${hiro_reading}
+    `war room update: hiro reading \${hiro_reading}
 
 \${hiro_context}
 
 hiro = hedge impact real-time oracle
 
-it measures whether institutions are:
-• buying protection (bearish signal)
-• adding exposure (bullish signal)
-• neutral (waiting)
+tracks institutional hedging flow in real time:
+• positive = adding long exposure
+• negative = reducing/hedging
+• flat = waiting
+
+retail watches price.
+command watches flow.
+
+$TSLA`,
+
+    `intel update: institutional flow at \${hiro_reading}
+
+\${hiro_context}
+
+hiro shows what smart money is doing — not saying.
+
+positive flow = institutions getting long
+negative flow = institutions hedging/reducing
 
 price tells you what happened.
 flow tells you what's happening.
 
 $TSLA`,
-  ],
 
-  scenario: [
-    `today's scenarios:
+    `trenches report: hiro showing \${hiro_reading}
 
-🐂 bull case: \${bull_trigger} → \${bull_target}
-📊 base case: \${base_trigger} → \${base_target}
-🐻 bear case: \${bear_trigger} → \${bear_target}
+\${hiro_context}
 
-how to use this:
+most traders react to candles.
+war room monitors the flow beneath.
 
-don't predict which scenario plays out.
-identify the triggers, then react.
-
-the market will tell you which path it's taking.
-your job is to listen.
-
-$TSLA`,
-
-    `the setup for today:
-
-bull trigger: \${bull_trigger}
-base case: \${base_trigger}
-bear trigger: \${bear_trigger}
-
-most traders pick a direction and hope.
-structure traders wait for confirmation.
-
-hope is not a strategy.
-levels are.
+this is how you see the airstrike before it lands.
 
 $TSLA`,
   ],
