@@ -49,6 +49,30 @@ export async function embedText(text: string): Promise<number[]> {
   return embedding;
 }
 
+/**
+ * Apply recency boost to chunks from reports and weekly reviews.
+ * Recent content gets a similarity boost that decays over ~7 days.
+ */
+function applyRecencyBoost(chunks: RagChunk[]): RagChunk[] {
+  const now = new Date();
+  
+  return chunks.map(chunk => {
+    let boostedSimilarity = chunk.similarity || 0;
+    
+    // Only boost reports and weekly reviews
+    if ((chunk.source === 'report' || chunk.source === 'weekly-review') && chunk.source_date) {
+      const sourceDate = new Date(chunk.source_date);
+      const daysDiff = Math.floor((now.getTime() - sourceDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Boost: 0.15 for today, decays ~0.02/day, floors at 0 after ~7 days
+      const recencyBoost = Math.max(0, 0.15 - daysDiff * 0.02);
+      boostedSimilarity += recencyBoost;
+    }
+    
+    return { ...chunk, similarity: boostedSimilarity };
+  });
+}
+
 export async function retrieveChunks(
   question: string,
   matchCount = 5
@@ -56,16 +80,26 @@ export async function retrieveChunks(
   const embedding = await embedText(question);
   const supabase = await createServiceClient();
 
+  // Fetch more chunks than needed, then rerank with recency boost
+  const fetchCount = Math.max(matchCount * 3, 15);
+  
   const { data, error } = await supabase.rpc("match_chunks", {
     query_embedding: embedding,
-    match_count: matchCount,
+    match_count: fetchCount,
   });
 
   if (error) {
     throw new Error(`Supabase match_chunks error: ${error.message}`);
   }
 
-  return (data || []) as RagChunk[];
+  const chunks = (data || []) as RagChunk[];
+  
+  // Apply recency boost and re-sort
+  const boostedChunks = applyRecencyBoost(chunks);
+  boostedChunks.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+  
+  // Return top N after reranking
+  return boostedChunks.slice(0, matchCount);
 }
 
 export async function generateAnswer(
