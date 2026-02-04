@@ -53,15 +53,6 @@ interface ContentHubData {
   };
 }
 
-interface TweetDraft {
-  id: string;
-  date: string;
-  type: string;
-  content: string;
-  status: string;
-  created_at: string;
-}
-
 export default function ContentHubPage() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [data, setData] = useState<ContentHubData | null>(null);
@@ -71,18 +62,10 @@ export default function ContentHubPage() {
   const [copiedMorning, setCopiedMorning] = useState(false);
   const [copiedEOD, setCopiedEOD] = useState(false);
   const [copiedForecast, setCopiedForecast] = useState(false);
-  const [tweetDrafts, setTweetDrafts] = useState<TweetDraft[]>([]);
-  const [tweetDraftsLoading, setTweetDraftsLoading] = useState(false);
-  const [tweetDraftsError, setTweetDraftsError] = useState<string | null>(null);
-  const [copiedDraftId, setCopiedDraftId] = useState<string | null>(null);
 
   useEffect(() => {
     loadContent();
   }, [selectedDate]);
-
-  useEffect(() => {
-    loadTweetDrafts();
-  }, []);
 
   const loadContent = async () => {
     setLoading(true);
@@ -160,49 +143,6 @@ export default function ContentHubPage() {
     }
   };
 
-  const loadTweetDrafts = async () => {
-    setTweetDraftsLoading(true);
-    setTweetDraftsError(null);
-
-    try {
-      const response = await fetch("/api/tweets/drafts");
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to load tweet drafts");
-      }
-      const payload = await response.json();
-      setTweetDrafts(payload.drafts || []);
-    } catch (err) {
-      setTweetDraftsError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setTweetDraftsLoading(false);
-    }
-  };
-
-  const handleCopyDraft = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedDraftId(id);
-    setTimeout(() => setCopiedDraftId(null), 2000);
-  };
-
-  const handleUpdateDraft = async (id: string, status: "approved" | "rejected") => {
-    setTweetDraftsError(null);
-    try {
-      const response = await fetch(`/api/tweets/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update draft");
-      }
-      await loadTweetDrafts();
-    } catch (err) {
-      setTweetDraftsError(err instanceof Error ? err.message : "Unknown error");
-    }
-  };
-
   if (loading && !data) {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
@@ -247,12 +187,25 @@ export default function ContentHubPage() {
                 )}
               </div>
             </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100"
-            />
+            <div className="flex gap-2">
+              <button
+                onClick={loadContent}
+                disabled={loading}
+                className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium ${
+                  loading
+                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {loading ? "Loading..." : "↻ Refresh"}
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100"
+              />
+            </div>
           </div>
         </div>
 
@@ -465,80 +418,6 @@ export default function ContentHubPage() {
               </div>
             </div>
 
-            {/* Tweet Drafts */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-gray-800">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold">Tweet Drafts</h2>
-                    <div className="text-sm text-gray-400 mt-1">
-                      {tweetDrafts.length} pending
-                    </div>
-                  </div>
-                  <button
-                    onClick={loadTweetDrafts}
-                    disabled={tweetDraftsLoading}
-                    className={`w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium ${
-                      tweetDraftsLoading
-                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
-                  >
-                    {tweetDraftsLoading ? "Loading..." : "↻ Refresh"}
-                  </button>
-                </div>
-              </div>
-              <div className="p-4 sm:p-6 space-y-4">
-                {tweetDraftsError && (
-                  <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-sm text-red-300">
-                    {tweetDraftsError}
-                  </div>
-                )}
-
-                {tweetDraftsLoading ? (
-                  <div className="text-gray-500 text-sm">Loading drafts...</div>
-                ) : tweetDrafts.length === 0 ? (
-                  <div className="text-gray-500 text-sm">No pending drafts yet.</div>
-                ) : (
-                  tweetDrafts.map((draft) => (
-                    <div key={draft.id} className="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
-                        <div className="text-xs uppercase text-gray-500">
-                          {draft.type} • {draft.date}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleCopyDraft(draft.id, draft.content)}
-                            className={`min-h-[44px] px-3 py-2 rounded text-xs font-medium ${
-                              copiedDraftId === draft.id
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                            }`}
-                          >
-                            {copiedDraftId === draft.id ? "✓ Copied!" : "Copy"}
-                          </button>
-                          <button
-                            onClick={() => handleUpdateDraft(draft.id, "approved")}
-                            className="min-h-[44px] px-3 py-2 rounded text-xs font-medium bg-emerald-600 hover:bg-emerald-700"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleUpdateDraft(draft.id, "rejected")}
-                            className="min-h-[44px] px-3 py-2 rounded text-xs font-medium bg-rose-600 hover:bg-rose-700"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                      <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
-                        {draft.content}
-                      </pre>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
           </div>
         )}
       </div>
