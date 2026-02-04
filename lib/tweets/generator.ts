@@ -16,8 +16,9 @@ interface TemplateData {
 
 const MAX_TWEET_LENGTH = 280;
 
-export async function generateTweetDrafts(): Promise<TweetDraftInput[]> {
-  const targetDate = format(subDays(new Date(), 1), "yyyy-MM-dd");
+export async function generateTweetDrafts(date?: string): Promise<TweetDraftInput[]> {
+  // Use provided date or today's date
+  const targetDate = date || format(new Date(), "yyyy-MM-dd");
   const supabase = await createServiceClient();
 
   const { data: report, error: reportError } = await supabase
