@@ -114,16 +114,132 @@ export default function LandingPageV3() {
         </div>
       </section>
 
-      {/* value prop */}
+      {/* the problem - correction chart */}
       <section className="py-16 px-6 border-t border-zinc-900 bg-zinc-950">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4">why most traders get wiped</h2>
-          <p className="text-zinc-400 leading-relaxed">
-            most traders lose money because they react emotionally to price movement.
-            <br />
-            flacko analyzes dealer positioning, technical structure, and volatility regimes to map where odds shift — helping
-            traders know when to lean offensive, defensive, or patient.
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold mb-2 text-center">
+            the problem this solves
+          </h2>
+          <p className="text-center text-zinc-500 mb-10">
+            corrections unfold in stages. we catch them early.
           </p>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Correction Chart Visual */}
+            <div className="relative">
+              <div className="bg-zinc-900/30 rounded-xl p-6 border border-zinc-800/50">
+                {/* Chart area */}
+                <div className="relative h-56">
+                  {/* Grid lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between opacity-30">
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                    <div className="border-b border-zinc-700"></div>
+                  </div>
+                  
+                  {/* Declining line - SVG with clear color segments */}
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
+                    {/* Green segment - Weeks 1-2 */}
+                    <path 
+                      d="M 0 28 C 12 22, 20 20, 30 18 C 42 16, 50 22, 55 28 C 60 34, 68 30, 78 32 C 88 34, 95 33, 100 35" 
+                      fill="none" 
+                      stroke="#22c55e" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    {/* Yellow segment - Weeks 3-4 */}
+                    <path 
+                      d="M 100 35 C 110 40, 118 38, 125 42 C 135 48, 140 44, 148 50 C 158 58, 168 54, 175 52 C 182 50, 188 56, 195 64 C 198 68, 200 70, 200 70" 
+                      fill="none" 
+                      stroke="#eab308" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    {/* Red segment - Weeks 5-10 */}
+                    <path 
+                      d="M 200 70 C 215 78, 225 74, 235 68 C 248 60, 255 72, 265 85 C 280 105, 290 100, 300 95 C 315 88, 325 98, 340 115 C 360 138, 375 132, 390 140 C 410 150, 420 148, 435 160 C 455 175, 470 172, 485 185 C 495 193, 500 195, 500 195" 
+                      fill="none" 
+                      stroke="#ef4444" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    
+                    {/* Connector lines - aligned to dot positions */}
+                    <line x1="30" y1="18" x2="30" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="100" y1="35" x2="100" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="200" y1="70" x2="200" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="265" y1="85" x2="265" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
+                  </svg>
+                  
+                  {/* Mode Labels & Dots - positioned to center on line */}
+                  <div className="absolute -top-5 left-[5%] flex flex-col items-center">
+                    <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">green mode</span>
+                  </div>
+                  <div className="absolute top-[8%] left-[6%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
+                  </div>
+                  
+                  <div className="absolute top-1 left-[18%] flex flex-col items-center">
+                    <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">yellow mode</span>
+                  </div>
+                  <div className="absolute top-[17.5%] left-[20%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
+                  </div>
+                  
+                  <div className="absolute -top-5 left-[38%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">red mode</span>
+                  </div>
+                  <div className="absolute top-[35%] left-[40%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
+                  </div>
+                  
+                  <div className="absolute top-1 left-[51%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">master eject</span>
+                  </div>
+                  <div className="absolute top-[42.5%] left-[53%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50"></div>
+                  </div>
+                </div>
+                
+                {/* X-axis labels */}
+                <div className="flex justify-between mt-3 text-[9px] text-zinc-500">
+                  <span>week 1</span>
+                  <span>week 2</span>
+                  <span>week 3</span>
+                  <span>week 4</span>
+                  <span>week 5</span>
+                  <span>week 6</span>
+                  <span>week 7</span>
+                  <span>week 8</span>
+                  <span>week 9</span>
+                  <span>week 10</span>
+                </div>
+                
+                {/* Caption */}
+                <div className="mt-4 text-center">
+                  <span className="text-xs text-zinc-400">we warn you <strong className="text-yellow-400 font-bold">early</strong> — not when it's too late</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Text content */}
+            <div className="space-y-4 text-zinc-300">
+              <p>
+                tsla will have <strong className="text-white">30-40% corrections</strong> on the way to wherever it's going. it always does.
+              </p>
+              <p>
+                the problem isn't finding dips to buy — it's knowing <strong className="text-white">which dips NOT to buy</strong>. corrections unfold over weeks, with warning signs the whole way down.
+              </p>
+              <p>
+                this system is designed to <strong className="text-white">catch the warning signs early</strong>. you'll know on week 3, not week 10. as conditions deteriorate, exposure ratchets down. no averaging into weakness.
+              </p>
+              <p className="text-zinc-500 text-sm pt-2">
+                and we'll monitor & discuss together as a team.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
