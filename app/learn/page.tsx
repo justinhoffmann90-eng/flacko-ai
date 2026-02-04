@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { TopicCard } from "@/components/learn/TopicCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,14 @@ import {
   TrendingUp,
   Wand2,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Learn | Flacko AI",
+  description: "Master TSLA trading with a repeatable, risk-first system.",
+};
+
+export const dynamic = "force-static";
+export const revalidate = 3600;
 
 const topics = [
   {
@@ -130,8 +139,7 @@ export default function LearnHubPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="relative overflow-hidden">
-        <div className="absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute -top-10 right-0 h-72 w-72 rounded-full bg-sky-500/10 blur-[140px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="container relative mx-auto px-4 py-12 sm:py-16">
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="max-w-3xl">
@@ -210,7 +218,7 @@ export default function LearnHubPage() {
                   </ul>
                 </div>
               </div>
-              <div className="absolute -bottom-8 -right-4 hidden h-24 w-24 rounded-full bg-primary/20 blur-[80px] lg:block" />
+              <div className="absolute -bottom-10 -right-10 hidden h-32 w-32 rounded-full bg-primary/10 lg:block" />
             </div>
           </div>
         </div>

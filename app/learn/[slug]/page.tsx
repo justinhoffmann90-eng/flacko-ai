@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -6,6 +7,9 @@ import rehypeRaw from "rehype-raw";
 import { ModeCard } from "@/components/learn/ModeCard";
 import { Button } from "@/components/ui/button";
 import { getLearnContent, getLearnSlugs } from "@/lib/learn/getContent";
+
+export const dynamic = "force-static";
+export const revalidate = 3600;
 
 const modeCards = [
   {
@@ -36,6 +40,22 @@ const modeCards = [
 
 export function generateStaticParams() {
   return getLearnSlugs().map((slug) => ({ slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const topic = getLearnContent(params.slug);
+
+  if (!topic) {
+    return {
+      title: "Learn | Flacko AI",
+      description: "Master TSLA trading with a repeatable, risk-first system.",
+    };
+  }
+
+  return {
+    title: `${topic.title} | Learn | Flacko AI`,
+    description: topic.description ?? "Master TSLA trading with a repeatable, risk-first system.",
+  };
 }
 
 export default function LearnTopicPage({ params }: { params: { slug: string } }) {
