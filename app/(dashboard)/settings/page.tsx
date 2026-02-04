@@ -169,17 +169,25 @@ export default function SettingsPage() {
     setError(null);
     try {
       const res = await fetch("/api/user/billing-portal", { method: "POST" });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.error) {
+      
+      if (!res.ok) {
+        const data = await res.json();
         if (data.error === "No subscription found") {
           setError("No active subscription found. Please contact support if you believe this is an error.");
         } else {
-          setError(`Billing error: ${data.error}`);
+          setError(`Billing error: ${data.error || `HTTP ${res.status}`}`);
         }
+        return;
+      }
+      
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("Failed to get billing portal URL. Please try again.");
       }
     } catch (err) {
+      console.error("Billing portal error:", err);
       setError("Failed to open billing portal. Please try again.");
     } finally {
       setBillingLoading(false);
