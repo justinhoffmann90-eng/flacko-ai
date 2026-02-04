@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface ContentHubData {
   date: string;
@@ -255,7 +255,7 @@ export default function ContentHubPage() {
               <h1 className="text-2xl sm:text-3xl font-bold">📊 Daily Content Hub</h1>
               <div className="flex flex-wrap items-center gap-4 mt-2 text-sm">
                 <span className="text-gray-400">
-                  {format(new Date(selectedDate), "EEEE, MMM d, yyyy")}
+                  {format(parseISO(selectedDate), "EEEE, MMM d, yyyy")}
                 </span>
                 {data && (
                   <span className="text-gray-400">
