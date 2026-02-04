@@ -702,7 +702,7 @@ export default function LandingPageV4() {
             <div className="absolute inset-x-0 top-0 h-1 bg-white" />
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-semibold tracking-widest text-zinc-300 uppercase">⚡ founder tier</span>
-              <span className="text-[11px] font-bold text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-full">3 spots left</span>
+              <span className="text-[11px] font-bold text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-full">11 spots left</span>
             </div>
             <div className="flex items-end gap-2 mb-4">
               <span className="text-4xl font-bold text-white">$29.99</span>
@@ -712,10 +712,10 @@ export default function LandingPageV4() {
 
             <div className="mb-4">
               <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-white w-[94%] rounded-full" />
+                <div className="h-full bg-white w-[78%] rounded-full" />
               </div>
               <div className="flex justify-between text-[11px] text-zinc-500 mt-2">
-                <span>47 of 50 claimed</span>
+                <span>39 of 50 claimed</span>
                 <span>next tier: $39.99/mo</span>
               </div>
             </div>

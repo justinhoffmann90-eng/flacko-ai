@@ -89,7 +89,7 @@ export default function SignupPage() {
         <div className="absolute inset-x-0 top-0 h-1 bg-white" />
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <span className="text-[10px] sm:text-xs font-semibold tracking-widest text-zinc-300 uppercase">⚡ founder tier</span>
-          <span className="text-[10px] sm:text-[11px] font-bold text-yellow-400 bg-yellow-500/20 px-2 py-0.5 sm:py-1 rounded-full">3 spots left</span>
+          <span className="text-[10px] sm:text-[11px] font-bold text-yellow-400 bg-yellow-500/20 px-2 py-0.5 sm:py-1 rounded-full">11 spots left</span>
         </div>
         <div className="flex items-end gap-2 mb-2 sm:mb-3">
           <span className="text-3xl sm:text-4xl font-bold text-white">$29.99</span>
@@ -99,10 +99,10 @@ export default function SignupPage() {
 
         <div>
           <div className="h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden">
-            <div className="h-full bg-white w-[94%] rounded-full" />
+            <div className="h-full bg-white w-[78%] rounded-full" />
           </div>
           <div className="flex justify-between text-[10px] sm:text-[11px] text-zinc-500 mt-1.5 sm:mt-2">
-            <span>47 of 50 claimed</span>
+            <span>39 of 50 claimed</span>
             <span>next tier: $39.99/mo</span>
           </div>
         </div>
