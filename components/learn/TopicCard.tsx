@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ArrowRight } from "lucide-react";
 
 interface TopicCardProps {
   title: string;
@@ -10,12 +11,9 @@ interface TopicCardProps {
   href: string;
   icon: ReactNode;
   badge?: string;
-  progress?: number;
 }
 
-export function TopicCard({ title, description, time, href, icon, badge, progress = 0 }: TopicCardProps) {
-  const progressPercent = Math.round(progress * 100);
-
+export function TopicCard({ title, description, time, href, icon, badge }: TopicCardProps) {
   return (
     <Link
       href={href}
@@ -34,16 +32,10 @@ export function TopicCard({ title, description, time, href, icon, badge, progres
             <p className="text-xs text-muted-foreground">{time}</p>
           </div>
         </CardHeader>
-        <CardContent className="px-5 pb-6 pt-0 text-sm text-muted-foreground sm:px-6">
-          <p>{description}</p>
-          <div className="mt-5">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-primary/70 transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">{progressPercent}% complete</p>
+        <CardContent className="px-5 pb-6 pt-0 sm:px-6">
+          <p className="text-sm text-muted-foreground">{description}</p>
+          <div className="mt-4 flex items-center text-xs font-medium text-primary">
+            Read lesson <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
           </div>
         </CardContent>
       </Card>
