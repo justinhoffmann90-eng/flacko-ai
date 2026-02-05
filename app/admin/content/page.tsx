@@ -925,6 +925,9 @@ export default function ContentHubPage() {
 
             {/* Quote Image Generator */}
             <QuoteImageGenerator modeAccent={modeAccent} />
+
+            {/* X Article Builder */}
+            <XArticleBuilder />
           </div>
         )}
       </div>
@@ -1077,6 +1080,113 @@ function QuoteImageGenerator({ modeAccent }: { modeAccent: { badge: string; glow
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function XArticleBuilder() {
+  const [input, setInput] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Convert Discord format to X article-friendly format
+  const convertToArticle = (text: string): string => {
+    let result = text;
+    
+    // Remove Discord separators (━━━━ lines)
+    result = result.replace(/[━─═]+/g, "\n---\n");
+    
+    // Convert **bold** to plain text (X articles don't support markdown)
+    result = result.replace(/\*\*([^*]+)\*\*/g, "$1");
+    
+    // Convert *italic* to plain text
+    result = result.replace(/\*([^*]+)\*/g, "$1");
+    
+    // Clean up bullet points (• → -)
+    result = result.replace(/•/g, "-");
+    
+    // Clean up multiple newlines
+    result = result.replace(/\n{3,}/g, "\n\n");
+    
+    // Trim whitespace
+    result = result.trim();
+    
+    return result;
+  };
+
+  const articleOutput = convertToArticle(input);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(articleOutput);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
+      <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-zinc-800">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <span>📝</span> X Article Builder
+              </h2>
+              <div className="text-sm text-zinc-500 mt-1">Convert Discord posts to X article format</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6 space-y-5">
+          {/* Input */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Paste Discord Content</label>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Paste your Morning Brief, EOD Wrap, or any Discord-formatted content here..."
+              rows={8}
+              className="w-full px-4 py-3 bg-black border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none font-mono text-sm"
+            />
+            <div className="text-xs text-zinc-500 mt-1">{input.length} characters</div>
+          </div>
+
+          {/* Output Preview */}
+          {input && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-zinc-400">Article Preview</label>
+                <button
+                  onClick={handleCopy}
+                  className={`min-h-[36px] px-4 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                    copied
+                      ? "bg-green-600 text-white border-green-500"
+                      : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
+                  }`}
+                >
+                  {copied ? "✓ Copied!" : "Copy Article"}
+                </button>
+              </div>
+              <div className="bg-black border border-zinc-800 rounded-xl p-4 max-h-[400px] overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm text-zinc-200 font-sans leading-relaxed">{articleOutput}</pre>
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">{articleOutput.length} characters</div>
+            </div>
+          )}
+
+          {/* Help Text */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+            <div className="text-sm text-zinc-400">
+              <strong className="text-zinc-300">What this does:</strong>
+              <ul className="mt-2 space-y-1 text-zinc-500">
+                <li>• Removes Discord markdown (bold, italic)</li>
+                <li>• Cleans up separator lines (━━━)</li>
+                <li>• Converts bullets to dashes</li>
+                <li>• Formats for clean X article paste</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
