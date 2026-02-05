@@ -112,6 +112,16 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Cards API (used by Content Hub for image generation)
+  if (request.nextUrl.pathname.startsWith("/api/cards")) {
+    return supabaseResponse;
+  }
+
+  // Content preview/download (used by Content Hub)
+  if (request.nextUrl.pathname.startsWith("/api/content")) {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
