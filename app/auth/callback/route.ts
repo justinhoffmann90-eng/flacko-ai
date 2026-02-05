@@ -26,6 +26,10 @@ export async function GET(request: Request) {
       type: type as "magiclink" | "recovery" | "email",
     });
     if (!error) {
+      // Recovery flows must land on the reset-password page so the user can set their password
+      if (type === "recovery") {
+        return NextResponse.redirect(`${origin}/reset-password`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
     console.error("Token verification error:", error);
