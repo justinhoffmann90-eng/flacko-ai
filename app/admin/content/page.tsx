@@ -1094,22 +1094,48 @@ function XArticleBuilder() {
   const convertToArticle = (text: string): string => {
     let result = text;
     
-    // Remove Discord separators (━━━━ lines)
-    result = result.replace(/[━─═]+/g, "\n---\n");
+    // Remove markdown headers (### ## #) - keep the text, add newline after
+    result = result.replace(/^#{1,6}\s*(.+)$/gm, "$1\n");
     
     // Convert **bold** to plain text (X articles don't support markdown)
     result = result.replace(/\*\*([^*]+)\*\*/g, "$1");
     
+    // Convert __underline__ to plain text
+    result = result.replace(/__([^_]+)__/g, "$1");
+    
     // Convert *italic* to plain text
     result = result.replace(/\*([^*]+)\*/g, "$1");
+    
+    // Convert _italic_ to plain text
+    result = result.replace(/_([^_]+)_/g, "$1");
+    
+    // Convert ~~strikethrough~~ to plain text
+    result = result.replace(/~~([^~]+)~~/g, "$1");
+    
+    // Remove Discord separators (━━━━ lines)
+    result = result.replace(/[━─═]{3,}/g, "---");
     
     // Clean up bullet points (• → -)
     result = result.replace(/•/g, "-");
     
-    // Clean up multiple newlines
+    // Remove code block markers
+    result = result.replace(/```[a-z]*\n?/g, "");
+    result = result.replace(/`([^`]+)`/g, "$1");
+    
+    // Clean up Discord emoji format :emoji_name:
+    // Keep common ones, remove custom server emojis
+    result = result.replace(/<:[a-zA-Z0-9_]+:[0-9]+>/g, "");
+    
+    // Clean up multiple newlines (more than 2 → 2)
     result = result.replace(/\n{3,}/g, "\n\n");
     
-    // Trim whitespace
+    // Clean up multiple dashes/separators in a row
+    result = result.replace(/(-{3,}\n?){2,}/g, "---\n\n");
+    
+    // Trim whitespace from each line
+    result = result.split("\n").map(line => line.trim()).join("\n");
+    
+    // Trim overall
     result = result.trim();
     
     return result;
@@ -1178,12 +1204,17 @@ function XArticleBuilder() {
           {/* Help Text */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
             <div className="text-sm text-zinc-400">
-              <strong className="text-zinc-300">What this does:</strong>
+              <strong className="text-zinc-300">What this converts:</strong>
               <ul className="mt-2 space-y-1 text-zinc-500">
-                <li>• Removes Discord markdown (bold, italic)</li>
-                <li>• Cleans up separator lines (━━━)</li>
-                <li>• Converts bullets to dashes</li>
-                <li>• Formats for clean X article paste</li>
+                <li>• Headers (## Title) → plain text</li>
+                <li>• Bold (**text**) → plain text</li>
+                <li>• Italic (*text* or _text_) → plain text</li>
+                <li>• Underline (__text__) → plain text</li>
+                <li>• Strikethrough (~~text~~) → plain text</li>
+                <li>• Code blocks and inline code → plain text</li>
+                <li>• Separator lines (━━━) → ---</li>
+                <li>• Bullets (•) → dashes (-)</li>
+                <li>• Custom Discord emojis → removed</li>
               </ul>
             </div>
           </div>
