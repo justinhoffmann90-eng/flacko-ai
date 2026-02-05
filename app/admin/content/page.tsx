@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 
 interface ContentHubData {
@@ -62,6 +62,66 @@ interface TweetDraft {
   created_at: string;
 }
 
+interface DiscordChannel {
+  key: string;
+  id: string;
+  purpose: string;
+}
+
+const MODE_ACCENTS: Record<string, { badge: string; glow: string; text: string; ring: string }> = {
+  GREEN: {
+    badge: "bg-green-500/15 text-green-400 border-green-500/40",
+    glow: "shadow-[0_0_35px_rgba(34,197,94,0.25)]",
+    text: "text-green-400",
+    ring: "ring-green-500/40",
+  },
+  YELLOW: {
+    badge: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
+    glow: "shadow-[0_0_35px_rgba(234,179,8,0.25)]",
+    text: "text-yellow-300",
+    ring: "ring-yellow-500/40",
+  },
+  ORANGE: {
+    badge: "bg-orange-500/15 text-orange-300 border-orange-500/40",
+    glow: "shadow-[0_0_35px_rgba(249,115,22,0.25)]",
+    text: "text-orange-300",
+    ring: "ring-orange-500/40",
+  },
+  RED: {
+    badge: "bg-red-500/15 text-red-400 border-red-500/40",
+    glow: "shadow-[0_0_35px_rgba(239,68,68,0.25)]",
+    text: "text-red-400",
+    ring: "ring-red-500/40",
+  },
+};
+
+const TEMPLATE_OPTIONS = [
+  { value: "minimal", label: "Minimal" },
+  { value: "detailed", label: "Detailed" },
+  { value: "hype", label: "Hype" },
+  { value: "defensive", label: "Defensive" },
+] as const;
+
+type TemplateStyle = (typeof TEMPLATE_OPTIONS)[number]["value"];
+
+function getModeKey(mode: string) {
+  return String(mode || "").toUpperCase();
+}
+
+function getModeAccent(mode: string) {
+  const modeKey = getModeKey(mode);
+  return MODE_ACCENTS[modeKey] || MODE_ACCENTS.YELLOW;
+}
+
+function createTweetIntent(text: string) {
+  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+}
+
+function formatLevelValue(value?: number) {
+  if (!value && value !== 0) return "—";
+  return `$${Number(value).toFixed(2)}`;
+}
+
 export default function ContentHubPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // null = load latest
   const [data, setData] = useState<ContentHubData | null>(null);
@@ -75,6 +135,12 @@ export default function ContentHubPage() {
   const [tweetDraftsLoading, setTweetDraftsLoading] = useState(false);
   const [tweetDraftsError, setTweetDraftsError] = useState<string | null>(null);
   const [copiedDraftId, setCopiedDraftId] = useState<string | null>(null);
+  const [discordChannels, setDiscordChannels] = useState<DiscordChannel[]>([]);
+  const [selectedDiscordChannel, setSelectedDiscordChannel] = useState<string>("");
+  const [discordPosting, setDiscordPosting] = useState<string | null>(null);
+  const [discordStatus, setDiscordStatus] = useState<string | null>(null);
+  const [templateStyle, setTemplateStyle] = useState<TemplateStyle>("minimal");
+  const [threadTweets, setThreadTweets] = useState<string[]>([]);
 
   useEffect(() => {
     loadContent(selectedDate);
@@ -82,7 +148,28 @@ export default function ContentHubPage() {
 
   useEffect(() => {
     loadTweetDrafts();
+    loadDiscordChannels();
   }, []);
+
+  const activeDate = selectedDate || data?.date || null;
+  const formattedDate = activeDate
+    ? format(parseISO(activeDate), "EEEE, MMM d, yyyy")
+    : "Loading...";
+
+  const modeAccent = data ? getModeAccent(data.mode) : MODE_ACCENTS.YELLOW;
+
+  const quickStats = useMemo(() => {
+    if (!data) return { ready: 0, pending: 0 };
+    const statuses = [data.modeCard.status, data.morningCard.status, data.eodCard.status];
+    const ready = statuses.filter((status) => status === "ready").length;
+    const pending = statuses.length - ready;
+    return { ready, pending };
+  }, [data]);
+
+  const threadPreview = useMemo(() => {
+    if (!data) return [] as string[];
+    return buildThreadTweets(data, templateStyle);
+  }, [data, templateStyle]);
 
   const loadContent = async (date?: string | null) => {
     setLoading(true);
@@ -92,7 +179,7 @@ export default function ContentHubPage() {
       // If no date specified, API will return latest report
       const url = date ? `/api/content/hub?date=${date}` : `/api/content/hub`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to load content");
@@ -100,7 +187,7 @@ export default function ContentHubPage() {
 
       const contentData = await response.json();
       setData(contentData);
-      
+
       // If we loaded without a date, update selectedDate from response
       if (!date && contentData.date) {
         setSelectedDate(contentData.date);
@@ -136,15 +223,15 @@ export default function ContentHubPage() {
       ...data,
       eodCard: {
         ...data.eodCard,
-        status: "generating"
-      }
+        status: "generating",
+      },
     });
 
     try {
       const response = await fetch("/api/content/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "eod-accuracy-card", date: selectedDate }),
+        body: JSON.stringify({ type: "eod-accuracy-card", date: activeDate }),
       });
 
       if (!response.ok) {
@@ -160,8 +247,8 @@ export default function ContentHubPage() {
           ...data,
           eodCard: {
             ...data.eodCard,
-            status: "error" as any
-          }
+            status: "error" as any,
+          },
         });
       }
     }
@@ -227,12 +314,83 @@ export default function ContentHubPage() {
     }
   };
 
+  const loadDiscordChannels = async () => {
+    try {
+      const response = await fetch("/api/content/discord");
+      if (!response.ok) return;
+      const payload = await response.json();
+      const channels = (payload.channels || []) as DiscordChannel[];
+      const filtered = channels.filter((channel) => channel.key !== "alerts");
+      setDiscordChannels(filtered);
+      if (!selectedDiscordChannel && filtered.length) {
+        setSelectedDiscordChannel(filtered[0].key);
+      }
+    } catch (err) {
+      console.error("Failed to load discord channels", err);
+    }
+  };
+
+  const postToDiscord = async (content: string, context: string) => {
+    if (!selectedDiscordChannel) return;
+    setDiscordPosting(context);
+    setDiscordStatus(null);
+    try {
+      const response = await fetch("/api/content/discord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelKey: selectedDiscordChannel, content }),
+      });
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(payload.error || "Failed to post to Discord");
+      }
+      setDiscordStatus("Posted to Discord ✅");
+      setTimeout(() => setDiscordStatus(null), 2500);
+    } catch (err) {
+      setDiscordStatus(err instanceof Error ? err.message : "Discord post failed");
+      setTimeout(() => setDiscordStatus(null), 3500);
+    } finally {
+      setDiscordPosting(null);
+    }
+  };
+
+  const triggerDownload = (url: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const handleCopyAll = () => {
+    if (!data) return;
+    const parts = [data.modeCard.tweetText, data.morningCard.tweetText, data.eodCard.tweetText]
+      .filter(Boolean)
+      .join("\n\n—\n\n");
+    navigator.clipboard.writeText(parts);
+  };
+
+  const handleDownloadAll = () => {
+    if (!data || !activeDate) return;
+    triggerDownload(`/api/content/download?type=mode-card&date=${activeDate}&download=1`);
+    triggerDownload(`/api/content/download?type=daily-mode-card&date=${activeDate}&download=1`);
+    if (data.eodCard.status === "ready") {
+      triggerDownload(`/api/content/download?type=eod-accuracy-card&date=${activeDate}&download=1`);
+    }
+  };
+
+  const handleGenerateThread = () => {
+    if (!data) return;
+    setThreadTweets(buildThreadTweets(data, templateStyle));
+  };
+
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
+      <div className="min-h-screen bg-black text-zinc-100 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
-            <div className="text-gray-400">Loading content hub...</div>
+            <div className="text-zinc-500">Loading content hub...</div>
           </div>
         </div>
       </div>
@@ -241,7 +399,7 @@ export default function ContentHubPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
+      <div className="min-h-screen bg-black text-zinc-100 p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
             <div className="text-red-400 font-medium">Error</div>
@@ -253,314 +411,515 @@ export default function ContentHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-4 sm:p-8">
+    <div className="min-h-screen bg-black text-zinc-100 px-4 sm:px-8 pb-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-950 via-black to-zinc-950 p-6 sm:p-8 mb-6">
+          <div className="absolute -top-24 right-0 h-48 w-48 bg-gradient-to-br from-white/10 to-transparent blur-3xl" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between relative z-10">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">📊 Daily Content Hub</h1>
-              <div className="flex flex-wrap items-center gap-4 mt-2 text-sm">
-                <span className="text-gray-400">
-                  {format(parseISO(selectedDate), "EEEE, MMM d, yyyy")}
-                </span>
+              <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Command Center</p>
+              <h1 className="text-3xl sm:text-4xl font-semibold mt-2">⚔️ Content Hub v2</h1>
+              <div className="flex flex-wrap items-center gap-3 mt-3 text-sm">
+                <span className="text-zinc-500">{formattedDate}</span>
                 {data && (
-                  <span className="text-gray-400">
-                    Mode: {data.modeEmoji} <span className="font-bold">{data.mode}</span>
+                  <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold ${modeAccent.badge}`}>
+                    {data.modeEmoji} {data.mode} MODE
                   </span>
                 )}
               </div>
             </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-100"
-            />
+            <div className="flex flex-col sm:items-end gap-3">
+              <input
+                type="date"
+                value={activeDate || ""}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-zinc-900/80 border border-zinc-700 rounded-lg text-zinc-100"
+              />
+              {discordStatus && (
+                <div className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 rounded-lg">
+                  {discordStatus}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {data && (
           <div className="space-y-6">
-            {/* Daily Mode Card */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-gray-800">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold">Daily Mode Card</h2>
-                    <div className="text-sm text-gray-400 mt-1">
-                      {data.modeCard.status === "ready" && "✅ Ready"}
+            {/* Quick Actions Bar */}
+            <div className="sticky top-4 z-30">
+              <div className={`relative overflow-hidden rounded-2xl border border-zinc-800 bg-black/85 backdrop-blur-xl p-4 sm:p-5 ${modeAccent.glow}`}>
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-xl border ${modeAccent.badge} flex items-center justify-center text-lg`}>{data.modeEmoji}</div>
+                      <div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Today&apos;s Mode</div>
+                        <div className={`text-lg font-semibold ${modeAccent.text}`}>{data.mode}</div>
+                      </div>
                     </div>
+                    <div className="flex items-center gap-6">
+                      <div>
+                        <div className="text-xs text-zinc-500">Content Ready</div>
+                        <div className="text-lg font-semibold text-zinc-100">{quickStats.ready}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-500">Pending</div>
+                        <div className="text-lg font-semibold text-zinc-100">{quickStats.pending}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={handleCopyAll}
+                      className="min-h-[44px] px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-sm font-medium"
+                    >
+                      Copy All Tweets
+                    </button>
+                    <button
+                      onClick={handleDownloadAll}
+                      className="min-h-[44px] px-4 py-2 rounded-lg bg-white text-black hover:bg-zinc-200 text-sm font-medium"
+                    >
+                      Download All PNGs
+                    </button>
+                    <select
+                      value={selectedDiscordChannel}
+                      onChange={(e) => setSelectedDiscordChannel(e.target.value)}
+                      className="min-h-[44px] px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-sm"
+                    >
+                      {discordChannels.map((channel) => (
+                        <option key={channel.key} value={channel.key}>
+                          {channel.key}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="p-4 sm:p-6">
-                {/* Preview */}
-                <div className="mb-4">
-                  <img
-                    src={data.modeCard.imageUrl}
-                    className="w-full max-h-[400px] object-contain border border-gray-700 rounded-lg bg-gray-950"
-                    alt="Daily Mode Card Preview"
-                  />
+            {/* Daily Mode Card */}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
+              <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="p-5 sm:p-6 border-b border-zinc-800">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">Daily Mode Card</h2>
+                      <div className="text-sm text-zinc-500 mt-1">{data.modeCard.status === "ready" && "✅ Ready"}</div>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-xs border ${modeAccent.badge}`}>Live Preview</div>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                  <a
-                    href={data.modeCard.imageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-center"
-                  >
-                    Open Full Size
-                  </a>
-                  <a
-                    href={data.modeCard.imageUrl}
-                    download={`tsla-mode-${selectedDate}.png`}
-                    className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium text-center"
-                  >
-                    Download PNG
-                  </a>
-                </div>
+                <div className="p-5 sm:p-6">
+                  {/* Preview */}
+                  <div className="mb-5 group">
+                    <img
+                      src={data.modeCard.imageUrl}
+                      className={`w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01] ${modeAccent.glow}`}
+                      alt="Daily Mode Card Preview"
+                    />
+                  </div>
 
-                {/* Tweet Text */}
-                <div>
-                  <div className="text-sm font-medium text-gray-400 mb-2">Tweet Text:</div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative">
-                    <pre className="whitespace-pre-wrap text-sm font-mono">{data.modeCard.tweetText}</pre>
-                    <button
-                      onClick={() => handleCopyTweet(data.modeCard.tweetText, "mode")}
-                      className={`absolute top-3 right-3 min-h-[44px] px-3 py-2 rounded text-xs font-medium ${
-                        copiedMode
-                          ? "bg-green-600 text-white"
-                          : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                      }`}
+                  {/* Actions */}
+                  <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-5">
+                    <a
+                      href={data.modeCard.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
                     >
-                      {copiedMode ? "✓ Copied!" : "Copy"}
+                      Open Full Size
+                    </a>
+                    <button
+                      onClick={() =>
+                        triggerDownload(`/api/content/download?type=mode-card&date=${activeDate}&download=1`)
+                      }
+                      className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
+                    >
+                      Download PNG
                     </button>
+                    <a
+                      href={createTweetIntent(data.modeCard.tweetText)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[44px] px-4 py-2 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg text-sm font-medium text-center"
+                    >
+                      Open in X
+                    </a>
+                    <button
+                      onClick={() => postToDiscord(data.modeCard.tweetText, "mode")}
+                      disabled={!selectedDiscordChannel || discordPosting === "mode"}
+                      className="min-h-[44px] px-4 py-2 bg-indigo-500/20 border border-indigo-500/40 hover:bg-indigo-500/30 rounded-lg text-sm font-medium"
+                    >
+                      {discordPosting === "mode" ? "Posting..." : "Post to Discord"}
+                    </button>
+                  </div>
+
+                  {/* Tweet Text */}
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Tweet Text</div>
+                    <div className="bg-black/60 border border-zinc-800 rounded-2xl p-4 relative">
+                      <pre className="whitespace-pre-wrap text-sm font-mono text-zinc-200">{data.modeCard.tweetText}</pre>
+                      <button
+                        onClick={() => handleCopyTweet(data.modeCard.tweetText, "mode")}
+                        className={`absolute top-3 right-3 min-h-[40px] px-3 py-2 rounded text-xs font-medium border ${
+                          copiedMode
+                            ? "bg-green-600 text-white border-green-500"
+                            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
+                        }`}
+                      >
+                        {copiedMode ? "✓ Copied!" : "Copy"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Morning Card */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-gray-800">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold">Morning Levels Card</h2>
-                    <div className="text-sm text-gray-400 mt-1">
-                      {data.morningCard.status === "ready" && "✅ Ready"}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
+              <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="p-5 sm:p-6 border-b border-zinc-800">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">Morning Levels Card</h2>
+                      <div className="text-sm text-zinc-500 mt-1">{data.morningCard.status === "ready" && "✅ Ready"}</div>
                     </div>
+                    <div className="px-3 py-1 rounded-full text-xs border border-zinc-700 text-zinc-400">Live Preview</div>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-4 sm:p-6">
-                {/* Preview */}
-                <div className="mb-4">
-                  <iframe
-                    src={data.morningCard.imageUrl}
-                    className="w-full h-[280px] sm:h-[400px] border border-gray-700 rounded-lg bg-gray-950"
-                    title="Morning Card Preview"
-                  />
-                </div>
+                <div className="p-5 sm:p-6">
+                  {/* Preview */}
+                  <div className="mb-5 group">
+                    <img
+                      src={`/api/content/download?type=daily-mode-card&date=${activeDate}`}
+                      className="w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01]"
+                      alt="Morning Card Preview"
+                    />
+                  </div>
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                  <a
-                    href={data.morningCard.imageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-center"
-                  >
-                    Open Full Size
-                  </a>
-                  <a
-                    href={data.morningCard.imageUrl}
-                    download={`tsla-levels-${selectedDate}.html`}
-                    className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium text-center"
-                  >
-                    Download HTML
-                  </a>
-                </div>
-
-                {/* Tweet Text */}
-                <div>
-                  <div className="text-sm font-medium text-gray-400 mb-2">Tweet Text:</div>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative">
-                    <pre className="whitespace-pre-wrap text-sm font-mono">{data.morningCard.tweetText}</pre>
-                    <button
-                      onClick={() => handleCopyTweet(data.morningCard.tweetText, "morning")}
-                      className={`absolute top-3 right-3 min-h-[44px] px-3 py-2 rounded text-xs font-medium ${
-                        copiedMorning
-                          ? "bg-green-600 text-white"
-                          : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                      }`}
+                  {/* Actions */}
+                  <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-5">
+                    <a
+                      href={data.morningCard.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
                     >
-                      {copiedMorning ? "✓ Copied!" : "Copy"}
+                      Open Full Size
+                    </a>
+                    <button
+                      onClick={() =>
+                        triggerDownload(`/api/content/download?type=daily-mode-card&date=${activeDate}&download=1`)
+                      }
+                      className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
+                    >
+                      Download PNG
                     </button>
+                    <a
+                      href={createTweetIntent(data.morningCard.tweetText)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[44px] px-4 py-2 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg text-sm font-medium text-center"
+                    >
+                      Open in X
+                    </a>
+                    <button
+                      onClick={() => postToDiscord(data.morningCard.tweetText, "morning")}
+                      disabled={!selectedDiscordChannel || discordPosting === "morning"}
+                      className="min-h-[44px] px-4 py-2 bg-indigo-500/20 border border-indigo-500/40 hover:bg-indigo-500/30 rounded-lg text-sm font-medium"
+                    >
+                      {discordPosting === "morning" ? "Posting..." : "Post to Discord"}
+                    </button>
+                  </div>
+
+                  {/* Tweet Text */}
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Tweet Text</div>
+                    <div className="bg-black/60 border border-zinc-800 rounded-2xl p-4 relative">
+                      <pre className="whitespace-pre-wrap text-sm font-mono text-zinc-200">{data.morningCard.tweetText}</pre>
+                      <button
+                        onClick={() => handleCopyTweet(data.morningCard.tweetText, "morning")}
+                        className={`absolute top-3 right-3 min-h-[40px] px-3 py-2 rounded text-xs font-medium border ${
+                          copiedMorning
+                            ? "bg-green-600 text-white border-green-500"
+                            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
+                        }`}
+                      >
+                        {copiedMorning ? "✓ Copied!" : "Copy"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* EOD Accuracy Card */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-gray-800">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold">EOD Accuracy Card</h2>
-                    <div className="text-sm text-gray-400 mt-1">
-                      {data.eodCard.status === "ready" && "✅ Ready"}
-                      {data.eodCard.status === "pending" && "⏳ Generates at 4pm CT"}
-                      {data.eodCard.status === "generating" && "🔄 Generating..."}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
+              <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="p-5 sm:p-6 border-b border-zinc-800">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">EOD Accuracy Card</h2>
+                      <div className="text-sm text-zinc-500 mt-1">
+                        {data.eodCard.status === "ready" && "✅ Ready"}
+                        {data.eodCard.status === "pending" && "⏳ Generates at 4pm CT"}
+                        {data.eodCard.status === "generating" && "🔄 Generating..."}
+                      </div>
                     </div>
+                    {data.eodCard.status === "pending" && (
+                      <button
+                        onClick={handleGenerateEOD}
+                        className="min-h-[44px] px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium"
+                      >
+                        Generate Now
+                      </button>
+                    )}
                   </div>
-                  {data.eodCard.status === "pending" && (
-                    <button
-                      onClick={handleGenerateEOD}
-                      className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium"
-                    >
-                      Generate Now
-                    </button>
+                </div>
+
+                <div className="p-5 sm:p-6">
+                  {data.eodCard.status === "ready" ? (
+                    <>
+                      {/* Preview */}
+                      <div className="mb-5 group">
+                        <img
+                          src={`/api/content/download?type=eod-accuracy-card&date=${activeDate}`}
+                          className="w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01]"
+                          alt="EOD Card Preview"
+                        />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-5">
+                        <a
+                          href={data.eodCard.imageUrl || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
+                        >
+                          Open Full Size
+                        </a>
+                        <button
+                          onClick={() =>
+                            triggerDownload(`/api/content/download?type=eod-accuracy-card&date=${activeDate}&download=1`)
+                          }
+                          className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
+                        >
+                          Download PNG
+                        </button>
+                        {data.eodCard.tweetText && (
+                          <a
+                            href={createTweetIntent(data.eodCard.tweetText)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-h-[44px] px-4 py-2 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg text-sm font-medium text-center"
+                          >
+                            Open in X
+                          </a>
+                        )}
+                        {data.eodCard.tweetText && (
+                          <button
+                            onClick={() => postToDiscord(data.eodCard.tweetText || "", "eod")}
+                            disabled={!selectedDiscordChannel || discordPosting === "eod"}
+                            className="min-h-[44px] px-4 py-2 bg-indigo-500/20 border border-indigo-500/40 hover:bg-indigo-500/30 rounded-lg text-sm font-medium"
+                          >
+                            {discordPosting === "eod" ? "Posting..." : "Post to Discord"}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Tweet Text */}
+                      {data.eodCard.tweetText && (
+                        <div>
+                          <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Tweet Text</div>
+                          <div className="bg-black/60 border border-zinc-800 rounded-2xl p-4 relative">
+                            <pre className="whitespace-pre-wrap text-sm font-mono text-zinc-200">{data.eodCard.tweetText}</pre>
+                            <button
+                              onClick={() => handleCopyTweet(data.eodCard.tweetText!, "eod")}
+                              className={`absolute top-3 right-3 min-h-[40px] px-3 py-2 rounded text-xs font-medium border ${
+                                copiedEOD
+                                  ? "bg-green-600 text-white border-green-500"
+                                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
+                              }`}
+                            >
+                              {copiedEOD ? "✓ Copied!" : "Copy"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center py-20 text-zinc-500">
+                      {data.eodCard.status === "pending" && "EOD card will be available after market close"}
+                      {data.eodCard.status === "generating" && "Generating card..."}
+                    </div>
                   )}
                 </div>
               </div>
+            </div>
 
-              <div className="p-4 sm:p-6">
-                {data.eodCard.status === "ready" && data.eodCard.imageUrl ? (
-                  <>
-                    {/* Preview */}
-                    <div className="mb-4">
-                      <iframe
-                        src={data.eodCard.imageUrl}
-                        className="w-full h-[320px] sm:h-[500px] border border-gray-700 rounded-lg bg-gray-950"
-                        title="EOD Card Preview"
-                      />
+            {/* Thread Generator */}
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
+              <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="p-5 sm:p-6 border-b border-zinc-800">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">Thread Generator</h2>
+                      <div className="text-sm text-zinc-500 mt-1">4-part thread based on today&apos;s report</div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                      <a
-                        href={data.eodCard.imageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-center"
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <select
+                        value={templateStyle}
+                        onChange={(e) => setTemplateStyle(e.target.value as TemplateStyle)}
+                        className="min-h-[44px] px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-sm"
                       >
-                        Open Full Size
-                      </a>
-                      <a
-                        href={data.eodCard.imageUrl}
-                        download={`tsla-accuracy-${selectedDate}.html`}
-                        className="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium text-center"
+                        {TEMPLATE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={handleGenerateThread}
+                        className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
                       >
-                        Download HTML
-                      </a>
+                        Generate Thread
+                      </button>
                     </div>
-
-                    {/* Tweet Text */}
-                    {data.eodCard.tweetText && (
-                      <div>
-                        <div className="text-sm font-medium text-gray-400 mb-2">Tweet Text:</div>
-                        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 relative">
-                          <pre className="whitespace-pre-wrap text-sm font-mono">{data.eodCard.tweetText}</pre>
+                  </div>
+                </div>
+                <div className="p-5 sm:p-6 space-y-4">
+                  {(threadTweets.length ? threadTweets : threadPreview).map((tweet, index) => (
+                    <div key={index} className="border border-zinc-800 rounded-2xl p-4 bg-black/60">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
+                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Tweet {index + 1}</div>
+                        <div className="flex flex-wrap gap-2">
                           <button
-                            onClick={() => handleCopyTweet(data.eodCard.tweetText!, "eod")}
-                            className={`absolute top-3 right-3 min-h-[44px] px-3 py-2 rounded text-xs font-medium ${
-                              copiedEOD
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                            }`}
+                            onClick={() => navigator.clipboard.writeText(tweet)}
+                            className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-zinc-900 border border-zinc-700"
                           >
-                            {copiedEOD ? "✓ Copied!" : "Copy"}
+                            Copy
+                          </button>
+                          <a
+                            href={createTweetIntent(tweet)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-zinc-900 border border-zinc-700"
+                          >
+                            Open in X
+                          </a>
+                          <button
+                            onClick={() => postToDiscord(tweet, `thread-${index}`)}
+                            disabled={!selectedDiscordChannel || discordPosting === `thread-${index}`}
+                            className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-indigo-500/20 border border-indigo-500/40"
+                          >
+                            {discordPosting === `thread-${index}` ? "Posting..." : "Post to Discord"}
                           </button>
                         </div>
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center py-20 text-gray-500">
-                    {data.eodCard.status === "pending" && "EOD card will be available after market close"}
-                    {data.eodCard.status === "generating" && "Generating card..."}
-                  </div>
-                )}
+                      <pre className="whitespace-pre-wrap text-sm text-zinc-200 font-mono">{tweet}</pre>
+                      <div className="text-xs text-zinc-500 mt-2">{tweet.length} characters</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Tweet Drafts */}
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-gray-800">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold">Tweet Drafts</h2>
-                    <div className="text-sm text-gray-400 mt-1">
-                      {tweetDrafts.length} pending
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
+              <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="p-5 sm:p-6 border-b border-zinc-800">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">Tweet Drafts</h2>
+                      <div className="text-sm text-zinc-500 mt-1">{tweetDrafts.length} pending</div>
                     </div>
+                    <button
+                      onClick={refreshTweetDrafts}
+                      disabled={tweetDraftsLoading}
+                      className={`min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium border ${
+                        tweetDraftsLoading
+                          ? "bg-zinc-900 text-zinc-500 border-zinc-800"
+                          : "bg-zinc-900 hover:bg-zinc-800 border-zinc-700"
+                      }`}
+                    >
+                      {tweetDraftsLoading ? "Refreshing..." : "↻ Refresh"}
+                    </button>
                   </div>
-                  <button
-                    onClick={refreshTweetDrafts}
-                    disabled={tweetDraftsLoading}
-                    className={`w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium ${
-                      tweetDraftsLoading
-                        ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
-                  >
-                    {tweetDraftsLoading ? "Refreshing..." : "↻ Refresh"}
-                  </button>
                 </div>
-              </div>
-              <div className="p-4 sm:p-6 space-y-4">
-                {tweetDraftsError && (
-                  <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-sm text-red-300">
-                    {tweetDraftsError}
-                  </div>
-                )}
-
-                {tweetDraftsLoading ? (
-                  <div className="text-gray-500 text-sm">Loading drafts...</div>
-                ) : tweetDrafts.length === 0 ? (
-                  <div className="text-gray-500 text-sm">No pending drafts yet.</div>
-                ) : (
-                  tweetDrafts.map((draft) => (
-                    <div key={draft.id} className="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
-                        <div className="text-xs uppercase text-gray-500">
-                          {draft.type} • {draft.date}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleCopyDraft(draft.id, draft.content)}
-                            className={`min-h-[44px] px-3 py-2 rounded text-xs font-medium ${
-                              copiedDraftId === draft.id
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                            }`}
-                          >
-                            {copiedDraftId === draft.id ? "✓ Copied!" : "Copy"}
-                          </button>
-                          <button
-                            onClick={() => handleUpdateDraft(draft.id, "approved")}
-                            className="min-h-[44px] px-3 py-2 rounded text-xs font-medium bg-emerald-600 hover:bg-emerald-700"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleUpdateDraft(draft.id, "rejected")}
-                            className="min-h-[44px] px-3 py-2 rounded text-xs font-medium bg-rose-600 hover:bg-rose-700"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                      <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
-                        {draft.content}
-                      </pre>
+                <div className="p-5 sm:p-6 space-y-4">
+                  {tweetDraftsError && (
+                    <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-sm text-red-300">
+                      {tweetDraftsError}
                     </div>
-                  ))
-                )}
+                  )}
+
+                  {tweetDraftsLoading ? (
+                    <div className="text-zinc-500 text-sm">Loading drafts...</div>
+                  ) : tweetDrafts.length === 0 ? (
+                    <div className="text-zinc-500 text-sm">No pending drafts yet.</div>
+                  ) : (
+                    tweetDrafts.map((draft) => (
+                      <div key={draft.id} className="border border-zinc-800 rounded-2xl p-4 bg-black/60">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
+                          <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                            {draft.type} • {draft.date}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => handleCopyDraft(draft.id, draft.content)}
+                              className={`min-h-[40px] px-3 py-2 rounded text-xs font-medium border ${
+                                copiedDraftId === draft.id
+                                  ? "bg-green-600 text-white border-green-500"
+                                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
+                              }`}
+                            >
+                              {copiedDraftId === draft.id ? "✓ Copied!" : "Copy"}
+                            </button>
+                            <a
+                              href={createTweetIntent(draft.content)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-zinc-900 border border-zinc-700"
+                            >
+                              Open in X
+                            </a>
+                            <button
+                              onClick={() => postToDiscord(draft.content, `draft-${draft.id}`)}
+                              disabled={!selectedDiscordChannel || discordPosting === `draft-${draft.id}`}
+                              className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-indigo-500/20 border border-indigo-500/40"
+                            >
+                              {discordPosting === `draft-${draft.id}` ? "Posting..." : "Post to Discord"}
+                            </button>
+                            <button
+                              onClick={() => handleUpdateDraft(draft.id, "approved")}
+                              className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-emerald-600 hover:bg-emerald-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleUpdateDraft(draft.id, "rejected")}
+                              className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-rose-600 hover:bg-rose-700"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                        <pre className="whitespace-pre-wrap text-sm text-zinc-200 font-mono">{draft.content}</pre>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -568,4 +927,40 @@ export default function ContentHubPage() {
       </div>
     </div>
   );
+}
+
+function buildThreadTweets(data: ContentHubData, template: TemplateStyle): string[] {
+  const dateLabel = format(parseISO(data.date), "MMM d, yyyy");
+  const levels = data.morningCard.levels || {};
+  const modeLine = `${data.modeEmoji} ${data.mode.toUpperCase()} MODE — ${dateLabel}`;
+  const levelLine = `Key levels: R1 ${formatLevelValue(levels.R1)}, R2 ${formatLevelValue(levels.R2)}, S1 ${formatLevelValue(levels.S1)}, S2 ${formatLevelValue(levels.S2)}`;
+
+  const base = {
+    minimal: [
+      `${modeLine}\n\nDaily cap in effect. Map your risk accordingly. ⚔️`,
+      `${levelLine}\n\nRespect the levels.`,
+      `Focus: clean reactions at key levels + protect capital.`,
+      `Get the full daily brief + accuracy track record → flacko.ai ⚔️`,
+    ],
+    detailed: [
+      `${modeLine}\n\nToday’s plan is live. Daily cap + posture pulled from the report.`,
+      `${levelLine}\n\nThese are the highest-impact levels for today’s tape.`,
+      `What to watch: wait for clean reactions at levels, size by mode, and avoid forcing trades.`,
+      `Want the full breakdown + alerts? Join the gang → flacko.ai ⚔️`,
+    ],
+    hype: [
+      `${modeLine}\n\nWe’ve got a plan. Levels locked. Risk capped. ⚡️`,
+      `${levelLine}\n\nThese are the battlegrounds.`,
+      `Stay sharp: let price come to you and execute the playbook. ⚔️`,
+      `Full report + live alerts → flacko.ai ⚔️`,
+    ],
+    defensive: [
+      `${modeLine}\n\nRisk tight today. Size down and stay defensive.`,
+      `${levelLine}\n\nProtect capital first.`,
+      `What matters: patience, clean reactions, no hero trades.`,
+      `Track the system + accuracy → flacko.ai ⚔️`,
+    ],
+  } as const;
+
+  return base[template];
 }
