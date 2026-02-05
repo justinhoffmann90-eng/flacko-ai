@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [isExistingUser, setIsExistingUser] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -34,6 +35,26 @@ export default function LoginPage() {
     };
     checkSession();
   }, [supabase, router]);
+
+  // Check if user is existing (has logged in before) when email changes
+  const checkUserStatus = async (emailToCheck: string) => {
+    if (!emailToCheck || !emailToCheck.includes("@")) {
+      setIsExistingUser(false);
+      return;
+    }
+    
+    try {
+      const res = await fetch("/api/check-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailToCheck }),
+      });
+      const data = await res.json();
+      setIsExistingUser(data.hasLoggedIn === true);
+    } catch {
+      setIsExistingUser(false);
+    }
+  };
 
   // Show loading while checking session
   if (checkingSession) {
@@ -169,12 +190,23 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={(e) => checkUserStatus(e.target.value)}
                 required
                 autoComplete="email"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {isExistingUser && (
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <Input
                 id="password"
                 name="password"
