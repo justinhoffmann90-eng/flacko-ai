@@ -580,188 +580,44 @@ export default function ContentHubPage() {
               </div>
             </div>
 
-            {/* Morning Card */}
+            {/* Morning Card - Coming Soon */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
               <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
                 <div className="p-5 sm:p-6 border-b border-zinc-800">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold">Morning Levels Card</h2>
-                      <div className="text-sm text-zinc-500 mt-1">{data.morningCard.status === "ready" && "✅ Ready"}</div>
-                    </div>
-                    <div className="px-3 py-1 rounded-full text-xs border border-zinc-700 text-zinc-400">Live Preview</div>
-                  </div>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    Morning Levels Card
+                    <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">Coming Soon</span>
+                  </h2>
+                  <div className="text-sm text-zinc-500 mt-1">Being rebuilt for Vercel compatibility</div>
                 </div>
-
                 <div className="p-5 sm:p-6">
-                  {/* Preview */}
-                  <div className="mb-5 group">
-                    <img
-                      src={`/api/content/download?type=daily-mode-card&date=${activeDate}`}
-                      className="w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01]"
-                      alt="Morning Card Preview"
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-5">
-                    <a
-                      href={data.morningCard.imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
-                    >
-                      Open Full Size
-                    </a>
-                    <button
-                      onClick={() =>
-                        triggerDownload(`/api/content/download?type=daily-mode-card&date=${activeDate}&download=1`)
-                      }
-                      className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
-                    >
-                      Download PNG
-                    </button>
-                    <a
-                      href={createTweetIntent(data.morningCard.tweetText)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[44px] px-4 py-2 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg text-sm font-medium text-center"
-                    >
-                      Open in X
-                    </a>
-                    <button
-                      onClick={() => postToDiscord(data.morningCard.tweetText, "morning")}
-                      disabled={!selectedDiscordChannel || discordPosting === "morning"}
-                      className="min-h-[44px] px-4 py-2 bg-indigo-500/20 border border-indigo-500/40 hover:bg-indigo-500/30 rounded-lg text-sm font-medium"
-                    >
-                      {discordPosting === "morning" ? "Posting..." : "Post to Discord"}
-                    </button>
-                  </div>
-
-                  {/* Tweet Text */}
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Tweet Text</div>
-                    <div className="bg-black/60 border border-zinc-800 rounded-2xl p-4 relative">
-                      <pre className="whitespace-pre-wrap text-sm font-mono text-zinc-200">{data.morningCard.tweetText}</pre>
-                      <button
-                        onClick={() => handleCopyTweet(data.morningCard.tweetText, "morning")}
-                        className={`absolute top-3 right-3 min-h-[40px] px-3 py-2 rounded text-xs font-medium border ${
-                          copiedMorning
-                            ? "bg-green-600 text-white border-green-500"
-                            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
-                        }`}
-                      >
-                        {copiedMorning ? "✓ Copied!" : "Copy"}
-                      </button>
-                    </div>
+                  <div className="text-center py-12 text-zinc-500">
+                    <div className="text-4xl mb-4">🚧</div>
+                    <div className="text-lg font-medium text-zinc-400 mb-2">Under Construction</div>
+                    <div className="text-sm">Use Daily Mode Card above for now</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* EOD Accuracy Card */}
+            {/* EOD Accuracy Card - Coming Soon */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
               <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
                 <div className="p-5 sm:p-6 border-b border-zinc-800">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold">EOD Accuracy Card</h2>
-                      <div className="text-sm text-zinc-500 mt-1">
-                        {data.eodCard.status === "ready" && "✅ Ready"}
-                        {data.eodCard.status === "pending" && "⏳ Generates at 4pm CT"}
-                        {data.eodCard.status === "generating" && "🔄 Generating..."}
-                      </div>
-                    </div>
-                    {data.eodCard.status === "pending" && (
-                      <button
-                        onClick={handleGenerateEOD}
-                        className="min-h-[44px] px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium"
-                      >
-                        Generate Now
-                      </button>
-                    )}
-                  </div>
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    EOD Accuracy Card
+                    <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">Coming Soon</span>
+                  </h2>
+                  <div className="text-sm text-zinc-500 mt-1">Being rebuilt for Vercel compatibility</div>
                 </div>
-
                 <div className="p-5 sm:p-6">
-                  {data.eodCard.status === "ready" ? (
-                    <>
-                      {/* Preview */}
-                      <div className="mb-5 group">
-                        <img
-                          src={`/api/content/download?type=eod-accuracy-card&date=${activeDate}`}
-                          className="w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01]"
-                          alt="EOD Card Preview"
-                        />
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-col xl:flex-row xl:items-center gap-3 mb-5">
-                        <a
-                          href={data.eodCard.imageUrl || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
-                        >
-                          Open Full Size
-                        </a>
-                        <button
-                          onClick={() =>
-                            triggerDownload(`/api/content/download?type=eod-accuracy-card&date=${activeDate}&download=1`)
-                          }
-                          className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
-                        >
-                          Download PNG
-                        </button>
-                        {data.eodCard.tweetText && (
-                          <a
-                            href={createTweetIntent(data.eodCard.tweetText)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="min-h-[44px] px-4 py-2 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg text-sm font-medium text-center"
-                          >
-                            Open in X
-                          </a>
-                        )}
-                        {data.eodCard.tweetText && (
-                          <button
-                            onClick={() => postToDiscord(data.eodCard.tweetText || "", "eod")}
-                            disabled={!selectedDiscordChannel || discordPosting === "eod"}
-                            className="min-h-[44px] px-4 py-2 bg-indigo-500/20 border border-indigo-500/40 hover:bg-indigo-500/30 rounded-lg text-sm font-medium"
-                          >
-                            {discordPosting === "eod" ? "Posting..." : "Post to Discord"}
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Tweet Text */}
-                      {data.eodCard.tweetText && (
-                        <div>
-                          <div className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Tweet Text</div>
-                          <div className="bg-black/60 border border-zinc-800 rounded-2xl p-4 relative">
-                            <pre className="whitespace-pre-wrap text-sm font-mono text-zinc-200">{data.eodCard.tweetText}</pre>
-                            <button
-                              onClick={() => handleCopyTweet(data.eodCard.tweetText!, "eod")}
-                              className={`absolute top-3 right-3 min-h-[40px] px-3 py-2 rounded text-xs font-medium border ${
-                                copiedEOD
-                                  ? "bg-green-600 text-white border-green-500"
-                                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700"
-                              }`}
-                            >
-                              {copiedEOD ? "✓ Copied!" : "Copy"}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center py-20 text-zinc-500">
-                      {data.eodCard.status === "pending" && "EOD card will be available after market close"}
-                      {data.eodCard.status === "generating" && "Generating card..."}
-                    </div>
-                  )}
+                  <div className="text-center py-12 text-zinc-500">
+                    <div className="text-4xl mb-4">🚧</div>
+                    <div className="text-lg font-medium text-zinc-400 mb-2">Under Construction</div>
+                    <div className="text-sm">Will show accuracy tracking after market close</div>
+                  </div>
                 </div>
               </div>
             </div>
