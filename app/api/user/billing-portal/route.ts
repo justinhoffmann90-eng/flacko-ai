@@ -40,9 +40,17 @@ export async function POST() {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Billing portal error:", error);
-    // Log more details for debugging
+    // Return more specific error info
     if (error instanceof Error) {
       console.error("Error details:", error.message, error.stack);
+      // Check for common Stripe errors
+      if (error.message.includes("No such customer")) {
+        return NextResponse.json({ error: "Customer not found in Stripe. Please contact support." }, { status: 404 });
+      }
+      if (error.message.includes("STRIPE_SECRET_KEY")) {
+        return NextResponse.json({ error: "Stripe configuration error. Please contact support." }, { status: 500 });
+      }
+      return NextResponse.json({ error: `Billing error: ${error.message}` }, { status: 500 });
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
