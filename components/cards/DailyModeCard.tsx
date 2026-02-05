@@ -117,7 +117,7 @@ export default function DailyModeCard({
           >
             Key Levels
           </div>
-          <div style={{ display: "grid", gap: "12px", fontSize: "20px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span>Call Wall</span>
               <span style={{ fontWeight: 700 }}>{formatPrice(levels.call_wall)}</span>
