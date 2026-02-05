@@ -6,11 +6,6 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  // Dev mode bypass - skip all auth checks
-  if (process.env.DEV_BYPASS_AUTH === "true") {
-    return supabaseResponse;
-  }
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -49,9 +44,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Define public routes that don't require authentication
-  const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/pricing", "/landing-v2", "/landing-new", "/welcome", "/founder", "/learn", "/terms", "/privacy", "/v3"];
+  const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/pricing", "/welcome", "/founder", "/learn", "/terms", "/privacy"];
   const isPublicRoute = publicRoutes.some(
-    (route) => request.nextUrl.pathname === route || 
+    (route) => request.nextUrl.pathname === route ||
                request.nextUrl.pathname.startsWith(route + "/") ||
                request.nextUrl.pathname.startsWith("/api/webhooks")
   );
@@ -71,39 +66,14 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Debug endpoints (temporary)
-  if (request.nextUrl.pathname.startsWith("/api/debug")) {
-    return supabaseResponse;
-  }
-
-  // Alert debug endpoint (uses Bearer token auth like cron)
-  if (request.nextUrl.pathname.startsWith("/api/alerts/debug")) {
-    return supabaseResponse;
-  }
-
   // Command center API should be accessible (data is not sensitive)
   if (request.nextUrl.pathname.startsWith("/api/command-center")) {
     return supabaseResponse;
   }
 
   // Signup checkout endpoints (no auth needed - public checkout)
-  if (request.nextUrl.pathname === "/api/signup-checkout" || 
+  if (request.nextUrl.pathname === "/api/signup-checkout" ||
       request.nextUrl.pathname === "/api/create-checkout") {
-    return supabaseResponse;
-  }
-
-  // Stripe test endpoint (temporary debug)
-  if (request.nextUrl.pathname === "/api/stripe-test") {
-    return supabaseResponse;
-  }
-
-  // Email test endpoint (temporary)
-  if (request.nextUrl.pathname === "/api/test-email") {
-    return supabaseResponse;
-  }
-
-  // Admin send password email (temporary one-time use)
-  if (request.nextUrl.pathname === "/api/admin/send-password-email") {
     return supabaseResponse;
   }
 

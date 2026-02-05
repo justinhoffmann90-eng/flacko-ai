@@ -10,6 +10,25 @@ import { addRoleToMember } from "@/lib/discord/bot";
  * Or schedule as daily cron job
  */
 export async function POST(request: Request) {
+  // Verify admin auth
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  const hasBearerAuth = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+  if (!hasBearerAuth) {
+    // Fall back to checking admin session
+    const { createClient } = await import("@/lib/supabase/server");
+    const userClient = await createClient();
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { data: userData } = await userClient.from("users").select("is_admin").eq("id", user.id).single();
+    if (!userData?.is_admin) {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    }
+  }
+
   const supabase = await createServiceClient();
 
   try {

@@ -1,11 +1,10 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { createCheckoutSession, getCurrentTier, getPriceForTier } from "@/lib/stripe/server";
+import { createCheckoutSession } from "@/lib/stripe/server";
 
 interface ExistingSubscription {
   status: string;
-  locked_price_cents: number | null;
-  price_tier: number;
+  is_founder?: boolean;
 }
 
 export async function POST() {
@@ -21,7 +20,7 @@ export async function POST() {
     // Check if user already has an active subscription
     const { data: existingSubData } = await supabase
       .from("subscriptions")
-      .select("status, locked_price_cents, price_tier")
+      .select("status, is_founder")
       .eq("user_id", user.id)
       .single();
 
@@ -30,45 +29,32 @@ export async function POST() {
       return NextResponse.json({ error: "Already subscribed" }, { status: 400 });
     }
 
-    // Determine price - use locked price if returning subscriber
-    let priceInCents: number;
-    let tier: number;
+    // Check if user is a beta founder (determines pricing tier)
+    const { data: userData } = await supabase
+      .from("users")
+      .select("is_beta_founder")
+      .eq("id", user.id)
+      .single();
 
-    if (existingSubscription?.locked_price_cents) {
-      // Returning subscriber - use their locked price
-      priceInCents = existingSubscription.locked_price_cents;
-      tier = existingSubscription.price_tier;
-    } else {
-      // New subscriber - calculate current tier
-      const { count } = await serviceSupabase
-        .from("subscriptions")
-        .select("*", { count: "exact", head: true })
-        .in("status", ["active", "comped"]);
+    const isFounder = userData?.is_beta_founder === true || existingSubscription?.is_founder === true;
 
-      tier = getCurrentTier(count || 0);
-      priceInCents = getPriceForTier(tier);
-    }
-
-    // Create Stripe checkout session
+    // Create Stripe checkout session using the correct price ID
+    // Founder: $14.99/mo + 45-day trial | Public: $29.99/mo
     const session = await createCheckoutSession({
       userId: user.id,
       email: user.email!,
-      priceInCents,
-      tier,
       successUrl: `https://flacko.ai/dashboard?success=true`,
       cancelUrl: `https://flacko.ai/signup?canceled=true`,
+      isFounder,
     });
 
     // Create pending subscription record if not exists
     if (!existingSubscription) {
-      const subToInsert = {
+      await serviceSupabase.from("subscriptions").insert({
         user_id: user.id,
         status: "pending",
-        price_tier: tier,
-        locked_price_cents: priceInCents,
-      };
-      await (serviceSupabase.from("subscriptions") as unknown as { insert: (data: typeof subToInsert) => Promise<unknown> })
-        .insert(subToInsert);
+        is_founder: isFounder,
+      });
     }
 
     return NextResponse.json({ url: session.url });

@@ -1,5 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+// Whitelist of fields that users can update on their profile
+const userUpdateSchema = z.object({
+  x_handle: z.string().optional(),
+  discord_username: z.string().optional(),
+  last_dashboard_visit: z.string().datetime().optional(),
+}).strict();
 
 export async function GET() {
   try {
@@ -35,12 +43,20 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const updates = await request.json();
+    const body = await request.json();
+    const parsed = userUpdateSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid fields", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
 
     const { data, error } = await supabase
       .from("users")
       .update({
-        ...updates,
+        ...parsed.data,
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)

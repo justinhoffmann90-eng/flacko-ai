@@ -182,7 +182,7 @@ export default async function DashboardPage() {
                   {mode.toUpperCase()} MODE
                 </Badge>
                 <p className="text-sm md:text-base lg:text-lg text-muted-foreground mt-3 md:mt-4">
-                  {report ? `Latest Report: ${formatDateShort(report.report_date)}` : "No report yet"}
+                  {report ? `Latest Report: ${formatDateShort(report.report_date)}` : "Report pending — check back after market close"}
                 </p>
               </div>
               <Link href="/report">

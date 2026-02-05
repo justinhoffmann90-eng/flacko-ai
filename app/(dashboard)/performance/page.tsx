@@ -71,7 +71,10 @@ export default async function PerformancePage() {
           </CardHeader>
           <CardContent>
             {reports.length === 0 ? (
-              <p className="text-muted-foreground text-center">No data available</p>
+              <div className="text-center py-6 space-y-2">
+                <p className="text-muted-foreground">No performance data yet</p>
+                <p className="text-sm text-muted-foreground">Accuracy tracking starts once reports include previous-day forecast scores.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {reports.slice(0, 10).map((report) => {

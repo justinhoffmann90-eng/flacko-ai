@@ -58,13 +58,12 @@ async function logAlertDelivery(
 }
 
 export async function GET(request: Request) {
-  // Verify cron secret (temporary: also allow hardcoded secret for debugging)
+  // Verify cron secret
   const headersList = await headers();
   const authHeader = headersList.get("authorization");
   const expectedSecret = process.env.CRON_SECRET;
-  const hardcodedSecret = "58154a5d97165f1d9d5abb2d839782e682835fee057ba8c8acfca26c24305a9e";
 
-  if (authHeader !== `Bearer ${expectedSecret}` && authHeader !== `Bearer ${hardcodedSecret}`) {
+  if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -366,57 +365,47 @@ export async function GET(request: Request) {
     }
 
     // Send email alerts to ALL active subscribers with email_alerts enabled
-    // This ensures new subscribers get alerts even if they joined after report upload
-    const { data: allSubscribers } = await supabase
+    // Batch query to avoid N+1: fetch subscribers with their settings and email in one go
+    const { data: subscribersWithDetails } = await supabase
       .from("subscriptions")
-      .select("user_id")
+      .select(`
+        user_id,
+        users!inner(id, email),
+        user_settings(email_alerts)
+      `)
       .in("status", ["active", "comped"]);
 
-    console.log(`📧 Checking email alerts for ${allSubscribers?.length || 0} active subscribers`);
+    // Flatten and filter to subscribers with email alerts enabled
+    const eligibleSubscribers = (subscribersWithDetails || []).filter((sub) => {
+      const settings = (sub as any).user_settings;
+      // Default to true if no settings or email_alerts not explicitly set
+      const emailAlertsEnabled = !settings || (settings as any).email_alerts !== false;
+      const email = (sub as any).users?.email;
+      return emailAlertsEnabled && email;
+    });
+
+    console.log(`Checking email alerts for ${eligibleSubscribers.length} eligible subscribers`);
 
     // Build the alerts array once (same for all users)
     const alertsToSend = Array.from(uniqueAlerts.values());
 
+    // Build key levels from report data (once, not per-user)
+    const keyLevels = extractedData?.key_levels ? {
+      hedgeWall: extractedData.key_levels.hedge_wall,
+      gammaStrike: extractedData.key_levels.gamma_strike,
+      putWall: extractedData.key_levels.put_wall,
+      callWall: extractedData.key_levels.call_wall,
+      masterEject: extractedData.key_levels.master_eject,
+    } : undefined;
+
     let emailsSent = 0;
     let emailsFailed = 0;
-    for (const sub of allSubscribers || []) {
-      // Check if user has email_alerts enabled (defaults to true if not set)
-      const { data: settings } = await supabase
-        .from("user_settings")
-        .select("email_alerts")
-        .eq("user_id", sub.user_id)
-        .maybeSingle();
-
-      // Default to true if no settings or email_alerts not explicitly set
-      const emailAlertsEnabled = settings?.email_alerts !== false;
-
-      if (!emailAlertsEnabled) {
-        continue;
-      }
-
-      // Get user email
-      const { data: userData } = await supabase
-        .from("users")
-        .select("email")
-        .eq("id", sub.user_id)
-        .single();
-
-      if (!userData?.email) {
-        continue;
-      }
+    for (const sub of eligibleSubscribers) {
+      const userEmail = (sub as any).users?.email as string;
 
       try {
-        // Build key levels from report data
-        const keyLevels = extractedData?.key_levels ? {
-          hedgeWall: extractedData.key_levels.hedge_wall,
-          gammaStrike: extractedData.key_levels.gamma_strike,
-          putWall: extractedData.key_levels.put_wall,
-          callWall: extractedData.key_levels.call_wall,
-          masterEject: extractedData.key_levels.master_eject,
-        } : undefined;
-
         const html = getAlertEmailHtml({
-          userName: userData.email.split("@")[0],
+          userName: userEmail.split("@")[0],
           alerts: alertsToSend,
           currentPrice,
           mode: extractedData?.mode?.current || "yellow",
@@ -427,16 +416,16 @@ export async function GET(request: Request) {
 
         await resend.emails.send({
           from: EMAIL_FROM,
-          to: userData.email,
-          subject: `🚨 TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
+          to: userEmail,
+          subject: `TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
           html,
         });
 
         emailsSent++;
-        console.log(`Email alert sent to ${userData.email}`);
+        console.log(`Email alert sent to ${userEmail}`);
       } catch (emailError) {
         emailsFailed++;
-        console.error(`Failed to send email to ${userData.email}:`, emailError);
+        console.error(`Failed to send email to ${userEmail}:`, emailError);
       }
     }
 

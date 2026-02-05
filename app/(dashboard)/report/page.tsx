@@ -41,12 +41,15 @@ export default async function ReportPage() {
     return (
       <>
         <Header title="Today's Report" />
-        <main className="px-4 py-6 max-w-2xl mx-auto">
+        <main className="px-4 py-6 max-w-2xl mx-auto space-y-4">
           <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">No report available yet.</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Reports are published daily after market close.
+            <CardContent className="pt-8 pb-8 text-center space-y-3">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                <AlertTriangle className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-lg font-medium">No report available yet</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Daily reports are typically published by 8:00 PM ET after market close. Check back soon or join the Discord for real-time updates.
               </p>
             </CardContent>
           </Card>

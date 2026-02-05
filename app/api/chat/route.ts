@@ -131,27 +131,13 @@ export async function POST(request: Request) {
     const response = result.response;
     const assistantMessage = response.text();
 
-    // Update usage (only if authenticated)
+    // Update usage atomically via RPC to prevent race conditions
     if (userId && !devBypass) {
       const today = new Date().toISOString().split("T")[0];
-      const { data: usageData2 } = await supabase
-        .from("chat_usage")
-        .select("message_count")
-        .eq("user_id", userId)
-        .eq("usage_date", today)
-        .single();
-
-      const currentUsage = usageData2 as ChatUsage | null;
-      const usageToSave = {
-        user_id: userId,
-        usage_date: today,
-        message_count: (currentUsage?.message_count || 0) + 1,
-      };
-      await (supabase
-        .from("chat_usage") as unknown as { upsert: (data: typeof usageToSave, opts: { onConflict: string }) => Promise<unknown> })
-        .upsert(usageToSave, {
-          onConflict: "user_id,usage_date",
-        });
+      await supabase.rpc("increment_chat_usage", {
+        p_user_id: userId,
+        p_usage_date: today,
+      });
     }
 
     return NextResponse.json({ response: assistantMessage });
