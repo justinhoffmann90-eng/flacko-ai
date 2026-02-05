@@ -8,8 +8,9 @@ export async function POST(request: Request) {
   try {
     const { email, adminSecret } = await request.json();
 
-    // Simple protection - must know the secret
-    if (adminSecret !== "flacko-admin-2026") {
+    // Verify admin secret from environment variable
+    const expectedSecret = process.env.ADMIN_SECRET;
+    if (!expectedSecret || adminSecret !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

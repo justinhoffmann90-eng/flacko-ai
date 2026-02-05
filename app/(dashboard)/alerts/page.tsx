@@ -155,10 +155,13 @@ export default async function AlertsPage() {
         {/* Empty State */}
         {alerts.length === 0 && (
           <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">No alert levels available</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Alert levels will appear when a report is published
+            <CardContent className="pt-8 pb-8 text-center space-y-3">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                <MessageCircle className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-lg font-medium">No alert levels yet</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Key price levels with buy/sell actions will appear here once today&apos;s report is published. Alerts auto-fire to Discord when levels are hit.
               </p>
             </CardContent>
           </Card>

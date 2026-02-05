@@ -83,12 +83,16 @@ export default async function WeeklyReviewPage() {
     return (
       <>
         <Header title="Weekly Review" />
-        <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto">
+        <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-4">
+          <ReportToggle />
           <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">No weekly review available yet.</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Weekly reviews are published Sunday.
+            <CardContent className="pt-8 pb-8 text-center space-y-3">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                <span className="text-2xl">📅</span>
+              </div>
+              <p className="text-lg font-medium">No weekly review yet</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Weekly reviews drop every Sunday with a full recap of the week, updated thesis check, and key levels for the week ahead.
               </p>
             </CardContent>
           </Card>

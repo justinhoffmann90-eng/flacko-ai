@@ -121,11 +121,13 @@ export default async function CatalystsPage({
 
         {/* Catalysts by Month */}
         {Object.keys(groupedCatalysts).length === 0 ? (
-          <Card className="p-6 text-center">
-            <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No upcoming catalysts</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Check back soon for updates
+          <Card className="p-8 text-center space-y-3">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+              <Calendar className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-lg font-medium">No upcoming catalysts</p>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              No events on the calendar right now. Catalysts like earnings, product launches, and macro events are added as they&apos;re confirmed. Check the weekly review for the latest outlook.
             </p>
           </Card>
         ) : (
