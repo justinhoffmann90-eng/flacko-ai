@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const accessToken = searchParams.get("access_token");
   const refreshToken = searchParams.get("refresh_token");
+  const type = searchParams.get("type");
   const next = searchParams.get("next") ?? "/";
 
   const supabase = await createClient();
@@ -25,6 +26,10 @@ export async function GET(request: Request) {
       refresh_token: refreshToken,
     });
     if (!error) {
+      // Recovery flows must land on the reset-password page
+      if (type === "recovery") {
+        return NextResponse.redirect(`${origin}/reset-password`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

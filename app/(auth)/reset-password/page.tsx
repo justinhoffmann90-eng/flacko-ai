@@ -25,7 +25,8 @@ export default function ResetPasswordPage() {
   const initializeAuth = useCallback(async () => {
     try {
       const hash = window.location.hash;
-      
+      const queryParams = new URLSearchParams(window.location.search);
+
       // Check for error in hash first
       if (hash.includes("error=")) {
         const hashParams = new URLSearchParams(hash.substring(1));
@@ -36,14 +37,70 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // Check for tokens in hash
+      // Check for error in query params
+      if (queryParams.get("error")) {
+        const errorDesc = queryParams.get("error_description") || "Link is invalid or expired";
+        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+        setDebugInfo("Error in URL query params");
+        setPageState("error");
+        return;
+      }
+
+      // Handle token_hash in query params (modern Supabase recovery flow)
+      const tokenHash = queryParams.get("token_hash");
+      const type = queryParams.get("type");
+      if (tokenHash && type) {
+        const { data, error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as "recovery" | "magiclink" | "email",
+        });
+
+        if (verifyError) {
+          console.error("verifyOtp error:", verifyError);
+          setError(`Failed to verify: ${verifyError.message}`);
+          setDebugInfo(`verifyOtp failed: ${verifyError.message}`);
+          setPageState("error");
+          return;
+        }
+
+        if (data.session) {
+          console.log("Session established via token_hash for:", data.session.user.email);
+          setUserEmail(data.session.user.email || "");
+          window.history.replaceState(null, "", "/reset-password");
+          setPageState("form");
+          return;
+        }
+      }
+
+      // Handle PKCE code in query params
+      const code = queryParams.get("code");
+      if (code) {
+        const { data, error: codeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (codeError) {
+          console.error("Code exchange error:", codeError);
+          setError(`Failed to verify: ${codeError.message}`);
+          setDebugInfo(`Code exchange failed: ${codeError.message}`);
+          setPageState("error");
+          return;
+        }
+
+        if (data.session) {
+          console.log("Session established via code for:", data.session.user.email);
+          setUserEmail(data.session.user.email || "");
+          window.history.replaceState(null, "", "/reset-password");
+          setPageState("form");
+          return;
+        }
+      }
+
+      // Check for tokens in hash (legacy Supabase implicit flow)
       if (hash.includes("access_token=")) {
         const hashParams = new URLSearchParams(hash.substring(1));
         const accessToken = hashParams.get("access_token");
         const refreshToken = hashParams.get("refresh_token");
 
         if (accessToken && refreshToken) {
-          // Set session with extracted tokens
           const { data, error: sessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -60,28 +117,16 @@ export default function ResetPasswordPage() {
           if (data.session) {
             console.log("Session established for:", data.session.user.email);
             setUserEmail(data.session.user.email || "");
-            
-            // IMPORTANT: Wait for session to be persisted before clearing hash
-            // Set up listener first
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-              if (event === 'SIGNED_IN' && session) {
-                // Session is now persisted to cookies, safe to clear hash
-                console.log("Session persisted, clearing hash");
-                window.history.replaceState(null, "", "/reset-password");
-                subscription.unsubscribe();
-              }
-            });
-            
-            // Show the form immediately (session is in memory)
+            window.history.replaceState(null, "", "/reset-password");
             setPageState("form");
             return;
           }
         }
       }
 
-      // No hash tokens - check for existing session
+      // No URL tokens - check for existing session (e.g., redirected from /auth/callback)
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
         console.log("Existing session found");
         setUserEmail(session.user.email || "");
@@ -91,9 +136,9 @@ export default function ResetPasswordPage() {
 
       // No session, no tokens - invalid state
       setError("No valid session found. Please request a new password link.");
-      setDebugInfo("No hash tokens and no existing session");
+      setDebugInfo("No tokens and no existing session");
       setPageState("error");
-      
+
     } catch (err) {
       console.error("Init error:", err);
       setError("Something went wrong. Please try again.");
