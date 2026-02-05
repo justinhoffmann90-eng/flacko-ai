@@ -922,8 +922,162 @@ export default function ContentHubPage() {
                 </div>
               </div>
             </div>
+
+            {/* Quote Image Generator */}
+            <QuoteImageGenerator modeAccent={modeAccent} />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function QuoteImageGenerator({ modeAccent }: { modeAccent: { badge: string; glow: string; text: string; ring: string } }) {
+  const [quote, setQuote] = useState("");
+  const [author, setAuthor] = useState("Flacko AI");
+  const [style, setStyle] = useState<"neutral" | "red" | "orange" | "yellow" | "green">("neutral");
+  const [generating, setGenerating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const styleOptions = [
+    { value: "neutral", label: "Neutral (White)", color: "bg-white" },
+    { value: "red", label: "Red Mode", color: "bg-red-500" },
+    { value: "orange", label: "Orange Mode", color: "bg-orange-500" },
+    { value: "yellow", label: "Yellow Mode", color: "bg-yellow-500" },
+    { value: "green", label: "Green Mode", color: "bg-green-500" },
+  ];
+
+  const handleGenerate = async () => {
+    if (!quote.trim()) return;
+    setGenerating(true);
+    setPreviewUrl(null);
+
+    try {
+      const response = await fetch("/api/content/quote-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quote, author, style }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch (err) {
+      console.error("Quote generation error:", err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!previewUrl) return;
+    const a = document.createElement("a");
+    a.href = previewUrl;
+    a.download = `flacko-quote-${Date.now()}.png`;
+    a.click();
+  };
+
+  return (
+    <div className="relative">
+      <div className={`absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70`} />
+      <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-zinc-800">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <span>💬</span> Quote Image Generator
+              </h2>
+              <div className="text-sm text-zinc-500 mt-1">Create branded quote images for X</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6 space-y-5">
+          {/* Quote Input */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-2">Quote</label>
+            <textarea
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+              placeholder="Cash is a position. At RED mode, daily cap is 5%. The goal isn't to catch the bottom — it's to survive until clarity returns."
+              rows={4}
+              className="w-full px-4 py-3 bg-black border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none"
+            />
+            <div className="text-xs text-zinc-500 mt-1">{quote.length} characters</div>
+          </div>
+
+          {/* Author & Style Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Author</label>
+              <input
+                type="text"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                className="w-full px-4 py-3 bg-black border border-zinc-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-zinc-700"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-400 mb-2">Color Style</label>
+              <div className="flex flex-wrap gap-2">
+                {styleOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setStyle(opt.value as typeof style)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+                      style === opt.value
+                        ? "bg-zinc-800 border-zinc-600 ring-2 ring-zinc-500"
+                        : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    <span className={`inline-block w-3 h-3 rounded-full ${opt.color} mr-2`} />
+                    {opt.label.split(" ")[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerate}
+            disabled={!quote.trim() || generating}
+            className={`w-full min-h-[50px] px-6 py-3 rounded-xl text-base font-semibold transition-all ${
+              generating
+                ? "bg-zinc-800 text-zinc-400 cursor-wait"
+                : "bg-white text-black hover:bg-zinc-200"
+            }`}
+          >
+            {generating ? "Generating..." : "Generate Quote Image"}
+          </button>
+
+          {/* Preview */}
+          {previewUrl && (
+            <div className="space-y-4">
+              <div className="border border-zinc-800 rounded-xl overflow-hidden">
+                <img src={previewUrl} alt="Quote preview" className="w-full" />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700"
+                >
+                  Download PNG
+                </button>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(quote + "\n\n— " + author + "\n\nflacko.ai ⚔️")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold bg-zinc-900 border border-zinc-700 text-center flex items-center justify-center"
+                >
+                  Open in X
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
