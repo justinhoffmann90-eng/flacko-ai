@@ -411,67 +411,99 @@ export default function LandingPage() {
                     <div className="border-b border-zinc-700"></div>
                   </div>
                   
-                  {/* Declining line - SVG with clear color segments */}
+                  {/* Price line - SVG with 5 color segments showing local top formation */}
                   <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
-                    {/* Green segment - Weeks 1-2 */}
+                    {/* Green segment - Weeks 1-2: Uptrend to local top */}
                     <path 
-                      d="M 0 28 C 12 22, 20 20, 30 18 C 42 16, 50 22, 55 28 C 60 34, 68 30, 78 32 C 88 34, 95 33, 100 35" 
+                      d="M 0 45 C 15 40, 30 32, 45 25 C 60 18, 70 12, 80 10 C 90 8, 95 10, 100 15" 
                       fill="none" 
                       stroke="#22c55e" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Yellow segment - Weeks 3-4 */}
+                    {/* Yellow segment - Weeks 3-4: First pullback, warning signs */}
                     <path 
-                      d="M 100 35 C 110 40, 118 38, 125 42 C 135 48, 140 44, 148 50 C 158 58, 168 54, 175 52 C 182 50, 188 56, 195 64 C 198 68, 200 70, 200 70" 
+                      d="M 100 15 C 108 22, 115 28, 125 35 C 140 48, 150 52, 160 50 C 170 48, 180 55, 190 60" 
                       fill="none" 
                       stroke="#eab308" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Red segment - Weeks 5-10 */}
+                    {/* Orange segment - Weeks 5-6: Structure weakening */}
                     <path 
-                      d="M 200 70 C 215 78, 225 74, 235 68 C 248 60, 255 72, 265 85 C 280 105, 290 100, 300 95 C 315 88, 325 98, 340 115 C 360 138, 375 132, 390 140 C 410 150, 420 148, 435 160 C 455 175, 470 172, 485 185 C 495 193, 500 195, 500 195" 
+                      d="M 190 60 C 205 68, 215 72, 230 80 C 245 88, 255 85, 265 90 C 275 95, 285 100, 295 105" 
+                      fill="none" 
+                      stroke="#f97316" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    {/* Red segment - Weeks 7-9: Structure broken */}
+                    <path 
+                      d="M 295 105 C 310 115, 325 125, 340 135 C 360 150, 375 155, 390 165" 
                       fill="none" 
                       stroke="#ef4444" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
+                    {/* Master Eject - Weeks 9-10: Final capitulation */}
+                    <path 
+                      d="M 390 165 C 410 172, 430 178, 450 185 C 470 190, 485 193, 500 195" 
+                      fill="none" 
+                      stroke="#dc2626" 
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
                     
-                    {/* Connector lines - aligned to dot positions */}
-                    <line x1="30" y1="18" x2="30" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="100" y1="35" x2="100" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="200" y1="70" x2="200" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="265" y1="85" x2="265" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
+                    {/* Connector lines - aligned to each mode's dot position */}
+                    <line x1="80" y1="10" x2="80" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="160" y1="50" x2="160" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="265" y1="90" x2="265" y2="0" stroke="#f97316" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="360" y1="150" x2="360" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="450" y1="185" x2="450" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
+                    
+                    {/* Local top indicator */}
+                    <text x="80" y="10" dy="-8" textAnchor="middle" className="fill-zinc-500" fontSize="8">local top</text>
                   </svg>
                   
-                  {/* Mode Labels & Dots - positioned to center on line */}
-                  <div className="absolute -top-5 left-[5%] flex flex-col items-center">
-                    <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">green mode</span>
+                  {/* Mode Labels & Dots - staggered vertically to prevent overlap */}
+                  {/* Green mode - at the local top */}
+                  <div className="absolute -top-6 left-[14%] flex flex-col items-center">
+                    <span className="text-[9px] text-green-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">green</span>
                   </div>
-                  <div className="absolute top-[8%] left-[6%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[5%] left-[16%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
-                  <div className="absolute top-1 left-[18%] flex flex-col items-center">
-                    <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">yellow mode</span>
+                  {/* Yellow mode */}
+                  <div className="absolute top-0 left-[30%] flex flex-col items-center">
+                    <span className="text-[9px] text-yellow-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">yellow</span>
                   </div>
-                  <div className="absolute top-[17.5%] left-[20%] -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
+                  <div className="absolute top-[25%] left-[32%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50"></div>
                   </div>
                   
-                  <div className="absolute -top-5 left-[38%] flex flex-col items-center">
-                    <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">red mode</span>
+                  {/* Orange mode */}
+                  <div className="absolute -top-6 left-[51%] flex flex-col items-center">
+                    <span className="text-[9px] text-orange-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">orange</span>
                   </div>
-                  <div className="absolute top-[35%] left-[40%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[45%] left-[53%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-orange-500 border-2 border-orange-300 shadow-lg shadow-orange-500/50"></div>
+                  </div>
+                  
+                  {/* Red mode */}
+                  <div className="absolute top-0 left-[70%] flex flex-col items-center">
+                    <span className="text-[9px] text-red-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">red</span>
+                  </div>
+                  <div className="absolute top-[75%] left-[72%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
                   </div>
                   
-                  <div className="absolute top-1 left-[51%] flex flex-col items-center">
-                    <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">master eject</span>
+                  {/* Master Eject */}
+                  <div className="absolute -top-6 left-[88%] flex flex-col items-center">
+                    <span className="text-[8px] text-red-600 font-bold bg-red-950/90 px-1.5 py-0.5 rounded border border-red-800 whitespace-nowrap">eject</span>
                   </div>
-                  <div className="absolute top-[42.5%] left-[53%] -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50"></div>
+                  <div className="absolute top-[92%] left-[90%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50 animate-pulse"></div>
                   </div>
                 </div>
                 
