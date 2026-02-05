@@ -145,6 +145,42 @@ export async function POST(request: Request) {
             onConflict: "user_id",
           });
 
+          // Create price alerts for new subscriber from today's report
+          try {
+            const today = new Date().toISOString().split('T')[0];
+            const { data: report } = await supabase
+              .from("reports")
+              .select("id, extracted_data")
+              .eq("report_date", today)
+              .single();
+
+            if (report?.extracted_data?.alerts) {
+              const alertInserts = report.extracted_data.alerts.map((alert: any) => ({
+                report_id: report.id,
+                user_id: userId,
+                price: alert.price,
+                type: alert.type,
+                level_name: alert.level_name,
+                action: alert.action,
+                reason: alert.reason,
+              }));
+
+              const { error: alertError } = await supabase
+                .from("report_alerts")
+                .upsert(alertInserts, { onConflict: "report_id,user_id,price,type" });
+
+              if (alertError) {
+                console.error(`Failed to create alerts for new subscriber ${userId}:`, alertError);
+              } else {
+                console.log(`✅ Created ${alertInserts.length} price alerts for new subscriber ${userId}`);
+              }
+            } else {
+              console.log(`No report for ${today} yet - new subscriber ${userId} will get alerts when report is uploaded`);
+            }
+          } catch (alertErr) {
+            console.error(`Exception creating alerts for ${userId}:`, alertErr);
+          }
+
           // Send password setup email so user can set their password
           // customer_email may be null after checkout; use customer_details.email as fallback
           const customerEmail = session.customer_email || session.customer_details?.email;
