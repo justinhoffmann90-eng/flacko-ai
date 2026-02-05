@@ -766,74 +766,6 @@ export default function ContentHubPage() {
               </div>
             </div>
 
-            {/* Thread Generator */}
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
-              <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
-                <div className="p-5 sm:p-6 border-b border-zinc-800">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold">Thread Generator</h2>
-                      <div className="text-sm text-zinc-500 mt-1">4-part thread based on today&apos;s report</div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <select
-                        value={templateStyle}
-                        onChange={(e) => setTemplateStyle(e.target.value as TemplateStyle)}
-                        className="min-h-[44px] px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-sm"
-                      >
-                        {TEMPLATE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={handleGenerateThread}
-                        className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium"
-                      >
-                        Generate Thread
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 sm:p-6 space-y-4">
-                  {(threadTweets.length ? threadTweets : threadPreview).map((tweet, index) => (
-                    <div key={index} className="border border-zinc-800 rounded-2xl p-4 bg-black/60">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
-                        <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Tweet {index + 1}</div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => navigator.clipboard.writeText(tweet)}
-                            className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-zinc-900 border border-zinc-700"
-                          >
-                            Copy
-                          </button>
-                          <a
-                            href={createTweetIntent(tweet)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-zinc-900 border border-zinc-700"
-                          >
-                            Open in X
-                          </a>
-                          <button
-                            onClick={() => postToDiscord(tweet, `thread-${index}`)}
-                            disabled={!selectedDiscordChannel || discordPosting === `thread-${index}`}
-                            className="min-h-[40px] px-3 py-2 rounded text-xs font-medium bg-indigo-500/20 border border-indigo-500/40"
-                          >
-                            {discordPosting === `thread-${index}` ? "Posting..." : "Post to Discord"}
-                          </button>
-                        </div>
-                      </div>
-                      <pre className="whitespace-pre-wrap text-sm text-zinc-200 font-mono">{tweet}</pre>
-                      <div className="text-xs text-zinc-500 mt-2">{tweet.length} characters</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             {/* Tweet Drafts */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
@@ -936,6 +868,33 @@ export default function ContentHubPage() {
 }
 
 function QuoteImageGenerator({ modeAccent }: { modeAccent: { badge: string; glow: string; text: string; ring: string } }) {
+  return (
+    <div className="relative">
+      <div className={`absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70`} />
+      <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-zinc-800">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <span>💬</span> Quote Image Generator
+                <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">Coming Soon</span>
+              </h2>
+              <div className="text-sm text-zinc-500 mt-1">Create branded quote images for X</div>
+            </div>
+          </div>
+        </div>
+        <div className="p-5 sm:p-6">
+          <div className="text-center py-12 text-zinc-500">
+            <div className="text-4xl mb-4">🚧</div>
+            <div className="text-lg font-medium text-zinc-400 mb-2">Under Construction</div>
+            <div className="text-sm">Being rebuilt for better performance. Check back soon!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  
+  /* Original implementation - disabled until fixed
   const [quote, setQuote] = useState("");
   const [author, setAuthor] = useState("Flacko AI");
   const [style, setStyle] = useState<"neutral" | "red" | "orange" | "yellow" | "green">("neutral");
@@ -996,94 +955,7 @@ function QuoteImageGenerator({ modeAccent }: { modeAccent: { badge: string; glow
             </div>
           </div>
         </div>
-
-        <div className="p-5 sm:p-6 space-y-5">
-          {/* Quote Input */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-2">Quote</label>
-            <textarea
-              value={quote}
-              onChange={(e) => setQuote(e.target.value)}
-              placeholder="Cash is a position. At RED mode, daily cap is 5%. The goal isn't to catch the bottom — it's to survive until clarity returns."
-              rows={4}
-              className="w-full px-4 py-3 bg-black border border-zinc-800 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-700 resize-none"
-            />
-            <div className="text-xs text-zinc-500 mt-1">{quote.length} characters</div>
-          </div>
-
-          {/* Author & Style Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Author</label>
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                className="w-full px-4 py-3 bg-black border border-zinc-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-zinc-700"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-2">Color Style</label>
-              <div className="flex flex-wrap gap-2">
-                {styleOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setStyle(opt.value as typeof style)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-                      style === opt.value
-                        ? "bg-zinc-800 border-zinc-600 ring-2 ring-zinc-500"
-                        : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-                    }`}
-                  >
-                    <span className={`inline-block w-3 h-3 rounded-full ${opt.color} mr-2`} />
-                    {opt.label.split(" ")[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Generate Button */}
-          <button
-            onClick={handleGenerate}
-            disabled={!quote.trim() || generating}
-            className={`w-full min-h-[50px] px-6 py-3 rounded-xl text-base font-semibold transition-all ${
-              generating
-                ? "bg-zinc-800 text-zinc-400 cursor-wait"
-                : "bg-white text-black hover:bg-zinc-200"
-            }`}
-          >
-            {generating ? "Generating..." : "Generate Quote Image"}
-          </button>
-
-          {/* Preview */}
-          {previewUrl && (
-            <div className="space-y-4">
-              <div className="border border-zinc-800 rounded-xl overflow-hidden">
-                <img src={previewUrl} alt="Quote preview" className="w-full" />
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleDownload}
-                  className="flex-1 min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700"
-                >
-                  Download PNG
-                </button>
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(quote + "\n\n— " + author + "\n\nflacko.ai ⚔️")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold bg-zinc-900 border border-zinc-700 text-center flex items-center justify-center"
-                >
-                  Open in X
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  */
 }
 
 function XArticleBuilder() {
