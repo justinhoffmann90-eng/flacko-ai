@@ -403,24 +403,35 @@ export async function POST(request: Request) {
         const userId = subscription.metadata?.user_id;
 
         if (userId) {
+          // Preserve current_period_end so user retains access until then
+          const periodEnd = subscription.current_period_end 
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : null;
+
           await supabase
             .from("subscriptions")
             .update({
               status: "canceled",
+              current_period_end: periodEnd,
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
 
-          // Remove Discord subscriber role
-          const { data: userData } = await supabase
-            .from("users")
-            .select("discord_user_id")
-            .eq("id", userId)
-            .single();
+          // Only remove Discord role if period has ended (no grace period remaining)
+          const hasAccessRemaining = periodEnd && new Date(periodEnd) > new Date();
+          
+          if (!hasAccessRemaining) {
+            const { data: userData } = await supabase
+              .from("users")
+              .select("discord_user_id")
+              .eq("id", userId)
+              .single();
 
-          if (userData?.discord_user_id) {
-            await removeRoleFromMember(userData.discord_user_id);
+            if (userData?.discord_user_id) {
+              await removeRoleFromMember(userData.discord_user_id);
+            }
           }
+          // Note: If user still has access, a scheduled job should remove role when period ends
         }
         break;
       }
