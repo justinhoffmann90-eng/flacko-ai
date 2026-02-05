@@ -411,99 +411,67 @@ export default function LandingPage() {
                     <div className="border-b border-zinc-700"></div>
                   </div>
                   
-                  {/* Price line - Clean smooth curve. Orange at week 3. Eject before big drop. */}
+                  {/* Declining line - SVG with clear color segments */}
                   <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
-                    {/* Green segment - Weeks 1-2: Uptrend to local top */}
+                    {/* Green segment - Weeks 1-2 */}
                     <path 
-                      d="M 0 60 Q 50 30, 100 20" 
+                      d="M 0 28 C 12 22, 20 20, 30 18 C 42 16, 50 22, 55 28 C 60 34, 68 30, 78 32 C 88 34, 95 33, 100 35" 
                       fill="none" 
                       stroke="#22c55e" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Yellow segment - Week 2-3: First warning, starts pulling back */}
+                    {/* Yellow segment - Weeks 3-4 */}
                     <path 
-                      d="M 100 20 Q 125 35, 150 50" 
+                      d="M 100 35 C 110 40, 118 38, 125 42 C 135 48, 140 44, 148 50 C 158 58, 168 54, 175 52 C 182 50, 188 56, 195 64 C 198 68, 200 70, 200 70" 
                       fill="none" 
                       stroke="#eab308" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Orange segment - Week 3-4: Structure weakening */}
+                    {/* Red segment - Weeks 5-10 */}
                     <path 
-                      d="M 150 50 Q 185 70, 220 85" 
-                      fill="none" 
-                      stroke="#f97316" 
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                    {/* Red segment - Weeks 4-6: Structure broken, extended */}
-                    <path 
-                      d="M 220 85 Q 270 115, 320 140" 
+                      d="M 200 70 C 215 78, 225 74, 235 68 C 248 60, 255 72, 265 85 C 280 105, 290 100, 300 95 C 315 88, 325 98, 340 115 C 360 138, 375 132, 390 140 C 410 150, 420 148, 435 160 C 455 175, 470 172, 485 185 C 495 193, 500 195, 500 195" 
                       fill="none" 
                       stroke="#ef4444" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Master Eject - Week 6-7: Exit signal */}
-                    <path 
-                      d="M 320 140 Q 345 152, 370 160" 
-                      fill="none" 
-                      stroke="#dc2626" 
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                    />
-                    {/* Post-eject drop - What you avoided (faded dashed) */}
-                    <path 
-                      d="M 370 160 Q 420 180, 500 195" 
-                      fill="none" 
-                      stroke="#52525b" 
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeDasharray="6,4"
-                      opacity="0.6"
-                    />
+                    
+                    {/* Connector lines - aligned to dot positions */}
+                    <line x1="30" y1="18" x2="30" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="100" y1="35" x2="100" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="200" y1="70" x2="200" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="265" y1="85" x2="265" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
                   </svg>
                   
-                  {/* Mode Labels & Dots */}
-                  {/* Green - top left */}
-                  <div className="absolute -top-5 left-[0%]">
-                    <span className="text-[9px] text-green-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded">green</span>
+                  {/* Mode Labels & Dots - positioned to center on line */}
+                  <div className="absolute -top-5 left-[5%] flex flex-col items-center">
+                    <span className="text-[10px] text-green-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">green mode</span>
                   </div>
-                  <div className="absolute top-[30%] left-[0%]">
+                  <div className="absolute top-[8%] left-[6%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
-                  {/* Yellow - BELOW the curve at week 2 */}
-                  <div className="absolute top-[22%] left-[20%] -translate-x-1/2">
-                    <span className="text-[9px] text-yellow-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded">yellow</span>
+                  <div className="absolute top-1 left-[18%] flex flex-col items-center">
+                    <span className="text-[10px] text-yellow-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">yellow mode</span>
                   </div>
-                  <div className="absolute top-[10%] left-[20%] -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50"></div>
-                  </div>
-                  
-                  {/* Orange - at week 3 (30%) */}
-                  <div className="absolute -top-5 left-[30%] -translate-x-1/2">
-                    <span className="text-[9px] text-orange-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded">orange</span>
-                  </div>
-                  <div className="absolute top-[25%] left-[30%] -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-orange-500 border-2 border-orange-300 shadow-lg shadow-orange-500/50"></div>
+                  <div className="absolute top-[17.5%] left-[20%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse"></div>
                   </div>
                   
-                  {/* Red - below curve at week 4-5 */}
-                  <div className="absolute top-[52%] left-[44%] -translate-x-1/2">
-                    <span className="text-[9px] text-red-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded">red</span>
+                  <div className="absolute -top-5 left-[38%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-400 font-bold bg-zinc-900/80 px-1.5 py-0.5 rounded">red mode</span>
                   </div>
-                  <div className="absolute top-[42.5%] left-[44%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[35%] left-[40%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
                   </div>
                   
-                  {/* Eject - above, close to red */}
-                  <div className="absolute -top-5 left-[64%] -translate-x-1/2">
-                    <span className="text-[8px] text-red-600 font-bold bg-red-950/90 px-1.5 py-0.5 rounded border border-red-800">eject</span>
+                  <div className="absolute top-1 left-[51%] flex flex-col items-center">
+                    <span className="text-[10px] text-red-600 font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800">master eject</span>
                   </div>
-                  <div className="absolute top-[70%] left-[64%] -translate-x-1/2 -translate-y-1/2">
-                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50 animate-pulse"></div>
+                  <div className="absolute top-[42.5%] left-[53%] -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50"></div>
                   </div>
                 </div>
                 
