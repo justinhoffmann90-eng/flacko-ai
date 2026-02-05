@@ -132,14 +132,14 @@ export default function SignupPage() {
           onClick={() => setShowDetails(!showDetails)}
           className="w-full flex items-center justify-between bg-zinc-900/50 backdrop-blur-sm rounded-xl p-4 border border-zinc-800/50 sm:hidden"
         >
-          <span className="text-sm text-zinc-300">what you get</span>
+          <span className="text-sm text-zinc-300">what you get:</span>
           <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
         </button>
         
         {/* Mobile: collapsible / Desktop: always visible */}
         <div className={`${showDetails ? 'block' : 'hidden'} sm:block`}>
           <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl p-4 border border-zinc-800/50 mt-2 sm:mt-0">
-            <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-zinc-500 mb-3 hidden sm:block">what you get</p>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-widest text-zinc-500 mb-3 hidden sm:block">what you get:</p>
             <div className="space-y-2 text-[13px] sm:text-sm text-zinc-300">
               {benefits.map((item) => (
                 <div key={item} className="flex items-start gap-2.5">
