@@ -141,7 +141,7 @@ export async function GET(request: Request) {
     if (isEODAvailable) {
       try {
         const { compareLevels, calculateAccuracy } = await import("@/lib/accuracy/compareLevels");
-        const { getIntradayPriceData } = await import("@/lib/accuracy/priceData");
+        const { getIntradayPriceData } = await import("@/lib/price/yahoo-finance");
 
         const alerts = extracted.alerts || [];
         const priceData = await getIntradayPriceData(date);
