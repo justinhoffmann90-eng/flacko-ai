@@ -137,11 +137,41 @@ export async function GET(request: Request) {
       tweetDrafts: [] // TODO: Implement tweet drafts storage
     };
 
-    // If EOD is available, generate EOD tweet text
+    // If EOD is available, generate EOD tweet text from accuracy data
     if (isEODAvailable) {
-      // We'll need to fetch the accuracy data to generate the tweet
-      // For now, just provide a placeholder
-      response.eodCard.tweetText = `$TSLA Accuracy Check — ${format(new Date(date), "MMM d")}\n\nCheck out today's level performance\n\nTrack record: flacko.ai/accuracy ⚔️`;
+      try {
+        const { compareLevels, calculateAccuracy } = await import("@/lib/accuracy/compareLevels");
+        const { getIntradayPriceData } = await import("@/lib/accuracy/priceData");
+
+        const alerts = extracted.alerts || [];
+        const priceData = await getIntradayPriceData(date);
+
+        if (priceData && alerts.length > 0) {
+          const results = compareLevels(alerts, priceData);
+          const accuracy = calculateAccuracy(results);
+
+          const eodTweet = generateEODTweet({
+            date,
+            accuracy: {
+              hit: accuracy.hit,
+              total: accuracy.total,
+              percentage: accuracy.percentage,
+              broken: accuracy.broken,
+              notTested: accuracy.notTested,
+            },
+            results,
+            ohlc: { high: priceData.high, low: priceData.low },
+          });
+
+          response.eodCard.tweetText = eodTweet;
+          response.eodCard.accuracy = accuracy;
+        } else {
+          response.eodCard.tweetText = `$TSLA Accuracy Check — ${format(new Date(date), "MMM d")}\n\nLevel accuracy results pending.\n\nTrack record → flacko.ai/accuracy`;
+        }
+      } catch (eodError) {
+        console.error("EOD tweet generation error:", eodError);
+        response.eodCard.tweetText = `$TSLA Accuracy Check — ${format(new Date(date), "MMM d")}\n\nLevel performance tracking live.\n\nTrack record → flacko.ai/accuracy`;
+      }
     }
 
     return NextResponse.json(response);
