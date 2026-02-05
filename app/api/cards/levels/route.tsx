@@ -60,12 +60,13 @@ export async function GET(request: Request) {
   let closePrice = Number(extracted.current_price || extracted.close_price || 0);
   
   // Get alerts/levels from extracted_data
+  // Alerts use "level_name" field, not "name"
   const alertsData = (extracted.alerts || []) as Array<Record<string, unknown>>;
   const levels: Level[] = alertsData
-    .filter((a) => a.price && a.name)
+    .filter((a) => a.price && (a.level_name || a.name))
     .map((a) => {
       const price = Number(a.price);
-      const name = String(a.name || "");
+      const name = String(a.level_name || a.name || "");
       const pctFromClose = closePrice > 0 ? ((price - closePrice) / closePrice) * 100 : 0;
       let type = pctFromClose >= 0 ? "upside" : "downside";
       if (name.toLowerCase().includes("eject")) type = "eject";
