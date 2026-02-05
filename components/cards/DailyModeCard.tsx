@@ -60,6 +60,7 @@ export default function DailyModeCard({
         justifyContent: "space-between",
       }}
     >
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <div style={{ fontSize: "20px", letterSpacing: "2px", fontWeight: 700 }}>
@@ -76,18 +77,22 @@ export default function DailyModeCard({
             fontWeight: 800,
             fontSize: "20px",
             letterSpacing: "1px",
+            display: "flex",
           }}
         >
           {modeKey} MODE
         </div>
       </div>
 
+      {/* Mode Display */}
       <div
         style={{
           border: `2px solid ${modeColor}`,
           borderRadius: "16px",
           padding: "28px",
-          textAlign: "center",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           fontSize: "34px",
           fontWeight: 800,
           letterSpacing: "3px",
@@ -96,7 +101,9 @@ export default function DailyModeCard({
         {modeKey}
       </div>
 
+      {/* Bottom Row */}
       <div style={{ display: "flex", gap: "32px" }}>
+        {/* Key Levels */}
         <div
           style={{
             flex: 1,
@@ -104,6 +111,8 @@ export default function DailyModeCard({
             borderRadius: "14px",
             padding: "24px",
             border: "1px solid #1f2937",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           <div
@@ -113,30 +122,32 @@ export default function DailyModeCard({
               textTransform: "uppercase",
               letterSpacing: "2px",
               marginBottom: "16px",
+              display: "flex",
             }}
           >
             Key Levels
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Call Wall</span>
-              <span style={{ fontWeight: 700 }}>{formatPrice(levels.call_wall)}</span>
+              <div>Call Wall</div>
+              <div style={{ fontWeight: 700 }}>{formatPrice(levels.call_wall)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Gamma Strike</span>
-              <span style={{ fontWeight: 700 }}>{formatPrice(levels.gamma_strike)}</span>
+              <div>Gamma Strike</div>
+              <div style={{ fontWeight: 700 }}>{formatPrice(levels.gamma_strike)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Hedge Wall</span>
-              <span style={{ fontWeight: 700 }}>{formatPrice(levels.hedge_wall)}</span>
+              <div>Hedge Wall</div>
+              <div style={{ fontWeight: 700 }}>{formatPrice(levels.hedge_wall)}</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Put Wall</span>
-              <span style={{ fontWeight: 700 }}>{formatPrice(levels.put_wall)}</span>
+              <div>Put Wall</div>
+              <div style={{ fontWeight: 700 }}>{formatPrice(levels.put_wall)}</div>
             </div>
           </div>
         </div>
 
+        {/* Daily Cap & Posture */}
         <div
           style={{
             width: "360px",
@@ -149,7 +160,7 @@ export default function DailyModeCard({
             justifyContent: "space-between",
           }}
         >
-          <div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <div
               style={{
                 fontSize: "14px",
@@ -157,18 +168,20 @@ export default function DailyModeCard({
                 textTransform: "uppercase",
                 letterSpacing: "2px",
                 marginBottom: "12px",
+                display: "flex",
               }}
             >
               Daily Cap
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 800 }}>{dailyCapText}</div>
+            <div style={{ fontSize: "28px", fontWeight: 800, display: "flex" }}>{dailyCapText}</div>
           </div>
-          <div style={{ fontSize: "16px", color: "#cbd5f5", lineHeight: 1.4 }}>
+          <div style={{ fontSize: "16px", color: "#cbd5f5", lineHeight: 1.4, display: "flex" }}>
             {posture}
           </div>
         </div>
       </div>
 
+      {/* Footer */}
       <div style={{ display: "flex", justifyContent: "flex-end", color: "#94a3b8" }}>
         flacko.ai
       </div>
