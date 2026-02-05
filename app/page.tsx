@@ -411,51 +411,51 @@ export default function LandingPage() {
                     <div className="border-b border-zinc-700"></div>
                   </div>
                   
-                  {/* Price line - SVG with color segments. Dots at START of each segment. Eject BEFORE the big drop. */}
+                  {/* Price line - SVG with realistic stock-like curvature. Orange at week 3. Extended red. Eject close to red. */}
                   <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="none">
-                    {/* Green segment - Weeks 1-2: Uptrend to local top */}
+                    {/* Green segment - Weeks 1-2: Uptrend with pullbacks to local top */}
                     <path 
-                      d="M 0 50 C 10 45, 20 38, 30 30 C 40 22, 50 15, 60 12 C 70 10, 75 12, 80 18" 
+                      d="M 0 55 C 8 52, 15 48, 25 42 C 35 36, 42 38, 50 32 C 58 26, 65 22, 75 18 C 85 14, 92 12, 100 15" 
                       fill="none" 
                       stroke="#22c55e" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Yellow segment - Weeks 3-4: First pullback */}
+                    {/* Yellow segment - Week 2-3: First pullback with bounce attempt */}
                     <path 
-                      d="M 80 18 C 90 28, 100 35, 115 42 C 130 50, 140 52, 150 55" 
+                      d="M 100 15 C 108 20, 115 28, 122 32 C 130 38, 135 35, 142 40 C 148 45, 150 48, 150 50" 
                       fill="none" 
                       stroke="#eab308" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Orange segment - Weeks 5-6: Structure weakening */}
+                    {/* Orange segment - Week 3-4: Structure weakening, failed bounce */}
                     <path 
-                      d="M 150 55 C 165 62, 180 68, 195 75 C 210 82, 220 86, 230 90" 
+                      d="M 150 50 C 158 55, 165 58, 175 65 C 185 72, 190 70, 198 76 C 206 82, 212 88, 220 92" 
                       fill="none" 
                       stroke="#f97316" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Red segment - Weeks 6-7: Structure broken */}
+                    {/* Red segment - Weeks 4-6: Structure broken, extended decline */}
                     <path 
-                      d="M 230 90 C 245 98, 260 105, 275 112 C 290 120, 300 125, 310 130" 
+                      d="M 220 92 C 232 100, 242 106, 255 115 C 268 124, 278 128, 290 138 C 302 148, 312 155, 325 165" 
                       fill="none" 
                       stroke="#ef4444" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Master Eject zone - Week 7-8: EXIT HERE */}
+                    {/* Master Eject zone - Week 6-7: EXIT HERE (close to red) */}
                     <path 
-                      d="M 310 130 C 325 138, 340 145, 355 152" 
+                      d="M 325 165 C 335 172, 345 178, 360 185" 
                       fill="none" 
                       stroke="#dc2626" 
                       strokeWidth="4"
                       strokeLinecap="round"
                     />
-                    {/* Post-eject drop - What happens if you don't exit (faded to show "avoided") */}
+                    {/* Post-eject drop - What happens if you don't exit (faded) */}
                     <path 
-                      d="M 355 152 C 380 165, 410 178, 440 188 C 470 196, 490 198, 500 200" 
+                      d="M 360 185 C 385 192, 420 196, 460 198 C 480 199, 495 200, 500 200" 
                       fill="none" 
                       stroke="#71717a" 
                       strokeWidth="3"
@@ -465,11 +465,11 @@ export default function LandingPage() {
                     />
                     
                     {/* Connector lines - at START of each segment */}
-                    <line x1="0" y1="50" x2="0" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="80" y1="18" x2="80" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="150" y1="55" x2="150" y2="0" stroke="#f97316" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="230" y1="90" x2="230" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
-                    <line x1="310" y1="130" x2="310" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="0" y1="55" x2="0" y2="0" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="100" y1="15" x2="100" y2="0" stroke="#eab308" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="150" y1="50" x2="150" y2="200" stroke="#f97316" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="220" y1="92" x2="220" y2="0" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <line x1="325" y1="165" x2="325" y2="0" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="3,3" />
                   </svg>
                   
                   {/* Mode Labels & Dots - at START of each color segment */}
@@ -477,39 +477,39 @@ export default function LandingPage() {
                   <div className="absolute -top-6 left-[-1%] flex flex-col items-center">
                     <span className="text-[9px] text-green-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">green</span>
                   </div>
-                  <div className="absolute top-[25%] left-[0%] -translate-y-1/2">
+                  <div className="absolute top-[27.5%] left-[0%] -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-green-300 shadow-lg shadow-green-500/50"></div>
                   </div>
                   
-                  {/* Yellow mode - at start of yellow segment */}
-                  <div className="absolute top-0 left-[14%] flex flex-col items-center">
+                  {/* Yellow mode - label BELOW curve */}
+                  <div className="absolute top-[18%] left-[18%] flex flex-col items-center">
                     <span className="text-[9px] text-yellow-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">yellow</span>
                   </div>
-                  <div className="absolute top-[9%] left-[16%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[7.5%] left-[20%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 border-2 border-yellow-300 shadow-lg shadow-yellow-500/50"></div>
                   </div>
                   
-                  {/* Orange mode - at start of orange segment */}
+                  {/* Orange mode - aligned with week 3 (30% = 150/500) */}
                   <div className="absolute -top-6 left-[28%] flex flex-col items-center">
                     <span className="text-[9px] text-orange-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">orange</span>
                   </div>
-                  <div className="absolute top-[27.5%] left-[30%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[25%] left-[30%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-orange-500 border-2 border-orange-300 shadow-lg shadow-orange-500/50"></div>
                   </div>
                   
                   {/* Red mode - at start of red segment */}
-                  <div className="absolute top-0 left-[44%] flex flex-col items-center">
+                  <div className="absolute top-[38%] left-[42%] flex flex-col items-center">
                     <span className="text-[9px] text-red-400 font-bold bg-zinc-900/90 px-1.5 py-0.5 rounded whitespace-nowrap">red</span>
                   </div>
-                  <div className="absolute top-[45%] left-[46%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[46%] left-[44%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-red-300 shadow-lg shadow-red-500/50"></div>
                   </div>
                   
-                  {/* Master Eject - at start of eject zone, BEFORE the big drop */}
-                  <div className="absolute -top-6 left-[60%] flex flex-col items-center">
+                  {/* Master Eject - close to red, before final drop */}
+                  <div className="absolute -top-6 left-[63%] flex flex-col items-center">
                     <span className="text-[8px] text-red-600 font-bold bg-red-950/90 px-1.5 py-0.5 rounded border border-red-800 whitespace-nowrap">eject</span>
                   </div>
-                  <div className="absolute top-[65%] left-[62%] -translate-x-1/2 -translate-y-1/2">
+                  <div className="absolute top-[82.5%] left-[65%] -translate-x-1/2 -translate-y-1/2">
                     <div className="w-3 h-3 rounded-full bg-red-600 border-2 border-red-400 shadow-lg shadow-red-600/50 animate-pulse"></div>
                   </div>
                 </div>
