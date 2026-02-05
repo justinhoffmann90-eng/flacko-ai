@@ -107,6 +107,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Check user endpoint (for login page to detect existing vs new users)
+  if (request.nextUrl.pathname === "/api/check-user") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
