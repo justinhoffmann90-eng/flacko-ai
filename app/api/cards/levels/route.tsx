@@ -19,59 +19,22 @@ interface Level {
   pctFromClose: number;
 }
 
-function parseReportContent(content: string, closePrice: number): { mode: string; dailyCap: string; levels: Level[] } {
-  let mode = "YELLOW";
-  let dailyCap = "15";
-
-  // Extract mode
-  if (/🔴\s*(RED|DEFENSIVE)/i.test(content)) mode = "RED";
-  else if (/🟠\s*ORANGE/i.test(content)) mode = "ORANGE";
-  else if (/🟡\s*YELLOW/i.test(content)) mode = "YELLOW";
-  else if (/🟢\s*(GREEN|ACCUMULATION)/i.test(content)) mode = "GREEN";
-
-  // Extract daily cap
-  const capMatch = content.match(/daily\s*cap[:\s|]*\**(\d+(?:-\d+)?)\s*%/i);
-  if (capMatch) dailyCap = capMatch[1];
-
-  // Extract levels from Alert Levels table
-  const levels: Level[] = [];
-  const levelRegex = /\|\s*\$?([\d.]+)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/g;
-  let match;
-  while ((match = levelRegex.exec(content)) !== null) {
-    const price = parseFloat(match[1]);
-    const levelName = match[2].replace(/[*🎯🔇⚡📈⏸️🛡️⚠️❌📍]/g, "").trim();
-
-    if (price > 0 && levelName && !levelName.includes("Level") && !levelName.includes("Price")) {
-      const pctFromClose = closePrice > 0 ? ((price - closePrice) / closePrice) * 100 : 0;
-      let type = pctFromClose >= 0 ? "upside" : "downside";
-      if (levelName.toLowerCase().includes("eject")) type = "eject";
-
-      levels.push({ name: levelName, price, type, pctFromClose });
-    }
-  }
-
-  // Sort by price descending
-  levels.sort((a, b) => b.price - a.price);
-
-  return { mode, dailyCap, levels: levels.slice(0, 8) }; // Max 8 levels
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateParam = searchParams.get("date") || new Date().toISOString().slice(0, 10);
 
   const supabase = await createServiceClient();
 
-  let { data: report } = await supabase
+  let { data: report, error } = await supabase
     .from("reports")
-    .select("report_date, markdown_content, extracted_data")
+    .select("report_date, extracted_data")
     .eq("report_date", dateParam)
     .single();
 
-  if (!report) {
+  if (error || !report) {
     const { data: latestReport } = await supabase
       .from("reports")
-      .select("report_date, markdown_content, extracted_data")
+      .select("report_date, extracted_data")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();
@@ -82,17 +45,34 @@ export async function GET(request: Request) {
     report = latestReport;
   }
 
-  // Get close price from extracted_data or try to parse
+  // Extract data from extracted_data JSON
   const extracted = (report.extracted_data || {}) as Record<string, unknown>;
-  let closePrice = 0;
-  if (extracted.current_price) closePrice = Number(extracted.current_price);
-  else if (extracted.close_price) closePrice = Number(extracted.close_price);
-  else {
-    const closeMatch = report.markdown_content?.match(/\*\*\$([\d.]+)\*\*\s*\|\s*\*\*📍\s*Current/i);
-    if (closeMatch) closePrice = parseFloat(closeMatch[1]);
-  }
-
-  const { mode, dailyCap, levels } = parseReportContent(report.markdown_content || "", closePrice);
+  
+  // Get mode
+  const modeData = extracted.mode as Record<string, unknown> | undefined;
+  let mode = String(modeData?.current || "YELLOW").toUpperCase();
+  
+  // Get daily cap
+  const positionData = extracted.position as Record<string, unknown> | undefined;
+  let dailyCap = String(positionData?.daily_cap_pct || modeData?.daily_cap || "15");
+  
+  // Get close price
+  let closePrice = Number(extracted.current_price || extracted.close_price || 0);
+  
+  // Get alerts/levels from extracted_data
+  const alertsData = (extracted.alerts || []) as Array<Record<string, unknown>>;
+  const levels: Level[] = alertsData
+    .filter((a) => a.price && a.name)
+    .map((a) => {
+      const price = Number(a.price);
+      const name = String(a.name || "");
+      const pctFromClose = closePrice > 0 ? ((price - closePrice) / closePrice) * 100 : 0;
+      let type = pctFromClose >= 0 ? "upside" : "downside";
+      if (name.toLowerCase().includes("eject")) type = "eject";
+      return { name, price, type, pctFromClose };
+    })
+    .sort((a, b) => b.price - a.price)
+    .slice(0, 8);
   const modeColor = MODE_COLORS[mode] || MODE_COLORS.YELLOW;
 
   return new ImageResponse(

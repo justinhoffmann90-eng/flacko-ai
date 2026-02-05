@@ -85,16 +85,16 @@ export async function GET(request: Request) {
 
   const supabase = await createServiceClient();
 
-  let { data: report } = await supabase
+  let { data: report, error } = await supabase
     .from("reports")
-    .select("report_date, markdown_content, extracted_data")
+    .select("report_date, extracted_data")
     .eq("report_date", dateParam)
     .single();
 
-  if (!report) {
+  if (error || !report) {
     const { data: latestReport } = await supabase
       .from("reports")
-      .select("report_date, markdown_content, extracted_data")
+      .select("report_date, extracted_data")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();
@@ -111,31 +111,27 @@ export async function GET(request: Request) {
     return new Response(`Could not fetch price data for ${report.report_date}`, { status: 500 });
   }
 
-  // Extract mode
-  const content = report.markdown_content || "";
-  let mode = "YELLOW";
-  if (/🔴\s*(RED|DEFENSIVE)/i.test(content)) mode = "RED";
-  else if (/🟠\s*ORANGE/i.test(content)) mode = "ORANGE";
-  else if (/🟡\s*YELLOW/i.test(content)) mode = "YELLOW";
-  else if (/🟢\s*(GREEN|ACCUMULATION)/i.test(content)) mode = "GREEN";
-
-  // Parse levels from report
-  const levels: Array<{ name: string; price: number; type: string }> = [];
-  const levelRegex = /\|\s*\$?([\d.]+)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/g;
-  let match;
-  const closeMatch = content.match(/\*\*\$([\d.]+)\*\*/);
-  const closePrice = closeMatch ? parseFloat(closeMatch[1]) : ohlc.close;
-
-  while ((match = levelRegex.exec(content)) !== null) {
-    const price = parseFloat(match[1]);
-    const levelName = match[2].replace(/[*🎯🔇⚡📈⏸️🛡️⚠️❌📍]/g, "").trim();
-
-    if (price > 0 && levelName && !levelName.includes("Level") && !levelName.includes("Price")) {
+  // Extract data from extracted_data JSON
+  const extracted = (report.extracted_data || {}) as Record<string, unknown>;
+  
+  // Get mode
+  const modeData = extracted.mode as Record<string, unknown> | undefined;
+  let mode = String(modeData?.current || "YELLOW").toUpperCase();
+  
+  // Get close price for calculating level types
+  const closePrice = Number(extracted.current_price || extracted.close_price || ohlc.close);
+  
+  // Get alerts/levels from extracted_data
+  const alertsData = (extracted.alerts || []) as Array<Record<string, unknown>>;
+  const levels: Array<{ name: string; price: number; type: string }> = alertsData
+    .filter((a) => a.price && a.name)
+    .map((a) => {
+      const price = Number(a.price);
+      const name = String(a.name || "");
       let type = price >= closePrice ? "upside" : "downside";
-      if (levelName.toLowerCase().includes("eject")) type = "eject";
-      levels.push({ name: levelName, price, type });
-    }
-  }
+      if (name.toLowerCase().includes("eject")) type = "eject";
+      return { name, price, type };
+    });
 
   // Evaluate levels against actual price action
   const results = evaluateLevels(levels.slice(0, 6), ohlc);
