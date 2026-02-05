@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -53,6 +54,7 @@ export default function RootLayout({
           <ProgressBar />
         </Suspense>
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
