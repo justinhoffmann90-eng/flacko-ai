@@ -10,7 +10,6 @@ import {
   FileText,
   MessageSquare,
   Calendar,
-  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
@@ -33,11 +32,6 @@ const navItems = [
     href: "/catalysts",
     label: "Catalysts",
     icon: Calendar,
-  },
-  {
-    href: "/backlog",
-    label: "Backlog",
-    icon: ClipboardList,
   },
 ];
 

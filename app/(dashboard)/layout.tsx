@@ -29,7 +29,6 @@ export default function DashboardLayout({
               <DesktopNavLink href="/dashboard" icon="home" label="Home" currentPath={pathname} />
               <DesktopNavLink href="/report" icon="file" label="Reports" currentPath={pathname} />
               <DesktopNavLink href="/catalysts" icon="spark" label="Catalysts" currentPath={pathname} />
-              <DesktopNavLink href="/backlog" icon="list" label="Backlog" currentPath={pathname} />
               <DesktopNavLink href="/chat" icon="message" label="Chat" currentPath={pathname} />
               <DesktopNavLink href="/settings" icon="settings" label="Settings" currentPath={pathname} />
             </nav>
