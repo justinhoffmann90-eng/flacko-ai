@@ -580,43 +580,85 @@ export default function ContentHubPage() {
               </div>
             </div>
 
-            {/* Morning Card - Coming Soon */}
+            {/* Morning Levels Card */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
               <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
                 <div className="p-5 sm:p-6 border-b border-zinc-800">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    Morning Levels Card
-                    <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">Coming Soon</span>
-                  </h2>
-                  <div className="text-sm text-zinc-500 mt-1">Being rebuilt for Vercel compatibility</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">Morning Levels Card</h2>
+                      <div className="text-sm text-zinc-500 mt-1">Alert levels from daily report</div>
+                    </div>
+                    <div className="px-3 py-1 rounded-full text-xs border border-zinc-700 text-zinc-400">Live Preview</div>
+                  </div>
                 </div>
                 <div className="p-5 sm:p-6">
-                  <div className="text-center py-12 text-zinc-500">
-                    <div className="text-4xl mb-4">🚧</div>
-                    <div className="text-lg font-medium text-zinc-400 mb-2">Under Construction</div>
-                    <div className="text-sm">Use Daily Mode Card above for now</div>
+                  <div className="mb-5 group">
+                    <img
+                      src={`/api/cards/levels?date=${activeDate}`}
+                      className="w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01]"
+                      alt="Morning Levels Card Preview"
+                    />
+                  </div>
+                  <div className="flex flex-col xl:flex-row xl:items-center gap-3">
+                    <a
+                      href={`/api/cards/levels?date=${activeDate}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
+                    >
+                      Open Full Size
+                    </a>
+                    <a
+                      href={`/api/cards/levels?date=${activeDate}`}
+                      download={`tsla-levels-${activeDate}.png`}
+                      className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium text-center"
+                    >
+                      Download PNG
+                    </a>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* EOD Accuracy Card - Coming Soon */}
+            {/* EOD Accuracy Card */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-3xl blur opacity-70" />
               <div className="relative bg-zinc-950/80 rounded-3xl border border-zinc-800 overflow-hidden">
                 <div className="p-5 sm:p-6 border-b border-zinc-800">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    EOD Accuracy Card
-                    <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full">Coming Soon</span>
-                  </h2>
-                  <div className="text-sm text-zinc-500 mt-1">Being rebuilt for Vercel compatibility</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold">EOD Accuracy Card</h2>
+                      <div className="text-sm text-zinc-500 mt-1">Level performance vs actual price action</div>
+                    </div>
+                    <div className="px-3 py-1 rounded-full text-xs border border-zinc-700 text-zinc-400">Live Preview</div>
+                  </div>
                 </div>
                 <div className="p-5 sm:p-6">
-                  <div className="text-center py-12 text-zinc-500">
-                    <div className="text-4xl mb-4">🚧</div>
-                    <div className="text-lg font-medium text-zinc-400 mb-2">Under Construction</div>
-                    <div className="text-sm">Will show accuracy tracking after market close</div>
+                  <div className="mb-5 group">
+                    <img
+                      src={`/api/cards/eod?date=${activeDate}`}
+                      className="w-full max-h-[520px] object-contain border border-zinc-800 rounded-2xl bg-black/80 transition-transform duration-300 group-hover:scale-[1.01]"
+                      alt="EOD Accuracy Card Preview"
+                    />
+                  </div>
+                  <div className="flex flex-col xl:flex-row xl:items-center gap-3">
+                    <a
+                      href={`/api/cards/eod?date=${activeDate}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[44px] px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-sm font-medium text-center border border-zinc-700"
+                    >
+                      Open Full Size
+                    </a>
+                    <a
+                      href={`/api/cards/eod?date=${activeDate}`}
+                      download={`tsla-eod-${activeDate}.png`}
+                      className="min-h-[44px] px-4 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-sm font-medium text-center"
+                    >
+                      Download PNG
+                    </a>
                   </div>
                 </div>
               </div>
