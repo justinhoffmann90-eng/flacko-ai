@@ -1,12 +1,33 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Wand2, Copy, Trash2, Edit3, Check } from "lucide-react";
+import { Wand2, Copy, Trash2, Edit3, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { getDefaultPrompt } from "@/lib/content/prompts";
+import { getDefaultPrompt, injectReportData } from "@/lib/content/prompts";
 import { PromptEditorModal } from "./prompt-editor-modal";
+
+interface ReportData {
+  mode?: string;
+  dailyCap?: number;
+  currentPrice?: number;
+  priceChangePct?: number;
+  callWall?: number;
+  gammaStrike?: number;
+  hedgeWall?: number;
+  putWall?: number;
+  masterEject?: number;
+  hiro?: string;
+  hiroLow?: string;
+  hiroHigh?: string;
+  positioning?: string;
+  date?: string;
+  weekly9ema?: number;
+  weekly21ema?: number;
+  daily9ema?: number;
+  daily21ema?: number;
+}
 
 interface GeneratorCardProps {
   contentKey: string;
@@ -37,6 +58,46 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
   const [isEditingSubtitle, setIsEditingSubtitle] = useState(false);
   const [subtitle, setSubtitle] = useState(defaultSubtitles[contentKey] || "");
   const subtitleInputRef = useRef<HTMLInputElement>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [isLoadingReport, setIsLoadingReport] = useState(true);
+
+  // Fetch latest report data on mount
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const res = await fetch("/api/reports/latest");
+        if (res.ok) {
+          const data = await res.json();
+          const extracted = data.extracted_data || {};
+          setReportData({
+            mode: extracted.mode?.current?.toUpperCase() || "N/A",
+            dailyCap: extracted.position?.daily_cap_pct || extracted.tiers?.daily_cap_pct,
+            currentPrice: extracted.price?.close,
+            priceChangePct: extracted.price?.change_pct,
+            callWall: extracted.key_levels?.call_wall,
+            gammaStrike: extracted.key_levels?.gamma_strike,
+            hedgeWall: extracted.key_levels?.hedge_wall,
+            putWall: extracted.key_levels?.put_wall,
+            masterEject: extracted.key_levels?.master_eject,
+            hiro: extracted.hiro?.reading || "N/A",
+            hiroLow: extracted.hiro?.low_30day || "N/A",
+            hiroHigh: extracted.hiro?.high_30day || "N/A",
+            positioning: extracted.positioning?.current_stance || extracted.position?.current_stance || "N/A",
+            date: data.report_date,
+            weekly9ema: data.parsed_data?.weekly_9ema,
+            weekly21ema: data.parsed_data?.weekly_21ema,
+            daily9ema: data.parsed_data?.daily_9ema,
+            daily21ema: data.parsed_data?.daily_21ema,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch report:", err);
+      } finally {
+        setIsLoadingReport(false);
+      }
+    };
+    fetchReport();
+  }, []);
 
   // Load custom title from localStorage on mount
   useEffect(() => {
@@ -129,89 +190,14 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     
     // Get the prompt (custom or default)
     const customPrompt = localStorage.getItem(storageKey);
-    const prompt = customPrompt || getDefaultPrompt(contentKey);
+    const basePrompt = customPrompt || getDefaultPrompt(contentKey);
     
-    // Simulate generation - in production this would call an AI API
-    // For now, generate a placeholder response
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Inject report data into the prompt
+    const prompt = reportData ? injectReportData(basePrompt, reportData) : basePrompt;
     
-    const mockOutputs: Record<string, string> = {
-      pre_market_tweet: `$TSLA Pre-market levels to watch:
-📊 Call Wall: $285
-🎯 Gamma Strike: $280  
-🛡️ Put Wall: $275
-
-Overnight action suggests opening near key gamma level. Watch for direction off the open.`,
-      market_open_tweet: `$TSLA Opening bell 🔔
-
-Opening within yesterday's range. Volume looks healthy. Key level to watch: $280 gamma strike.
-
-Mode: 🟡 YELLOW | Proceed with caution`,
-      midday_tweet: `$TSLA Midday update:
-
-Morning session held key support at $275 (Put Wall). Bounced nicely off that level. 
-
-Watching for test of $280 gamma into the afternoon.`,
-      power_hour_tweet: `$TSLA Power Hour ⚡
-
-Last 90 minutes of trading. Key closing levels:
-• Above $280 = bullish close
-• Below $275 = bearish close
-• $277-279 = neutral/chop
-
-Watch the gamma pin!`,
-      eod_tweet: `$TSLA EOD Summary:
-
-Closed at $281.50 (+1.2%)
-📈 Held above gamma strike
-📈 Put wall support worked
-
-Earnings next week - expect volatility expansion. See you tomorrow!`,
-      eod_wrap: `**TSLA EOD Wrap - ${new Date().toLocaleDateString()}**
-
-**Price Action:**
-TSLA closed the session at $281.50, up 1.2% on the day. The stock held key support at the $275 put wall early in the session before grinding higher through the afternoon.
-
-**Level Performance:**
-• Call Wall ($285): Not tested - remains overhead resistance
-• Gamma Strike ($280): Held as support after midday bounce
-• Put Wall ($275): Perfect support - multiple tests held
-
-**Gamma Landscape:**
-Net gamma remains positive with the $280 strike the main gravitational pull. Tomorrow's expiration could see increased pinning around this level.
-
-**Overnight Considerations:**
-Watch for any macro headlines that could shift sentiment. Key levels remain the same for tomorrow's session.`,
-      morning_brief: `**TSLA Morning Brief - ${new Date().toLocaleDateString()}**
-
-**Mode:** 🟡 YELLOW | Daily Cap: 15%
-
-**Key Levels Today:**
-• Call Wall: $285 (upside target)
-• Gamma Strike: $280 (pivot)
-• Put Wall: $275 (key support)
-
-**Overnight Action:**
-TSLA trading slightly higher in pre-market following broader market strength. No major stock-specific news.
-
-**Posture:**
-Proceed with caution. Market remains in a consolidation phase. Look for setups with good R/R at key levels.`,
-      hiro_alert: `**🚨 HIRO Alert - TSLA**
-
-**Unusual Flow Detected**
-
-Large block of calls traded at the $285 strike for Friday expiration. Significant gamma accumulation building at this level.
-
-**Implications:**
-• If stock approaches $285, could see gamma acceleration
-• Market makers may hedge by buying shares
-• Watch for potential squeeze setup
-
-**Action:**
-Consider positioning for potential move toward $285. Use put wall at $275 as stop reference.`,
-    };
-    
-    setOutput(mockOutputs[contentKey] || `Generated ${label} content would appear here...\n\nPrompt used:\n${prompt.slice(0, 200)}...`);
+    // Show the injected prompt as output so user can copy and use with their AI
+    // In production, this would call an AI API
+    setOutput(`📋 PROMPT WITH LIVE DATA:\n\n${prompt}\n\n---\n\n💡 Copy this prompt and paste into ChatGPT, Claude, or your preferred AI to generate the content.`);
     setIsGenerating(false);
   };
 
@@ -280,17 +266,35 @@ Consider positioning for potential move toward $285. Use put wall at $275 as sto
           </Button>
         </div>
 
+        {/* Data Status */}
+        {reportData && (
+          <div className="mb-3 p-2 bg-zinc-900/50 rounded-md border border-zinc-800">
+            <div className="flex items-center gap-4 text-xs text-zinc-500">
+              <span>📊 <strong className="text-zinc-400">{reportData.mode}</strong></span>
+              <span>💰 ${reportData.currentPrice}</span>
+              <span>🎯 GS: ${reportData.gammaStrike}</span>
+              <span>📅 {reportData.date}</span>
+            </div>
+          </div>
+        )}
+        {isLoadingReport && (
+          <div className="mb-3 p-2 bg-zinc-900/30 rounded-md border border-zinc-800 text-xs text-zinc-500 flex items-center gap-2">
+            <RefreshCw className="w-3 h-3 animate-spin" />
+            Loading latest report data...
+          </div>
+        )}
+
         {/* Output */}
         <div className="flex-1 min-h-[150px]">
           {output ? (
             <Textarea
               value={output}
               onChange={(e) => setOutput(e.target.value)}
-              className="w-full h-full min-h-[150px] bg-zinc-900/50 border-zinc-800 text-zinc-300 text-sm resize-none focus:border-purple-500/50"
+              className="w-full h-full min-h-[150px] bg-zinc-900/50 border-zinc-800 text-zinc-300 text-sm resize-none focus:border-purple-500/50 font-mono"
             />
           ) : (
             <div className="w-full h-full min-h-[150px] bg-zinc-900/30 border border-zinc-800 rounded-md flex items-center justify-center text-zinc-600 text-sm">
-              Click Generate to create {label.toLowerCase()}
+              Click Generate to create prompt with live data
             </div>
           )}
         </div>

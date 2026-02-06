@@ -1,6 +1,7 @@
 /**
  * Default prompts for Content Hub v3
  * Each content type has a default prompt that users can customize
+ * Prompts include {{variable}} placeholders that get replaced with real data
  */
 
 export interface ContentType {
@@ -13,215 +14,306 @@ export const CONTENT_TYPES: ContentType[] = [
   {
     key: "pre_market_tweet",
     label: "Pre-Market Tweet",
-    defaultPrompt: `Generate a pre-market tweet for TSLA based on the daily report.
+    defaultPrompt: `Generate a pre-market tweet for $TSLA.
 
-Context: Overnight price action, futures, and key levels to watch.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Current Price: ${{currentPrice}}
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- Master Eject: ${{masterEject}}
+- HIRO: {{hiro}}
+- Positioning: {{positioning}}
 
-Requirements:
+STYLE:
 - Max 280 characters
-- Include relevant emojis
-- Mention key levels if significant
-- Tone: professional but engaging
-- Include $TSLA ticker`,
+- Battlefield briefing tone, all lowercase
+- Include $TSLA cashtag
+- Key level to watch + what happens if we break/hold it
+- No hashtags, no fluff
+
+EXAMPLE VIBE:
+"$tsla watching 405 hedge wall. above it dealers stay long delta. below and we revisit 400 gamma strike. hiro flipped positive yesterday — first time in weeks. cautiously adding above 405."`,
   },
   {
     key: "market_open_tweet",
     label: "Market Open Tweet",
-    defaultPrompt: `Generate a market open tweet for TSLA.
+    defaultPrompt: `Generate a market open tweet for $TSLA.
 
-Context: Opening price action, initial volume, and early direction vs. overnight levels.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Current Price: ${{currentPrice}}
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- HIRO: {{hiro}}
 
-Requirements:
+STYLE:
 - Max 280 characters
-- Reference opening levels or gap
-- Tone: energetic, observational
-- Include $TSLA ticker`,
+- Battlefield briefing tone, all lowercase
+- React to opening action vs. pre-market levels
+- Note if we gapped up/down and where we are vs. key levels
+- Include $TSLA cashtag
+
+EXAMPLE VIBE:
+"$tsla opened above hedge wall, testing 410 now. watching for acceptance above gamma strike 400 — that's the bull/bear line today. volume light so far."`,
   },
   {
     key: "midday_tweet",
     label: "Midday Tweet",
-    defaultPrompt: `Generate a midday update tweet for TSLA.
+    defaultPrompt: `Generate a midday update tweet for $TSLA.
 
-Context: Midday price action, volume trends, and key level tests.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Current Price: ${{currentPrice}}
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- HIRO: {{hiro}}
 
-Requirements:
+STYLE:
 - Max 280 characters
-- Summarize morning action
-- Mention any level breaks or holds
-- Tone: informative, measured
-- Include $TSLA ticker`,
+- Battlefield briefing tone, all lowercase  
+- Summarize morning action — what levels held/broke
+- Where we are now vs. key levels
+- Include $TSLA cashtag
+
+EXAMPLE VIBE:
+"$tsla midday — holding above 405 hedge wall after morning dip to 403. gamma strike 400 defended twice. staying orange mode, nibbles only until we reclaim daily 9ema at 417."`,
   },
   {
     key: "power_hour_tweet",
     label: "Power Hour Tweet",
-    defaultPrompt: `Generate a power hour tweet for TSLA.
+    defaultPrompt: `Generate a power hour tweet for $TSLA.
 
-Context: Last 60-90 minutes of trading, EOD positioning, key closing levels to watch.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Current Price: ${{currentPrice}}
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- Master Eject: ${{masterEject}}
+- HIRO: {{hiro}}
 
-Requirements:
+STYLE:
 - Max 280 characters
-- Highlight important closing levels
-- Mention gamma strike if relevant
-- Tone: urgent but professional
-- Include $TSLA ticker`,
+- Battlefield briefing tone, all lowercase
+- Focus on closing level implications
+- What a close above/below key level means
+- Include $TSLA cashtag
+
+EXAMPLE VIBE:
+"$tsla power hour — need a close above 405 hedge wall to confirm today's bounce. below 400 gamma strike and we're back in negative gamma. watching dealer positioning into close."`,
   },
   {
     key: "eod_tweet",
     label: "EOD Tweet",
-    defaultPrompt: `Generate an end-of-day tweet for TSLA.
+    defaultPrompt: `Generate an end-of-day tweet for $TSLA.
 
-Context: Closing price, daily performance, and setup for next session.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Close: ${{currentPrice}} ({{priceChangePct}}%)
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- HIRO: {{hiro}}
+- Tomorrow's key level: {{tomorrowKey}}
 
-Requirements:
+STYLE:
 - Max 280 characters
-- Include closing price and daily change
-- Mention any significant level breaks
-- Tone: summary, forward-looking
-- Include $TSLA ticker`,
+- Battlefield briefing tone, all lowercase
+- Include close price and % change
+- Note what level we closed relative to
+- Forward-looking setup for tomorrow
+- Include $TSLA cashtag
+
+EXAMPLE VIBE:
+"$tsla closed 411.11 (+2.55%) above hedge wall 405. hiro flipped to +480m — strongest single day swing in weeks. watching 417 daily 9ema tomorrow for mode upgrade to yellow."`,
   },
   {
     key: "eod_wrap",
     label: "EOD Wrap (Discord)",
-    defaultPrompt: `Generate an end-of-day market wrap for Discord.
+    defaultPrompt: `Generate an end-of-day market wrap for Discord #fs-insight channel.
 
-Context: Full day recap of TSLA price action, key events, level performance, and overnight setup.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Close: ${{currentPrice}} ({{priceChangePct}}%)
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}  
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- Master Eject: ${{masterEject}}
+- HIRO: {{hiro}} (30-day range: {{hiroLow}} to {{hiroHigh}})
+- Positioning: {{positioning}}
 
-Requirements:
-- Longer format (multiple paragraphs OK)
-- Include bullet points for key levels tested
-- Mention any macro catalysts
-- Include tomorrow's key levels
-- Tone: detailed, analytical
-- Use Discord formatting (bold, bullet points)`,
+FORMAT:
+**EOD Wrap - {{date}}**
+
+📊 **The Day**
+(2-3 sentences on price action, what levels were tested)
+
+🎯 **Key Levels Performance**  
+• Call Wall ${{callWall}}: (held/broke/not tested)
+• Hedge Wall ${{hedgeWall}}: (held/broke/not tested)
+• Gamma Strike ${{gammaStrike}}: (held/broke/not tested)
+• Put Wall ${{putWall}}: (held/broke/not tested)
+
+📈 **HIRO Read**
+(What dealer positioning tells us)
+
+🔮 **Tomorrow**
+(Key level to watch and what triggers mode change)
+
+STYLE:
+- Factual, analytical tone
+- Use Discord formatting (bold, bullet points)
+- No fluff, just signal`,
   },
   {
     key: "morning_brief",
     label: "Morning Brief (Discord)",
     defaultPrompt: `Generate a morning brief for Discord.
 
-Context: Pre-market setup for TSLA, overnight action, key levels to watch, and macro context.
+TODAY'S DATA:
+- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)
+- Previous Close: ${{currentPrice}}
+- Call Wall: ${{callWall}}
+- Gamma Strike: ${{gammaStrike}}
+- Hedge Wall: ${{hedgeWall}}
+- Put Wall: ${{putWall}}
+- Master Eject: ${{masterEject}}
+- HIRO: {{hiro}}
+- Weekly 9 EMA: ${{weekly9ema}}
+- Weekly 21 EMA: ${{weekly21ema}}
+- Daily 9 EMA: ${{daily9ema}}
+- Daily 21 EMA: ${{daily21ema}}
 
-Requirements:
-- Structured format with headers
-- Include mode color and daily cap
-- List key upside and downside levels
-- Mention any upcoming catalysts
-- Tone: professional, actionable
-- Use Discord formatting`,
+FORMAT:
+**Morning Brief - {{date}}**
+
+🚦 **Mode: {{mode}}** | Daily Cap: {{dailyCap}}%
+
+📊 **Key Levels**
+🔼 Upside: ${{callWall}} (Call Wall) → ${{weekly9ema}} (Weekly 9)
+📍 Current: ${{currentPrice}}
+🔽 Support: ${{hedgeWall}} (Hedge) → ${{gammaStrike}} (Gamma) → ${{putWall}} (Put Wall)
+🚨 Eject: ${{masterEject}}
+
+📈 **HIRO**: {{hiro}}
+(Brief interpretation)
+
+🎯 **Today's Focus**
+• Bull trigger: (specific price + condition)
+• Bear trigger: (specific price + condition)
+
+STYLE:
+- Actionable and clear
+- Use Discord formatting
+- Front-load the important info`,
   },
   {
     key: "hiro_alert",
     label: "HIRO Alert (Discord)",
-    defaultPrompt: `Generate a HIRO alert for Discord.
+    defaultPrompt: `Generate a HIRO alert for Discord #alerts channel.
 
-Context: HIRO (High Interest Rate Opportunity) signals for TSLA - unusual options flow or significant gamma levels being tested.
+CURRENT DATA:
+- HIRO: {{hiro}}
+- 30-Day Range: {{hiroLow}} to {{hiroHigh}}
+- Current Price: ${{currentPrice}}
+- Gamma Strike: ${{gammaStrike}}
+- Mode: {{mode}}
 
-Requirements:
-- Alert-style format
-- Include specific price levels
-- Mention gamma implications if relevant
-- Tone: urgent, actionable
-- Use Discord formatting with emojis`,
+FORMAT:
+🚨 **HIRO Alert**
+
+**Reading**: {{hiro}}
+**Percentile**: (calculate where this falls in 30-day range)
+**Price**: ${{currentPrice}}
+
+**What This Means**:
+(1-2 sentences on dealer positioning implication)
+
+**Action**:
+(What the mode system suggests doing)
+
+STYLE:
+- Alert format, urgent but not panicked
+- Factual interpretation
+- Clear action guidance based on mode`,
   },
 ];
 
-// Image card prompts - Visual design descriptions for AI customization
+// Image card prompts - Visual design descriptions
 export const MODE_CARD_PROMPT = `Design a Mode Card with the following visual layout:
 
 HEADER SECTION:
-- Mode indicator as a prominent traffic light style icon on the left (circular emoji or colored indicator)
-- Mode text (GREEN/YELLOW/ORANGE/RED) in large, bold typography next to the indicator
-- Date and ticker symbol ($TSLA) in smaller text, right-aligned or below the mode
+- Flacko AI logo top left
+- Ticker ($TSLA) and date
+- Mode pill (GREEN/YELLOW/ORANGE/RED) with appropriate color
+- Daily Cap percentage
 
-DAILY CAP SECTION:
-- "Daily Cap" label with the percentage value (e.g., "15%") displayed prominently
-- Use the mode color for visual emphasis (green/yellow/orange/red gradient or accent)
+PRICE LADDER (Left Side):
+- Vertical layout showing levels from high to low
+- Call Wall (green) at top
+- Gamma Strike (yellow/white)
+- Hedge Wall (orange)
+- Put Wall (red)
+- Master Eject (dark red)
+- Current price indicator showing position
+- % distance from each level
 
-KEY LEVELS SECTION:
-- Visual price ladder or list showing:
-  * Call Wall (upside resistance) - green or blue accent
-  * Gamma Strike (neutral/balance point) - white or neutral
-  * Hedge Wall (first support) - yellow or orange accent
-  * Put Wall (key support) - red accent
-  * Current Price indicator showing position relative to levels
-- Include percentage distance from close for context
+RIGHT PANEL:
+- "FLACKO AI'S TAKE" header
+- "What I'd Do" section with action text
+- "Would Change My Mind" section with caution text
 
-ACTION SECTION:
-- "What I'd Do" box with actionable text, styled as a call-to-action
-- "Would Change My Mind" box with defensive trigger conditions
-- Use distinct background colors or borders to differentiate these sections
+KEY LEVELS BOX:
+- Compact list of all levels with colors
+- Price and % from current
 
-VISUAL STYLE:
-- Dark theme background (slate/zinc 950)
-- Rounded corners and subtle borders
-- Clean, modern typography with good hierarchy
-- Color coding that reinforces the mode (green = bullish, yellow = cautious, orange = elevated risk, red = defensive)`;
-
-export const LEVELS_CARD_PROMPT = `Design a Levels Card showing a vertical price ladder with the following visual layout:
-
-PRICE LADDER (Top to Bottom):
-- Call Wall at the top with upside/resistance styling (green or light color)
-- Hedge Wall below call wall with support styling (yellow/orange accent)
-- Gamma Strike in the center as the neutral pivot point (white or bright color for emphasis)
-- Put Wall below gamma strike with support styling (red accent)
-- Visual spacing between levels proportional to price distance
-
-CURRENT PRICE INDICATOR:
-- Horizontal marker or arrow showing where current price sits relative to the ladder
-- Highlighted background or border when price is between two specific levels
-- Price value displayed prominently with label
-
-COLOR CODING:
-- Levels above current price: green/blue tones (upside targets)
-- Levels below current price: red/orange tones (downside support)
-- Gamma Strike: neutral/white (the fulcrum)
-- Use gradients or solid fills to create visual depth
-
-HEADER:
-- "Key Levels" or similar title
-- Date of the levels
-- Ticker symbol ($TSLA)
+FOOTER:
+- "Your TSLA trading operating system" tagline
+- flacko.ai link
 
 VISUAL STYLE:
-- Dark background with high contrast text
-- Clean geometric shapes for level markers
-- Price values in monospace or tabular font for alignment
-- Subtle grid lines or separators between levels`;
+- Dark theme (slate-950 background)
+- 1200x675 aspect ratio for Twitter/Discord
+- Clean typography, good contrast`;
 
-export const SCORECARD_PROMPT = `Design a Weekly Scorecard with the following visual layout:
+export const LEVELS_CARD_PROMPT = `Design a Levels Card showing a vertical price ladder:
 
-HEADER SECTION:
-- "Weekly Scorecard" title with week ending date prominently displayed
-- Large, bold scenario hit ratio (e.g., "4/5" or "80%") as the primary metric
-- Visual progress indicator, gauge, or colored bar showing performance
+LAYOUT:
+- Vertical price ladder from Call Wall (top) to Master Eject (bottom)
+- Current price marker showing position in the ladder
+- Color coding: green for upside, red for downside, yellow for neutral
+- Price labels with % distance from current
 
-SCENARIOS SECTION:
-- "Scenarios Hit" label with the ratio displayed as large typography
-- Color code the performance (green for 80%+, yellow for 60-79%, red for below 60%)
+STYLE:
+- Dark background
+- Clean geometric design
+- Monospace font for prices
+- 1200x675 aspect ratio`;
 
-WINS SECTION:
-- "Key Wins" header with trophy or checkmark icon
-- Bulleted or card-style list of wins (2-4 items)
-- Use green accents or checkmarks for positive items
-- One win per line with brief description
+export const SCORECARD_PROMPT = `Design a Weekly Scorecard:
 
-MISSES SECTION:
-- "Key Misses" or "Lessons" header with learning icon
-- Bulleted or card-style list of misses/lessons (2-4 items)
-- Use orange/yellow accents for these items
-- Frame as learning opportunities
+LAYOUT:
+- Week ending date prominently displayed
+- Large "4/5" or "80%" scenario hit ratio
+- Key Wins list (green checkmarks)
+- Key Misses list (orange caution)
+- Summary takeaway at bottom
 
-SUMMARY SECTION:
-- "Summary" or "Takeaway" box at the bottom
-- 1-2 sentences capturing the week overall
-- Distinct background color (subtle) to separate from lists
-
-VISUAL STYLE:
-- Dark theme with good contrast
-- Clear visual hierarchy with the hit ratio as the hero element
-- Icons or emoji to differentiate sections
-- Rounded corners on section containers
-- Professional, clean layout suitable for sharing`;
+STYLE:
+- Dark theme
+- Performance color coding (green = good, yellow = ok, red = poor)
+- Clean card-based sections
+- 1200x675 aspect ratio`;
 
 // Storage keys for prompt editor
 export const MODE_CARD_STORAGE_KEY = "content-hub-mode-card-prompt";
@@ -259,3 +351,47 @@ export const CONTENT_TYPE_KEYS = CONTENT_TYPES.map((ct) => ({
   key: ct.key,
   label: ct.label,
 }));
+
+// Helper to inject report data into a prompt template
+export function injectReportData(prompt: string, data: {
+  mode?: string;
+  dailyCap?: number;
+  currentPrice?: number;
+  priceChangePct?: number;
+  callWall?: number;
+  gammaStrike?: number;
+  hedgeWall?: number;
+  putWall?: number;
+  masterEject?: number;
+  hiro?: string;
+  hiroLow?: string;
+  hiroHigh?: string;
+  positioning?: string;
+  date?: string;
+  weekly9ema?: number;
+  weekly21ema?: number;
+  daily9ema?: number;
+  daily21ema?: number;
+  tomorrowKey?: string;
+}): string {
+  return prompt
+    .replace(/\{\{mode\}\}/g, data.mode || 'N/A')
+    .replace(/\{\{dailyCap\}\}/g, String(data.dailyCap || 'N/A'))
+    .replace(/\{\{currentPrice\}\}/g, String(data.currentPrice || 'N/A'))
+    .replace(/\{\{priceChangePct\}\}/g, String(data.priceChangePct || 'N/A'))
+    .replace(/\{\{callWall\}\}/g, String(data.callWall || 'N/A'))
+    .replace(/\{\{gammaStrike\}\}/g, String(data.gammaStrike || 'N/A'))
+    .replace(/\{\{hedgeWall\}\}/g, String(data.hedgeWall || 'N/A'))
+    .replace(/\{\{putWall\}\}/g, String(data.putWall || 'N/A'))
+    .replace(/\{\{masterEject\}\}/g, String(data.masterEject || 'N/A'))
+    .replace(/\{\{hiro\}\}/g, data.hiro || 'N/A')
+    .replace(/\{\{hiroLow\}\}/g, data.hiroLow || 'N/A')
+    .replace(/\{\{hiroHigh\}\}/g, data.hiroHigh || 'N/A')
+    .replace(/\{\{positioning\}\}/g, data.positioning || 'N/A')
+    .replace(/\{\{date\}\}/g, data.date || new Date().toLocaleDateString())
+    .replace(/\{\{weekly9ema\}\}/g, String(data.weekly9ema || 'N/A'))
+    .replace(/\{\{weekly21ema\}\}/g, String(data.weekly21ema || 'N/A'))
+    .replace(/\{\{daily9ema\}\}/g, String(data.daily9ema || 'N/A'))
+    .replace(/\{\{daily21ema\}\}/g, String(data.daily21ema || 'N/A'))
+    .replace(/\{\{tomorrowKey\}\}/g, data.tomorrowKey || 'See report');
+}
