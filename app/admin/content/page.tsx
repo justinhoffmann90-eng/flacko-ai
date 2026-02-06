@@ -973,26 +973,39 @@ export default function ContentHubPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">AI Content Generation</div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => openPromptEditor("tweet", "Tweet Prompt")}
-                className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
-              >
-                Edit Tweet Prompt
-              </button>
-              <button
-                onClick={() => openPromptEditor("morning-brief", "Morning Brief Prompt")}
-                className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
-              >
-                Edit Morning Brief
-              </button>
-              <button
-                onClick={() => openPromptEditor("eod-wrap", "EOD Wrap Prompt")}
-                className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
-              >
-                Edit EOD Wrap
-              </button>
-            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800">
+            <span className="text-xs text-zinc-400 w-full mb-2">✏️ Edit prompts for each content type:</span>
+            <button
+              onClick={() => openPromptEditor("tweet", "Tweet Generation")}
+              className="px-3 py-1.5 text-xs bg-purple-900/30 hover:bg-purple-800/40 rounded-lg border border-purple-500/30 text-purple-300"
+            >
+              Tweet
+            </button>
+            <button
+              onClick={() => openPromptEditor("thread", "X Thread Generation")}
+              className="px-3 py-1.5 text-xs bg-purple-900/30 hover:bg-purple-800/40 rounded-lg border border-purple-500/30 text-purple-300"
+            >
+              X Thread
+            </button>
+            <button
+              onClick={() => openPromptEditor("morning-brief", "Morning Brief")}
+              className="px-3 py-1.5 text-xs bg-purple-900/30 hover:bg-purple-800/40 rounded-lg border border-purple-500/30 text-purple-300"
+            >
+              Morning Brief
+            </button>
+            <button
+              onClick={() => openPromptEditor("eod-wrap", "EOD Wrap")}
+              className="px-3 py-1.5 text-xs bg-purple-900/30 hover:bg-purple-800/40 rounded-lg border border-purple-500/30 text-purple-300"
+            >
+              EOD Wrap
+            </button>
+            <button
+              onClick={() => openPromptEditor("educational", "Educational Thread")}
+              className="px-3 py-1.5 text-xs bg-purple-900/30 hover:bg-purple-800/40 rounded-lg border border-purple-500/30 text-purple-300"
+            >
+              Educational
+            </button>
           </div>
           <AIContentStudio
             activeDate={activeDate}
@@ -1007,7 +1020,18 @@ export default function ContentHubPage() {
         <WeeklyScorecardSection />
 
         {/* Quote Image Generator */}
-        <QuoteImageGenerator modeAccent={modeAccent} />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Image Generation</div>
+            <button
+              onClick={() => openPromptEditor("quote-image", "Quote Image Style")}
+              className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 rounded-lg border border-zinc-700"
+            >
+              ✏️ Edit Image Prompt
+            </button>
+          </div>
+          <QuoteImageGenerator modeAccent={modeAccent} />
+        </div>
 
         {/* X Article Builder */}
         <XArticleBuilder />
