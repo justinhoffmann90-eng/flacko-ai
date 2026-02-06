@@ -147,12 +147,131 @@ export function calculateAccuracy(results: LevelResult[]): {
   const hit = results.filter(r => r.status === "hit").length;
   const broken = results.filter(r => r.status === "broken").length;
   const notTested = results.filter(r => r.status === "not_tested").length;
-  
+
   // Accuracy = (hits + not tested) / total
   // We don't penalize for levels not tested, only for broken levels
   const accurate = hit + notTested;
   const percentage = total > 0 ? (accurate / total) * 100 : 0;
-  
+
+  return {
+    total,
+    hit,
+    broken,
+    notTested,
+    percentage
+  };
+}
+
+/**
+ * Forecast level comparison result
+ */
+export interface ForecastLevelResult {
+  name: string;
+  price: number;
+  type: "resistance" | "support";
+  status: "hit" | "broken" | "not_tested";
+  actualPrice?: number;
+  distance?: number;
+}
+
+/**
+ * Compare forecast levels against actual high/low data.
+ * Used by the forecast-actual card generator.
+ */
+export function compareForecastLevels(
+  forecastLevels: Array<{ name: string; price: number; type: "resistance" | "support" }>,
+  actual: { high: number; low: number },
+  tolerance: number = 0.50
+): ForecastLevelResult[] {
+  return forecastLevels.map(level => {
+    if (level.type === "resistance") {
+      const distance = level.price - actual.high;
+
+      if (distance <= tolerance && distance >= 0) {
+        return {
+          name: level.name,
+          price: level.price,
+          type: level.type,
+          status: "hit",
+          actualPrice: actual.high,
+          distance
+        };
+      } else if (actual.high > level.price) {
+        return {
+          name: level.name,
+          price: level.price,
+          type: level.type,
+          status: "broken",
+          actualPrice: actual.high,
+          distance
+        };
+      } else {
+        return {
+          name: level.name,
+          price: level.price,
+          type: level.type,
+          status: "not_tested",
+          actualPrice: actual.high,
+          distance
+        };
+      }
+    } else {
+      // Support level
+      const distance = actual.low - level.price;
+
+      if (Math.abs(distance) <= tolerance && distance <= 0) {
+        return {
+          name: level.name,
+          price: level.price,
+          type: level.type,
+          status: "hit",
+          actualPrice: actual.low,
+          distance: Math.abs(distance)
+        };
+      } else if (actual.low < level.price) {
+        return {
+          name: level.name,
+          price: level.price,
+          type: level.type,
+          status: "broken",
+          actualPrice: actual.low,
+          distance: Math.abs(distance)
+        };
+      } else {
+        return {
+          name: level.name,
+          price: level.price,
+          type: level.type,
+          status: "not_tested",
+          actualPrice: actual.low,
+          distance: Math.abs(distance)
+        };
+      }
+    }
+  });
+}
+
+/**
+ * Calculate forecast accuracy from comparison results.
+ * Used by the forecast-actual card generator.
+ */
+export function calculateForecastAccuracy(results: ForecastLevelResult[]): {
+  total: number;
+  hit: number;
+  broken: number;
+  notTested: number;
+  percentage: number;
+} {
+  const total = results.length;
+  const hit = results.filter(r => r.status === "hit").length;
+  const broken = results.filter(r => r.status === "broken").length;
+  const notTested = results.filter(r => r.status === "not_tested").length;
+
+  // Accuracy = (hits + not tested) / total
+  // We don't penalize for levels not tested, only for broken levels
+  const accurate = hit + notTested;
+  const percentage = total > 0 ? (accurate / total) * 100 : 0;
+
   return {
     total,
     hit,

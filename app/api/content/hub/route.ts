@@ -134,8 +134,24 @@ export async function GET(request: Request) {
         tweetText: null,
         accuracy: null
       },
-      tweetDrafts: [] // TODO: Implement tweet drafts storage
+      tweetDrafts: [] // Will be populated from tweet_drafts table below
     };
+
+    // Fetch tweet drafts for this date from the database
+    try {
+      const { data: tweetDrafts } = await serviceSupabase
+        .from("tweet_drafts")
+        .select("id, date, type, content, status, created_at")
+        .eq("date", date)
+        .order("created_at", { ascending: false });
+
+      if (tweetDrafts && tweetDrafts.length > 0) {
+        response.tweetDrafts = tweetDrafts;
+      }
+    } catch (tweetDraftError) {
+      // Non-critical error - continue without tweet drafts
+      console.warn("Failed to fetch tweet drafts:", tweetDraftError);
+    }
 
     // If EOD is available, generate EOD tweet text from accuracy data
     if (isEODAvailable) {
