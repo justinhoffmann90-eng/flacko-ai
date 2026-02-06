@@ -182,7 +182,7 @@ export interface ExtractedReportData {
   // Consolidated key levels (for email templates)
   key_levels?: KeyLevels;
   // v3.5 fields
-  pause_zone?: number;
+  pause_zone?: number;  // Also known as "Slow Zone" (Daily 21 EMA)
   daily_9ema?: number;
   daily_21ema?: number;
   weekly_9ema?: number;
@@ -192,6 +192,12 @@ export interface ExtractedReportData {
   gamma_regime?: 'Positive' | 'Negative';
   hiro?: HiroData;
   correction_risk?: 'LOW' | 'LOW-MODERATE' | 'MODERATE' | 'HIGH';
+  // v3.7 fields
+  trim_cap_pct?: number;  // Mode-based: GREEN=10, YELLOW=20, ORANGE=25, RED=30
+  ema_extension_pct?: number;  // % above Weekly 9 EMA (0 if below)
+  acceleration_zone?: number;  // Key Gamma Strike (triggers trim sequence when reclaimed)
+  master_eject_rationale?: string;  // Explanation of why this level
+  fib_levels?: { price: number; label: string }[] | null;  // Optional fib extension targets
 }
 
 export interface ParsedReportData {

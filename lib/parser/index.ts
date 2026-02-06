@@ -1,7 +1,7 @@
 import { ExtractedReportData, ParsedReportData, ReportAlert, TrafficLightMode, TierSignal, TierSignals, Positioning, LevelMapEntry } from "@/types";
 import matter from "gray-matter";
 
-export const PARSER_VERSION = "3.5.1"; // v3.5.1 clearer action language (no "X% of cap" math)
+export const PARSER_VERSION = "3.7.0"; // v3.7.0 trim cap, EMA extension, acceleration zone, fib levels, master eject rationale
 
 /**
  * Transform action text to add clarifying context for subscribers
@@ -120,6 +120,13 @@ interface ReportFrontmatter {
   // Earnings
   earnings_date?: string;
   earnings_days_away?: number;
+
+  // v3.7 fields
+  trim_cap_pct?: number;  // Mode-based: GREEN=10, YELLOW=20, ORANGE=25, RED=30
+  ema_extension_pct?: number;  // % above Weekly 9 EMA
+  acceleration_zone?: number;  // Key Gamma Strike value
+  master_eject_rationale?: string;  // Why this level
+  fib_levels?: { price: number; label: string }[] | null;
 }
 
 interface ParseResult {
@@ -574,6 +581,13 @@ function extractFromFrontmatter(
     high_30day: fm.hiro_30day_high || 0,
   } : undefined;
 
+  // v3.7 fields
+  const trim_cap_pct = fm.trim_cap_pct;
+  const ema_extension_pct = fm.ema_extension_pct;
+  const acceleration_zone = fm.acceleration_zone;
+  const master_eject_rationale = fm.master_eject_rationale;
+  const fib_levels = fm.fib_levels;
+
   // Validate required fields
   if (price.close <= 0) {
     warnings.push("Could not extract close price from frontmatter");
@@ -619,6 +633,12 @@ function extractFromFrontmatter(
     gamma_regime,
     hiro,
     correction_risk,
+    // v3.7 fields
+    trim_cap_pct,
+    ema_extension_pct,
+    acceleration_zone,
+    master_eject_rationale,
+    fib_levels,
   };
 }
 
