@@ -15,6 +15,17 @@ interface GeneratorCardProps {
   onTitleChange?: (newTitle: string) => void;
 }
 
+const defaultSubtitles: Record<string, string> = {
+  pre_market_tweet: "Key levels and overnight action before market open",
+  market_open_tweet: "First 30 minutes reaction and initial direction",
+  midday_tweet: "Mid-session update on price action and levels",
+  power_hour_tweet: "Final hour momentum and closing outlook",
+  eod_tweet: "End of day summary and next day setup",
+  eod_wrap: "Detailed Discord wrap with full analysis",
+  morning_brief: "Comprehensive morning briefing for Discord",
+  hiro_alert: "Real-time HIRO reading and dealer positioning",
+};
+
 export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: GeneratorCardProps) {
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -23,6 +34,9 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(label);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [isEditingSubtitle, setIsEditingSubtitle] = useState(false);
+  const [subtitle, setSubtitle] = useState(defaultSubtitles[contentKey] || "");
+  const subtitleInputRef = useRef<HTMLInputElement>(null);
 
   // Load custom title from localStorage on mount
   useEffect(() => {
@@ -35,6 +49,17 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     }
   }, [contentKey]);
 
+  // Load custom subtitle from localStorage on mount
+  useEffect(() => {
+    const customSubtitles = localStorage.getItem("content-hub-subtitles");
+    if (customSubtitles) {
+      const subtitles = JSON.parse(customSubtitles);
+      if (subtitles[contentKey]) {
+        setSubtitle(subtitles[contentKey]);
+      }
+    }
+  }, [contentKey]);
+
   // Focus input when editing title
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -42,6 +67,14 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
       titleInputRef.current.select();
     }
   }, [isEditingTitle]);
+
+  // Focus input when editing subtitle
+  useEffect(() => {
+    if (isEditingSubtitle && subtitleInputRef.current) {
+      subtitleInputRef.current.focus();
+      subtitleInputRef.current.select();
+    }
+  }, [isEditingSubtitle]);
 
   const saveTitle = (newTitle: string) => {
     const trimmedTitle = newTitle.trim();
@@ -64,6 +97,30 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     } else if (e.key === "Escape") {
       setTitle(label);
       setIsEditingTitle(false);
+    }
+  };
+
+  const saveSubtitle = (newSubtitle: string) => {
+    const trimmedSubtitle = newSubtitle.trim();
+    const defaultSubtitle = defaultSubtitles[contentKey] || "";
+    if (trimmedSubtitle && trimmedSubtitle !== defaultSubtitle) {
+      setSubtitle(trimmedSubtitle);
+      const customSubtitles = localStorage.getItem("content-hub-subtitles");
+      const subtitles = customSubtitles ? JSON.parse(customSubtitles) : {};
+      subtitles[contentKey] = trimmedSubtitle;
+      localStorage.setItem("content-hub-subtitles", JSON.stringify(subtitles));
+    } else if (!trimmedSubtitle) {
+      setSubtitle(defaultSubtitle);
+    }
+    setIsEditingSubtitle(false);
+  };
+
+  const handleSubtitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      saveSubtitle(subtitle);
+    } else if (e.key === "Escape") {
+      setSubtitle(defaultSubtitles[contentKey] || "");
+      setIsEditingSubtitle(false);
     }
   };
 
@@ -172,25 +229,46 @@ Consider positioning for potential move toward $285. Use put wall at $275 as sto
     <>
       <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-5 flex flex-col min-h-[350px]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          {isEditingTitle ? (
-            <Input
-              ref={titleInputRef}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => saveTitle(title)}
-              onKeyDown={handleTitleKeyDown}
-              className="h-8 w-auto min-w-[200px] bg-zinc-900 border-zinc-700 text-zinc-200 font-semibold"
-            />
-          ) : (
-            <h3
-              className="font-semibold text-zinc-200 cursor-pointer hover:text-purple-400 transition-colors"
-              onClick={() => setIsEditingTitle(true)}
-              title="Click to edit title"
-            >
-              {title}
-            </h3>
-          )}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col gap-1">
+            {isEditingTitle ? (
+              <Input
+                ref={titleInputRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => saveTitle(title)}
+                onKeyDown={handleTitleKeyDown}
+                className="h-8 w-auto min-w-[200px] bg-zinc-900 border-zinc-700 text-zinc-200 font-semibold"
+              />
+            ) : (
+              <h3
+                className="font-semibold text-zinc-200 cursor-pointer hover:text-purple-400 transition-colors"
+                onClick={() => setIsEditingTitle(true)}
+                title="Click to edit title"
+              >
+                {title}
+              </h3>
+            )}
+            {isEditingSubtitle ? (
+              <Input
+                ref={subtitleInputRef}
+                value={subtitle}
+                onChange={(e) => setSubtitle(e.target.value)}
+                onBlur={() => saveSubtitle(subtitle)}
+                onKeyDown={handleSubtitleKeyDown}
+                className="h-6 w-auto min-w-[250px] max-w-[350px] bg-zinc-900 border-zinc-700 text-zinc-400 text-sm"
+                placeholder="Enter subtitle description..."
+              />
+            ) : (
+              <p
+                className="text-sm text-zinc-500 cursor-pointer hover:text-zinc-400 transition-colors"
+                onClick={() => setIsEditingSubtitle(true)}
+                title="Click to edit subtitle"
+              >
+                {subtitle}
+              </p>
+            )}
+          </div>
           <Button
             onClick={handleGenerate}
             disabled={isGenerating}
