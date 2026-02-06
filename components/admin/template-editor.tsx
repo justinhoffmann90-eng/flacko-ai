@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Using native select to avoid Radix dependency issues
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
@@ -258,25 +258,22 @@ export function TemplateEditor() {
       <CardContent className="space-y-6">
         {/* Template Selector */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Select Template</label>
-          <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose a template to edit" />
-            </SelectTrigger>
-            <SelectContent>
-              {templates.map((template) => (
-                <SelectItem key={template.id} value={template.id}>
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(template.category)}
-                    <span>{template.name}</span>
-                    {template.isCustom && (
-                      <Badge variant="outline" className="ml-2 text-xs">Custom</Badge>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <label htmlFor="template-select" className="text-sm font-medium">Select Template</label>
+          <select
+            id="template-select"
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <option value="" disabled>Choose a template to edit</option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.category === "discord" ? "📱 " : "📧 "}
+                {template.name}
+                {template.isCustom ? " (Custom)" : ""}
+              </option>
+            ))}
+          </select>
           {selectedTemplate && (
             <p className="text-sm text-muted-foreground">
               {selectedTemplate.description}
