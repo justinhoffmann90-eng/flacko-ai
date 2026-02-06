@@ -261,7 +261,7 @@ function XArticleBuilder() {
   );
 }
 
-function buildThreadTweets(data: ContentHubData, template: TemplateStyle): string[] {
+function buildThreadTweets(data: ContentHubData, template: TemplateStyle): readonly string[] {
   const dateLabel = format(parseISO(data.date), "MMM d, yyyy");
   const levels = data.morningCard.levels || {};
   const modeLine = `${data.modeEmoji} ${data.mode.toUpperCase()} MODE — ${dateLabel}`;
