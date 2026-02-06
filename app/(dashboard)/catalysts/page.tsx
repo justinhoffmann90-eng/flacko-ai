@@ -24,10 +24,11 @@ interface Catalyst {
 export default async function CatalystsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; view?: string }>;
 }) {
   const params = await searchParams;
   const typeFilter = params.type || "all";
+  const viewFilter = params.view || "upcoming";
   const devBypass = process.env.DEV_BYPASS_AUTH === "true";
   const supabase = devBypass ? await createServiceClient() : await createClient();
 
@@ -54,14 +55,23 @@ export default async function CatalystsPage({
     }
   }
 
-  // Fetch upcoming catalysts
+  // Fetch catalysts based on view (upcoming or archived)
   const today = new Date().toISOString().split("T")[0];
+  const isArchived = viewFilter === "archived";
+  
   let query = supabase
     .from("catalysts")
-    .select("*")
-    .gte("event_date", today)
-    .order("event_date", { ascending: true })
-    .limit(50);
+    .select("*");
+  
+  if (isArchived) {
+    // Archived: past events, most recent first
+    query = query.lt("event_date", today).order("event_date", { ascending: false });
+  } else {
+    // Upcoming: future events, soonest first
+    query = query.gte("event_date", today).order("event_date", { ascending: true });
+  }
+  
+  query = query.limit(50);
   
   // Apply type filter
   if (typeFilter === "tesla") {
@@ -99,20 +109,23 @@ export default async function CatalystsPage({
       <Header title="Catalyst Calendar" />
       <main className="px-4 py-6 max-w-lg mx-auto space-y-6">
         {/* Hero Card */}
-        <Card className="p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <Card className={`p-5 bg-gradient-to-br ${isArchived ? 'from-zinc-500/10 to-zinc-500/5 border-zinc-500/20' : 'from-primary/10 to-primary/5 border-primary/20'}`}>
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isArchived ? 'bg-zinc-500/20' : 'bg-primary/20'}`}>
+              <Sparkles className={`h-5 w-5 ${isArchived ? 'text-zinc-400' : 'text-primary'}`} />
             </div>
             <div>
-              <h2 className="font-semibold">Upcoming Catalysts</h2>
+              <h2 className="font-semibold">{isArchived ? 'Archived Catalysts' : 'Upcoming Catalysts'}</h2>
               <p className="text-xs text-muted-foreground">
-                {catalysts.length} events on the horizon
+                {catalysts.length} {isArchived ? 'past events' : 'events on the horizon'}
               </p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Key Tesla events, earnings, product launches, and macro events that could move the stock.
+            {isArchived 
+              ? 'Historical Tesla events, earnings, and macro events. Review past catalysts and their outcomes.'
+              : 'Key Tesla events, earnings, product launches, and macro events that could move the stock.'
+            }
           </p>
         </Card>
 
