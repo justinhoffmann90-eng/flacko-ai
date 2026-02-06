@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { TemplateEditor } from "@/components/admin/template-editor";
+// import { TemplateEditor } from "@/components/admin/template-editor";
 
 interface ContentHubData {
   date: string;
@@ -1012,8 +1012,8 @@ export default function ContentHubPage() {
         {/* X Article Builder */}
         <XArticleBuilder />
 
-        {/* Template Editor */}
-        <TemplateEditor />
+        {/* Template Editor - temporarily disabled for debugging */}
+        {/* <TemplateEditor /> */}
 
         {/* Prompt Editor Modal */}
         <PromptEditorModal
