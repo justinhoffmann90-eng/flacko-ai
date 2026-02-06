@@ -1,3 +1,36 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import { format, parseISO } from "date-fns";
+
+interface ContentHubData {
+  date: string;
+  mode: string;
+  modeEmoji: string;
+  morningCard: {
+    status: "ready" | "pending" | "error";
+    levels: {
+      R1?: number;
+      R2?: number;
+      S1?: number;
+      S2?: number;
+    };
+  };
+}
+
+type TemplateStyle = "minimal" | "detailed" | "hype" | "defensive";
+
+interface DiscordChannel {
+  key: string;
+  name: string;
+  webhook: string;
+}
+
+function formatLevelValue(val: number | undefined): string {
+  if (val === undefined || val === null) return "—";
+  return `$${val.toFixed(2)}`;
+}
+
 function QuoteImageGenerator({ modeAccent }: { modeAccent: { badge: string; glow: string; text: string; ring: string } }) {
   const [quote, setQuote] = useState("");
   const [author, setAuthor] = useState("Flacko AI");
@@ -128,54 +161,23 @@ function XArticleBuilder() {
   const [input, setInput] = useState("");
   const [copied, setCopied] = useState(false);
 
-  // Convert Discord format to X article-friendly format
   const convertToArticle = (text: string): string => {
     let result = text;
-    
-    // Remove markdown headers (### ## #) - keep the text, add newline after
     result = result.replace(/^#{1,6}\s*(.+)$/gm, "$1\n");
-    
-    // Convert **bold** to plain text (X articles don't support markdown)
     result = result.replace(/\*\*([^*]+)\*\*/g, "$1");
-    
-    // Convert __underline__ to plain text
     result = result.replace(/__([^_]+)__/g, "$1");
-    
-    // Convert *italic* to plain text
     result = result.replace(/\*([^*]+)\*/g, "$1");
-    
-    // Convert _italic_ to plain text
     result = result.replace(/_([^_]+)_/g, "$1");
-    
-    // Convert ~~strikethrough~~ to plain text
     result = result.replace(/~~([^~]+)~~/g, "$1");
-    
-    // Remove Discord separators (━━━━ lines)
     result = result.replace(/[━─═]{3,}/g, "---");
-    
-    // Clean up bullet points (• → -)
     result = result.replace(/•/g, "-");
-    
-    // Remove code block markers
     result = result.replace(/```[a-z]*\n?/g, "");
     result = result.replace(/`([^`]+)`/g, "$1");
-    
-    // Clean up Discord emoji format :emoji_name:
-    // Keep common ones, remove custom server emojis
     result = result.replace(/<:[a-zA-Z0-9_]+:[0-9]+>/g, "");
-    
-    // Clean up multiple newlines (more than 2 → 2)
     result = result.replace(/\n{3,}/g, "\n\n");
-    
-    // Clean up multiple dashes/separators in a row
     result = result.replace(/(-{3,}\n?){2,}/g, "---\n\n");
-    
-    // Trim whitespace from each line
     result = result.split("\n").map(line => line.trim()).join("\n");
-    
-    // Trim overall
     result = result.trim();
-    
     return result;
   };
 
@@ -203,7 +205,6 @@ function XArticleBuilder() {
         </div>
 
         <div className="p-5 sm:p-6 space-y-5">
-          {/* Input */}
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-2">Paste Discord Content</label>
             <textarea
@@ -216,7 +217,6 @@ function XArticleBuilder() {
             <div className="text-xs text-zinc-500 mt-1">{input.length} characters</div>
           </div>
 
-          {/* Output Preview */}
           {input && (
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -239,7 +239,6 @@ function XArticleBuilder() {
             </div>
           )}
 
-          {/* Help Text */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
             <div className="text-sm text-zinc-400">
               <strong className="text-zinc-300">What this converts:</strong>
@@ -297,7 +296,6 @@ function buildThreadTweets(data: ContentHubData, template: TemplateStyle): strin
 
   return base[template];
 }
-
 
 function AIContentStudio({
   activeDate,
@@ -406,7 +404,6 @@ function AIContentStudio({
         </div>
 
         <div className="p-5 sm:p-6 space-y-5">
-          {/* Content Type Selector */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {contentTypes.map((ct) => (
               <button
@@ -424,7 +421,6 @@ function AIContentStudio({
             ))}
           </div>
 
-          {/* Context/Prompt Input */}
           <div>
             <label className="block text-sm font-medium text-zinc-400 mb-2">
               {contentType === "custom" ? "Your Prompt" : "Additional Context (optional)"}
@@ -446,7 +442,6 @@ function AIContentStudio({
             />
           </div>
 
-          {/* Generate Button */}
           <button
             onClick={handleGenerate}
             disabled={generating || (contentType === "custom" && !customPrompt.trim())}
@@ -459,14 +454,12 @@ function AIContentStudio({
             {generating ? "Generating..." : "Generate Content"}
           </button>
 
-          {/* Error */}
           {error && (
             <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-sm text-red-300">
               {error}
             </div>
           )}
 
-          {/* Result */}
           {result && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -556,11 +549,10 @@ function WeeklyScorecardSection() {
   const [threadData, setThreadData] = useState<WeeklyThreadData | null>(null);
   const [copiedThread, setCopiedThread] = useState(false);
 
-  // Initialize with current week
   useEffect(() => {
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1);
     const year = startOfWeek.getFullYear();
     const weekNum = getISOWeek(startOfWeek);
     setSelectedWeek(`${year}-${String(weekNum).padStart(2, "0")}`);
@@ -603,7 +595,6 @@ function WeeklyScorecardSection() {
     setTimeout(() => setCopiedThread(false), 2000);
   };
 
-  // Generate week options for the past 8 weeks
   const weekOptions = useMemo(() => {
     const options: Array<{ value: string; label: string }> = [];
     const now = new Date();
@@ -677,7 +668,6 @@ function WeeklyScorecardSection() {
 
           {threadData && (
             <>
-              {/* Header Image Preview */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">
@@ -702,7 +692,6 @@ function WeeklyScorecardSection() {
                 </div>
               </div>
 
-              {/* Summary Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-black/40 border border-zinc-800 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-emerald-400">
@@ -730,7 +719,6 @@ function WeeklyScorecardSection() {
                 </div>
               </div>
 
-              {/* Consolidated Thread Text Area */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">
@@ -763,6 +751,273 @@ function WeeklyScorecardSection() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Prompt Editor Modal
+function PromptEditorModal({
+  isOpen,
+  onClose,
+  sectionKey,
+  sectionLabel,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  sectionKey: string;
+  sectionLabel: string;
+}) {
+  const [promptText, setPromptText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isDefault, setIsDefault] = useState(true);
+
+  useEffect(() => {
+    if (isOpen && sectionKey) {
+      setLoading(true);
+      fetch(`/api/content/ai-generate?section=${sectionKey}`)
+        .then(res => res.json())
+        .then(data => {
+          setPromptText(data.prompt_text || "");
+          setIsDefault(data.is_default ?? true);
+        })
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+    }
+  }, [isOpen, sectionKey]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/content/prompts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section_key: sectionKey, prompt_text: promptText }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save");
+      }
+      setIsDefault(false);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!confirm("Reset to default prompt? This cannot be undone.")) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/content/prompts?section=${sectionKey}`, { method: "DELETE" });
+      // Refetch the default
+      const res = await fetch(`/api/content/ai-generate?section=${sectionKey}`);
+      const data = await res.json();
+      setPromptText(data.prompt_text || "");
+      setIsDefault(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reset failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Edit Prompt: {sectionLabel}</h3>
+            {isDefault && (
+              <span className="text-xs text-zinc-500 mt-1 block">Using default prompt</span>
+            )}
+          </div>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        
+        <div className="flex-1 overflow-auto p-5">
+          {loading ? (
+            <div className="text-center py-12 text-zinc-500">Loading...</div>
+          ) : (
+            <textarea
+              value={promptText}
+              onChange={(e) => setPromptText(e.target.value)}
+              className="w-full h-[500px] bg-black border border-zinc-700 rounded-xl p-4 text-sm font-mono text-zinc-200 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              placeholder="Enter your custom prompt..."
+            />
+          )}
+          {error && (
+            <div className="mt-3 bg-red-900/30 border border-red-700 rounded-lg p-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+          <div className="mt-3 text-xs text-zinc-500">
+            <strong>Available placeholders:</strong> {"{{audience}}"}, {"{{context}}"}, {"{{reportContext}}"}
+          </div>
+        </div>
+        
+        <div className="p-5 border-t border-zinc-800 flex items-center justify-between">
+          <button
+            onClick={handleReset}
+            disabled={isDefault || saving}
+            className="px-4 py-2 text-sm text-zinc-400 hover:text-white disabled:opacity-50"
+          >
+            Reset to Default
+          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
+            >
+              {saving ? "Saving..." : "Save Prompt"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component
+export default function ContentHubPage() {
+  const [activeDate, setActiveDate] = useState<string | null>(null);
+  const [discordChannels] = useState<DiscordChannel[]>([
+    { key: "morning-brief", name: "#morning-brief", webhook: "" },
+    { key: "market-pulse", name: "#market-pulse", webhook: "" },
+    { key: "fs-insight", name: "#fs-insight", webhook: "" },
+  ]);
+  const [selectedDiscordChannel, setSelectedDiscordChannel] = useState("morning-brief");
+  const [discordPosting, setDiscordPosting] = useState<string | null>(null);
+  
+  // Prompt editor state
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [editingPromptKey, setEditingPromptKey] = useState<string>("");
+  const [editingPromptLabel, setEditingPromptLabel] = useState<string>("");
+
+  const modeAccent = {
+    badge: "bg-yellow-500/20 text-yellow-300 border-yellow-500/40",
+    glow: "from-yellow-800/30 via-yellow-500/20 to-yellow-800/30",
+    text: "text-yellow-400",
+    ring: "ring-yellow-500/50",
+  };
+
+  useEffect(() => {
+    setActiveDate(new Date().toISOString().split("T")[0]);
+  }, []);
+
+  const postToDiscord = async (content: string, context: string) => {
+    setDiscordPosting(context);
+    try {
+      // Placeholder for actual Discord posting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      alert("Posted to Discord!");
+    } catch (err) {
+      alert("Failed to post");
+    } finally {
+      setDiscordPosting(null);
+    }
+  };
+
+  const openPromptEditor = (key: string, label: string) => {
+    setEditingPromptKey(key);
+    setEditingPromptLabel(label);
+    setPromptModalOpen(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">Content Hub</h1>
+            <p className="text-zinc-500 mt-1">Generate and manage trading content</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => openPromptEditor("system-prompt", "System Prompt")}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium border border-zinc-700"
+            >
+              Edit System Prompt
+            </button>
+            <select
+              value={selectedDiscordChannel}
+              onChange={(e) => setSelectedDiscordChannel(e.target.value)}
+              className="min-h-[40px] px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-sm"
+            >
+              {discordChannels.map((ch) => (
+                <option key={ch.key} value={ch.key}>
+                  {ch.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* AI Content Studio with Edit Prompt buttons */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">AI Content Generation</div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => openPromptEditor("tweet", "Tweet Prompt")}
+                className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
+              >
+                Edit Tweet Prompt
+              </button>
+              <button
+                onClick={() => openPromptEditor("morning-brief", "Morning Brief Prompt")}
+                className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
+              >
+                Edit Morning Brief
+              </button>
+              <button
+                onClick={() => openPromptEditor("eod-wrap", "EOD Wrap Prompt")}
+                className="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
+              >
+                Edit EOD Wrap
+              </button>
+            </div>
+          </div>
+          <AIContentStudio
+            activeDate={activeDate}
+            discordChannels={discordChannels}
+            selectedDiscordChannel={selectedDiscordChannel}
+            postToDiscord={postToDiscord}
+            discordPosting={discordPosting}
+          />
+        </div>
+
+        {/* Weekly Scorecard Section */}
+        <WeeklyScorecardSection />
+
+        {/* Quote Image Generator */}
+        <QuoteImageGenerator modeAccent={modeAccent} />
+
+        {/* X Article Builder */}
+        <XArticleBuilder />
+
+        {/* Prompt Editor Modal */}
+        <PromptEditorModal
+          isOpen={promptModalOpen}
+          onClose={() => setPromptModalOpen(false)}
+          sectionKey={editingPromptKey}
+          sectionLabel={editingPromptLabel}
+        />
       </div>
     </div>
   );
