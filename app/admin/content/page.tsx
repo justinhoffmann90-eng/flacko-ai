@@ -969,6 +969,135 @@ export default function ContentHubPage() {
           </div>
         </div>
 
+        {/* Image Card Generators */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Daily Mode Card */}
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-2xl blur opacity-70" />
+            <div className="relative bg-zinc-950/80 rounded-2xl border border-zinc-800 overflow-hidden">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Daily Mode Card</h3>
+                  <div className="text-xs text-zinc-500">Traffic light mode visual</div>
+                </div>
+                <button
+                  onClick={() => openPromptEditor("mode-card", "Mode Card Style")}
+                  className="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
+                >
+                  ✏️ Edit
+                </button>
+              </div>
+              <div className="p-4">
+                <img
+                  src={`/api/cards/mode?date=${activeDate}`}
+                  className="w-full rounded-lg border border-zinc-800 bg-black"
+                  alt="Mode Card"
+                />
+                <div className="flex gap-2 mt-3">
+                  <a
+                    href={`/api/cards/mode?date=${activeDate}`}
+                    target="_blank"
+                    className="flex-1 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-xs font-medium text-center border border-zinc-700"
+                  >
+                    Open
+                  </a>
+                  <a
+                    href={`/api/cards/mode?date=${activeDate}`}
+                    download={`mode-${activeDate}.png`}
+                    className="flex-1 px-3 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-xs font-medium text-center"
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Morning Levels Card */}
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-2xl blur opacity-70" />
+            <div className="relative bg-zinc-950/80 rounded-2xl border border-zinc-800 overflow-hidden">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Morning Levels Card</h3>
+                  <div className="text-xs text-zinc-500">Alert levels visual</div>
+                </div>
+                <button
+                  onClick={() => openPromptEditor("levels-card", "Levels Card Style")}
+                  className="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
+                >
+                  ✏️ Edit
+                </button>
+              </div>
+              <div className="p-4">
+                <img
+                  src={`/api/cards/levels?date=${activeDate}`}
+                  className="w-full rounded-lg border border-zinc-800 bg-black"
+                  alt="Levels Card"
+                />
+                <div className="flex gap-2 mt-3">
+                  <a
+                    href={`/api/cards/levels?date=${activeDate}`}
+                    target="_blank"
+                    className="flex-1 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-xs font-medium text-center border border-zinc-700"
+                  >
+                    Open
+                  </a>
+                  <a
+                    href={`/api/cards/levels?date=${activeDate}`}
+                    download={`levels-${activeDate}.png`}
+                    className="flex-1 px-3 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-xs font-medium text-center"
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* EOD Accuracy Card */}
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-2xl blur opacity-70" />
+            <div className="relative bg-zinc-950/80 rounded-2xl border border-zinc-800 overflow-hidden">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">EOD Accuracy Card</h3>
+                  <div className="text-xs text-zinc-500">Level performance visual</div>
+                </div>
+                <button
+                  onClick={() => openPromptEditor("eod-card", "EOD Card Style")}
+                  className="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
+                >
+                  ✏️ Edit
+                </button>
+              </div>
+              <div className="p-4">
+                <img
+                  src={`/api/cards/eod?date=${activeDate}`}
+                  className="w-full rounded-lg border border-zinc-800 bg-black"
+                  alt="EOD Accuracy Card"
+                />
+                <div className="flex gap-2 mt-3">
+                  <a
+                    href={`/api/cards/eod?date=${activeDate}`}
+                    target="_blank"
+                    className="flex-1 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-xs font-medium text-center border border-zinc-700"
+                  >
+                    Open
+                  </a>
+                  <a
+                    href={`/api/cards/eod?date=${activeDate}`}
+                    download={`eod-${activeDate}.png`}
+                    className="flex-1 px-3 py-2 bg-white text-black hover:bg-zinc-200 rounded-lg text-xs font-medium text-center"
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* AI Content Studio with Edit Prompt buttons */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
