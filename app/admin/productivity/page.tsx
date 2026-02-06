@@ -39,7 +39,7 @@ interface TodayStats {
 
 interface HistoryEntry {
   date: string;
-  tasks: string[];
+  tasks: Task[];
   score: number;
   journal: string;
 }
@@ -421,7 +421,7 @@ export default function ProductivityPage() {
           return newStats;
         });
         addXP(pts);
-        saveDayToHistory(task.text);
+        saveDayToHistory(task);
       }
 
       return newTasks;
@@ -457,20 +457,20 @@ export default function ProductivityPage() {
     setDraggedCoreId(null);
   };
 
-  const saveDayToHistory = (taskText: string) => {
+  const saveDayToHistory = (task: Task) => {
     setHistory((prev) => {
       let entry = prev.find((h) => h.date === today);
       if (!entry) {
         entry = { date: today, tasks: [], score: 0, journal: "" };
         const newHistory = [entry, ...prev];
-        entry.tasks.push(taskText);
+        entry.tasks.push(task);
         entry.score = (todayStats.completed + 1) * 50 + todayStats.impactPoints;
         localStorage.setItem(storageKeys.history, JSON.stringify(newHistory));
         return newHistory;
       } else {
         const newHistory = prev.map((h) =>
           h.date === today
-            ? { ...h, tasks: [...h.tasks, taskText], score: (todayStats.completed + 1) * 50 + todayStats.impactPoints }
+            ? { ...h, tasks: [...h.tasks, task], score: (todayStats.completed + 1) * 50 + todayStats.impactPoints }
             : h
         );
         localStorage.setItem(storageKeys.history, JSON.stringify(newHistory));
@@ -510,7 +510,9 @@ export default function ProductivityPage() {
     if (customPts && customPts > 0) task.customPoints = customPts;
     setTasks((prev) => ({
       ...prev,
-      [currentColumn]: [...prev[currentColumn as keyof typeof prev], task],
+      [currentColumn]: currentColumn === "backlog"
+        ? [task, ...prev.backlog]
+        : [...prev[currentColumn as keyof typeof prev], task],
     }));
     setTaskModalOpen(false);
   };
@@ -588,6 +590,20 @@ export default function ProductivityPage() {
     if (confirm("Delete this idea?")) {
       setIdeas((prev) => prev.filter((i) => i.id !== id));
     }
+  };
+
+  const copyIdeaToBacklog = (idea: Idea) => {
+    const task: Task = {
+      id: Date.now(),
+      text: `${idea.series}: ${idea.angle}`,
+      engine: "growth",
+      impacts: ["growth"],
+      slot: null,
+    };
+    setTasks((prev) => ({
+      ...prev,
+      backlog: [task, ...prev.backlog],
+    }));
   };
 
   // History filtering
@@ -788,8 +804,10 @@ export default function ProductivityPage() {
         .idea-difficulty.medium { background: rgba(234,179,8,0.15); color: #eab308; }
         .idea-angle { font-size: 13px; color: #fafafa; margin-bottom: 6px; }
         .idea-trigger { font-size: 11px; color: #52525b; }
-        .idea-card-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
+        .idea-card-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
         .idea-card:hover .idea-card-actions { opacity: 1; }
+        .idea-copy-backlog { background: transparent; border: none; color: #52525b; cursor: pointer; font-size: 12px; }
+        .idea-copy-backlog:hover { color: #10b981; }
         .idea-delete, .idea-pin { background: transparent; border: none; color: #52525b; cursor: pointer; font-size: 12px; }
         .idea-delete:hover { color: #ef4444; }
         .idea-pin:hover { color: #eab308; }
@@ -808,8 +826,12 @@ export default function ProductivityPage() {
         .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .day-date { font-weight: 600; }
         .day-score { font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 700; color: #eab308; }
-        .day-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-        .day-task { font-size: 12px; padding: 6px 10px; background: rgba(16,185,129,0.1); border-radius: 6px; color: #10b981; }
+        .day-tasks { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .day-task-detail { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); border-radius: 8px; padding: 10px; }
+        .day-task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .day-task-engine { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .day-task-impacts { font-size: 12px; }
+        .day-task-text { font-size: 13px; color: #fafafa; }
         .day-journal { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 12px; font-size: 13px; color: #a1a1aa; font-style: italic; border-left: 3px solid #8b5cf6; }
         .no-history { text-align: center; padding: 60px; color: #52525b; }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -1058,8 +1080,11 @@ export default function ProductivityPage() {
                       <div className="idea-angle">{idea.angle}</div>
                       <div className="idea-trigger">⏰ {idea.trigger}</div>
                       <div className="idea-card-actions">
-                        <button className={`idea-pin ${idea.pinned ? "pinned" : ""}`} onClick={() => toggleIdeaPin(idea.id)}>📌</button>
-                        <button className="idea-delete" onClick={() => deleteIdea(idea.id)}>🗑️</button>
+                        <button className="idea-copy-backlog" onClick={() => copyIdeaToBacklog(idea)} title="Copy to Backlog">📋</button>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          <button className={`idea-pin ${idea.pinned ? "pinned" : ""}`} onClick={() => toggleIdeaPin(idea.id)} title="Pin idea">📌</button>
+                          <button className="idea-delete" onClick={() => deleteIdea(idea.id)} title="Delete idea">🗑️</button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1103,7 +1128,21 @@ export default function ProductivityPage() {
                       <div className="day-score">{h.score} pts</div>
                     </div>
                     {h.tasks.length > 0 && (
-                      <div className="day-tasks">{h.tasks.map((t, i) => <span key={i} className="day-task">✓ {t}</span>)}</div>
+                      <div className="day-tasks">
+                        {h.tasks.map((t, i) => (
+                          <div key={i} className="day-task-detail">
+                            <div className="day-task-header">
+                              <span className={`day-task-engine engine-${t.engine}`}>{engineLabels[t.engine] || "🤖 Product"}</span>
+                              {t.impacts && t.impacts.length > 0 && (
+                                <span className="day-task-impacts">
+                                  {t.impacts.map((imp) => impactLabels[imp]).join(" ")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="day-task-text">{t.text}</div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {h.journal && <div className="day-journal">&quot;{h.journal}&quot;</div>}
                   </div>
