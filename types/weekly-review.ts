@@ -76,6 +76,20 @@ export interface Catalyst {
   impact?: string;
 }
 
+// v2.0 Key Level for next week
+export interface WeeklyKeyLevelV2 {
+  price: number;
+  name: string;
+  type: 'trim' | 'support' | 'current' | 'eject';
+}
+
+// v2.0 Catalyst with days_away
+export interface CatalystV2 {
+  event: string;
+  date: string;
+  days_away?: number;
+}
+
 // Full Weekly Review Data
 export interface WeeklyReviewData {
   // Header
@@ -119,6 +133,66 @@ export interface WeeklyReviewData {
 
   // Optional gamma context
   gamma_shifts?: GammaShifts;
+
+  // ===== v2.0 FIELDS =====
+  // OHLC (alternative to candle object)
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  change_pct?: number;
+  weekly_candle?: string;  // "Bullish engulfing", "Doji", etc.
+
+  // Mode tracking
+  mode_start?: TrafficLightMode;
+  mode_end?: TrafficLightMode;
+  mode_trajectory?: string;  // "Improving", "Stable", "Deteriorating"
+
+  // EMA levels (numeric values)
+  weekly_9ema?: number;
+  weekly_13ema?: number;
+  weekly_21ema?: number;
+  ema_extension_pct?: number;  // % above Weekly 9 EMA
+
+  // Weekly BX-Trender
+  weekly_bx_color?: string;  // "Light Green", "Dark Green", "Light Red", "Dark Red"
+  weekly_bx_pattern?: string;  // "HH", "HL", "LH", "LL"
+
+  // Correction tracking
+  correction_stage?: string;  // "None", "Stage 1", "Stage 2", "Stage 3"
+
+  // Daily assessment scores
+  daily_scores?: number[];  // [82, 75, 88, 71, 79]
+  daily_system_values?: string[];  // ["PROTECTED_CAPITAL", "NEUTRAL", ...]
+  system_value_days?: number;  // Count of positive system value days
+  weekly_avg_score?: number;
+  weekly_grade?: string;  // "A", "B+", "C", etc.
+
+  // Level testing accountability
+  buy_levels_tested?: number;
+  buy_levels_held?: number;
+  trim_levels_tested?: number;
+  trim_levels_effective?: number;
+  slow_zone_triggered?: boolean;
+
+  // Master Eject
+  master_eject?: number;
+  master_eject_distance_pct?: number;
+
+  // Thesis
+  thesis_status?: ThesisStatus | string;  // Allow string for "Intact" from JSON
+
+  // Week ahead
+  next_week_mode?: TrafficLightMode | string;
+  next_week_bias?: string;  // "Neutral-to-Bullish", "Bearish", etc.
+  key_levels_next_week?: WeeklyKeyLevelV2[];
+
+  // QQQ and HIRO
+  qqq_verdict?: string;  // "Supportive", "Neutral", "Headwind"
+  hiro_eow?: number;  // End of week HIRO reading
+
+  // Catalysts v2
+  catalysts_v2?: CatalystV2[];
 }
 
 // Parsed from markdown
