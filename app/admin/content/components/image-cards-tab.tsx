@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import { Wand2, Download, Edit3, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,16 +31,80 @@ function ModeCardGenerator() {
   const [takeCaution, setTakeCaution] = useState("Break below put wall would flip me defensive");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Key levels state - populated from API
+  const [callWall, setCallWall] = useState<number>(285);
+  const [hedgeWall, setHedgeWall] = useState<number>(278);
+  const [gammaStrike, setGammaStrike] = useState<number>(280);
+  const [putWall, setPutWall] = useState<number>(275);
+  const [masterEject, setMasterEject] = useState<number>(270);
+  const [currentPrice, setCurrentPrice] = useState<number>(280);
+
+  // Fetch latest report data on mount
+  useEffect(() => {
+    const fetchLatestReport = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/reports/latest");
+        if (response.ok) {
+          const report = await response.json();
+          const data = report.extracted_data || {};
+
+          // Set mode
+          if (data.mode?.current) {
+            const reportMode = data.mode.current.toUpperCase() as "GREEN" | "YELLOW" | "ORANGE" | "RED";
+            setMode(reportMode);
+          }
+
+          // Set daily cap
+          if (data.position?.daily_cap_pct) {
+            setDailyCap(data.position.daily_cap_pct.toString());
+          }
+
+          // Set key levels
+          if (data.key_levels) {
+            if (data.key_levels.call_wall) setCallWall(parseFloat(data.key_levels.call_wall));
+            if (data.key_levels.hedge_wall) setHedgeWall(parseFloat(data.key_levels.hedge_wall));
+            if (data.key_levels.gamma_strike) setGammaStrike(parseFloat(data.key_levels.gamma_strike));
+            if (data.key_levels.put_wall) setPutWall(parseFloat(data.key_levels.put_wall));
+            if (data.key_levels.master_eject) setMasterEject(parseFloat(data.key_levels.master_eject));
+          }
+
+          // Set current price
+          if (data.price?.close) {
+            setCurrentPrice(parseFloat(data.price.close));
+          }
+
+          // Set date from report
+          if (report.date) {
+            setDate(report.date);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch latest report:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLatestReport();
+  }, []);
+
+  const calculatePctFromClose = (price: number) => {
+    if (!currentPrice || currentPrice === 0) return 0;
+    return ((price - currentPrice) / currentPrice) * 100;
+  };
 
   const handleGenerate = () => {
     const levels = [
-      { name: "Call Wall", price: 285, type: "upside" as const, pctFromClose: 1.8 },
-      { name: "Gamma Strike", price: 280, type: "upside" as const, pctFromClose: 0.0 },
-      { name: "Hedge Wall", price: 278, type: "downside" as const, pctFromClose: -0.7 },
-      { name: "Put Wall", price: 275, type: "downside" as const, pctFromClose: -1.8 },
-      { name: "Master Eject", price: 270, type: "eject" as const, pctFromClose: -3.6 },
-      { name: "Last Close", price: 280, type: "close" as const },
+      { name: "Call Wall", price: callWall, type: "upside" as const, pctFromClose: calculatePctFromClose(callWall) },
+      { name: "Gamma Strike", price: gammaStrike, type: "upside" as const, pctFromClose: calculatePctFromClose(gammaStrike) },
+      { name: "Hedge Wall", price: hedgeWall, type: "downside" as const, pctFromClose: calculatePctFromClose(hedgeWall) },
+      { name: "Put Wall", price: putWall, type: "downside" as const, pctFromClose: calculatePctFromClose(putWall) },
+      { name: "Master Eject", price: masterEject, type: "eject" as const, pctFromClose: calculatePctFromClose(masterEject) },
+      { name: "Last Close", price: currentPrice, type: "close" as const },
     ];
 
     setPreviewData({
@@ -127,6 +191,78 @@ function ModeCardGenerator() {
                 onChange={(e) => setDailyCap(e.target.value)}
                 className="bg-zinc-900 border-zinc-800 mt-1"
               />
+            </div>
+          </div>
+
+          {/* Key Levels Inputs */}
+          <div className="space-y-3 border border-zinc-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium text-zinc-300">Key Levels</Label>
+              {isLoading && (
+                <span className="text-xs text-purple-400 animate-pulse">Loading from report...</span>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs text-zinc-500">Call Wall</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={callWall}
+                  onChange={(e) => setCallWall(parseFloat(e.target.value) || 0)}
+                  className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Hedge Wall</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={hedgeWall}
+                  onChange={(e) => setHedgeWall(parseFloat(e.target.value) || 0)}
+                  className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Gamma Strike</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={gammaStrike}
+                  onChange={(e) => setGammaStrike(parseFloat(e.target.value) || 0)}
+                  className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Put Wall</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={putWall}
+                  onChange={(e) => setPutWall(parseFloat(e.target.value) || 0)}
+                  className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Master Eject</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={masterEject}
+                  onChange={(e) => setMasterEject(parseFloat(e.target.value) || 0)}
+                  className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-zinc-500">Current Price</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={currentPrice}
+                  onChange={(e) => setCurrentPrice(parseFloat(e.target.value) || 0)}
+                  className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                />
+              </div>
             </div>
           </div>
 

@@ -231,7 +231,21 @@ export const SCORECARD_STORAGE_KEY = "content-hub-scorecard-prompt";
 // Get default prompt for a content type
 export function getDefaultPrompt(key: string): string {
   const contentType = CONTENT_TYPES.find((ct) => ct.key === key);
-  return contentType?.defaultPrompt || "";
+  if (contentType) {
+    return contentType.defaultPrompt;
+  }
+
+  // Check image card prompts
+  switch (key) {
+    case "mode_card":
+      return MODE_CARD_PROMPT;
+    case "levels_card":
+      return LEVELS_CARD_PROMPT;
+    case "scorecard":
+      return SCORECARD_PROMPT;
+    default:
+      return "";
+  }
 }
 
 // Get label for a content type

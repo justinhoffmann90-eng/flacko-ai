@@ -111,16 +111,16 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
 
       {/* Main Content */}
       <div style={{ display: "flex", gap: 20 }}>
-        {/* Chart Panel */}
+        {/* Chart Panel - Levels Ladder */}
         <div
           style={{
             flex: 1,
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.02)",
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.08)",
             position: "relative",
-            minHeight: 280,
-            padding: 20,
+            minHeight: 320,
+            padding: "24px 28px",
           }}
         >
           {data.levels.map((level, idx) => (
@@ -128,64 +128,128 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
               key={idx}
               style={{
                 position: "absolute",
-                left: 0,
-                right: 0,
-                top: 20 + idx * 50,
-                height: 2,
+                left: 28,
+                right: 28,
+                top: 24 + idx * 56,
+                height: 36,
                 display: "flex",
                 alignItems: "center",
               }}
             >
+              {/* Level Label - Left Side */}
               <div
                 style={{
-                  flex: 1,
-                  height: "100%",
-                  background:
-                    level.type === "upside"
-                      ? "linear-gradient(90deg, transparent 5%, #22c55e 30%, #22c55e 70%, transparent 95%)"
-                      : level.type === "downside"
-                        ? "linear-gradient(90deg, transparent 5%, #ef4444 30%, #ef4444 70%, transparent 95%)"
-                        : level.type === "eject"
-                          ? "repeating-linear-gradient(90deg, #f97316 0px, #f97316 8px, transparent 8px, transparent 16px)"
-                          : "linear-gradient(90deg, transparent 5%, #3b82f6 30%, #3b82f6 70%, transparent 95%)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  right: 16,
+                  width: 100,
                   display: "flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "rgba(0,0,0,0.8)",
-                  padding: "4px 10px",
-                  borderRadius: 5,
-                  border:
-                    level.type === "upside"
-                      ? "2px solid #22c55e"
-                      : level.type === "downside"
-                        ? "2px solid #ef4444"
-                        : level.type === "eject"
-                          ? "2px solid #f97316"
-                          : "2px solid #3b82f6",
-                  color:
-                    level.type === "upside"
-                      ? "#22c55e"
-                      : level.type === "downside"
-                        ? "#ef4444"
-                        : level.type === "eject"
-                          ? "#f97316"
-                          : "#fff",
                 }}
               >
-                <span style={{ fontSize: 11, color: "#999" }}>{level.name}</span>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>${level.price.toFixed(2)}</span>
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background:
+                      level.type === "upside"
+                        ? "#22c55e"
+                        : level.type === "downside"
+                          ? "#ef4444"
+                          : level.type === "eject"
+                            ? "#f97316"
+                            : "#3b82f6",
+                    boxShadow:
+                      level.type === "upside"
+                        ? "0 0 8px rgba(34,197,94,0.5)"
+                        : level.type === "downside"
+                          ? "0 0 8px rgba(239,68,68,0.5)"
+                          : level.type === "eject"
+                            ? "0 0 8px rgba(249,115,22,0.5)"
+                            : "0 0 8px rgba(59,130,246,0.5)",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color:
+                      level.type === "upside"
+                        ? "#22c55e"
+                        : level.type === "downside"
+                          ? "#ef4444"
+                          : level.type === "eject"
+                            ? "#f97316"
+                            : "#fff",
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {level.name}
+                </span>
+              </div>
+
+              {/* Horizontal Line */}
+              <div
+                style={{
+                  flex: 1,
+                  height: 2,
+                  margin: "0 16px",
+                  background:
+                    level.type === "upside"
+                      ? "linear-gradient(90deg, #22c55e 0%, rgba(34,197,94,0.3) 70%, transparent 100%)"
+                      : level.type === "downside"
+                        ? "linear-gradient(90deg, #ef4444 0%, rgba(239,68,68,0.3) 70%, transparent 100%)"
+                        : level.type === "eject"
+                          ? "repeating-linear-gradient(90deg, #f97316 0px, #f97316 6px, transparent 6px, transparent 12px)"
+                          : "linear-gradient(90deg, #3b82f6 0%, rgba(59,130,246,0.3) 70%, transparent 100%)",
+                }}
+              />
+
+              {/* Price Badge - Right Side */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: "rgba(0,0,0,0.7)",
+                  padding: "6px 14px",
+                  borderRadius: 6,
+                  border:
+                    level.type === "upside"
+                      ? "1px solid rgba(34,197,94,0.4)"
+                      : level.type === "downside"
+                        ? "1px solid rgba(239,68,68,0.4)"
+                        : level.type === "eject"
+                          ? "1px solid rgba(249,115,22,0.4)"
+                          : "1px solid rgba(59,130,246,0.4)",
+                }}
+              >
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color:
+                      level.type === "upside"
+                        ? "#22c55e"
+                        : level.type === "downside"
+                          ? "#ef4444"
+                          : level.type === "eject"
+                            ? "#f97316"
+                            : "#fff",
+                    fontFamily: "'SF Mono', 'Monaco', 'Consolas', monospace",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  ${level.price.toFixed(2)}
+                </span>
                 {level.pctFromClose !== undefined && level.type !== "close" && (
                   <span
                     style={{
                       fontSize: 12,
                       fontWeight: 600,
                       color: level.pctFromClose >= 0 ? "#22c55e" : "#ef4444",
+                      background: level.pctFromClose >= 0 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                      padding: "2px 6px",
+                      borderRadius: 4,
                     }}
                   >
                     {level.pctFromClose >= 0 ? "+" : ""}
@@ -202,10 +266,10 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
           {(data.take?.action || data.take?.caution) && (
             <div
               style={{
-                background: "rgba(124,58,237,0.08)",
-                borderRadius: 10,
-                border: "1px solid rgba(124,58,237,0.25)",
-                padding: 14,
+                background: "rgba(124,58,237,0.06)",
+                borderRadius: 12,
+                border: "1px solid rgba(124,58,237,0.2)",
+                padding: 16,
               }}
             >
               <div
@@ -213,41 +277,49 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
                   fontSize: 11,
                   color: "#a78bfa",
                   textTransform: "uppercase",
-                  letterSpacing: 1,
-                  marginBottom: 10,
-                  fontWeight: 600,
+                  letterSpacing: 1.2,
+                  marginBottom: 14,
+                  fontWeight: 700,
                 }}
               >
                 🧠 FLACKO AI&apos;S TAKE
               </div>
               {data.take?.action && (
-                <div style={{ marginBottom: 10 }}>
+                <div style={{ marginBottom: 14 }}>
                   <div
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 700,
-                      marginBottom: 3,
+                      marginBottom: 6,
                       color: "#22c55e",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
                     }}
                   >
-                    ✅ WHAT I&apos;D DO
+                    ✅ What I&apos;d Do
                   </div>
-                  <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.4 }}>{data.take.action}</div>
+                  <div style={{ fontSize: 14, color: "#e5e7eb", lineHeight: 1.5, fontWeight: 400 }}>
+                    {data.take.action}
+                  </div>
                 </div>
               )}
               {data.take?.caution && (
                 <div>
                   <div
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 700,
-                      marginBottom: 3,
+                      marginBottom: 6,
                       color: "#f97316",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
                     }}
                   >
-                    ⚠️ WOULD CHANGE MY MIND
+                    ⚠️ Would Change My Mind
                   </div>
-                  <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.4 }}>{data.take.caution}</div>
+                  <div style={{ fontSize: 14, color: "#e5e7eb", lineHeight: 1.5, fontWeight: 400 }}>
+                    {data.take.caution}
+                  </div>
                 </div>
               )}
             </div>
@@ -255,10 +327,10 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
 
           <div
             style={{
-              background: "rgba(255,255,255,0.03)",
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.1)",
-              padding: 14,
+              background: "rgba(255,255,255,0.02)",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.08)",
+              padding: 16,
             }}
           >
             <div
@@ -266,8 +338,9 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
                 fontSize: 11,
                 color: "#888",
                 textTransform: "uppercase",
-                letterSpacing: 1,
-                marginBottom: 10,
+                letterSpacing: 1.2,
+                marginBottom: 12,
+                fontWeight: 600,
               }}
             >
               Key Levels
@@ -279,41 +352,61 @@ export const ModeCardTemplate: React.FC<{ data: ModeCardData }> = ({ data }) => 
                   key={idx}
                   style={{
                     display: "flex",
-                    alignItems: "flex-start",
-                    gap: 10,
-                    padding: "8px 0",
-                    borderBottom: idx < data.levels.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "10px 0",
+                    borderBottom: idx < data.levels.length - 2 ? "1px solid rgba(255,255,255,0.05)" : "none",
                   }}
                 >
                   <div
                     style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: 3,
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
                       flexShrink: 0,
-                      marginTop: 2,
                       background:
                         level.type === "upside" ? "#22c55e" : level.type === "downside" ? "#ef4444" : "#f97316",
+                      boxShadow:
+                        level.type === "upside"
+                          ? "0 0 8px rgba(34,197,94,0.4)"
+                          : level.type === "downside"
+                            ? "0 0 8px rgba(239,68,68,0.4)"
+                            : "0 0 8px rgba(249,115,22,0.4)",
                     }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span>
-                        <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>${level.price.toFixed(2)}</span>
-                        <span style={{ fontSize: 13, color: "#a1a1aa", marginLeft: 8 }}>{level.name}</span>
-                      </span>
-                      {level.pctFromClose !== undefined && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 13, color: "#a1a1aa", fontWeight: 500 }}>{level.name}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span
                           style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: level.pctFromClose >= 0 ? "#22c55e" : "#ef4444",
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "#fff",
+                            fontFamily: "'SF Mono', 'Monaco', 'Consolas', monospace",
+                            letterSpacing: 0.5,
                           }}
                         >
-                          {level.pctFromClose >= 0 ? "+" : ""}
-                          {level.pctFromClose.toFixed(1)}%
+                          ${level.price.toFixed(2)}
                         </span>
-                      )}
+                        {level.pctFromClose !== undefined && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: level.pctFromClose >= 0 ? "#22c55e" : "#ef4444",
+                              background: level.pctFromClose >= 0 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                              padding: "3px 6px",
+                              borderRadius: 4,
+                              minWidth: 44,
+                              textAlign: "center",
+                            }}
+                          >
+                            {level.pctFromClose >= 0 ? "+" : ""}
+                            {level.pctFromClose.toFixed(1)}%
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
