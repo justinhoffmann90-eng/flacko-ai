@@ -957,22 +957,22 @@ export default function ContentHubPage() {
         </div>
 
         {/* Image Card Generators */}
+        {/* Image Cards Section Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Image Cards</div>
+            <div className="text-xs text-zinc-600 mt-1">Auto-generated from daily report data</div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Daily Mode Card */}
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-2xl blur opacity-70" />
             <div className="relative bg-zinc-950/80 rounded-2xl border border-zinc-800 overflow-hidden">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">Daily Mode Card</h3>
-                  <div className="text-xs text-zinc-500">Traffic light mode visual</div>
-                </div>
-                <button
-                  onClick={() => openPromptEditor("mode-card", "Mode Card Style")}
-                  className="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
-                >
-                  ✏️ Edit
-                </button>
+              <div className="p-4 border-b border-zinc-800">
+                <h3 className="font-semibold">Daily Mode Card</h3>
+                <div className="text-xs text-zinc-500">Traffic light mode visual</div>
               </div>
               <div className="p-4">
                 <img
@@ -1004,17 +1004,9 @@ export default function ContentHubPage() {
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-2xl blur opacity-70" />
             <div className="relative bg-zinc-950/80 rounded-2xl border border-zinc-800 overflow-hidden">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">Morning Levels Card</h3>
-                  <div className="text-xs text-zinc-500">Alert levels visual</div>
-                </div>
-                <button
-                  onClick={() => openPromptEditor("levels-card", "Levels Card Style")}
-                  className="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
-                >
-                  ✏️ Edit
-                </button>
+              <div className="p-4 border-b border-zinc-800">
+                <h3 className="font-semibold">Morning Levels Card</h3>
+                <div className="text-xs text-zinc-500">Alert levels visual</div>
               </div>
               <div className="p-4">
                 <img
@@ -1046,17 +1038,9 @@ export default function ContentHubPage() {
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-zinc-800/30 via-white/10 to-zinc-800/30 rounded-2xl blur opacity-70" />
             <div className="relative bg-zinc-950/80 rounded-2xl border border-zinc-800 overflow-hidden">
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">EOD Accuracy Card</h3>
-                  <div className="text-xs text-zinc-500">Level performance visual</div>
-                </div>
-                <button
-                  onClick={() => openPromptEditor("eod-card", "EOD Card Style")}
-                  className="px-2 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded border border-zinc-700"
-                >
-                  ✏️ Edit
-                </button>
+              <div className="p-4 border-b border-zinc-800">
+                <h3 className="font-semibold">EOD Accuracy Card</h3>
+                <div className="text-xs text-zinc-500">Level performance visual</div>
               </div>
               <div className="p-4">
                 <img
@@ -1136,18 +1120,7 @@ export default function ContentHubPage() {
         <WeeklyScorecardSection />
 
         {/* Quote Image Generator */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Image Generation</div>
-            <button
-              onClick={() => openPromptEditor("quote-image", "Quote Image Style")}
-              className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 rounded-lg border border-zinc-700"
-            >
-              ✏️ Edit Image Prompt
-            </button>
-          </div>
-          <QuoteImageGenerator modeAccent={modeAccent} />
-        </div>
+        <QuoteImageGenerator modeAccent={modeAccent} />
 
         {/* X Article Builder */}
         <XArticleBuilder />
