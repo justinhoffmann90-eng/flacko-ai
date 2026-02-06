@@ -948,25 +948,12 @@ export default function ContentHubPage() {
             <h1 className="text-2xl sm:text-3xl font-bold">Content Hub</h1>
             <p className="text-zinc-500 mt-1">Generate and manage trading content</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => openPromptEditor("system-prompt", "System Prompt")}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium border border-zinc-700"
-            >
-              Edit System Prompt
-            </button>
-            <select
-              value={selectedDiscordChannel}
-              onChange={(e) => setSelectedDiscordChannel(e.target.value)}
-              className="min-h-[40px] px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-sm"
-            >
-              {discordChannels.map((ch) => (
-                <option key={ch.key} value={ch.key}>
-                  {ch.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button
+            onClick={() => openPromptEditor("system-prompt", "System Prompt")}
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium border border-zinc-700"
+          >
+            Edit System Prompt
+          </button>
         </div>
 
         {/* Image Card Generators */}
