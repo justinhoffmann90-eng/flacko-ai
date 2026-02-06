@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { 
   Loader2, 
   Save, 
@@ -50,6 +47,7 @@ export function TemplateEditor() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
@@ -77,13 +75,20 @@ export function TemplateEditor() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch("/api/templates");
       
       if (!response.ok) {
-        throw new Error("Failed to fetch templates");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${response.status}`);
       }
       
       const data = await response.json();
+      
+      if (!data.templates || !Array.isArray(data.templates)) {
+        throw new Error("Invalid response format");
+      }
+      
       setTemplates(data.templates);
       
       // Select first template by default
@@ -91,6 +96,7 @@ export function TemplateEditor() {
         setSelectedTemplateId(data.templates[0].id);
       }
     } catch (err) {
+      console.error("Template fetch error:", err);
       setError(err instanceof Error ? err.message : "Failed to load templates");
     } finally {
       setLoading(false);
@@ -98,7 +104,7 @@ export function TemplateEditor() {
   };
 
   const handleSave = async () => {
-    if (!selectedTemplateId) return;
+    if (!selectedTemplateId || !content) return;
     
     setSaving(true);
     setError(null);
@@ -117,14 +123,12 @@ export function TemplateEditor() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || "Failed to save template");
+        throw new Error(data.error || "Failed to save");
       }
       
-      setSuccess("Template saved successfully");
       setOriginalContent(content);
+      setSuccess("Template saved successfully");
       setHasChanges(false);
-      
-      // Refresh templates to get updated timestamp
       fetchTemplates();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save template");
@@ -135,10 +139,6 @@ export function TemplateEditor() {
 
   const handleReset = async () => {
     if (!selectedTemplateId) return;
-    
-    if (!confirm("Are you sure you want to reset this template to default? All custom changes will be lost.")) {
-      return;
-    }
     
     setSaving(true);
     setError(null);
@@ -160,12 +160,10 @@ export function TemplateEditor() {
         throw new Error(data.error || "Failed to reset template");
       }
       
-      setContent(data.content);
-      setOriginalContent(data.content);
+      setContent(data.content || "");
+      setOriginalContent(data.content || "");
       setSuccess("Template reset to default");
       setHasChanges(false);
-      
-      // Refresh templates
       fetchTemplates();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reset template");
@@ -184,7 +182,6 @@ export function TemplateEditor() {
     
     setContent(newContent);
     
-    // Restore focus and cursor position
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + variableName.length + 4, start + variableName.length + 4);
@@ -202,11 +199,36 @@ export function TemplateEditor() {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Loading templates...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Error state with no templates
+  if (error && templates.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileEdit className="h-5 w-5" />
+            AI Template Editor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button onClick={fetchTemplates} className="mt-4" variant="outline">
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
@@ -262,6 +284,7 @@ export function TemplateEditor() {
           )}
         </div>
 
+        {/* Error/Success Messages */}
         {error && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -276,6 +299,7 @@ export function TemplateEditor() {
           </Alert>
         )}
 
+        {/* Editor - only show when template is selected */}
         {selectedTemplate && (
           <>
             {/* Variables Panel */}
@@ -303,89 +327,98 @@ export function TemplateEditor() {
               </p>
             </div>
 
-            {/* Editor Tabs */}
-            <Tabs defaultValue="edit" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="edit" className="gap-2">
-                  <Code className="h-4 w-4" />
-                  Edit
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </TabsTrigger>
-              </TabsList>
+            {/* Simple Tab Buttons */}
+            <div className="flex gap-2 border-b pb-2">
+              <Button
+                variant={activeTab === "edit" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("edit")}
+                className="gap-2"
+              >
+                <Code className="h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                variant={activeTab === "preview" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("preview")}
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Preview
+              </Button>
+            </div>
 
-              <TabsContent value="edit" className="mt-4">
-                <textarea
-                  id="template-editor"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full min-h-[400px] p-4 font-mono text-sm bg-zinc-950 text-zinc-100 rounded-lg border border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary resize-y"
-                  spellCheck={false}
-                />
-              </TabsContent>
-
-              <TabsContent value="preview" className="mt-4">
-                <ScrollArea className="h-[400px] rounded-lg border bg-zinc-950 p-4">
-                  {selectedTemplate.category === "email" ? (
-                    <div 
-                      className="prose prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: content }}
-                    />
-                  ) : (
-                    <pre className="font-mono text-sm text-zinc-300 whitespace-pre-wrap">
-                      {content}
-                    </pre>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
-
-            {/* Status and Actions */}
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {hasChanges ? (
-                  <span className="text-yellow-500 flex items-center gap-1">
-                    <AlertTriangle className="h-4 w-4" />
-                    Unsaved changes
-                  </span>
-                ) : selectedTemplate.isCustom ? (
-                  <span className="text-green-500 flex items-center gap-1">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Saved{selectedTemplate.updatedAt && ` • ${new Date(selectedTemplate.updatedAt).toLocaleString()}`}
-                  </span>
+            {/* Editor Content */}
+            {activeTab === "edit" ? (
+              <textarea
+                id="template-editor"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="w-full min-h-[400px] p-4 font-mono text-sm bg-zinc-950 text-zinc-100 rounded-lg border border-zinc-800 focus:border-primary focus:ring-1 focus:ring-primary resize-y"
+                spellCheck={false}
+              />
+            ) : (
+              <div className="h-[400px] rounded-lg border bg-zinc-950 p-4 overflow-auto">
+                {selectedTemplate.category === "email" ? (
+                  <div 
+                    className="prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
                 ) : (
-                  <span>Using default template</span>
+                  <pre className="font-mono text-sm text-zinc-300 whitespace-pre-wrap">
+                    {content}
+                  </pre>
                 )}
               </div>
+            )}
 
-              <div className="flex gap-2">
-                {selectedTemplate.isCustom && (
+            {/* Status and Actions */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  {hasChanges ? (
+                    <span className="text-yellow-500 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Unsaved changes
+                    </span>
+                  ) : selectedTemplate.isCustom ? (
+                    <span className="text-green-500 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Saved
+                      {selectedTemplate.updatedAt && ` • ${new Date(selectedTemplate.updatedAt).toLocaleString()}`}
+                    </span>
+                  ) : (
+                    <span>Using default template</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {selectedTemplate.isCustom && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReset}
+                      disabled={saving}
+                      className="gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset to Default
+                    </Button>
+                  )}
                   <Button
-                    variant="outline"
-                    onClick={handleReset}
-                    disabled={saving}
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving || !hasChanges}
                     className="gap-2"
                   >
-                    <RotateCcw className="h-4 w-4" />
-                    Reset to Default
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Save Template
                   </Button>
-                )}
-                <Button
-                  onClick={handleSave}
-                  disabled={!hasChanges || saving}
-                  className="gap-2"
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  Save Changes
-                </Button>
+                </div>
               </div>
             </div>
           </>
