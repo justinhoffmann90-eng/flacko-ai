@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wand2, Copy, Trash2, Edit3, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { getDefaultPrompt } from "@/lib/content/prompts";
 import { PromptEditorModal } from "./prompt-editor-modal";
 
@@ -11,13 +12,60 @@ interface GeneratorCardProps {
   contentKey: string;
   label: string;
   storageKey: string;
+  onTitleChange?: (newTitle: string) => void;
 }
 
-export function GeneratorCard({ contentKey, label, storageKey }: GeneratorCardProps) {
+export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: GeneratorCardProps) {
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [title, setTitle] = useState(label);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Load custom title from localStorage on mount
+  useEffect(() => {
+    const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
+    if (renamedTitles) {
+      const titles = JSON.parse(renamedTitles);
+      if (titles[contentKey]) {
+        setTitle(titles[contentKey]);
+      }
+    }
+  }, [contentKey]);
+
+  // Focus input when editing title
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const saveTitle = (newTitle: string) => {
+    const trimmedTitle = newTitle.trim();
+    if (trimmedTitle && trimmedTitle !== label) {
+      setTitle(trimmedTitle);
+      const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
+      const titles = renamedTitles ? JSON.parse(renamedTitles) : {};
+      titles[contentKey] = trimmedTitle;
+      localStorage.setItem("content-hub-renamed-titles", JSON.stringify(titles));
+      onTitleChange?.(trimmedTitle);
+    } else if (!trimmedTitle) {
+      setTitle(label);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      saveTitle(title);
+    } else if (e.key === "Escape") {
+      setTitle(label);
+      setIsEditingTitle(false);
+    }
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -122,10 +170,27 @@ Consider positioning for potential move toward $285. Use put wall at $275 as sto
 
   return (
     <>
-      <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-5 flex flex-col h-full">
+      <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-5 flex flex-col min-h-[350px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-zinc-200">{label}</h3>
+          {isEditingTitle ? (
+            <Input
+              ref={titleInputRef}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => saveTitle(title)}
+              onKeyDown={handleTitleKeyDown}
+              className="h-8 w-auto min-w-[200px] bg-zinc-900 border-zinc-700 text-zinc-200 font-semibold"
+            />
+          ) : (
+            <h3
+              className="font-semibold text-zinc-200 cursor-pointer hover:text-purple-400 transition-colors"
+              onClick={() => setIsEditingTitle(true)}
+              title="Click to edit title"
+            >
+              {title}
+            </h3>
+          )}
           <Button
             onClick={handleGenerate}
             disabled={isGenerating}

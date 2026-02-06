@@ -125,39 +125,108 @@ Requirements:
   },
 ];
 
-// Image card prompts
-export const MODE_CARD_PROMPT = `Generate a daily mode card for TSLA.
+// Image card prompts - Visual design descriptions for AI customization
+export const MODE_CARD_PROMPT = `Design a Mode Card with the following visual layout:
 
-The mode card should display:
-- Mode color (GREEN/YELLOW/ORANGE/RED)
-- Daily cap percentage
-- Key levels (Call Wall, Gamma Strike, Hedge Wall, Put Wall)
-- Current price
-- Brief take on market conditions
+HEADER SECTION:
+- Mode indicator as a prominent traffic light style icon on the left (circular emoji or colored indicator)
+- Mode text (GREEN/YELLOW/ORANGE/RED) in large, bold typography next to the indicator
+- Date and ticker symbol ($TSLA) in smaller text, right-aligned or below the mode
 
-Format as JSON with fields: mode, dailyCap, levels (array), currentPrice, take`;
+DAILY CAP SECTION:
+- "Daily Cap" label with the percentage value (e.g., "15%") displayed prominently
+- Use the mode color for visual emphasis (green/yellow/orange/red gradient or accent)
 
-export const LEVELS_CARD_PROMPT = `Generate a levels card for TSLA.
+KEY LEVELS SECTION:
+- Visual price ladder or list showing:
+  * Call Wall (upside resistance) - green or blue accent
+  * Gamma Strike (neutral/balance point) - white or neutral
+  * Hedge Wall (first support) - yellow or orange accent
+  * Put Wall (key support) - red accent
+  * Current Price indicator showing position relative to levels
+- Include percentage distance from close for context
 
-The levels card should display key trading levels:
-- Call Wall
-- Hedge Wall
-- Key Gamma level
-- Put Wall
-- Current price with visual positioning
+ACTION SECTION:
+- "What I'd Do" box with actionable text, styled as a call-to-action
+- "Would Change My Mind" box with defensive trigger conditions
+- Use distinct background colors or borders to differentiate these sections
 
-Format as JSON with fields: callWall, hedgeWall, gammaStrike, putWall, currentPrice`;
+VISUAL STYLE:
+- Dark theme background (slate/zinc 950)
+- Rounded corners and subtle borders
+- Clean, modern typography with good hierarchy
+- Color coding that reinforces the mode (green = bullish, yellow = cautious, orange = elevated risk, red = defensive)`;
 
-export const SCORECARD_PROMPT = `Generate a weekly scorecard for TSLA trading.
+export const LEVELS_CARD_PROMPT = `Design a Levels Card showing a vertical price ladder with the following visual layout:
 
-The scorecard should display:
-- Week ending date
-- Scenarios hit (e.g., "4/5")
-- Key wins for the week
-- Key misses or lessons
-- Overall performance summary
+PRICE LADDER (Top to Bottom):
+- Call Wall at the top with upside/resistance styling (green or light color)
+- Hedge Wall below call wall with support styling (yellow/orange accent)
+- Gamma Strike in the center as the neutral pivot point (white or bright color for emphasis)
+- Put Wall below gamma strike with support styling (red accent)
+- Visual spacing between levels proportional to price distance
 
-Format as JSON with fields: weekEnding, scenariosHit, keyWins, keyMisses, summary`;
+CURRENT PRICE INDICATOR:
+- Horizontal marker or arrow showing where current price sits relative to the ladder
+- Highlighted background or border when price is between two specific levels
+- Price value displayed prominently with label
+
+COLOR CODING:
+- Levels above current price: green/blue tones (upside targets)
+- Levels below current price: red/orange tones (downside support)
+- Gamma Strike: neutral/white (the fulcrum)
+- Use gradients or solid fills to create visual depth
+
+HEADER:
+- "Key Levels" or similar title
+- Date of the levels
+- Ticker symbol ($TSLA)
+
+VISUAL STYLE:
+- Dark background with high contrast text
+- Clean geometric shapes for level markers
+- Price values in monospace or tabular font for alignment
+- Subtle grid lines or separators between levels`;
+
+export const SCORECARD_PROMPT = `Design a Weekly Scorecard with the following visual layout:
+
+HEADER SECTION:
+- "Weekly Scorecard" title with week ending date prominently displayed
+- Large, bold scenario hit ratio (e.g., "4/5" or "80%") as the primary metric
+- Visual progress indicator, gauge, or colored bar showing performance
+
+SCENARIOS SECTION:
+- "Scenarios Hit" label with the ratio displayed as large typography
+- Color code the performance (green for 80%+, yellow for 60-79%, red for below 60%)
+
+WINS SECTION:
+- "Key Wins" header with trophy or checkmark icon
+- Bulleted or card-style list of wins (2-4 items)
+- Use green accents or checkmarks for positive items
+- One win per line with brief description
+
+MISSES SECTION:
+- "Key Misses" or "Lessons" header with learning icon
+- Bulleted or card-style list of misses/lessons (2-4 items)
+- Use orange/yellow accents for these items
+- Frame as learning opportunities
+
+SUMMARY SECTION:
+- "Summary" or "Takeaway" box at the bottom
+- 1-2 sentences capturing the week overall
+- Distinct background color (subtle) to separate from lists
+
+VISUAL STYLE:
+- Dark theme with good contrast
+- Clear visual hierarchy with the hit ratio as the hero element
+- Icons or emoji to differentiate sections
+- Rounded corners on section containers
+- Professional, clean layout suitable for sharing`;
+
+// Storage keys for prompt editor
+export const MODE_CARD_STORAGE_KEY = "content-hub-mode-card-prompt";
+export const LEVELS_CARD_STORAGE_KEY = "content-hub-levels-card-prompt";
+export const SCORECARD_STORAGE_KEY = "content-hub-scorecard-prompt";
 
 // Get default prompt for a content type
 export function getDefaultPrompt(key: string): string {

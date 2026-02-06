@@ -58,12 +58,12 @@ function ModeCardGenerator() {
 
   const handleDownload = async () => {
     if (!previewRef.current || !previewData) return;
-    
+
     const canvas = await html2canvas(previewRef.current, {
       backgroundColor: null,
       scale: 2,
     });
-    
+
     const link = document.createElement("a");
     link.download = `mode-card-${ticker}-${date}.png`;
     link.href = canvas.toDataURL("image/png");
@@ -85,97 +85,108 @@ function ModeCardGenerator() {
         </Button>
       </div>
 
-      {/* Inputs */}
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <Label className="text-sm text-zinc-400">Mode</Label>
-          <Select value={mode} onValueChange={(v: any) => setMode(v)}>
-            <SelectTrigger className="bg-zinc-900 border-zinc-800 mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-800">
-              <SelectItem value="GREEN">🟢 GREEN</SelectItem>
-              <SelectItem value="YELLOW">🟡 YELLOW</SelectItem>
-              <SelectItem value="ORANGE">🟠 ORANGE</SelectItem>
-              <SelectItem value="RED">🔴 RED</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Date</Label>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Ticker</Label>
-          <Input
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Daily Cap (%)</Label>
-          <Input
-            value={dailyCap}
-            onChange={(e) => setDailyCap(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 mb-4">
-        <div>
-          <Label className="text-sm text-zinc-400">What I&apos;d Do</Label>
-          <Textarea
-            value={takeAction}
-            onChange={(e) => setTakeAction(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
-            rows={2}
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Would Change My Mind</Label>
-          <Textarea
-            value={takeCaution}
-            onChange={(e) => setTakeCaution(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
-            rows={2}
-          />
-        </div>
-      </div>
-
-      <Button
-        onClick={handleGenerate}
-        className="w-full mb-4 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-      >
-        <Wand2 className="w-4 h-4" />
-        Generate Preview
-      </Button>
-
-      {/* Preview */}
-      {previewData && (
-        <div className="space-y-3">
-          <Label className="text-sm text-zinc-400">Preview</Label>
-          <div className="overflow-auto border border-zinc-800 rounded-lg p-4 bg-zinc-900/50">
-            <div ref={previewRef} className="inline-block">
-              <ModeCardTemplate data={previewData} />
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Left Side - Inputs */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-zinc-400">Mode</Label>
+              <Select value={mode} onValueChange={(v: any) => setMode(v)}>
+                <SelectTrigger className="bg-zinc-900 border-zinc-800 mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800">
+                  <SelectItem value="GREEN">🟢 GREEN</SelectItem>
+                  <SelectItem value="YELLOW">🟡 YELLOW</SelectItem>
+                  <SelectItem value="ORANGE">🟠 ORANGE</SelectItem>
+                  <SelectItem value="RED">🔴 RED</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Date</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Ticker</Label>
+              <Input
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Daily Cap (%)</Label>
+              <Input
+                value={dailyCap}
+                onChange={(e) => setDailyCap(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
             </div>
           </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm text-zinc-400">What I&apos;d Do</Label>
+              <Textarea
+                value={takeAction}
+                onChange={(e) => setTakeAction(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Would Change My Mind</Label>
+              <Textarea
+                value={takeCaution}
+                onChange={(e) => setTakeCaution(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                rows={2}
+              />
+            </div>
+          </div>
+
           <Button
-            onClick={handleDownload}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            onClick={handleGenerate}
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
           >
-            <Download className="w-4 h-4" />
-            Download PNG
+            <Wand2 className="w-4 h-4" />
+            Generate Preview
           </Button>
         </div>
-      )}
+
+        {/* Right Side - Preview */}
+        <div className="space-y-3">
+          <Label className="text-sm text-zinc-400">Preview</Label>
+          <div className="overflow-auto border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 min-h-[300px] flex items-center justify-center">
+            {previewData ? (
+              <div ref={previewRef} className="inline-block">
+                <ModeCardTemplate data={previewData} />
+              </div>
+            ) : (
+              <div className="text-zinc-600 text-center">
+                <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Click &quot;Generate Preview&quot; to see the card</p>
+              </div>
+            )}
+          </div>
+          {previewData && (
+            <Button
+              onClick={handleDownload}
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            >
+              <Download className="w-4 h-4" />
+              Download PNG
+            </Button>
+          )}
+        </div>
+      </div>
 
       <PromptEditorModal
         isOpen={isEditorOpen}
@@ -213,12 +224,12 @@ function LevelsCardGenerator() {
 
   const handleDownload = async () => {
     if (!previewRef.current || !previewData) return;
-    
+
     const canvas = await html2canvas(previewRef.current, {
       backgroundColor: null,
       scale: 2,
     });
-    
+
     const link = document.createElement("a");
     link.download = `levels-card-${date}.png`;
     link.href = canvas.toDataURL("image/png");
@@ -240,96 +251,107 @@ function LevelsCardGenerator() {
         </Button>
       </div>
 
-      {/* Inputs */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <Label className="text-sm text-zinc-400">Call Wall</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={callWall}
-            onChange={(e) => setCallWall(parseFloat(e.target.value))}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Hedge Wall</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={hedgeWall}
-            onChange={(e) => setHedgeWall(parseFloat(e.target.value))}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Gamma Strike</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={gammaStrike}
-            onChange={(e) => setGammaStrike(parseFloat(e.target.value))}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Put Wall</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={putWall}
-            onChange={(e) => setPutWall(parseFloat(e.target.value))}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Current Price</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={currentPrice}
-            onChange={(e) => setCurrentPrice(parseFloat(e.target.value))}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Date</Label>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-      </div>
-
-      <Button
-        onClick={handleGenerate}
-        className="w-full mb-4 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-      >
-        <Wand2 className="w-4 h-4" />
-        Generate Preview
-      </Button>
-
-      {/* Preview */}
-      {previewData && (
-        <div className="space-y-3">
-          <Label className="text-sm text-zinc-400">Preview</Label>
-          <div className="overflow-auto border border-zinc-800 rounded-lg p-4 bg-zinc-900/50">
-            <div ref={previewRef} className="inline-block">
-              <LevelsCardTemplate data={previewData} />
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Left Side - Inputs */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-zinc-400">Call Wall</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={callWall}
+                onChange={(e) => setCallWall(parseFloat(e.target.value))}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Hedge Wall</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={hedgeWall}
+                onChange={(e) => setHedgeWall(parseFloat(e.target.value))}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Gamma Strike</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={gammaStrike}
+                onChange={(e) => setGammaStrike(parseFloat(e.target.value))}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Put Wall</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={putWall}
+                onChange={(e) => setPutWall(parseFloat(e.target.value))}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Current Price</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={currentPrice}
+                onChange={(e) => setCurrentPrice(parseFloat(e.target.value))}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Date</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
             </div>
           </div>
+
           <Button
-            onClick={handleDownload}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            onClick={handleGenerate}
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
           >
-            <Download className="w-4 h-4" />
-            Download PNG
+            <Wand2 className="w-4 h-4" />
+            Generate Preview
           </Button>
         </div>
-      )}
+
+        {/* Right Side - Preview */}
+        <div className="space-y-3">
+          <Label className="text-sm text-zinc-400">Preview</Label>
+          <div className="overflow-auto border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 min-h-[300px] flex items-center justify-center">
+            {previewData ? (
+              <div ref={previewRef} className="inline-block">
+                <LevelsCardTemplate data={previewData} />
+              </div>
+            ) : (
+              <div className="text-zinc-600 text-center">
+                <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Click &quot;Generate Preview&quot; to see the card</p>
+              </div>
+            )}
+          </div>
+          {previewData && (
+            <Button
+              onClick={handleDownload}
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            >
+              <Download className="w-4 h-4" />
+              Download PNG
+            </Button>
+          )}
+        </div>
+      </div>
 
       <PromptEditorModal
         isOpen={isEditorOpen}
@@ -365,12 +387,12 @@ function ScorecardGenerator() {
 
   const handleDownload = async () => {
     if (!previewRef.current || !previewData) return;
-    
+
     const canvas = await html2canvas(previewRef.current, {
       backgroundColor: null,
       scale: 2,
     });
-    
+
     const link = document.createElement("a");
     link.download = `weekly-scorecard-${weekEnding}.png`;
     link.href = canvas.toDataURL("image/png");
@@ -392,85 +414,96 @@ function ScorecardGenerator() {
         </Button>
       </div>
 
-      {/* Inputs */}
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <Label className="text-sm text-zinc-400">Week Ending</Label>
-          <Input
-            type="date"
-            value={weekEnding}
-            onChange={(e) => setWeekEnding(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Scenarios Hit</Label>
-          <Input
-            value={scenariosHit}
-            onChange={(e) => setScenariosHit(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1"
-            placeholder="e.g., 4/5"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 mb-4">
-        <div>
-          <Label className="text-sm text-zinc-400">Key Wins (one per line)</Label>
-          <Textarea
-            value={keyWins}
-            onChange={(e) => setKeyWins(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
-            rows={3}
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Key Misses (one per line)</Label>
-          <Textarea
-            value={keyMisses}
-            onChange={(e) => setKeyMisses(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
-            rows={3}
-          />
-        </div>
-        <div>
-          <Label className="text-sm text-zinc-400">Summary</Label>
-          <Textarea
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
-            rows={2}
-          />
-        </div>
-      </div>
-
-      <Button
-        onClick={handleGenerate}
-        className="w-full mb-4 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-      >
-        <Wand2 className="w-4 h-4" />
-        Generate Preview
-      </Button>
-
-      {/* Preview */}
-      {previewData && (
-        <div className="space-y-3">
-          <Label className="text-sm text-zinc-400">Preview</Label>
-          <div className="overflow-auto border border-zinc-800 rounded-lg p-4 bg-zinc-900/50">
-            <div ref={previewRef} className="inline-block">
-              <ScorecardTemplate data={previewData} />
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Left Side - Inputs */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-zinc-400">Week Ending</Label>
+              <Input
+                type="date"
+                value={weekEnding}
+                onChange={(e) => setWeekEnding(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Scenarios Hit</Label>
+              <Input
+                value={scenariosHit}
+                onChange={(e) => setScenariosHit(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1"
+                placeholder="e.g., 4/5"
+              />
             </div>
           </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm text-zinc-400">Key Wins (one per line)</Label>
+              <Textarea
+                value={keyWins}
+                onChange={(e) => setKeyWins(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Key Misses (one per line)</Label>
+              <Textarea
+                value={keyMisses}
+                onChange={(e) => setKeyMisses(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-zinc-400">Summary</Label>
+              <Textarea
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 mt-1 text-sm"
+                rows={2}
+              />
+            </div>
+          </div>
+
           <Button
-            onClick={handleDownload}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            onClick={handleGenerate}
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
           >
-            <Download className="w-4 h-4" />
-            Download PNG
+            <Wand2 className="w-4 h-4" />
+            Generate Preview
           </Button>
         </div>
-      )}
+
+        {/* Right Side - Preview */}
+        <div className="space-y-3">
+          <Label className="text-sm text-zinc-400">Preview</Label>
+          <div className="overflow-auto border border-zinc-800 rounded-lg p-4 bg-zinc-900/50 min-h-[300px] flex items-center justify-center">
+            {previewData ? (
+              <div ref={previewRef} className="inline-block">
+                <ScorecardTemplate data={previewData} />
+              </div>
+            ) : (
+              <div className="text-zinc-600 text-center">
+                <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Click &quot;Generate Preview&quot; to see the card</p>
+              </div>
+            )}
+          </div>
+          {previewData && (
+            <Button
+              onClick={handleDownload}
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            >
+              <Download className="w-4 h-4" />
+              Download PNG
+            </Button>
+          )}
+        </div>
+      </div>
 
       <PromptEditorModal
         isOpen={isEditorOpen}
@@ -496,7 +529,7 @@ export function ImageCardsTab() {
         </div>
       </div>
 
-      <div className="grid xl:grid-cols-3 gap-6">
+      <div className="flex flex-col gap-6">
         <ModeCardGenerator />
         <LevelsCardGenerator />
         <ScorecardGenerator />
