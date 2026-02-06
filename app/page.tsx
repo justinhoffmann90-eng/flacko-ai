@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb, Loader2 } from "lucide-react";
+import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb, Loader2, BookOpen, ChevronRight } from "lucide-react";
 import { NeuralBackground } from "@/components/neural-background";
 import { useState, useEffect } from "react";
 
@@ -277,6 +277,29 @@ export default function LandingPage() {
                 always know what's coming so you're never caught off guard.
               </p>
             </div>
+
+            {/* Education Hub */}
+            <Link href="/learn" className="block">
+              <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800 hover:border-primary/50 hover:bg-zinc-900/70 transition-colors cursor-pointer h-full">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">education hub</h3>
+                    <p className="text-sm text-zinc-500">master the system</p>
+                  </div>
+                </div>
+                <p className="text-sm text-zinc-400">
+                  learn how to use flacko ai effectively — from modes and levels to gamma mechanics. 
+                  build your edge with structured lessons.
+                </p>
+                <div className="mt-4 flex items-center text-primary text-sm">
+                  <span>start learning</span>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </div>
+              </div>
+            </Link>
 
             {/* Thesis Snapshot */}
             <div className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800">

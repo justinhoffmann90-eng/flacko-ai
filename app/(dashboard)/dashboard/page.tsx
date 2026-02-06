@@ -10,6 +10,7 @@ import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio, Calenda
 import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { PositioningCard } from "@/components/dashboard/positioning-card";
+import { EducationHubCard } from "@/components/dashboard/education-hub-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
@@ -250,6 +251,8 @@ export default async function DashboardPage() {
 
           {/* Right column */}
           <div className="space-y-4">
+            {/* Education Hub */}
+            <EducationHubCard />
 
             {/* Upcoming Catalysts */}
             {upcomingCatalysts.length > 0 && (
