@@ -460,8 +460,11 @@ Report back with:
             </div>
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-1 text-sm">
-                <Link href="/admin/reports" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
-                  Upload Report
+                <Link href="/admin/productivity" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
+                  Productivity
+                </Link>
+                <Link href="/admin/content" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
+                  Content
                 </Link>
                 <Link href="/admin/subscribers" className="px-3 py-2 rounded-lg hover:bg-purple-500/10 text-gray-300 hover:text-purple-300 transition-all">
                   Subscribers
