@@ -40,7 +40,7 @@ export async function GET() {
     // Fetch all subscriptions using service client
     const { data: subsData } = await serviceClient
       .from("subscriptions")
-      .select("id, user_id, status, stripe_subscription_id, current_period_end");
+      .select("id, user_id, status, stripe_subscription_id, current_period_end, locked_price_cents");
 
     // Map subscriptions to users
     const subsByUser = new Map();
