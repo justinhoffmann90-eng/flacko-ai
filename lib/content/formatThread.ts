@@ -1,8 +1,8 @@
 /**
  * Weekly Thread Formatter
  *
- * Converts weekly aggregate data into an array of tweets for X posting.
- * Each tweet is under 280 characters.
+ * LORD PRETTY FLACKO PERSONA
+ * Converts weekly aggregate data into battlefield-style thread for X posting.
  */
 
 import { WeeklyAggregate, DayScore } from "@/lib/accuracy/aggregateWeekly";
@@ -40,9 +40,9 @@ function formatShortDate(dateStr: string): string {
 }
 
 /**
- * Get grade emoji based on score
+ * Get grade based on score
  */
-function getGradeEmoji(score: number): string {
+function getGrade(score: number): string {
   if (score >= 90) return "A+";
   if (score >= 80) return "A";
   if (score >= 70) return "B";
@@ -51,133 +51,137 @@ function getGradeEmoji(score: number): string {
 }
 
 /**
- * Get overall sentiment based on weekly score
+ * Get battlefield sentiment based on weekly score
  */
-function getSentiment(score: number): string {
-  if (score >= 90) return "Exceptional week";
-  if (score >= 80) return "Strong week";
-  if (score >= 70) return "Solid week";
-  if (score >= 60) return "Mixed week";
-  return "Challenging week";
+function getBattlefieldSentiment(score: number): string {
+  if (score >= 90) return "exceptional week. the war room was locked in.";
+  if (score >= 80) return "strong week. structure provided edge.";
+  if (score >= 70) return "solid week. defended key positions.";
+  if (score >= 60) return "mixed week. some battles won, some lessons learned.";
+  return "challenging week. survived to fight again.";
 }
 
 /**
- * Generate "What Worked" bullet points
+ * Generate "What Worked" insights with battlefield context
  */
 function generateWhatWorked(data: WeeklyAggregate): string[] {
   const points: string[] = [];
 
   // Level accuracy highlight
   if (data.overallLevelAccuracy >= 80) {
-    points.push(`Level accuracy at ${formatPct(data.overallLevelAccuracy)}`);
+    points.push(`level accuracy at ${formatPct(data.overallLevelAccuracy)} — dealer positioning provided reliable edge`);
   } else if (data.totalLevelsHit >= 3) {
-    points.push(`${data.totalLevelsHit} key levels held`);
+    points.push(`${data.totalLevelsHit} key defensive lines held — structure worked`);
   }
 
   // Mode distribution insight
   const modes = data.modeBreakdown;
   if (modes.green.days > 0 && modes.green.avgScore >= 75) {
-    points.push(`GREEN days averaged ${formatPct(modes.green.avgScore)}`);
+    points.push(`green mode days averaged ${formatPct(modes.green.avgScore)} — tailwinds delivered`);
   }
   if (modes.yellow.days >= 2 && modes.yellow.avgScore >= 70) {
-    points.push(`YELLOW mode execution on point`);
+    points.push(`yellow mode execution on point — patient positioning paid`);
   }
 
   // Best day callout
   if (data.bestDay && data.bestDay.score >= 85) {
     const bestDate = formatShortDate(data.bestDay.date);
-    points.push(`${bestDate} standout at ${formatPct(data.bestDay.score)}`);
+    points.push(`${bestDate} standout at ${formatPct(data.bestDay.score)} — textbook execution`);
   }
 
   // Consistency
   if (data.tradingDays >= 4 && data.weeklyScore >= 70) {
-    points.push(`Consistent execution across ${data.tradingDays} trading days`);
+    points.push(`consistent execution across ${data.tradingDays} trading days`);
   }
 
-  return points.slice(0, 3); // Max 3 points
+  return points.slice(0, 3);
 }
 
 /**
- * Generate "What Didn't Work" bullet points
+ * Generate "What Didn't Work" insights
  */
 function generateWhatDidntWork(data: WeeklyAggregate): string[] {
   const points: string[] = [];
 
   // Broken levels
   if (data.totalLevelsBroken > 0) {
-    points.push(`${data.totalLevelsBroken} levels broken`);
+    points.push(`${data.totalLevelsBroken} defensive lines breached — volatility exceeded structure`);
   }
 
   // Weak mode days
   const modes = data.modeBreakdown;
   if (modes.red.days > 0 && modes.red.avgScore < 60) {
-    points.push(`RED mode days underperformed`);
+    points.push(`red mode days underperformed — risk management critical in chaos`);
   }
   if (modes.orange.days > 0 && modes.orange.avgScore < 50) {
-    points.push(`ORANGE day execution needs work`);
+    points.push(`orange day execution needs work — size down when uncertain`);
   }
 
   // Worst day callout
   if (data.worstDay && data.worstDay.score < 50) {
     const worstDate = formatShortDate(data.worstDay.date);
-    points.push(`${worstDate} at ${formatPct(data.worstDay.score)} - room to improve`);
+    points.push(`${worstDate} at ${formatPct(data.worstDay.score)} — study the losses`);
   }
 
   // Low trading days
   if (data.tradingDays < 4) {
-    points.push(`Only ${data.tradingDays} trading days captured`);
+    points.push(`only ${data.tradingDays} trading days captured — incomplete data`);
   }
 
-  return points.slice(0, 2); // Max 2 points
+  return points.slice(0, 2);
 }
 
 /**
  * Format the weekly scorecard thread as an array of tweets
+ * LORD PRETTY FLACKO PERSONA — battlefield debrief
  */
 export function formatWeeklyThread(data: WeeklyAggregate): Tweet[] {
   const tweets: Tweet[] = [];
   let index = 1;
 
-  // Tweet 1: Header with headline stat
-  const gradeEmoji = getGradeEmoji(data.weeklyScore);
-  const sentiment = getSentiment(data.weeklyScore);
-  const header = `FLACKO AI WEEKLY SCORECARD\n${data.weekLabel}\n\n${data.weeklyScore}% accuracy | Grade: ${gradeEmoji}\n\n${sentiment}. Here's the breakdown:\n\nTHREAD`;
+  // Tweet 1: Header with battlefield briefing style
+  const grade = getGrade(data.weeklyScore);
+  const sentiment = getBattlefieldSentiment(data.weeklyScore);
+  const header = `weekly scorecard: ${data.weekLabel}\n\n` +
+    `${data.weeklyScore}% accuracy | grade: ${grade}\n\n` +
+    `${sentiment}\n\n` +
+    `battlefield report — thread:`;
 
   tweets.push({
     index: index++,
-    text: header,
+    text: header.toLowerCase(),
     isHeader: true,
     charCount: header.length,
   });
 
-  // Tweet 2: Mode breakdown
+  // Tweet 2: Mode breakdown — tactical overview
   const modeLines: string[] = [];
   const modes = data.modeBreakdown;
 
   if (modes.green.days > 0) {
-    modeLines.push(`${MODE_EMOJI.green} GREEN: ${modes.green.days}d @ ${formatPct(modes.green.avgScore)}`);
+    modeLines.push(`${MODE_EMOJI.green} green: ${modes.green.days}d @ ${formatPct(modes.green.avgScore)} — tailwind days`);
   }
   if (modes.yellow.days > 0) {
-    modeLines.push(`${MODE_EMOJI.yellow} YELLOW: ${modes.yellow.days}d @ ${formatPct(modes.yellow.avgScore)}`);
+    modeLines.push(`${MODE_EMOJI.yellow} yellow: ${modes.yellow.days}d @ ${formatPct(modes.yellow.avgScore)} — mixed conditions`);
   }
   if (modes.orange.days > 0) {
-    modeLines.push(`${MODE_EMOJI.orange} ORANGE: ${modes.orange.days}d @ ${formatPct(modes.orange.avgScore)}`);
+    modeLines.push(`${MODE_EMOJI.orange} orange: ${modes.orange.days}d @ ${formatPct(modes.orange.avgScore)} — headwind building`);
   }
   if (modes.red.days > 0) {
-    modeLines.push(`${MODE_EMOJI.red} RED: ${modes.red.days}d @ ${formatPct(modes.red.avgScore)}`);
+    modeLines.push(`${MODE_EMOJI.red} red: ${modes.red.days}d @ ${formatPct(modes.red.avgScore)} — defensive mode`);
   }
 
   if (modeLines.length > 0) {
-    const modeTweet = `MODE BREAKDOWN\n\n${modeLines.join("\n")}\n\n${data.tradingDays} trading days analyzed.`;
+    const modeTweet = `tactical breakdown:\n\n${modeLines.join("\n")}\n\n${data.tradingDays} trading days analyzed.`;
     tweets.push({
       index: index++,
-      text: modeTweet,
+      text: modeTweet.toLowerCase(),
       isHeader: false,
       charCount: modeTweet.length,
     });
   }
 
-  // Tweet 3-4: Daily highlights (pick notable days)
+  // Tweet 3: Daily highlights — key battles
   const notableDays = selectNotableDays(data.dayScores);
 
   if (notableDays.length > 0) {
@@ -186,40 +190,47 @@ export function formatWeeklyThread(data: WeeklyAggregate): Tweet[] {
       const dateLabel = formatShortDate(day.date);
       const changePct = day.ohlc.change_pct;
       const changeStr = changePct >= 0 ? `+${changePct.toFixed(1)}%` : `${changePct.toFixed(1)}%`;
-      return `${emoji} ${dateLabel}: ${formatPct(day.accuracy)} (TSLA ${changeStr})`;
+      return `${emoji} ${dateLabel}: ${formatPct(day.accuracy)} (tsla ${changeStr})`;
     });
 
-    const dayTweet = `DAILY SCORES\n\n${dayLines.join("\n")}`;
+    const dayTweet = `key battles:\n\n${dayLines.join("\n")}`;
     tweets.push({
       index: index++,
-      text: dayTweet,
+      text: dayTweet.toLowerCase(),
       isHeader: false,
       charCount: dayTweet.length,
     });
   }
 
-  // Tweet 5: Level accuracy stats
-  const levelTweet = `LEVEL ACCURACY\n\n${data.totalLevelsHit} levels hit\n${data.totalLevelsBroken} levels broken\n${data.totalLevelsNotTested} not tested\n\nOverall: ${formatPct(data.overallLevelAccuracy)}`;
+  // Tweet 4: Level accuracy stats with explanation
+  const levelTweet = `defensive line performance:\n\n` +
+    `${data.totalLevelsHit} levels held — dealer positioning provided edge\n` +
+    `${data.totalLevelsBroken} levels breached — volatility exceeded structure\n` +
+    `${data.totalLevelsNotTested} not tested — range stayed contained\n\n` +
+    `overall: ${formatPct(data.overallLevelAccuracy)}`;
+  
   tweets.push({
     index: index++,
-    text: levelTweet,
+    text: levelTweet.toLowerCase(),
     isHeader: false,
     charCount: levelTweet.length,
   });
 
-  // Tweet 6: What worked / What didn't
+  // Tweet 5: Analysis — what worked, what didn't
   const whatWorked = generateWhatWorked(data);
   const whatDidnt = generateWhatDidntWork(data);
 
-  let analysisTweet = "ANALYSIS\n\n";
+  let analysisTweet = `after-action review:\n\n`;
+  
   if (whatWorked.length > 0) {
-    analysisTweet += "What worked:\n";
+    analysisTweet += "what worked:\n";
     whatWorked.forEach(point => {
       analysisTweet += `+ ${point}\n`;
     });
   }
+  
   if (whatDidnt.length > 0) {
-    analysisTweet += "\nRoom to improve:\n";
+    analysisTweet += "\nlessons:\n";
     whatDidnt.forEach(point => {
       analysisTweet += `- ${point}\n`;
     });
@@ -232,16 +243,20 @@ export function formatWeeklyThread(data: WeeklyAggregate): Tweet[] {
 
   tweets.push({
     index: index++,
-    text: analysisTweet.trim(),
+    text: analysisTweet.toLowerCase().trim(),
     isHeader: false,
     charCount: analysisTweet.trim().length,
   });
 
-  // Tweet 7: CTA
-  const ctaTweet = `Full transparency. This is how we improve.\n\nTrack record + accuracy dashboard:\nflacko.ai/accuracy\n\nJoin the gang.`;
+  // Tweet 6: CTA — soldier reminder
+  const ctaTweet = `full transparency. this is how we improve.\n\n` +
+    `track record + accuracy dashboard:\n` +
+    `flacko.ai/accuracy\n\n` +
+    `join the war room.`;
+  
   tweets.push({
     index: index++,
-    text: ctaTweet,
+    text: ctaTweet.toLowerCase(),
     isHeader: false,
     charCount: ctaTweet.length,
   });

@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operator HQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0c;
+      --bg-card: #141418;
+      --bg-column: #0f0f12;
+      --border: rgba(255,255,255,0.06);
+      --text: #fafafa;
+      --text-dim: #a1a1aa;
+      --text-muted: #52525b;
+      --purple: #8b5cf6;
+      --green: #10b981;
+      --orange: #f97316;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --gold: #eab308;
+      --red: #ef4444;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* Header */
+    .header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text { font-size: 18px; font-weight: 700; }
+    .logo-sub { font-size: 11px; color: var(--text-muted); }
+
+    .player-stats { display: flex; align-items: center; gap: 16px; }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .stat-pill .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .level-badge {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .xp-bar {
+      width: 120px;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--pink));
+      transition: width 0.3s;
+    }
+
+    .nav-tabs { display: flex; gap: 8px; }
+    .nav-tab {
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .nav-tab:hover { border-color: var(--purple); color: var(--text); }
+    .nav-tab.active { background: var(--purple); border-color: var(--purple); color: white; }
+
+    /* Daily Score Card */
+    .daily-score-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 20px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .score-left { display: flex; align-items: center; gap: 20px; }
+    .score-today { text-align: center; }
+    .score-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+    .score-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--gold), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .score-breakdown { display: flex; gap: 16px; font-size: 13px; color: var(--text-dim); }
+    .breakdown-item { display: flex; align-items: center; gap: 6px; }
+    .breakdown-item .num { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+    .journal-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .journal-btn:hover { border-color: var(--purple); color: var(--text); }
+
+    /* Kanban */
+    .kanban {
+      display: flex;
+      gap: 14px;
+      padding: 0 20px 20px;
+      overflow-x: auto;
+      min-height: calc(100vh - 220px);
+    }
+
+    .column {
+      flex: 0 0 320px;
+      background: var(--bg-column);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 240px);
+    }
+    .column-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .column-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+    .column-title::first-letter { font-size: 18px; }
+    .column-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.05);
+      padding: 3px 8px;
+      border-radius: 8px;
+    }
+    .column-count.limit { color: var(--red); background: rgba(239,68,68,0.15); }
+    .column-tasks {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .column-footer { padding: 10px; border-top: 1px solid var(--border); }
+
+    /* Collapsible Backlog */
+    .column.collapsed {
+      flex: 0 0 60px;
+      min-width: 60px;
+    }
+    .column.collapsed .column-tasks,
+    .column.collapsed .column-footer,
+    .column.collapsed .column-count { display: none; }
+    .column.collapsed .column-header {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      padding: 16px 10px;
+      height: 100%;
+      border-bottom: none;
+    }
+    .column.collapsed .column-title { gap: 12px; }
+    .collapse-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    .collapse-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+    /* Pinned Tasks */
+    .task.pinned { border-color: var(--gold); }
+    .task.pinned::before {
+      content: '📌';
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      font-size: 12px;
+    }
+    .task { position: relative; }
+    .pin-btn { font-size: 12px !important; }
+    .pin-btn.pinned { color: var(--gold) !important; }
+
+    .add-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .add-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+    /* Today Column - Wide with time slots */
+    .column.today-col {
+      flex: 0 0 420px;
+      border: 1px solid rgba(139,92,246,0.3);
+      background: linear-gradient(180deg, rgba(139,92,246,0.03) 0%, var(--bg-column) 100%);
+    }
+    .column.today-col .column-title { color: var(--purple); }
+
+    .time-slots {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .time-slot {
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 100px;
+    }
+    .time-slot.drag-over { border-color: var(--purple); background: rgba(139,92,246,0.05); }
+    .slot-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .slot-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .slot-title .emoji { font-size: 16px; }
+    .slot-title.morning { color: var(--orange); }
+    .slot-title.midday { color: var(--cyan); }
+    .slot-title.closing { color: var(--pink); }
+    .slot-hint { font-size: 10px; color: var(--text-muted); }
+    .slot-tasks {
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 50px;
+    }
+    .slot-empty {
+      text-align: center;
+      padding: 16px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    /* Daily Core Tasks */
+    .core-tasks-section {
+      background: linear-gradient(135deg, rgba(234,179,8,0.08), rgba(249,115,22,0.05));
+      border: 1px solid rgba(234,179,8,0.25);
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    .core-tasks-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(234,179,8,0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .core-tasks-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .core-tasks-hint { font-size: 10px; color: var(--text-muted); }
+    .core-tasks-list {
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .core-task {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .core-task:hover { border-color: var(--gold); }
+    .core-task.dragging { opacity: 0.4; }
+    .core-tasks-section.drag-over { border-color: var(--gold); background: rgba(234,179,8,0.12); }
+    .core-task-icon { font-size: 18px; }
+    .core-task-content { flex: 1; }
+    .core-task-label { font-size: 11px; font-weight: 600; color: var(--text); }
+    .core-task-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Complete Column */
+    .column.complete-col .task { opacity: 0.6; }
+    .column.complete-col .task-text { text-decoration: line-through; color: var(--text-dim); }
+    .column.drag-over .column-tasks { background: rgba(139,92,246,0.05); border-radius: 8px; }
+
+    /* Task Card */
+    .task {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      cursor: grab;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .task:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
+    .task.dragging { opacity: 0.4; }
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .task-engine {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .engine-product { background: rgba(6,182,212,0.15); color: var(--cyan); }
+    .engine-systems { background: rgba(139,92,246,0.15); color: var(--purple); }
+    .engine-growth { background: rgba(236,72,153,0.15); color: var(--pink); }
+    .task-points {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--gold);
+      background: rgba(234,179,8,0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .task-text { font-size: 12px; line-height: 1.4; margin-bottom: 6px; }
+    .task-impacts { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+    .impact-badge {
+      font-size: 14px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+    }
+    .task-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .task:hover .task-actions { opacity: 1; }
+    .task-action {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .task-action:hover { background: rgba(255,255,255,0.1); }
+    .task-action.delete:hover { color: var(--red); }
+
+    .empty-state { text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 420px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+    .modal-section { margin-bottom: 16px; }
+    .modal-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .modal-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .modal-input:focus { border-color: var(--purple); }
+    .modal-textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .option-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .option-btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .option-btn.selected { border-color: white; }
+    .impact-btn { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+    .impact-btn.selected { background: rgba(139,92,246,0.2); color: var(--purple); }
+    .slot-btn { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+    .slot-btn.selected { border-color: white; }
+    .slot-btn[data-slot="morning"].selected { background: rgba(249,115,22,0.2); color: var(--orange); }
+    .slot-btn[data-slot="midday"].selected { background: rgba(6,182,212,0.2); color: var(--cyan); }
+    .slot-btn[data-slot="closing"].selected { background: rgba(236,72,153,0.2); color: var(--pink); }
+    .points-row { display: flex; align-items: center; gap: 12px; }
+    .points-input { width: 100px; text-align: center; }
+    .points-preview { font-size: 12px; color: var(--text-muted); }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+    .modal-btn { padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+    .modal-btn.cancel { background: transparent; color: var(--text-dim); }
+    .modal-btn.save { background: var(--purple); color: white; }
+
+    /* History View */
+    .history-view { padding: 20px; max-width: 900px; margin: 0 auto; }
+    .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .history-title { font-size: 24px; font-weight: 700; }
+    .history-tabs { display: flex; gap: 8px; }
+    .history-tab {
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .history-tab.active { background: var(--purple); border-color: var(--purple); color: white; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .big-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .day-entry {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .day-date { font-weight: 600; }
+    .day-score { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--gold); }
+    .day-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .day-task { font-size: 12px; padding: 6px 10px; background: rgba(16,185,129,0.1); border-radius: 6px; color: var(--green); }
+    .day-journal {
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--text-dim);
+      font-style: italic;
+      border-left: 3px solid var(--purple);
+    }
+    .no-history { text-align: center; padding: 60px; color: var(--text-muted); }
+
+    /* Daily Notes Section */
+    .daily-notes {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 20px;
+    }
+    .notes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .notes-title { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .notes-saved { font-size: 11px; color: var(--green); opacity: 0; transition: opacity 0.3s; }
+    .notes-saved.show { opacity: 1; }
+    .notes-textarea {
+      width: 100%;
+      min-height: 120px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+    }
+    .notes-textarea:focus { border-color: var(--purple); }
+    .notes-textarea::placeholder { color: var(--text-muted); }
+
+    /* Idea Bank Section */
+    .idea-bank {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 20px;
+    }
+    .idea-bank-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .idea-bank-title { font-size: 16px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .idea-bank-actions { display: flex; gap: 8px; }
+    .idea-bank-btn {
+      background: rgba(139,92,246,0.15);
+      border: 1px solid var(--purple);
+      color: var(--purple);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .idea-bank-btn:hover { background: rgba(139,92,246,0.25); }
+    .idea-categories { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .idea-category-tab {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+    .idea-category-tab:hover { border-color: var(--purple); color: var(--text); }
+    .idea-category-tab.active { background: var(--purple); border-color: var(--purple); color: white; }
+    .idea-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .idea-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      position: relative;
+    }
+    .idea-card:hover { border-color: var(--purple); }
+    .idea-card.pinned { border-color: var(--gold); }
+    .idea-card.pinned::before {
+      content: '📌';
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      font-size: 12px;
+    }
+    .idea-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .idea-series { font-size: 12px; font-weight: 600; color: var(--pink); }
+    .idea-difficulty {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .idea-difficulty.easy { background: rgba(16,185,129,0.15); color: var(--green); }
+    .idea-difficulty.medium { background: rgba(234,179,8,0.15); color: var(--gold); }
+    .idea-angle { font-size: 13px; color: var(--text); margin-bottom: 6px; }
+    .idea-trigger { font-size: 11px; color: var(--text-muted); }
+    .idea-card-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; opacity: 0; transition: opacity 0.2s; }
+    .idea-card:hover .idea-card-actions { opacity: 1; }
+    .idea-delete, .idea-pin {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .idea-delete:hover { color: var(--red); }
+    .idea-pin:hover { color: var(--gold); }
+    .idea-pin.pinned { color: var(--gold); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <div class="logo-text">Operator HQ</div>
+        </div>
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showView('kanban')">📋 Board</button>
+        <button class="nav-tab" onclick="showView('history')">📊 History</button>
+      </div>
+    </div>
+    <div class="player-stats">
+      <div class="stat-pill">🔥 <span class="value" id="streakCount">0</span> day streak</div>
+      <div class="stat-pill">
+        <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+        <span class="value" id="xpText">0 XP</span>
+      </div>
+      <div class="level-badge" id="levelBadge">Level 1</div>
+    </div>
+  </div>
+
+  <div class="view active" id="kanbanView">
+    <div class="daily-score-card">
+      <div class="score-left">
+        <div class="score-today">
+          <div class="score-label">Today's Score</div>
+          <div class="score-value" id="todayScore">0</div>
+        </div>
+        <div class="score-breakdown">
+          <div class="breakdown-item">✅ <span class="num" id="completedCount">0</span> completed</div>
+          <div class="breakdown-item">💰 <span class="num" id="impactPoints">0</span> impact pts</div>
+          <div class="breakdown-item">⚡ <span class="num" id="xpEarned">0</span> XP earned</div>
+        </div>
+      </div>
+      <button class="journal-btn" onclick="openJournalModal()">📝 Add journal note</button>
+    </div>
+
+    <div class="kanban">
+      <!-- Backlog -->
+      <div class="column" data-column="backlog" id="backlogColumn">
+        <div class="column-header">
+          <div class="column-title">🧠 Backlog</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="column-count" id="backlog-count">0</div>
+            <button class="collapse-btn" onclick="toggleBacklog()" id="collapseBtn" title="Collapse/Expand">◀</button>
+          </div>
+        </div>
+        <div class="column-tasks" id="backlog-tasks"></div>
+        <div class="column-footer">
+          <button class="add-btn" onclick="openTaskModal('backlog')">+ Add idea</button>
+        </div>
+      </div>
+
+      <!-- Today - with time slots -->
+      <div class="column today-col" data-column="today">
+        <div class="column-header">
+          <div class="column-title">⚔️ Today's Plan</div>
+          <div class="column-count" id="today-count">0 / 10</div>
+        </div>
+        <div class="time-slots">
+          <!-- Daily Core Tasks (Recurring) -->
+          <div class="core-tasks-section" id="coreTasks">
+            <div class="core-tasks-header">
+              <div class="core-tasks-title">⭐ Daily Core Tasks</div>
+              <div class="core-tasks-hint">Drag into time slots</div>
+            </div>
+            <div class="core-tasks-list" id="core-tasks-list"></div>
+          </div>
+
+          <div class="time-slot" data-slot="morning">
+            <div class="slot-header">
+              <div class="slot-title morning">☀️ Morning</div>
+              <div class="slot-hint">Start of day</div>
+            </div>
+            <div class="slot-tasks" id="morning-tasks"></div>
+          </div>
+          <div class="time-slot" data-slot="midday">
+            <div class="slot-header">
+              <div class="slot-title midday">🌤️ Midday</div>
+              <div class="slot-hint">Core work</div>
+            </div>
+            <div class="slot-tasks" id="midday-tasks"></div>
+          </div>
+          <div class="time-slot" data-slot="closing">
+            <div class="slot-header">
+              <div class="slot-title closing">🌙 Closing</div>
+              <div class="slot-hint">Wrap up</div>
+            </div>
+            <div class="slot-tasks" id="closing-tasks"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- In Progress -->
+      <div class="column" data-column="progress">
+        <div class="column-header">
+          <div class="column-title">🔥 In Progress</div>
+          <div class="column-count" id="progress-count">0 / 2</div>
+        </div>
+        <div class="column-tasks" id="progress-tasks"></div>
+      </div>
+
+      <!-- Complete -->
+      <div class="column complete-col" data-column="complete">
+        <div class="column-header">
+          <div class="column-title">✅ Complete</div>
+          <div class="column-count" id="complete-count">0</div>
+        </div>
+        <div class="column-tasks" id="complete-tasks"></div>
+      </div>
+    </div>
+
+    <!-- Daily Notes Section -->
+    <div class="daily-notes">
+      <div class="notes-header">
+        <div class="notes-title">💭 Quick Thoughts</div>
+        <span class="notes-saved" id="notesSaved">✓ Saved</span>
+      </div>
+      <textarea class="notes-textarea" id="dailyNotes" placeholder="Jot down any thoughts, ideas, or notes for today..."></textarea>
+    </div>
+
+    <!-- Idea Bank Section -->
+    <div class="idea-bank">
+      <div class="idea-bank-header">
+        <div class="idea-bank-title">💡 Growth Idea Bank</div>
+        <div class="idea-bank-actions">
+          <button class="idea-bank-btn" onclick="openIdeaModal()">+ Add Idea</button>
+        </div>
+      </div>
+      <div class="idea-categories" id="ideaCategories"></div>
+      <div class="idea-cards" id="ideaCards"></div>
+    </div>
+  </div>
+
+  <div class="view" id="historyView">
+    <div class="history-view">
+      <div class="history-header">
+        <div class="history-title">📊 Performance History</div>
+        <div class="history-tabs">
+          <button class="history-tab active" onclick="setHistoryRange('week')">This Week</button>
+          <button class="history-tab" onclick="setHistoryRange('month')">This Month</button>
+          <button class="history-tab" onclick="setHistoryRange('all')">All Time</button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="big-num" id="historyTotalScore">0</div><div class="stat-label">Total Score</div></div>
+        <div class="stat-card"><div class="big-num" id="historyTasksCompleted">0</div><div class="stat-label">Tasks Completed</div></div>
+        <div class="stat-card"><div class="big-num" id="historyAvgScore">0</div><div class="stat-label">Avg Daily Score</div></div>
+        <div class="stat-card"><div class="big-num" id="historyBestStreak">0</div><div class="stat-label">Best Streak</div></div>
+      </div>
+      <div id="historyEntries"></div>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal-overlay" id="taskModal">
+    <div class="modal">
+      <div class="modal-title">Add Task</div>
+      <div class="modal-section">
+        <label class="modal-label">Task Description</label>
+        <input type="text" class="modal-input" id="taskInput" placeholder="What needs to be done?">
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">Engine (required)</label>
+        <div class="option-grid" id="engineSelect">
+          <div class="option-btn engine-product" data-engine="product" onclick="selectEngine('product')">🤖 Product</div>
+          <div class="option-btn engine-systems" data-engine="systems" onclick="selectEngine('systems')">⚙️ Systems / Automation</div>
+          <div class="option-btn engine-growth" data-engine="growth" onclick="selectEngine('growth')">📈 Growth</div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">Impact Labels (select all that apply)</label>
+        <div class="option-grid" id="impactSelect">
+          <div class="impact-btn" data-impact="revenue" onclick="toggleImpact('revenue')">💰 Revenue</div>
+          <div class="impact-btn" data-impact="growth" onclick="toggleImpact('growth')">📈 Growth</div>
+          <div class="impact-btn" data-impact="product" onclick="toggleImpact('product')">🧠 Product Value</div>
+          <div class="impact-btn" data-impact="automation" onclick="toggleImpact('automation')">⚙️ Automation</div>
+          <div class="impact-btn" data-impact="reliability" onclick="toggleImpact('reliability')">🛡️ Reliability</div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">Points (auto-calculated, or override)</label>
+        <div class="points-row">
+          <input type="number" class="modal-input points-input" id="pointsInput" placeholder="Auto" min="1" max="500">
+          <span class="points-preview" id="pointsPreview">Suggested: 10 pts</span>
+        </div>
+      </div>
+      <div class="modal-section" id="slotSection" style="display:none;">
+        <label class="modal-label">Time Slot</label>
+        <div class="option-grid" id="slotSelect">
+          <div class="slot-btn" data-slot="morning" onclick="selectSlot('morning')">☀️ Morning</div>
+          <div class="slot-btn" data-slot="midday" onclick="selectSlot('midday')">🌤️ Midday</div>
+          <div class="slot-btn" data-slot="closing" onclick="selectSlot('closing')">🌙 Closing</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeTaskModal()">Cancel</button>
+        <button class="modal-btn save" onclick="saveTask()">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journal Modal -->
+  <div class="modal-overlay" id="journalModal">
+    <div class="modal">
+      <div class="modal-title">📝 Daily Journal</div>
+      <div class="modal-section">
+        <label class="modal-label">How did today go? Wins, blockers, reflections?</label>
+        <textarea class="modal-textarea" id="journalInput" placeholder="Write your thoughts..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeJournalModal()">Cancel</button>
+        <button class="modal-btn save" onclick="saveJournal()">Save Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Idea Modal -->
+  <div class="modal-overlay" id="ideaModal">
+    <div class="modal">
+      <div class="modal-title">💡 Add Content Idea</div>
+      <div class="modal-section">
+        <label class="modal-label">Category</label>
+        <select class="modal-input" id="ideaCategoryInput">
+          <option value="daily">📊 Daily / Intraday Insight</option>
+          <option value="educational">🧠 Educational Authority</option>
+          <option value="analysis">📉 Post-Move Analysis</option>
+          <option value="psychology">🎯 Trading Psychology</option>
+          <option value="proof">🧪 Proof & Transparency</option>
+          <option value="culture">🔥 Culture / Brand Voice</option>
+          <option value="weekly">📆 Weekly Series</option>
+        </select>
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">Series Name</label>
+        <input type="text" class="modal-input" id="ideaSeriesInput" placeholder="e.g., Level Watch">
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">Content Angle</label>
+        <input type="text" class="modal-input" id="ideaAngleInput" placeholder="What's the content about?">
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">When to Use / Trigger</label>
+        <input type="text" class="modal-input" id="ideaTriggerInput" placeholder="e.g., TSLA near key level">
+      </div>
+      <div class="modal-section">
+        <label class="modal-label">Difficulty</label>
+        <div class="option-grid">
+          <div class="slot-btn selected" data-diff="easy" onclick="selectDifficulty('easy')">Easy</div>
+          <div class="slot-btn" data-diff="medium" onclick="selectDifficulty('medium')">Medium</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeIdeaModal()">Cancel</button>
+        <button class="modal-btn save" onclick="saveIdea()">Add Idea</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const limits = { backlog: Infinity, today: 10, progress: 2, complete: Infinity };
+    const impactLabels = { revenue: '💰', growth: '📈', product: '🧠', automation: '⚙️', reliability: '🛡️' };
+    const impactPoints = { revenue: 30, growth: 25, product: 20, automation: 15, reliability: 10 };
+    const levels = [
+      { level: 1, xp: 0, title: 'Rookie' },
+      { level: 2, xp: 100, title: 'Operator' },
+      { level: 3, xp: 300, title: 'Commander' },
+      { level: 4, xp: 600, title: 'Elite' },
+      { level: 5, xp: 1000, title: 'Master' },
+      { level: 6, xp: 1500, title: 'Legend' },
+      { level: 7, xp: 2200, title: 'Mythic' },
+      { level: 8, xp: 3000, title: 'Transcendent' }
+    ];
+
+    let tasks = { backlog: [], today: [], progress: [], complete: [] };
+    let coreTasks = [
+      { id: 'core-1', icon: '🥇', label: 'Product Delivery', desc: 'Ship or validate daily intelligence output', engine: 'product' },
+      { id: 'core-2', icon: '🥈', label: 'Growth & Authority', desc: 'Publish one high-value public insight', engine: 'growth' },
+      { id: 'core-3', icon: '🥉', label: 'System/Product Improvement', desc: 'Improve one piece of infrastructure or product', engine: 'systems' }
+    ];
+    let coreTasksPlaced = {};
+    let gameData = { xp: 0, level: 1, streak: 0, bestStreak: 0, lastActiveDate: null };
+    let history = [];
+    let todayStats = { completed: 0, impactPoints: 0, xpEarned: 0 };
+    let currentColumn = 'backlog';
+    let selectedEngine = null;
+    let selectedImpacts = [];
+    let selectedSlot = 'morning';
+    let historyRange = 'week';
+
+    const today = new Date().toISOString().split('T')[0];
+    const storageKeys = {
+      tasks: 'flacko-kanban-v4',
+      game: 'flacko-game-v4',
+      history: 'flacko-history-v4',
+      todayStats: `flacko-stats-${today}`,
+      journal: `flacko-journal-${today}`,
+      corePlaced: `flacko-core-v4-${today}`,
+      notes: `flacko-notes-${today}`,
+      backlogCollapsed: 'flacko-backlog-collapsed',
+      ideas: 'flacko-ideas-v1'
+    };
+
+    const ideaCategories = {
+      all: '🎯 All',
+      daily: '📊 Daily',
+      educational: '🧠 Educational',
+      analysis: '📉 Analysis',
+      psychology: '🎯 Psychology',
+      proof: '🧪 Proof',
+      culture: '🔥 Culture',
+      weekly: '📆 Weekly'
+    };
+
+    const defaultIdeas = [
+      // 📊 Daily / Intraday Insight Series
+      { id: 1, category: 'daily', series: 'Level Watch', angle: 'Post when TSLA approaches key levels - why this level matters, dealer flow, bull vs bear scenario', trigger: 'TSLA near key level', difficulty: 'easy' },
+      { id: 2, category: 'daily', series: 'Mode Check', angle: 'Daily quick post: current market mode + what behavior usually follows', trigger: 'Daily', difficulty: 'easy' },
+      { id: 3, category: 'daily', series: 'Battle Plan Snapshot', angle: 'Ultra simple: bullish scenario, bearish scenario, invalidation levels', trigger: 'Pre-market or open', difficulty: 'easy' },
+      // 🧠 Educational Authority Series
+      { id: 4, category: 'educational', series: 'Indicator Breakdown', angle: 'Explain one indicator: what it measures, when it works best, common mistakes', trigger: 'Anytime', difficulty: 'medium' },
+      { id: 5, category: 'educational', series: 'Dealer Flow Simplified', angle: 'Explain one SpotGamma concept in plain language (put walls, call walls, gamma flips)', trigger: 'Anytime', difficulty: 'medium' },
+      { id: 6, category: 'educational', series: 'How Flacko Reads Charts', angle: 'Walk through your thinking process on a chart', trigger: 'Interesting setup', difficulty: 'medium' },
+      // 📉 Post-Move Analysis Series
+      { id: 7, category: 'analysis', series: 'After Action Report', angle: 'After big TSLA moves: what happened, which signals warned, what was unexpected', trigger: 'After big move', difficulty: 'easy' },
+      { id: 8, category: 'analysis', series: 'Scenario Review', angle: 'Compare predicted scenarios vs actual outcome', trigger: 'End of week', difficulty: 'easy' },
+      // 🎯 Trading Psychology + Strategy
+      { id: 9, category: 'psychology', series: 'Mistake Most TSLA Traders Make', angle: 'Simple contrarian insight about common trading errors', trigger: 'Anytime', difficulty: 'easy' },
+      { id: 10, category: 'psychology', series: 'When NOT to Trade', angle: 'Risk discipline content - knowing when to sit out', trigger: 'Choppy/unclear market', difficulty: 'easy' },
+      { id: 11, category: 'psychology', series: 'Position Management', angle: 'How we manage around a core TSLA position - your unique philosophy', trigger: 'Anytime', difficulty: 'medium' },
+      // 🧪 Proof & Transparency Content
+      { id: 12, category: 'proof', series: 'Report Snippet', angle: 'Post excerpt from daily report showing quality', trigger: 'After report published', difficulty: 'easy' },
+      { id: 13, category: 'proof', series: 'Historical Call Review', angle: 'Show past level or scenario that played out', trigger: 'Level hits or scenario plays', difficulty: 'easy' },
+      { id: 14, category: 'proof', series: 'Accuracy Scoreboard', angle: 'Track wins + misses openly for credibility', trigger: 'Weekly', difficulty: 'medium' },
+      // 🔥 Culture / Brand Voice Content
+      { id: 15, category: 'culture', series: 'Trenches Commentary', angle: 'React to market chaos humorously', trigger: 'Volatile day', difficulty: 'easy' },
+      { id: 16, category: 'culture', series: 'Trader Archetype Roast', angle: 'Roast breakout chasers, overleveraged bulls, panic sellers', trigger: 'Anytime', difficulty: 'easy' },
+      { id: 17, category: 'culture', series: 'War Room Update', angle: 'Light storytelling style market commentary', trigger: 'Interesting market day', difficulty: 'easy' },
+      // 📆 Weekly Series
+      { id: 18, category: 'weekly', series: 'Week Ahead Map', angle: 'Key levels + macro catalysts for the week', trigger: 'Sunday/Monday', difficulty: 'medium' },
+      { id: 19, category: 'weekly', series: 'What Mattered This Week', angle: 'Dealer flow / structural changes recap', trigger: 'Friday', difficulty: 'medium' },
+      { id: 20, category: 'weekly', series: 'One Lesson From This Week', angle: 'Educational + reflective insight from price action', trigger: 'Weekend', difficulty: 'easy' },
+    ];
+
+    let ideas = [];
+    let selectedIdeaCategory = 'all';
+    let selectedDifficulty = 'easy';
+
+    function loadData() {
+      const savedTasks = localStorage.getItem(storageKeys.tasks);
+      if (savedTasks) {
+        try { tasks = JSON.parse(savedTasks); } catch(e) {}
+      } else {
+        tasks = {
+          backlog: [
+            // 📈 GROWTH BACKLOG
+            { id: 101, text: 'Create "Flacko OS explained" flagship thread', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            { id: 102, text: 'Build repeatable daily post template system', engine: 'growth', impacts: ['growth', 'automation'], slot: null },
+            { id: 103, text: 'Create library of educational dealer flow posts', engine: 'growth', impacts: ['growth', 'product'], slot: null },
+            { id: 104, text: 'Create monthly "TSLA structural playbook" content series', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            { id: 105, text: 'Build case study posts using past successful calls', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            { id: 106, text: 'Create video content explaining reports', engine: 'growth', impacts: ['growth'], slot: null },
+            { id: 107, text: 'Improve landing page hero clarity', engine: 'growth', impacts: ['revenue', 'growth'], slot: null },
+            { id: 108, text: 'Add report preview screenshots to landing page', engine: 'growth', impacts: ['revenue', 'growth'], slot: null },
+            { id: 109, text: 'Improve signup onboarding walkthrough', engine: 'growth', impacts: ['revenue', 'product'], slot: null },
+            { id: 110, text: 'Create welcome email onboarding sequence', engine: 'growth', impacts: ['revenue', 'automation'], slot: null },
+            { id: 111, text: 'Improve pinned tweet funnel structure', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            { id: 112, text: 'Create subscriber success story highlights', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            { id: 113, text: 'Identify influencer collaboration opportunities', engine: 'growth', impacts: ['growth'], slot: null },
+            { id: 114, text: 'Create referral incentive system', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            { id: 115, text: 'Launch subscriber Discord engagement rituals', engine: 'growth', impacts: ['growth', 'product'], slot: null },
+            { id: 116, text: 'Design weekly subscriber call / briefing', engine: 'growth', impacts: ['growth', 'revenue'], slot: null },
+            // 🧠 PRODUCT BACKLOG
+            { id: 201, text: 'Improve scenario decision tree clarity', engine: 'product', impacts: ['product'], slot: null },
+            { id: 202, text: 'Improve "mode before move" definitions', engine: 'product', impacts: ['product'], slot: null },
+            { id: 203, text: 'Improve key level explanation framework', engine: 'product', impacts: ['product'], slot: null },
+            { id: 204, text: 'Add standardized probability language', engine: 'product', impacts: ['product', 'reliability'], slot: null },
+            { id: 205, text: 'Improve visual report formatting consistency', engine: 'product', impacts: ['product'], slot: null },
+            { id: 206, text: 'Improve weekly intelligence review structure', engine: 'product', impacts: ['product'], slot: null },
+            { id: 207, text: 'Add macro integration layer into reports', engine: 'product', impacts: ['product'], slot: null },
+            { id: 208, text: 'Build dealer flow interpretation rubric', engine: 'product', impacts: ['product'], slot: null },
+            { id: 209, text: 'Create signal hierarchy (which signals override others)', engine: 'product', impacts: ['product', 'reliability'], slot: null },
+            { id: 210, text: 'Improve volatility regime classification', engine: 'product', impacts: ['product'], slot: null },
+            { id: 211, text: 'Build post-move analysis section template', engine: 'product', impacts: ['product'], slot: null },
+            { id: 212, text: 'Create historical performance archive', engine: 'product', impacts: ['product', 'growth'], slot: null },
+            { id: 213, text: 'Build accuracy tracking methodology', engine: 'product', impacts: ['product', 'reliability'], slot: null },
+            { id: 214, text: 'Add "past scenario review" section to reports', engine: 'product', impacts: ['product'], slot: null },
+            { id: 215, text: 'Create transparency reporting format', engine: 'product', impacts: ['product', 'growth'], slot: null },
+            // ⚙️ SYSTEMS / AUTOMATION BACKLOG
+            { id: 301, text: 'Add alert monitoring dashboard', engine: 'systems', impacts: ['reliability', 'automation'], slot: null },
+            { id: 302, text: 'Create automation failure logging system', engine: 'systems', impacts: ['reliability', 'automation'], slot: null },
+            { id: 303, text: 'Add backup report generation fallback workflow', engine: 'systems', impacts: ['reliability'], slot: null },
+            { id: 304, text: 'Improve Discord alert reliability', engine: 'systems', impacts: ['reliability'], slot: null },
+            { id: 305, text: 'Reduce token usage inside report pipeline', engine: 'systems', impacts: ['automation'], slot: null },
+            { id: 306, text: 'Improve screenshot parsing reliability', engine: 'systems', impacts: ['automation', 'reliability'], slot: null },
+            { id: 307, text: 'Create automated report formatting system', engine: 'systems', impacts: ['automation'], slot: null },
+            { id: 308, text: 'Build centralized workflow documentation hub', engine: 'systems', impacts: ['automation', 'product'], slot: null },
+            { id: 309, text: 'Build modular agent architecture', engine: 'systems', impacts: ['automation'], slot: null },
+            { id: 310, text: 'Add multi-symbol expansion planning', engine: 'systems', impacts: ['automation', 'growth'], slot: null },
+            { id: 311, text: 'Build alert personalization logic', engine: 'systems', impacts: ['automation', 'product'], slot: null },
+            { id: 312, text: 'Create performance monitoring analytics', engine: 'systems', impacts: ['automation', 'reliability'], slot: null },
+          ],
+          today: [],
+          progress: [],
+          complete: []
+        };
+      }
+
+      // Load core tasks placement for today
+      const savedCorePlaced = localStorage.getItem(storageKeys.corePlaced);
+      if (savedCorePlaced) try { coreTasksPlaced = JSON.parse(savedCorePlaced); } catch(e) {}
+
+      const savedGame = localStorage.getItem(storageKeys.game);
+      if (savedGame) try { gameData = JSON.parse(savedGame); } catch(e) {}
+
+      const savedHistory = localStorage.getItem(storageKeys.history);
+      if (savedHistory) try { history = JSON.parse(savedHistory); } catch(e) {}
+
+      const savedStats = localStorage.getItem(storageKeys.todayStats);
+      if (savedStats) try { todayStats = JSON.parse(savedStats); } catch(e) {}
+
+      if (gameData.lastActiveDate) {
+        const diff = Math.floor((new Date(today) - new Date(gameData.lastActiveDate)) / 86400000);
+        if (diff === 1) {
+          gameData.streak++;
+          if (gameData.streak > gameData.bestStreak) gameData.bestStreak = gameData.streak;
+        } else if (diff > 1) {
+          gameData.streak = 1;
+        }
+      } else {
+        gameData.streak = 1;
+      }
+      gameData.lastActiveDate = today;
+      saveGame();
+    }
+
+    function saveData() { localStorage.setItem(storageKeys.tasks, JSON.stringify(tasks)); }
+    function saveGame() { localStorage.setItem(storageKeys.game, JSON.stringify(gameData)); }
+    function saveHistory() { localStorage.setItem(storageKeys.history, JSON.stringify(history)); }
+    function saveTodayStats() { localStorage.setItem(storageKeys.todayStats, JSON.stringify(todayStats)); }
+    function saveCorePlaced() { localStorage.setItem(storageKeys.corePlaced, JSON.stringify(coreTasksPlaced)); }
+
+    function calcTaskPoints(task) {
+      let pts = 10;
+      task.impacts.forEach(imp => pts += impactPoints[imp] || 0);
+      return pts;
+    }
+
+    function renderTask(t, col) {
+      const pts = t.customPoints || calcTaskPoints(t);
+      const engineLabels = { product: '🤖 Product', systems: '⚙️ Systems', growth: '📈 Growth' };
+      const isCoreTask = t.isCore;
+      const isPinned = t.pinned;
+      return `
+        <div class="task ${isCoreTask ? 'core-placed' : ''} ${isPinned ? 'pinned' : ''}" draggable="true" data-id="${t.id}" data-column="${col}" data-slot="${t.slot || ''}" ${isCoreTask ? 'data-core="true"' : ''}>
+          <div class="task-header">
+            <span class="task-engine engine-${t.engine}">${engineLabels[t.engine] || '🤖 Product'}</span>
+            <span class="task-points">+${pts}</span>
+          </div>
+          <div class="task-text">${t.text}</div>
+          ${t.impacts && t.impacts.length ? `<div class="task-impacts">${t.impacts.map(i => `<span class="impact-badge">${impactLabels[i]}</span>`).join('')}</div>` : ''}
+          <div class="task-actions">
+            ${col === 'backlog' ? `<button class="task-action pin-btn ${isPinned ? 'pinned' : ''}" onclick="togglePin(${t.id})" title="Pin to top">📌</button>` : ''}
+            ${!isCoreTask ? `<button class="task-action delete" onclick="deleteTask(${t.id}, '${col}')">🗑️</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCoreTask(ct) {
+      return `
+        <div class="core-task" draggable="true" data-core-id="${ct.id}">
+          <div class="core-task-icon">${ct.icon}</div>
+          <div class="core-task-content">
+            <div class="core-task-label">${ct.label}</div>
+            <div class="core-task-desc">${ct.desc}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      // Backlog - sort pinned tasks first
+      const backlogEl = document.getElementById('backlog-tasks');
+      document.getElementById('backlog-count').textContent = tasks.backlog.length;
+      const sortedBacklog = [...tasks.backlog].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+      backlogEl.innerHTML = sortedBacklog.length ? sortedBacklog.map(t => renderTask(t, 'backlog')).join('') : '<div class="empty-state">No tasks</div>';
+
+      // Core tasks (unplaced ones)
+      const unplacedCore = coreTasks.filter(ct => !coreTasksPlaced[ct.id]);
+      const coreListEl = document.getElementById('core-tasks-list');
+      const coreSectionEl = document.getElementById('coreTasks');
+      coreSectionEl.style.display = 'block';
+      if (unplacedCore.length > 0) {
+        coreListEl.innerHTML = unplacedCore.map(ct => renderCoreTask(ct)).join('');
+      } else {
+        coreListEl.innerHTML = '<div class="slot-empty">All core tasks scheduled! Drag back here to unschedule.</div>';
+      }
+
+      // Today - by slot (includes placed core tasks)
+      const todayCount = tasks.today.length;
+      const countEl = document.getElementById('today-count');
+      countEl.textContent = `${todayCount} / 10`;
+      countEl.classList.toggle('limit', todayCount >= 10);
+
+      ['morning', 'midday', 'closing'].forEach(slot => {
+        const slotTasks = tasks.today.filter(t => t.slot === slot);
+        const slotEl = document.getElementById(`${slot}-tasks`);
+        slotEl.innerHTML = slotTasks.length ? slotTasks.map(t => renderTask(t, 'today')).join('') : `<div class="slot-empty">Drop task here</div>`;
+      });
+
+      // Progress
+      const progressEl = document.getElementById('progress-tasks');
+      const progressCount = tasks.progress.length;
+      const progressCountEl = document.getElementById('progress-count');
+      progressCountEl.textContent = `${progressCount} / 2`;
+      progressCountEl.classList.toggle('limit', progressCount >= 2);
+      progressEl.innerHTML = tasks.progress.length ? tasks.progress.map(t => renderTask(t, 'progress')).join('') : '<div class="empty-state">No tasks</div>';
+
+      // Complete
+      const completeEl = document.getElementById('complete-tasks');
+      document.getElementById('complete-count').textContent = tasks.complete.length;
+      completeEl.innerHTML = tasks.complete.length ? tasks.complete.map(t => renderTask(t, 'complete')).join('') : '<div class="empty-state">No tasks</div>';
+
+      // Stats
+      document.getElementById('todayScore').textContent = todayStats.completed * 50 + todayStats.impactPoints;
+      document.getElementById('completedCount').textContent = todayStats.completed;
+      document.getElementById('impactPoints').textContent = todayStats.impactPoints;
+      document.getElementById('xpEarned').textContent = todayStats.xpEarned;
+
+      updatePlayerStats();
+      setupDragDrop();
+    }
+
+    function updatePlayerStats() {
+      const curr = levels.find(l => l.level === gameData.level) || levels[0];
+      const next = levels.find(l => l.level === gameData.level + 1);
+      document.getElementById('streakCount').textContent = gameData.streak;
+      document.getElementById('levelBadge').textContent = `Level ${gameData.level} ${curr.title}`;
+      if (next) {
+        const pct = ((gameData.xp - curr.xp) / (next.xp - curr.xp)) * 100;
+        document.getElementById('xpFill').style.width = pct + '%';
+        document.getElementById('xpText').textContent = `${gameData.xp} / ${next.xp} XP`;
+      } else {
+        document.getElementById('xpFill').style.width = '100%';
+        document.getElementById('xpText').textContent = 'MAX';
+      }
+    }
+
+    function addXP(amount) {
+      gameData.xp += amount;
+      todayStats.xpEarned += amount;
+      for (let i = levels.length - 1; i >= 0; i--) {
+        if (gameData.xp >= levels[i].xp) {
+          if (gameData.level < levels[i].level) {
+            gameData.level = levels[i].level;
+            alert(`🎉 Level Up! Level ${gameData.level} - ${levels[i].title}!`);
+          }
+          break;
+        }
+      }
+      saveGame();
+      saveTodayStats();
+    }
+
+    // Drag and Drop
+    let draggedTask = null, draggedFrom = null, draggedSlot = null, draggedCoreId = null;
+
+    function setupDragDrop() {
+      // Regular tasks
+      document.querySelectorAll('.task').forEach(el => {
+        el.addEventListener('dragstart', e => {
+          draggedTask = parseInt(e.target.dataset.id);
+          draggedFrom = e.target.dataset.column;
+          draggedSlot = e.target.dataset.slot || null;
+          draggedCoreId = null;
+          e.target.classList.add('dragging');
+        });
+        el.addEventListener('dragend', e => {
+          e.target.classList.remove('dragging');
+          document.querySelectorAll('.column, .time-slot').forEach(c => c.classList.remove('drag-over'));
+        });
+      });
+
+      // Core tasks
+      document.querySelectorAll('.core-task').forEach(el => {
+        el.addEventListener('dragstart', e => {
+          draggedCoreId = e.target.dataset.coreId;
+          draggedTask = null;
+          draggedFrom = 'core';
+          e.target.classList.add('dragging');
+        });
+        el.addEventListener('dragend', e => {
+          e.target.classList.remove('dragging');
+          document.querySelectorAll('.column, .time-slot').forEach(c => c.classList.remove('drag-over'));
+        });
+      });
+
+      // Regular columns (backlog, progress, complete)
+      document.querySelectorAll('.column:not(.today-col)').forEach(col => {
+        col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+        col.addEventListener('drop', e => handleColumnDrop(e, col.dataset.column, null));
+      });
+
+      // Time slots in Today column
+      document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
+        slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+        slot.addEventListener('drop', e => handleColumnDrop(e, 'today', slot.dataset.slot));
+      });
+
+      // Core tasks section (for returning placed core tasks)
+      const coreSection = document.getElementById('coreTasks');
+      if (coreSection) {
+        coreSection.addEventListener('dragover', e => { e.preventDefault(); coreSection.classList.add('drag-over'); });
+        coreSection.addEventListener('dragleave', () => coreSection.classList.remove('drag-over'));
+        coreSection.addEventListener('drop', e => handleCoreReturn(e));
+      }
+    }
+
+    function handleCoreReturn(e) {
+      e.preventDefault();
+      document.getElementById('coreTasks').classList.remove('drag-over');
+
+      // Check if we're dragging a placed core task
+      if (draggedTask && draggedFrom === 'today') {
+        const task = tasks.today.find(t => t.id === draggedTask);
+        if (task && task.isCore && task.coreId) {
+          // Remove from today
+          tasks.today = tasks.today.filter(t => t.id !== draggedTask);
+          // Remove from placed tracking
+          delete coreTasksPlaced[task.coreId];
+          saveCorePlaced();
+          saveData();
+          render();
+        }
+      }
+      draggedTask = null;
+      draggedFrom = null;
+      draggedSlot = null;
+    }
+
+    function handleColumnDrop(e, targetCol, targetSlot) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+
+      // Handle core task drop
+      if (draggedCoreId && targetCol === 'today' && targetSlot) {
+        const coreTask = coreTasks.find(ct => ct.id === draggedCoreId);
+        if (coreTask && !coreTasksPlaced[draggedCoreId]) {
+          // Check limits
+          if (tasks.today.length >= 10) {
+            alert('Today is at capacity (10 max)!');
+            return;
+          }
+          // Create task from core task
+          const newTask = {
+            id: Date.now(),
+            text: `${coreTask.icon} ${coreTask.label}: ${coreTask.desc}`,
+            engine: coreTask.engine,
+            impacts: [],
+            slot: targetSlot,
+            isCore: true,
+            coreId: draggedCoreId,
+            customPoints: 50
+          };
+          tasks.today.push(newTask);
+          coreTasksPlaced[draggedCoreId] = targetSlot;
+          saveCorePlaced();
+          saveData();
+          render();
+        }
+        draggedCoreId = null;
+        draggedFrom = null;
+        return;
+      }
+
+      if (!draggedTask || !draggedFrom) return;
+
+      // Same location
+      if (draggedFrom === targetCol && draggedSlot === targetSlot) return;
+
+      // Check limits
+      if (targetCol === 'today' && draggedFrom !== 'today' && tasks.today.length >= 10) {
+        alert('Today is at capacity (10 max)!');
+        return;
+      }
+      if (targetCol === 'progress' && tasks.progress.length >= 2) {
+        alert('In Progress is at capacity (2 max)!');
+        return;
+      }
+
+      // Find task
+      const sourceList = tasks[draggedFrom];
+      const idx = sourceList.findIndex(t => t.id === draggedTask);
+      if (idx === -1) return;
+
+      const [task] = sourceList.splice(idx, 1);
+      task.slot = targetSlot;
+      tasks[targetCol].push(task);
+
+      // Award points if moved to complete
+      if (targetCol === 'complete' && draggedFrom !== 'complete') {
+        const pts = task.customPoints || calcTaskPoints(task);
+        todayStats.completed++;
+        todayStats.impactPoints += pts - 10;
+        addXP(pts);
+        saveTodayStats();
+        saveDayToHistory(task);
+      }
+
+      saveData();
+      render();
+      draggedTask = null;
+      draggedFrom = null;
+      draggedSlot = null;
+    }
+
+    function saveDayToHistory(completedTask) {
+      let entry = history.find(h => h.date === today);
+      if (!entry) {
+        entry = { date: today, tasks: [], score: 0, journal: '' };
+        history.unshift(entry);
+      }
+      entry.tasks.push(completedTask.text);
+      entry.score = todayStats.completed * 50 + todayStats.impactPoints;
+      saveHistory();
+    }
+
+    // Modals
+    function openTaskModal(col) {
+      if (col === 'today' && tasks.today.length >= 10) { alert('Today at capacity!'); return; }
+      currentColumn = col;
+      selectedEngine = null;
+      selectedImpacts = [];
+      selectedSlot = 'morning';
+      document.querySelectorAll('#engineSelect .option-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('#impactSelect .impact-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('#slotSelect .slot-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelector('#slotSelect .slot-btn[data-slot="morning"]').classList.add('selected');
+      document.getElementById('taskInput').value = '';
+      document.getElementById('pointsInput').value = '';
+      updatePointsPreview();
+      document.getElementById('slotSection').style.display = col === 'today' ? 'block' : 'none';
+      document.getElementById('taskModal').classList.add('show');
+      document.getElementById('taskInput').focus();
+    }
+
+    function closeTaskModal() { document.getElementById('taskModal').classList.remove('show'); }
+
+    function selectEngine(eng) {
+      selectedEngine = eng;
+      document.querySelectorAll('#engineSelect .option-btn').forEach(b => b.classList.toggle('selected', b.dataset.engine === eng));
+    }
+
+    function toggleImpact(imp) {
+      const idx = selectedImpacts.indexOf(imp);
+      if (idx === -1) selectedImpacts.push(imp); else selectedImpacts.splice(idx, 1);
+      document.querySelectorAll('#impactSelect .impact-btn').forEach(b => b.classList.toggle('selected', selectedImpacts.includes(b.dataset.impact)));
+      updatePointsPreview();
+    }
+
+    function updatePointsPreview() {
+      let pts = 10;
+      selectedImpacts.forEach(imp => pts += impactPoints[imp] || 0);
+      document.getElementById('pointsPreview').textContent = `Suggested: ${pts} pts`;
+    }
+
+    function selectSlot(slot) {
+      selectedSlot = slot;
+      document.querySelectorAll('#slotSelect .slot-btn').forEach(b => b.classList.toggle('selected', b.dataset.slot === slot));
+    }
+
+    function saveTask() {
+      const text = document.getElementById('taskInput').value.trim();
+      if (!text || !selectedEngine) { alert('Enter task and select engine'); return; }
+      const customPts = parseInt(document.getElementById('pointsInput').value);
+      const task = {
+        id: Date.now(),
+        text,
+        engine: selectedEngine,
+        impacts: [...selectedImpacts],
+        slot: currentColumn === 'today' ? selectedSlot : null
+      };
+      if (customPts && customPts > 0) task.customPoints = customPts;
+      tasks[currentColumn].push(task);
+      saveData();
+      render();
+      closeTaskModal();
+    }
+
+    function deleteTask(id, col) {
+      if (confirm('Delete task?')) {
+        tasks[col] = tasks[col].filter(t => t.id !== id);
+        saveData();
+        render();
+      }
+    }
+
+    // Journal
+    function openJournalModal() {
+      document.getElementById('journalInput').value = localStorage.getItem(storageKeys.journal) || '';
+      document.getElementById('journalModal').classList.add('show');
+    }
+    function closeJournalModal() { document.getElementById('journalModal').classList.remove('show'); }
+    function saveJournal() {
+      const text = document.getElementById('journalInput').value.trim();
+      localStorage.setItem(storageKeys.journal, text);
+      let entry = history.find(h => h.date === today);
+      if (!entry) { entry = { date: today, tasks: [], score: 0, journal: '' }; history.unshift(entry); }
+      entry.journal = text;
+      entry.score = todayStats.completed * 50 + todayStats.impactPoints;
+      saveHistory();
+      closeJournalModal();
+    }
+
+    // Views
+    function showView(view) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(view + 'View').classList.add('active');
+      document.querySelector(`.nav-tab[onclick="showView('${view}')"]`).classList.add('active');
+      if (view === 'history') renderHistory();
+    }
+
+    function setHistoryRange(range) {
+      historyRange = range;
+      document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.history-tab[onclick="setHistoryRange('${range}')"]`).classList.add('active');
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const now = new Date();
+      let filtered = history;
+      if (historyRange === 'week') filtered = history.filter(h => new Date(h.date) >= new Date(now - 7 * 86400000));
+      else if (historyRange === 'month') filtered = history.filter(h => new Date(h.date) >= new Date(now - 30 * 86400000));
+
+      const totalScore = filtered.reduce((s, h) => s + h.score, 0);
+      const totalTasks = filtered.reduce((s, h) => s + h.tasks.length, 0);
+      const avgScore = filtered.length ? Math.round(totalScore / filtered.length) : 0;
+
+      document.getElementById('historyTotalScore').textContent = totalScore;
+      document.getElementById('historyTasksCompleted').textContent = totalTasks;
+      document.getElementById('historyAvgScore').textContent = avgScore;
+      document.getElementById('historyBestStreak').textContent = gameData.bestStreak;
+
+      const container = document.getElementById('historyEntries');
+      if (!filtered.length) { container.innerHTML = '<div class="no-history">No history yet!</div>'; return; }
+      container.innerHTML = filtered.map(h => {
+        const dateStr = new Date(h.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        return `<div class="day-entry">
+          <div class="day-header"><div class="day-date">${dateStr}</div><div class="day-score">${h.score} pts</div></div>
+          ${h.tasks.length ? `<div class="day-tasks">${h.tasks.map(t => `<span class="day-task">✓ ${t}</span>`).join('')}</div>` : ''}
+          ${h.journal ? `<div class="day-journal">"${h.journal}"</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeTaskModal(); closeJournalModal(); closeIdeaModal(); } });
+
+    // Backlog collapse
+    function toggleBacklog() {
+      const col = document.getElementById('backlogColumn');
+      const btn = document.getElementById('collapseBtn');
+      const isCollapsed = col.classList.toggle('collapsed');
+      btn.textContent = isCollapsed ? '▶' : '◀';
+      localStorage.setItem(storageKeys.backlogCollapsed, isCollapsed);
+    }
+
+    function loadBacklogState() {
+      const collapsed = localStorage.getItem(storageKeys.backlogCollapsed) === 'true';
+      if (collapsed) {
+        document.getElementById('backlogColumn').classList.add('collapsed');
+        document.getElementById('collapseBtn').textContent = '▶';
+      }
+    }
+
+    // Pin toggle
+    function togglePin(taskId) {
+      const task = tasks.backlog.find(t => t.id === taskId);
+      if (task) {
+        task.pinned = !task.pinned;
+        saveData();
+        render();
+      }
+    }
+
+    // Daily notes
+    function setupNotes() {
+      const textarea = document.getElementById('dailyNotes');
+      const savedNotes = localStorage.getItem(storageKeys.notes);
+      if (savedNotes) textarea.value = savedNotes;
+
+      let saveTimeout;
+      textarea.addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          localStorage.setItem(storageKeys.notes, textarea.value);
+          const saved = document.getElementById('notesSaved');
+          saved.classList.add('show');
+          setTimeout(() => saved.classList.remove('show'), 1500);
+        }, 500);
+      });
+    }
+
+    // Idea Bank
+    function loadIdeas() {
+      const saved = localStorage.getItem(storageKeys.ideas);
+      if (saved) {
+        try { ideas = JSON.parse(saved); } catch(e) { ideas = [...defaultIdeas]; }
+      } else {
+        ideas = [...defaultIdeas];
+      }
+    }
+
+    function saveIdeas() {
+      localStorage.setItem(storageKeys.ideas, JSON.stringify(ideas));
+    }
+
+    function renderIdeaCategories() {
+      const container = document.getElementById('ideaCategories');
+      container.innerHTML = Object.entries(ideaCategories).map(([key, label]) =>
+        `<button class="idea-category-tab ${selectedIdeaCategory === key ? 'active' : ''}" onclick="filterIdeas('${key}')">${label}</button>`
+      ).join('');
+    }
+
+    function filterIdeas(category) {
+      selectedIdeaCategory = category;
+      renderIdeaCategories();
+      renderIdeaCards();
+    }
+
+    function renderIdeaCards() {
+      const container = document.getElementById('ideaCards');
+      const filtered = selectedIdeaCategory === 'all' ? ideas : ideas.filter(i => i.category === selectedIdeaCategory);
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-state">No ideas in this category</div>';
+        return;
+      }
+
+      // Sort pinned ideas first
+      const sorted = [...filtered].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+      container.innerHTML = sorted.map(idea => `
+        <div class="idea-card ${idea.pinned ? 'pinned' : ''}">
+          <div class="idea-card-header">
+            <div class="idea-series">${idea.series}</div>
+            <div class="idea-difficulty ${idea.difficulty}">${idea.difficulty}</div>
+          </div>
+          <div class="idea-angle">${idea.angle}</div>
+          <div class="idea-trigger">⏰ ${idea.trigger}</div>
+          <div class="idea-card-actions">
+            <button class="idea-pin ${idea.pinned ? 'pinned' : ''}" onclick="toggleIdeaPin(${idea.id})" title="Pin to top">📌</button>
+            <button class="idea-delete" onclick="deleteIdea(${idea.id})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openIdeaModal() {
+      document.getElementById('ideaCategoryInput').value = 'daily';
+      document.getElementById('ideaSeriesInput').value = '';
+      document.getElementById('ideaAngleInput').value = '';
+      document.getElementById('ideaTriggerInput').value = '';
+      selectedDifficulty = 'easy';
+      document.querySelectorAll('#ideaModal .slot-btn').forEach(b => b.classList.toggle('selected', b.dataset.diff === 'easy'));
+      document.getElementById('ideaModal').classList.add('show');
+    }
+
+    function closeIdeaModal() {
+      document.getElementById('ideaModal').classList.remove('show');
+    }
+
+    function selectDifficulty(diff) {
+      selectedDifficulty = diff;
+      document.querySelectorAll('#ideaModal .slot-btn').forEach(b => b.classList.toggle('selected', b.dataset.diff === diff));
+    }
+
+    function saveIdea() {
+      const category = document.getElementById('ideaCategoryInput').value;
+      const series = document.getElementById('ideaSeriesInput').value.trim();
+      const angle = document.getElementById('ideaAngleInput').value.trim();
+      const trigger = document.getElementById('ideaTriggerInput').value.trim();
+
+      if (!series || !angle) {
+        alert('Please fill in series name and content angle');
+        return;
+      }
+
+      ideas.push({
+        id: Date.now(),
+        category,
+        series,
+        angle,
+        trigger: trigger || 'Anytime',
+        difficulty: selectedDifficulty
+      });
+
+      saveIdeas();
+      renderIdeaCards();
+      closeIdeaModal();
+    }
+
+    function toggleIdeaPin(id) {
+      const idea = ideas.find(i => i.id === id);
+      if (idea) {
+        idea.pinned = !idea.pinned;
+        saveIdeas();
+        renderIdeaCards();
+      }
+    }
+
+    function deleteIdea(id) {
+      if (confirm('Delete this idea?')) {
+        ideas = ideas.filter(i => i.id !== id);
+        saveIdeas();
+        renderIdeaCards();
+      }
+    }
+
+    function setupIdeaBank() {
+      loadIdeas();
+      renderIdeaCategories();
+      renderIdeaCards();
+    }
+
+    loadData();
+    render();
+    loadBacklogState();
+    setupNotes();
+    setupIdeaBank();
+  </script>
+</body>
+</html>
