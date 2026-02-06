@@ -127,6 +127,9 @@ interface ReportFrontmatter {
   acceleration_zone?: number;  // Key Gamma Strike value
   master_eject_rationale?: string;  // Why this level
   fib_levels?: { price: number; label: string }[] | null;
+  prev_day_score?: number | null;  // Previous day's 100-point assessment score
+  prev_day_grade?: string | null;  // A/B/C/D/F
+  prev_day_system_value?: string | null;  // ADDED_VALUE/PROTECTED_CAPITAL/NEUTRAL/MINOR_COST/COST_MONEY
 }
 
 interface ParseResult {
@@ -587,6 +590,9 @@ function extractFromFrontmatter(
   const acceleration_zone = fm.acceleration_zone;
   const master_eject_rationale = fm.master_eject_rationale;
   const fib_levels = fm.fib_levels;
+  const prev_day_score = fm.prev_day_score;
+  const prev_day_grade = fm.prev_day_grade;
+  const prev_day_system_value = fm.prev_day_system_value;
 
   // Validate required fields
   if (price.close <= 0) {
@@ -639,6 +645,9 @@ function extractFromFrontmatter(
     acceleration_zone,
     master_eject_rationale,
     fib_levels,
+    prev_day_score,
+    prev_day_grade,
+    prev_day_system_value,
   };
 }
 

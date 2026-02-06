@@ -198,6 +198,9 @@ export interface ExtractedReportData {
   acceleration_zone?: number;  // Key Gamma Strike (triggers trim sequence when reclaimed)
   master_eject_rationale?: string;  // Explanation of why this level
   fib_levels?: { price: number; label: string }[] | null;  // Optional fib extension targets
+  prev_day_score?: number | null;  // Previous day's 100-point assessment score
+  prev_day_grade?: string | null;  // A/B/C/D/F
+  prev_day_system_value?: string | null;  // ADDED_VALUE/PROTECTED_CAPITAL/NEUTRAL/MINOR_COST/COST_MONEY
 }
 
 export interface ParsedReportData {
