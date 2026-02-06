@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       }
 
       // Check daily usage
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
       const { data: usageData } = await supabase
         .from("chat_usage")
         .select("message_count")
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       const usage = usageData as ChatUsage | null;
       if (usage && usage.message_count >= DAILY_MESSAGE_LIMIT) {
         return NextResponse.json({
-          error: "Daily message limit reached. Resets at midnight ET.",
+          error: "Daily message limit reached. Resets at midnight CT.",
         }, { status: 429 });
       }
     }
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
 
     // Update usage atomically via RPC to prevent race conditions
     if (userId && !devBypass) {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
       await supabase.rpc("increment_chat_usage", {
         p_user_id: userId,
         p_usage_date: today,

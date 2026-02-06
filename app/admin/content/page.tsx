@@ -945,6 +945,9 @@ export default function ContentHubPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            <a href="/admin/command-center" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-white mb-2 transition-colors">
+              ← Command Center
+            </a>
             <h1 className="text-2xl sm:text-3xl font-bold">Content Hub</h1>
             <p className="text-zinc-500 mt-1">Generate and manage trading content</p>
           </div>

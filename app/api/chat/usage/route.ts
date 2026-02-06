@@ -21,7 +21,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
 
     const { data: usageData } = await supabase
       .from("chat_usage")

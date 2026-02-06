@@ -168,7 +168,11 @@ export default function ProductivityPage() {
   const [draggedCoreId, setDraggedCoreId] = useState<string | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split("T")[0];
+  // Helper to get date in Central Time (America/Chicago)
+  const getCentralDate = () => {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  };
+  const today = getCentralDate();
 
   // Storage keys
   const storageKeys = {
@@ -181,6 +185,7 @@ export default function ProductivityPage() {
     notes: `flacko-notes-${today}`,
     backlogCollapsed: "flacko-backlog-collapsed",
     ideas: "flacko-ideas-v1",
+    lastRefreshDate: "flacko-last-refresh-v1",
   };
 
   // Load data on mount
@@ -188,16 +193,63 @@ export default function ProductivityPage() {
     setMounted(true);
     
     // Load tasks
+    let loadedTasks = { backlog: defaultBacklog, today: [], progress: [], complete: [] };
     const savedTasks = localStorage.getItem(storageKeys.tasks);
     if (savedTasks) {
       try {
-        setTasks(JSON.parse(savedTasks));
+        loadedTasks = JSON.parse(savedTasks);
+        setTasks(loadedTasks);
       } catch {
-        setTasks({ backlog: defaultBacklog, today: [], progress: [], complete: [] });
+        setTasks(loadedTasks);
       }
     } else {
-      setTasks({ backlog: defaultBacklog, today: [], progress: [], complete: [] });
+      setTasks(loadedTasks);
     }
+
+    // Daily Board Refresh: Check if we need to archive completed tasks from previous day
+    const lastRefreshDate = localStorage.getItem(storageKeys.lastRefreshDate);
+    if (lastRefreshDate && lastRefreshDate !== today && loadedTasks.complete.length > 0) {
+      // It's a new day and there are completed tasks to archive
+      const completedTasks = loadedTasks.complete;
+      
+      // Add completed tasks to history under the previous day's date
+      setHistory((prev) => {
+        const existingEntry = prev.find((h) => h.date === lastRefreshDate);
+        let newHistory;
+        if (existingEntry) {
+          // Append to existing entry for that date
+          newHistory = prev.map((h) =>
+            h.date === lastRefreshDate
+              ? { ...h, tasks: [...h.tasks, ...completedTasks] }
+              : h
+          );
+        } else {
+          // Create new history entry for the previous day
+          const newEntry: HistoryEntry = {
+            date: lastRefreshDate,
+            tasks: completedTasks,
+            score: completedTasks.length * 50, // Approximate score
+            journal: "",
+          };
+          newHistory = [newEntry, ...prev];
+        }
+        localStorage.setItem(storageKeys.history, JSON.stringify(newHistory));
+        return newHistory;
+      });
+
+      // Clear completed tasks
+      loadedTasks.complete = [];
+      setTasks({ ...loadedTasks });
+      localStorage.setItem(storageKeys.tasks, JSON.stringify({ ...loadedTasks }));
+
+      // Reset todayStats for the new day
+      const resetStats: TodayStats = { completed: 0, impactPoints: 0, xpEarned: 0 };
+      setTodayStats(resetStats);
+      localStorage.setItem(storageKeys.todayStats, JSON.stringify(resetStats));
+    }
+
+    // Update last refresh date to today
+    localStorage.setItem(storageKeys.lastRefreshDate, today);
 
     // Load core tasks placement
     const savedCorePlaced = localStorage.getItem(storageKeys.corePlaced);
@@ -690,6 +742,8 @@ export default function ProductivityPage() {
         }
         .header { padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #0a0a0c; z-index: 100; }
         .header-left { display: flex; align-items: center; gap: 20px; }
+        .back-link { color: #52525b; font-size: 13px; text-decoration: none; margin-right: 16px; }
+        .back-link:hover { color: #fafafa; }
         .logo { display: flex; align-items: center; gap: 12px; }
         .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6, #ec4899); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         .logo-text { font-size: 18px; font-weight: 700; }
@@ -865,6 +919,7 @@ export default function ProductivityPage() {
         {/* Header */}
         <div className="header">
           <div className="header-left">
+            <a href="/admin/command-center" className="back-link">← Command Center</a>
             <div className="logo">
               <div className="logo-icon">⚡</div>
               <div>
