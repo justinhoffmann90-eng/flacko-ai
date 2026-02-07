@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 // Types
 interface Task {
@@ -168,6 +170,91 @@ export default function ProductivityPage() {
   const [draggedSlot, setDraggedSlot] = useState<string | null>(null);
   const [draggedCoreId, setDraggedCoreId] = useState<string | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+
+  // Cloud sync state
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">("idle");
+  const lastSave = useRef<number>(0);
+
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id || null);
+    });
+  }, []);
+
+  // Load from cloud
+  useEffect(() => {
+    if (!userId) return;
+    
+    const loadFromCloud = async () => {
+      setIsLoading(true);
+      try {
+        const { data: cloudData, error } = await supabase
+          .from("productivity_data")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+        
+        if (!error && cloudData) {
+          console.log("[Productivity] Loaded from cloud");
+          if (cloudData.tasks) setTasks(cloudData.tasks);
+          if (cloudData.history) setHistory(cloudData.history);
+          if (cloudData.game) setGameData(cloudData.game);
+          if (cloudData.ideas) setIdeas(cloudData.ideas);
+          if (cloudData.notes) setDailyNotes(cloudData.notes);
+        } else {
+          console.log("[Productivity] No cloud data, using localStorage");
+          // Will fall through to localStorage loading below
+        }
+      } catch (err) {
+        console.error("[Productivity] Load error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadFromCloud();
+  }, [userId]);
+
+  // Save to cloud (debounced)
+  useEffect(() => {
+    if (!userId || isLoading) return;
+    
+    const now = Date.now();
+    if (now - lastSave.current < 2000) return; // Debounce 2s
+    lastSave.current = now;
+    setSyncStatus("syncing");
+    
+    const timeout = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from("productivity_data")
+          .upsert({
+            user_id: userId,
+            tasks,
+            history,
+            game: gameData,
+            ideas,
+            notes: dailyNotes,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+        
+        if (error) {
+          console.error("[Productivity] Save error:", error);
+          setSyncStatus("error");
+        } else {
+          setSyncStatus("idle");
+        }
+      } catch (err) {
+        console.error("[Productivity] Save failed:", err);
+        setSyncStatus("error");
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timeout);
+  }, [userId, tasks, history, gameData, ideas, dailyNotes, isLoading]);
 
   // Helper to get date in Central Time (America/Chicago)
   const getCentralDate = () => {
@@ -937,6 +1024,17 @@ export default function ProductivityPage() {
             </div>
           </div>
           <div className="player-stats">
+            {/* Sync Status Indicator */}
+            {syncStatus === "syncing" && (
+              <div className="stat-pill" style={{ background: "rgba(139,92,246,0.15)", borderColor: "#8b5cf6" }}>
+                <span style={{ color: "#8b5cf6" }}>☁️ Syncing...</span>
+              </div>
+            )}
+            {syncStatus === "error" && (
+              <div className="stat-pill" style={{ background: "rgba(239,68,68,0.15)", borderColor: "#ef4444" }}>
+                <span style={{ color: "#ef4444" }}>⚠️ Sync Error</span>
+              </div>
+            )}
             <div className="stat-pill">
               🔥 <span className="value">{gameData.streak}</span> day streak
             </div>
