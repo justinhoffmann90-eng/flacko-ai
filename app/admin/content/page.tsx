@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { Wand2, Calendar, Image } from "lucide-react";
 import { GeneratorsTab } from "./components/generators-tab";

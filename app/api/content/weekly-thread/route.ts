@@ -1,4 +1,5 @@
 /**
+export const dynamic = "force-dynamic";
  * Weekly Thread API
  *
  * GET /api/content/weekly-thread?week=YYYY-WW or ?date=YYYY-MM-DD

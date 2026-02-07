@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { generateDailyModeCard } from "@/lib/content/daily-mode-card";
 import { generateEODAccuracyCard } from "@/lib/content/eod-accuracy-card";

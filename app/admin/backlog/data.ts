@@ -40,6 +40,9 @@ export interface BacklogStorageItem {
   title: string;
   description: string;
   reason: string;
+  category?: BacklogCategory;
+  tags?: string[];
+  isPinned?: boolean;
 }
 
 export const categories = {
@@ -1008,6 +1011,7 @@ export const goal3Weak: WeakItem[] = [
 
 // ============ BACKLOG (Future Consideration) ============
 export const backlogStorage: BacklogStorageItem[] = [
+  { id: "b18", title: "Saturday = Prompt Refinement Day", description: "Dedicate Saturdays to refining AI prompts across all content generation systems (Axelrod bot, video scripts, tweet generation). Review performance, A/B test variations, and improve output quality.", reason: "Growth — Continuous improvement of AI systems is essential for maintaining competitive edge and output quality. Tags: #Growth #AI-Optimization", isPinned: true },
   { id: "b12", title: "Gamma Explainer Series", description: "Educational thread series explaining gamma mechanics and how they affect TSLA price action.", reason: "High effort, low conversion — better focus on proof-based content first." },
   { id: "b13", title: "Monthly State of TSLA", description: "Monthly macro-style recap of TSLA trend, catalysts, and positioning.", reason: "Not differentiated vs broader market commentary — low ROI for now." },
   { id: "b14", title: "HIRO Swing Visualization", description: "Visual map of HIRO swing signals over time with price overlays.", reason: "Too niche for current audience; limited growth impact." },
