@@ -92,6 +92,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Reports latest endpoint (used by Content Hub for data injection)
+  if (request.nextUrl.pathname === "/api/reports/latest") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
