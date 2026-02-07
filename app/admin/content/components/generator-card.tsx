@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Wand2, Copy, Trash2, Edit3, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { getDefaultPrompt, injectReportData } from "@/lib/content/prompts";
 import { PromptEditorModal } from "./prompt-editor-modal";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 interface ReportData {
   mode?: string;
@@ -60,6 +63,14 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
   const subtitleInputRef = useRef<HTMLInputElement>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id || null);
+    });
+  }, []);
 
   // Fetch latest report data on mount
   useEffect(() => {
@@ -99,27 +110,73 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     fetchReport();
   }, []);
 
-  // Load custom title from localStorage on mount
+  // Load custom title from cloud/localStorage
   useEffect(() => {
-    const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
-    if (renamedTitles) {
-      const titles = JSON.parse(renamedTitles);
-      if (titles[contentKey]) {
-        setTitle(titles[contentKey]);
+    if (!userId) return;
+    
+    const loadData = async () => {
+      try {
+        // Try cloud first
+        const { data: cloudData } = await supabase
+          .from("content_hub_data")
+          .select("renamed_titles")
+          .eq("user_id", userId)
+          .single();
+        
+        if (cloudData?.renamed_titles && cloudData.renamed_titles[contentKey]) {
+          setTitle(cloudData.renamed_titles[contentKey]);
+          return;
+        }
+        
+        // Fallback to localStorage
+        const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
+        if (renamedTitles) {
+          const titles = JSON.parse(renamedTitles);
+          if (titles[contentKey]) {
+            setTitle(titles[contentKey]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load title:", err);
       }
-    }
-  }, [contentKey]);
+    };
+    
+    loadData();
+  }, [contentKey, userId]);
 
-  // Load custom subtitle from localStorage on mount
+  // Load custom subtitle from cloud/localStorage
   useEffect(() => {
-    const customSubtitles = localStorage.getItem("content-hub-subtitles");
-    if (customSubtitles) {
-      const subtitles = JSON.parse(customSubtitles);
-      if (subtitles[contentKey]) {
-        setSubtitle(subtitles[contentKey]);
+    if (!userId) return;
+    
+    const loadData = async () => {
+      try {
+        // Try cloud first
+        const { data: cloudData } = await supabase
+          .from("content_hub_data")
+          .select("custom_subtitles")
+          .eq("user_id", userId)
+          .single();
+        
+        if (cloudData?.custom_subtitles && cloudData.custom_subtitles[contentKey]) {
+          setSubtitle(cloudData.custom_subtitles[contentKey]);
+          return;
+        }
+        
+        // Fallback to localStorage
+        const customSubtitles = localStorage.getItem("content-hub-subtitles");
+        if (customSubtitles) {
+          const subtitles = JSON.parse(customSubtitles);
+          if (subtitles[contentKey]) {
+            setSubtitle(subtitles[contentKey]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load subtitle:", err);
       }
-    }
-  }, [contentKey]);
+    };
+    
+    loadData();
+  }, [contentKey, userId]);
 
   // Focus input when editing title
   useEffect(() => {
@@ -137,14 +194,32 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     }
   }, [isEditingSubtitle]);
 
-  const saveTitle = (newTitle: string) => {
+  const saveTitle = async (newTitle: string) => {
     const trimmedTitle = newTitle.trim();
     if (trimmedTitle && trimmedTitle !== label) {
       setTitle(trimmedTitle);
+      
+      // Update localStorage
       const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
       const titles = renamedTitles ? JSON.parse(renamedTitles) : {};
       titles[contentKey] = trimmedTitle;
       localStorage.setItem("content-hub-renamed-titles", JSON.stringify(titles));
+      
+      // Sync to cloud
+      if (userId) {
+        try {
+          await supabase
+            .from("content_hub_data")
+            .upsert({
+              user_id: userId,
+              renamed_titles: titles,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+        } catch (err) {
+          console.error("Failed to sync title:", err);
+        }
+      }
+      
       onTitleChange?.(trimmedTitle);
     } else if (!trimmedTitle) {
       setTitle(label);
@@ -161,15 +236,32 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     }
   };
 
-  const saveSubtitle = (newSubtitle: string) => {
+  const saveSubtitle = async (newSubtitle: string) => {
     const trimmedSubtitle = newSubtitle.trim();
     const defaultSubtitle = defaultSubtitles[contentKey] || "";
     if (trimmedSubtitle && trimmedSubtitle !== defaultSubtitle) {
       setSubtitle(trimmedSubtitle);
+      
+      // Update localStorage
       const customSubtitles = localStorage.getItem("content-hub-subtitles");
       const subtitles = customSubtitles ? JSON.parse(customSubtitles) : {};
       subtitles[contentKey] = trimmedSubtitle;
       localStorage.setItem("content-hub-subtitles", JSON.stringify(subtitles));
+      
+      // Sync to cloud
+      if (userId) {
+        try {
+          await supabase
+            .from("content_hub_data")
+            .upsert({
+              user_id: userId,
+              custom_subtitles: subtitles,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
+        } catch (err) {
+          console.error("Failed to sync subtitle:", err);
+        }
+      }
     } else if (!trimmedSubtitle) {
       setSubtitle(defaultSubtitle);
     }

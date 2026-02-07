@@ -1,34 +1,107 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Cloud } from "lucide-react";
 import { GeneratorCard } from "./generator-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CONTENT_TYPES } from "@/lib/content/prompts";
+import { createClient } from "@/lib/supabase/client";
 
 interface CustomContentType {
   key: string;
   label: string;
 }
 
+const supabase = createClient();
+
 export function GeneratorsTab() {
   const [customTypes, setCustomTypes] = useState<CustomContentType[]>([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newTypeTitle, setNewTypeTitle] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
+  const lastSave = useRef<number>(0);
 
-  // Load custom types from localStorage on mount
+  // Get current user
   useEffect(() => {
-    const stored = localStorage.getItem("content-hub-custom-types");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setCustomTypes(parsed);
-      } catch (e) {
-        console.error("Failed to parse custom types:", e);
-      }
-    }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id || null);
+    });
   }, []);
+
+  // Load custom types from cloud first, then localStorage
+  useEffect(() => {
+    if (!userId) return;
+    
+    const loadData = async () => {
+      try {
+        // Try cloud first
+        const { data: cloudData, error } = await supabase
+          .from("content_hub_data")
+          .select("custom_types")
+          .eq("user_id", userId)
+          .single();
+        
+        if (!error && cloudData?.custom_types && cloudData.custom_types.length > 0) {
+          console.log("[GeneratorsTab] Loaded from cloud");
+          setCustomTypes(cloudData.custom_types);
+          setSyncStatus("synced");
+          return;
+        }
+        
+        // Fallback to localStorage
+        const stored = localStorage.getItem("content-hub-custom-types");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            setCustomTypes(parsed);
+            // Also save to cloud
+            saveToCloud(parsed);
+          } catch (e) {
+            console.error("Failed to parse custom types:", e);
+          }
+        }
+      } catch (err) {
+        console.error("[GeneratorsTab] Load error:", err);
+      }
+    };
+    
+    loadData();
+  }, [userId]);
+
+  // Save to cloud
+  const saveToCloud = async (types: CustomContentType[]) => {
+    if (!userId) return;
+    
+    const now = Date.now();
+    if (now - lastSave.current < 2000) return;
+    lastSave.current = now;
+    
+    setSyncStatus("syncing");
+    
+    try {
+      const { error } = await supabase
+        .from("content_hub_data")
+        .upsert({
+          user_id: userId,
+          custom_types: types,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+      
+      if (error) {
+        console.error("[GeneratorsTab] Save error:", error);
+        setSyncStatus("idle");
+      } else {
+        setSyncStatus("synced");
+        // Also update localStorage as backup
+        localStorage.setItem("content-hub-custom-types", JSON.stringify(types));
+      }
+    } catch (err) {
+      console.error("[GeneratorsTab] Save failed:", err);
+      setSyncStatus("idle");
+    }
+  };
 
   const handleAddCustomType = () => {
     const trimmedTitle = newTypeTitle.trim();
@@ -42,27 +115,37 @@ export function GeneratorsTab() {
 
     const updatedTypes = [...customTypes, newType];
     setCustomTypes(updatedTypes);
-    localStorage.setItem("content-hub-custom-types", JSON.stringify(updatedTypes));
+    saveToCloud(updatedTypes);
 
     // Reset form
     setNewTypeTitle("");
     setIsAddingNew(false);
   };
 
-  const handleDeleteCustomType = (keyToDelete: string) => {
+  const handleDeleteCustomType = async (keyToDelete: string) => {
     const updatedTypes = customTypes.filter((type) => type.key !== keyToDelete);
     setCustomTypes(updatedTypes);
-    localStorage.setItem("content-hub-custom-types", JSON.stringify(updatedTypes));
+    
+    // Save to cloud
+    await saveToCloud(updatedTypes);
 
-    // Also clean up associated data
+    // Also clean up associated data from localStorage
     localStorage.removeItem(`content-hub-prompt-${keyToDelete}`);
 
-    // Remove from renamed titles if present
+    // Remove from renamed titles if present (also sync to cloud)
     const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
     if (renamedTitles) {
       const titles = JSON.parse(renamedTitles);
       delete titles[keyToDelete];
       localStorage.setItem("content-hub-renamed-titles", JSON.stringify(titles));
+      // Also sync renamed titles to cloud
+      await supabase
+        .from("content_hub_data")
+        .upsert({
+          user_id: userId,
+          renamed_titles: titles,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
     }
   };
 
@@ -84,6 +167,16 @@ export function GeneratorsTab() {
             Generate trading content with customizable AI prompts
           </p>
         </div>
+        {syncStatus === "syncing" && (
+          <span className="text-sm text-purple-400 flex items-center gap-1">
+            <Cloud className="w-4 h-4" /> Syncing...
+          </span>
+        )}
+        {syncStatus === "synced" && (
+          <span className="text-sm text-green-400 flex items-center gap-1">
+            <Cloud className="w-4 h-4" /> Cloud Saved
+          </span>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 xl:grid-cols-2 gap-4">

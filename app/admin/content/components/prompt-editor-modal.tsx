@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, RotateCcw, Save } from "lucide-react";
+import { X, RotateCcw, Save, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { getDefaultPrompt } from "@/lib/content/prompts";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 interface PromptEditorModalProps {
   isOpen: boolean;
@@ -25,20 +28,80 @@ export function PromptEditorModal({
 }: PromptEditorModalProps) {
   const [prompt, setPrompt] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      const saved = localStorage.getItem(storageKey);
-      setPrompt(saved || getDefaultPrompt(contentType));
-      setIsDirty(false);
+      const loadPrompt = async () => {
+        try {
+          // Try to load from cloud first
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: cloudData } = await supabase
+              .from("content_hub_data")
+              .select("custom_prompts")
+              .eq("user_id", user.id)
+              .single();
+            
+            if (cloudData?.custom_prompts && cloudData.custom_prompts[contentType]) {
+              setPrompt(cloudData.custom_prompts[contentType]);
+              setIsDirty(false);
+              return;
+            }
+          }
+          
+          // Fallback to localStorage
+          const saved = localStorage.getItem(storageKey);
+          setPrompt(saved || getDefaultPrompt(contentType));
+          setIsDirty(false);
+        } catch (err) {
+          console.error("Failed to load prompt:", err);
+          const saved = localStorage.getItem(storageKey);
+          setPrompt(saved || getDefaultPrompt(contentType));
+        }
+      };
+      
+      loadPrompt();
     }
   }, [isOpen, storageKey, contentType]);
 
-  const handleSave = () => {
-    localStorage.setItem(storageKey, prompt);
-    setIsDirty(false);
-    onSaved?.();
-    onClose();
+  const handleSave = async () => {
+    setIsSaving(true);
+    
+    try {
+      // Save to localStorage
+      localStorage.setItem(storageKey, prompt);
+      
+      // Save to cloud
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get existing custom prompts
+        const { data: existingData } = await supabase
+          .from("content_hub_data")
+          .select("custom_prompts")
+          .eq("user_id", user.id)
+          .single();
+        
+        const customPrompts = existingData?.custom_prompts || {};
+        customPrompts[contentType] = prompt;
+        
+        await supabase
+          .from("content_hub_data")
+          .upsert({
+            user_id: user.id,
+            custom_prompts: customPrompts,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+      }
+      
+      setIsDirty(false);
+      onSaved?.();
+      onClose();
+    } catch (err) {
+      console.error("Failed to save prompt:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -82,7 +145,7 @@ export function PromptEditorModal({
           />
           <p className="mt-2 text-xs text-zinc-600">
             This prompt will be used when generating {contentLabel.toLowerCase()}. 
-            Changes are saved to your browser&apos;s local storage.
+            Changes are saved to the cloud and synced across devices.
           </p>
         </div>
 
@@ -106,11 +169,20 @@ export function PromptEditorModal({
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!isDirty}
+              disabled={!isDirty || isSaving}
               className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
             >
-              <Save className="w-4 h-4" />
-              Save Prompt
+              {isSaving ? (
+                <>
+                  <Cloud className="w-4 h-4" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Prompt
+                </>
+              )}
             </Button>
           </div>
         </div>

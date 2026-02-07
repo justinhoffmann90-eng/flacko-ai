@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Save } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Save, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CONTENT_TYPE_KEYS } from "@/lib/content/prompts";
+import { createClient } from "@/lib/supabase/client";
 
 interface ScheduleSlot {
   time: string;
@@ -23,25 +24,111 @@ const DEFAULT_TIMES = ["7:00a", "9:30a", "12:00p", "2:00p", "4:00p"];
 
 const STORAGE_KEY = "content-hub-weekly-schedule";
 
+const supabase = createClient();
+
 export function CalendarTab() {
   const [schedule, setSchedule] = useState<ScheduleSlot[]>([]);
   const [saved, setSaved] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
+  const [userId, setUserId] = useState<string | null>(null);
+  const lastSave = useRef<number>(0);
 
-  // Initialize schedule from localStorage or defaults
+  // Get current user
   useEffect(() => {
-    const savedSchedule = localStorage.getItem(STORAGE_KEY);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id || null);
+    });
+  }, []);
+
+  // Load from cloud first, then localStorage fallback
+  useEffect(() => {
+    if (!userId) return;
     
-    if (savedSchedule) {
+    const loadData = async () => {
       try {
-        const parsed = JSON.parse(savedSchedule);
-        setSchedule(parsed);
-      } catch {
+        // Try cloud first
+        const { data: cloudData, error } = await supabase
+          .from("content_hub_data")
+          .select("weekly_schedule")
+          .eq("user_id", userId)
+          .single();
+        
+        if (!error && cloudData?.weekly_schedule && Object.keys(cloudData.weekly_schedule).length > 0) {
+          console.log("[CalendarTab] Loaded from cloud");
+          const parsed = parseScheduleFromObject(cloudData.weekly_schedule);
+          setSchedule(parsed);
+          setSyncStatus("synced");
+          return;
+        }
+        
+        // Fallback to localStorage
+        const savedSchedule = localStorage.getItem(STORAGE_KEY);
+        if (savedSchedule) {
+          try {
+            const parsed = JSON.parse(savedSchedule);
+            setSchedule(parsed);
+            // Also save to cloud
+            saveToCloud(parsed);
+          } catch {
+            initializeDefaultSchedule();
+          }
+        } else {
+          initializeDefaultSchedule();
+        }
+      } catch (err) {
+        console.error("[CalendarTab] Load error:", err);
         initializeDefaultSchedule();
       }
-    } else {
-      initializeDefaultSchedule();
+    };
+    
+    loadData();
+  }, [userId]);
+
+  // Auto-save to cloud when schedule changes
+  useEffect(() => {
+    if (!userId || schedule.length === 0) return;
+    
+    const timeout = setTimeout(() => {
+      saveToCloud(schedule);
+    }, 1000);
+    
+    return () => clearTimeout(timeout);
+  }, [schedule, userId]);
+
+  const saveToCloud = async (scheduleData: ScheduleSlot[]) => {
+    if (!userId) return;
+    
+    const now = Date.now();
+    if (now - lastSave.current < 2000) return;
+    lastSave.current = now;
+    
+    setSyncStatus("syncing");
+    
+    try {
+      const scheduleObject = scheduleToObject(scheduleData);
+      const { error } = await supabase
+        .from("content_hub_data")
+        .upsert({
+          user_id: userId,
+          weekly_schedule: scheduleObject,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+      
+      if (error) {
+        console.error("[CalendarTab] Save error:", error);
+        setSyncStatus("idle");
+      } else {
+        setSyncStatus("synced");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+        // Also update localStorage as backup
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleData));
+      }
+    } catch (err) {
+      console.error("[CalendarTab] Save failed:", err);
+      setSyncStatus("idle");
     }
-  }, []);
+  };
 
   const initializeDefaultSchedule = () => {
     const defaultSchedule: ScheduleSlot[] = DEFAULT_TIMES.map((time) => ({
@@ -57,6 +144,25 @@ export function CalendarTab() {
       },
     }));
     setSchedule(defaultSchedule);
+  };
+
+  // Convert schedule array to object for storage
+  const scheduleToObject = (sched: ScheduleSlot[]): Record<string, Record<string, string>> => {
+    const obj: Record<string, Record<string, string>> = {};
+    sched.forEach((slot) => {
+      obj[slot.time] = slot.daySlots;
+    });
+    return obj;
+  };
+
+  // Convert object back to schedule array
+  const parseScheduleFromObject = (obj: Record<string, Record<string, string>>): ScheduleSlot[] => {
+    return DEFAULT_TIMES.map((time) => ({
+      time,
+      daySlots: obj[time] || {
+        Mon: "", Tue: "", Wed: "", Thu: "", Fri: "", Sat: "", Sun: "",
+      },
+    }));
   };
 
   const handleSlotChange = (timeIndex: number, day: string, value: string) => {
@@ -75,9 +181,7 @@ export function CalendarTab() {
   };
 
   const handleSave = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    saveToCloud(schedule);
   };
 
   const contentOptions = [{ key: "", label: "(none)" }, ...CONTENT_TYPE_KEYS];
@@ -91,13 +195,25 @@ export function CalendarTab() {
             Plan what content types to post and when (template repeats weekly)
           </p>
         </div>
-        <Button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-        >
-          <Save className="w-4 h-4" />
-          {saved ? "Saved!" : "Save Weekly Schedule"}
-        </Button>
+        <div className="flex items-center gap-3">
+          {syncStatus === "syncing" && (
+            <span className="text-sm text-purple-400 flex items-center gap-1">
+              <Cloud className="w-4 h-4" /> Syncing...
+            </span>
+          )}
+          {syncStatus === "synced" && (
+            <span className="text-sm text-green-400 flex items-center gap-1">
+              <Cloud className="w-4 h-4" /> Cloud Saved
+            </span>
+          )}
+          <Button
+            onClick={handleSave}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Save className="w-4 h-4" />
+            {saved ? "Saved!" : "Save Weekly Schedule"}
+          </Button>
+        </div>
       </div>
 
       {/* Schedule Grid */}
