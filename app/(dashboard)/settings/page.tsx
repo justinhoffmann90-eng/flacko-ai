@@ -25,7 +25,7 @@ interface DiscordInfo {
   username: string | null;
 }
 
-const DISCORD_INVITE_URL = "https://discord.gg/rS3wsxjt";
+const DISCORD_INVITE_URL = "https://discord.gg/WuDSbQFbfW";
 const DISCORD_CLIENT_ID = "1465761828461216028";
 
 export default function SettingsPage() {
