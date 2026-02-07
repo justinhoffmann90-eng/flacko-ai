@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// In-memory store for activities (will be replaced with Convex when deployed)
-const activities: any[] = [];
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const body = await request.json();
     
     const {
@@ -24,26 +23,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store activity (in-memory for now, Convex later)
-    const activity = {
-      _id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      action_type,
-      description,
-      status,
-      metadata,
-      session_id,
-      duration_ms,
-    };
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
     
-    activities.unshift(activity);
+    // Store activity in Supabase
+    const { data: activity, error } = await supabase
+      .from("activity_logs")
+      .insert({
+        user_id: user?.id,
+        action_type,
+        description,
+        status,
+        metadata: metadata || {},
+        session_id,
+        duration_ms,
+      })
+      .select()
+      .single();
     
-    // Keep only last 1000 activities
-    if (activities.length > 1000) {
-      activities.length = 1000;
+    if (error) {
+      console.error("Error storing activity:", error);
+      return NextResponse.json(
+        { error: "Failed to store activity" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true, activityId: activity._id });
+    return NextResponse.json({ success: true, activityId: activity.id });
   } catch (error) {
     console.error("Error logging activity:", error);
     return NextResponse.json(
@@ -54,5 +60,46 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ activities: activities.slice(0, 100) });
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Fetch recent activities
+    const { data: activities, error } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .eq("user_id", user?.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    
+    if (error) {
+      console.error("Error fetching activities:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch activities" },
+        { status: 500 }
+      );
+    }
+
+    // Transform to match expected format
+    const transformed = activities?.map(a => ({
+      _id: a.id,
+      timestamp: new Date(a.created_at).getTime(),
+      action_type: a.action_type,
+      description: a.description,
+      status: a.status,
+      metadata: a.metadata,
+      session_id: a.session_id,
+      duration_ms: a.duration_ms,
+    })) || [];
+
+    return NextResponse.json({ activities: transformed });
+  } catch (error) {
+    console.error("Error fetching activities:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch activities" },
+      { status: 500 }
+    );
+  }
 }

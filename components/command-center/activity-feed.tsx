@@ -106,50 +106,6 @@ export function ActivityFeed() {
     ? activities.filter((a) => a.action_type === filter)
     : activities;
 
-  // Demo activities for preview
-  const demoActivities: Activity[] = [
-    {
-      _id: "demo_1",
-      timestamp: Date.now() - 5 * 60000,
-      action_type: "report_generated",
-      description: "Daily TSLA report generated (Feb 6, 2026)",
-      status: "success",
-      metadata: { filePath: "~/trading_inputs/daily-reports/TSLA_Daily_Report_2026-02-06.md" },
-    },
-    {
-      _id: "demo_2",
-      timestamp: Date.now() - 15 * 60000,
-      action_type: "discord_posted",
-      description: "EOD wrap posted to Discord #reports",
-      status: "success",
-      metadata: { url: "https://discord.com/channels/..." },
-    },
-    {
-      _id: "demo_3",
-      timestamp: Date.now() - 45 * 60000,
-      action_type: "alert_sent",
-      description: "HIRO alert triggered: -47M reading",
-      status: "success",
-    },
-    {
-      _id: "demo_4",
-      timestamp: Date.now() - 2 * 3600000,
-      action_type: "cron_executed",
-      description: "Morning brief cron executed",
-      status: "success",
-    },
-    {
-      _id: "demo_5",
-      timestamp: Date.now() - 3 * 3600000,
-      action_type: "file_modified",
-      description: "Updated MEMORY.md with new trading insights",
-      status: "success",
-      metadata: { filePath: "~/clawd/MEMORY.md" },
-    },
-  ];
-
-  const displayActivities = activities.length > 0 ? filteredActivities : demoActivities;
-
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
       {/* Header */}
@@ -160,9 +116,6 @@ export function ActivityFeed() {
             <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">
               {actionTypeLabels[filter]}
             </span>
-          )}
-          {activities.length === 0 && (
-            <span className="text-xs text-gray-500">(Demo data - Convex setup required)</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -211,12 +164,14 @@ export function ActivityFeed() {
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
             Loading activities...
           </div>
-        ) : displayActivities.length === 0 ? (
+        ) : filteredActivities.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
-            No activities found
+            <div className="text-4xl mb-3">📋</div>
+            <div className="text-lg font-medium text-white mb-1">No activities yet</div>
+            <div className="text-sm">Activities will appear here as you use the system</div>
           </div>
         ) : (
-          displayActivities.map((activity) => (
+          filteredActivities.map((activity) => (
             <div
               key={activity._id}
               className="flex items-start gap-4 p-4 hover:bg-white/5 transition-colors"
