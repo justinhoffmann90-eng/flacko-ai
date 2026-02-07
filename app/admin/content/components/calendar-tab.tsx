@@ -1,21 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Save, Cloud } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CONTENT_TYPE_KEYS } from "@/lib/content/prompts";
+import { useState, useEffect, useRef } from "react";
+import { Cloud } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
 interface ScheduleSlot {
   time: string;
-  daySlots: Record<string, string>; // day -> content type key
+  daySlots: Record<string, string>; // day -> content type text
 }
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -28,8 +20,7 @@ const supabase = createClient();
 
 export function CalendarTab() {
   const [schedule, setSchedule] = useState<ScheduleSlot[]>([]);
-  const [saved, setSaved] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [userId, setUserId] = useState<string | null>(null);
   const lastSave = useRef<number>(0);
 
@@ -67,8 +58,8 @@ export function CalendarTab() {
           try {
             const parsed = JSON.parse(savedSchedule);
             setSchedule(parsed);
-            // Also save to cloud
-            saveToCloud(parsed);
+            // Sync to cloud in background
+            saveToCloud(parsed, false);
           } catch {
             initializeDefaultSchedule();
           }
@@ -84,25 +75,25 @@ export function CalendarTab() {
     loadData();
   }, [userId]);
 
-  // Auto-save to cloud when schedule changes
+  // Auto-save to cloud when schedule changes (debounced)
   useEffect(() => {
     if (!userId || schedule.length === 0) return;
     
     const timeout = setTimeout(() => {
-      saveToCloud(schedule);
-    }, 1000);
+      saveToCloud(schedule, true);
+    }, 800);
     
     return () => clearTimeout(timeout);
   }, [schedule, userId]);
 
-  const saveToCloud = async (scheduleData: ScheduleSlot[]) => {
+  const saveToCloud = async (scheduleData: ScheduleSlot[], showStatus = true) => {
     if (!userId) return;
     
     const now = Date.now();
-    if (now - lastSave.current < 2000) return;
+    if (now - lastSave.current < 1000) return; // Rate limit
     lastSave.current = now;
     
-    setSyncStatus("syncing");
+    if (showStatus) setSyncStatus("syncing");
     
     try {
       const scheduleObject = scheduleToObject(scheduleData);
@@ -116,17 +107,15 @@ export function CalendarTab() {
       
       if (error) {
         console.error("[CalendarTab] Save error:", error);
-        setSyncStatus("idle");
+        setSyncStatus("error");
       } else {
         setSyncStatus("synced");
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
         // Also update localStorage as backup
         localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleData));
       }
     } catch (err) {
       console.error("[CalendarTab] Save failed:", err);
-      setSyncStatus("idle");
+      setSyncStatus("error");
     }
   };
 
@@ -177,14 +166,8 @@ export function CalendarTab() {
       };
       return updated;
     });
-    setSaved(false);
+    // Auto-save will trigger via useEffect
   };
-
-  const handleSave = () => {
-    saveToCloud(schedule);
-  };
-
-  const contentOptions = [{ key: "", label: "(none)" }, ...CONTENT_TYPE_KEYS];
 
   return (
     <div className="space-y-6">
@@ -192,27 +175,25 @@ export function CalendarTab() {
         <div>
           <h2 className="text-xl font-semibold">Weekly Schedule</h2>
           <p className="text-sm text-zinc-500 mt-1">
-            Plan what content types to post and when (template repeats weekly)
+            Plan your content schedule — type freely in any field (auto-saves)
           </p>
         </div>
         <div className="flex items-center gap-3">
           {syncStatus === "syncing" && (
             <span className="text-sm text-purple-400 flex items-center gap-1">
-              <Cloud className="w-4 h-4" /> Syncing...
+              <Cloud className="w-4 h-4" /> Saving...
             </span>
           )}
           {syncStatus === "synced" && (
             <span className="text-sm text-green-400 flex items-center gap-1">
-              <Cloud className="w-4 h-4" /> Cloud Saved
+              <Cloud className="w-4 h-4" /> Saved
             </span>
           )}
-          <Button
-            onClick={handleSave}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <Save className="w-4 h-4" />
-            {saved ? "Saved!" : "Save Weekly Schedule"}
-          </Button>
+          {syncStatus === "error" && (
+            <span className="text-sm text-red-400 flex items-center gap-1">
+              <Cloud className="w-4 h-4" /> Save failed
+            </span>
+          )}
         </div>
       </div>
 
@@ -228,7 +209,7 @@ export function CalendarTab() {
                 {DAYS.map((day) => (
                   <th
                     key={day}
-                    className="px-2 py-3 text-center text-sm font-medium text-zinc-400 min-w-[100px]"
+                    className="px-2 py-3 text-center text-sm font-medium text-zinc-400 min-w-[120px]"
                   >
                     {day}
                   </th>
@@ -243,27 +224,13 @@ export function CalendarTab() {
                   </td>
                   {DAYS.map((day) => (
                     <td key={day} className="px-2 py-2">
-                      <Select
+                      <Input
+                        type="text"
                         value={slot.daySlots[day] || ""}
-                        onValueChange={(value) =>
-                          handleSlotChange(timeIndex, day, value)
-                        }
-                      >
-                        <SelectTrigger className="w-full bg-zinc-900 border-zinc-800 text-xs h-8">
-                          <SelectValue placeholder="-" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                          {contentOptions.map((option) => (
-                            <SelectItem
-                              key={option.key}
-                              value={option.key}
-                              className="text-xs"
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(e) => handleSlotChange(timeIndex, day, e.target.value)}
+                        placeholder="Type here..."
+                        className="w-full bg-zinc-900 border-zinc-800 text-xs h-8 text-zinc-300 placeholder:text-zinc-600"
+                      />
                     </td>
                   ))}
                 </tr>
@@ -273,24 +240,11 @@ export function CalendarTab() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="bg-zinc-950/30 border border-zinc-800 rounded-xl p-4">
-        <h3 className="text-sm font-medium text-zinc-400 mb-3">Content Types</h3>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2">
-          {CONTENT_TYPE_KEYS.map((type) => (
-            <div key={type.key} className="flex items-center gap-2 text-sm">
-              <span className="text-zinc-500">•</span>
-              <span className="text-zinc-400">{type.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Info */}
       <div className="text-sm text-zinc-600">
         <p>
-          This schedule is saved to your browser&apos;s local storage and persists
-          across sessions. It&apos;s a weekly template that applies to every week.
+          Changes are automatically saved to the cloud. You can type any content 
+          you want for each time slot — no restrictions.
         </p>
       </div>
     </div>

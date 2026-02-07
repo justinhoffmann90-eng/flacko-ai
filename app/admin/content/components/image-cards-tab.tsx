@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import html2canvas from "html2canvas";
 import { Wand2, Download, Edit3, Image } from "lucide-react";
+
+// Dynamically import html2canvas only on client side
+const getHtml2canvas = async () => {
+  if (typeof window === "undefined") return null;
+  const { default: html2canvas } = await import("html2canvas");
+  return html2canvas;
+};
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +50,9 @@ function ModeCardGenerator() {
 
   // Fetch latest report data on mount
   useEffect(() => {
+    // Guard for SSR
+    if (typeof window === "undefined") return;
+
     const fetchLatestReport = async () => {
       setIsLoading(true);
       try {
@@ -122,6 +131,9 @@ function ModeCardGenerator() {
 
   const handleDownload = async () => {
     if (!previewRef.current || !previewData) return;
+
+    const html2canvas = await getHtml2canvas();
+    if (!html2canvas) return;
 
     const canvas = await html2canvas(previewRef.current, {
       backgroundColor: null,
@@ -361,6 +373,9 @@ function LevelsCardGenerator() {
   const handleDownload = async () => {
     if (!previewRef.current || !previewData) return;
 
+    const html2canvas = await getHtml2canvas();
+    if (!html2canvas) return;
+
     const canvas = await html2canvas(previewRef.current, {
       backgroundColor: null,
       scale: 2,
@@ -523,6 +538,9 @@ function ScorecardGenerator() {
 
   const handleDownload = async () => {
     if (!previewRef.current || !previewData) return;
+
+    const html2canvas = await getHtml2canvas();
+    if (!html2canvas) return;
 
     const canvas = await html2canvas(previewRef.current, {
       backgroundColor: null,

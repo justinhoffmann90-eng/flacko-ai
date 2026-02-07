@@ -6,7 +6,13 @@ import { useState } from "react";
 import { Wand2, Calendar, Image } from "lucide-react";
 import { GeneratorsTab } from "./components/generators-tab";
 import { CalendarTab } from "./components/calendar-tab";
-import { ImageCardsTab } from "./components/image-cards-tab";
+import dynamicComponent from "next/dynamic";
+
+// Dynamically import ImageCardsTab with SSR disabled to prevent static prerender issues
+const ImageCardsTab = dynamicComponent(
+  () => import("./components/image-cards-tab").then((mod) => mod.ImageCardsTab),
+  { ssr: false }
+);
 
 const TABS = [
   { id: "generators", label: "Generators", icon: Wand2 },
