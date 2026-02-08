@@ -1,79 +1,111 @@
 ---
 title: "Master Eject"
-description: "The capital protection level — when to get out, no questions asked."
-readingTime: "4 min"
+description: "The escalating defense zone — how capital protection actually works."
+readingTime: "5 min"
 ---
 
 ## What Is the Master Eject?
 
-The **Master Eject** is a price level where you exit all positions. No hesitation. No hoping for a bounce. Just out.
+The Master Eject is **not a single price level** where you panic-sell everything. It's an **escalating defense zone** anchored at the Weekly 21 EMA, with graduated responses as price moves lower.
 
-It's your **circuit breaker** for capital protection.
+**The old way:** Price hits level → sell everything → go to cash.
 
----
-
-## Why It Exists
-
-| Reason | Explanation |
-|--------|-------------|
-| **Limits drawdowns** | Small losses stay small |
-| **Removes emotion** | Decision is pre-made |
-| **Preserves capital** | Live to trade another day |
-| **Signals regime change** | If broken, structure has failed |
+**The v4.0 way:** Price enters zone → cut leverage → assess context → trim if structure breaks → hold core for recovery.
 
 ---
 
-## How It's Set
+## The Escalating Defense Zone
 
-The Master Eject is placed below key support levels:
-
-| Consideration | Example |
-|---------------|---------|
-| Below Put Wall | Put Wall at $400 → Master Eject at $390 |
-| Below weekly EMA support | 21 EMA at $395 → Master Eject at $390 |
-| Technical structure | Major support at $395 → Master Eject at $388 |
-
-Typically **2-5% below** the lowest key support level.
+| Level | What It Means | Action |
+|-------|---------------|--------|
+| **Weekly 21 EMA** | Structure damage — weekly trend support lost | Cut ALL leverage (TSLL, options). Non-negotiable. |
+| **Between W21 and Put Wall** | Contested territory — watch HIRO and gamma | Hold TSLA shares. No new buys until support confirms. Assess context. |
+| **Put Wall / Gamma Strike** | Institutional support floor | If HIRO positive + level holding: nibble TSLA shares with available cash |
+| **Below Put Wall** | Structure broken, no gamma floor | Trim TSLA to 50%. 200 SMA Override takes over. |
 
 ---
 
-## What To Do When It Triggers
+## Why Partial Exit, Not Full Liquidation?
 
-| Step | Action |
-|------|--------|
-| 1 | **Exit immediately** — don't wait for confirmation |
-| 2 | **Close all TSLA positions** — calls, shares, whatever |
-| 3 | **Go to cash** — sit on hands |
-| 4 | **Wait for new report** — let the system recalibrate |
+The W21 EMA breaking signals **structure damage**, but it doesn't mean the bull thesis is dead.
 
----
+| Outcome | What You Did | Result |
+|---------|--------------|--------|
+| W21 breaks, bounces back | Cut leverage, held shares | Participated in recovery with core position |
+| W21 breaks, falls to Put Wall | Cut leverage, held shares, nibbled support | Built position at better prices |
+| W21 breaks, Put Wall breaks | Cut leverage, trimmed to 50% | Protected capital while keeping exposure |
+| Crashes to 200 SMA | Trimmed to 50%, deployed via Override | Caught generational buying opportunity |
 
-## Master Eject vs Stop Loss
-
-| Feature | Master Eject | Regular Stop |
-|---------|--------------|--------------|
-| **Scope** | All positions | Single position |
-| **Purpose** | Capital protection | Trade management |
-| **Flexibility** | None — it's absolute | Can be adjusted |
-| **Emotion** | Pre-decided | Often moved |
+**The asymmetry:** Cutting leverage protects you from the worst outcomes. Holding 50% core keeps you positioned for recovery. You don't need to be all-in or all-out.
 
 ---
 
-## Example
+## The Two-Close Rule
 
-> **Today's Report:**
-> - Put Wall: $400
-> - Master Eject: $392
-> 
-> **During session:**
-> - 11:30 AM: TSLA drops to $393
-> - 11:45 AM: TSLA breaks $392
-> 
-> **Your action:**
-> - Exit all positions at $392
-> - Don't wait for $390 or $385
-> - Don't hope for a bounce
-> - Cash by 12:00 PM
+Master Eject triggers require **two consecutive daily closes** below the Weekly 21 EMA.
+
+**Why?**
+- Single-day wicks below W21 are common
+- Waiting for confirmation prevents whipsaws
+- If it closes below twice, structure is actually breaking
+
+**Exception:** You still cut leverage on the **first** close below W21. The two-close rule applies to trimming TSLA to 50%.
+
+---
+
+## What To Do At Each Level
+
+### Level 1: W21 EMA Breaks (First Close)
+
+**Immediate action:**
+1. Sell ALL leverage positions (TSLL, options)
+2. Set alert for second close below W21
+3. Continue holding TSLA shares
+
+**Why cut leverage first?** Leveraged products amplify losses. In a breakdown, they can go to zero. Shares can recover; TSLL during a crash cannot.
+
+### Level 2: W21 EMA Confirms (Second Close)
+
+**If second consecutive close below W21:**
+1. Trim TSLA to 50% of portfolio
+2. Enter EJECTED state (0% daily cap)
+3. Watch for Put Wall / Gamma Strike support
+4. 200 SMA Override now active for oversold deployment
+
+### Level 3: Put Wall / Gamma Strike Zone
+
+**If price reaches institutional support with positive HIRO:**
+- This is your **buy zone** — shares only, no leverage
+- Nibble with available cash
+- Require HIRO positive + level holding
+
+**If HIRO negative and level breaking:**
+- Do NOT buy
+- Wait for flush to complete
+- Watch for 200 SMA Override triggers
+
+### Level 4: Below Put Wall
+
+**If Put Wall breaks:**
+1. Trim remaining TSLA to 50% if not already done
+2. 200 SMA Override is your only deployment method
+3. Tier 1: 20% below 200 SMA = 10% of portfolio in shares
+4. Tier 2: 30% below 200 SMA = 25% (60% TSLA / 40% TSLL)
+5. Tier 3: 40% below 200 SMA = 40% (40% TSLA / 60% TSLL)
+
+---
+
+## Context Matters: Using HIRO
+
+The same price level means different things with different HIRO readings:
+
+| HIRO | Price at Put Wall | Action |
+|------|-------------------|--------|
+| Strongly positive (+50%+ of range) | Institutional buying, support likely | Nibble shares |
+| Neutral (around 0) | Unclear, wait for direction | Hold, no action |
+| Strongly negative (-50%+ of range) | Institutions selling, breakdown likely | Do not buy, prepare to trim |
+
+**Key insight:** HIRO flipping positive after a selloff often signals capitulation is complete and the floor is in.
 
 ---
 
@@ -81,30 +113,16 @@ Typically **2-5% below** the lowest key support level.
 
 | Mistake | Reality |
 |---------|---------|
-| "It'll bounce" | It might not — and you can't afford to find out |
-| Moving the eject lower | Defeats the purpose |
-| Waiting for confirmation | You already have it — price broke |
-| Re-entering same day | Wait for structure to rebuild |
-
----
-
-## The Hard Truth
-
-The Master Eject will sometimes trigger **right before a reversal**. That's okay.
-
-| Outcome | Result |
-|---------|--------|
-| Eject triggers, price reverses | You missed a bounce — acceptable |
-| Eject triggers, price keeps falling | You saved your capital — critical |
-
-The asymmetry is in your favor: **small misses vs. catastrophic losses**.
+| "I'll sell everything at W21" | Partial exit protects you while keeping recovery exposure |
+| "I'll hold through it" | Cutting leverage is non-negotiable — it can go to zero |
+| "One close below = sell" | Wait for two closes to confirm structure break |
+| "Put Wall means buy" | Only if HIRO is positive — context matters |
+| "200 SMA is too far" | It's your generational buying opportunity |
 
 ---
 
 ## Key Takeaway
 
-The Master Eject isn't about being right. It's about **staying solvent**. Every great trader has a point where they simply get out.
+Master Eject isn't about panic — it's about **graduated defense**. Cut leverage immediately. Trim shares on confirmation. Use context (HIRO, gamma) to decide when the floor is in. The goal is to survive the drawdown while staying positioned for recovery.
 
----
-
-*Capital preservation beats being right. The Master Eject keeps you in the game.*
+*Capital preservation beats being right. But you don't have to choose — you can protect AND participate.*

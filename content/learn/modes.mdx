@@ -4,20 +4,71 @@ description: "The risk dial that controls your position sizing every day."
 readingTime: "5 min"
 ---
 
-## What Are Modes?
+## The Five Modes
 
-Modes are your **daily risk dial**. Before you trade, check the mode — it tells you how much capital you can deploy.
+Modes are your **daily risk dial**. Before you trade, check the mode — it tells you how much capital you can deploy and how much you can hold.
+
+| Mode | Daily Cap | Max Invested | Trim Cap | Posture |
+|------|-----------|--------------|----------|---------|
+| 🟢 **GREEN** | 30% | 85% | 10% | Full send — all timeframes aligned bullish |
+| 🟡 **YELLOW (Improving)** | 20% | 70% | 20% | Daily leading weekly in recovery — meaningful accumulation |
+| 🟡 **YELLOW** | 17.5% | 60% | 20% | Warning signs present — controlled accumulation at key levels |
+| 🟠 **ORANGE** | 10% | 40% | 25% | Multiple warnings — small nibbles only at key support |
+| 🔴 **RED** | 5% | 20% | 30% | Breakdown confirmed — nibbles at extreme support only |
+| ⬛ **EJECTED** | 0%* | 50% core | N/A | Below W21 for 2 closes — hold core, oversold override only |
+
+*EJECTED mode allows deployment only via the 200 SMA Oversold Override.
 
 ---
 
-## The Four Modes
+## Understanding the Caps
 
-| Mode | Daily Cap | When It's Set | What It Means |
-|------|-----------|---------------|---------------|
-| 🟢 **GREEN** | Up to 25% | Favorable conditions | Full send — market structure supports aggressive positioning |
-| 🟡 **YELLOW** | 15% or less | Mixed signals | Proceed with caution — be selective, wait for cleaner setups |
-| 🟠 **ORANGE** | 10% or less | Elevated risk | High caution — only high-conviction plays |
-| 🔴 **RED** | 5% or less | Defensive | Protect capital — nibbles only, if anything |
+### Daily Cap
+How much of your **available cash** you can deploy in a single day.
+
+**Example:** GREEN mode with $100,000 cash = $30,000 max deployment today.
+
+**Why it matters:** Caps force you to spread entries over multiple days. In YELLOW, you need 5-6 days to reach max invested. This protects you from going all-in before a correction deepens.
+
+### Max Invested
+The maximum percentage of your portfolio that should be in TSLA positions.
+
+**Example:** ORANGE mode = 40% max invested. If you have $200,000, max $80,000 in TSLA.
+
+**Why it matters:** Even if you have cash and daily cap available, you shouldn't exceed your max invested limit for the current mode. This prevents overexposure when conditions are deteriorating.
+
+### Trim Cap
+How much of your **remaining position** to trim at each resistance level.
+
+**Example:** ORANGE mode = 25% trim cap. If you hold $40,000 in TSLA and hit T1, trim $10,000.
+
+**Why it matters:** In defensive modes, bounces are suspect. Higher trim caps help you lock in gains faster. In GREEN, you let winners run with smaller trims.
+
+---
+
+## YELLOW Improving vs Standard YELLOW
+
+**YELLOW (Improving)** is a submode that triggers when the Daily BX-Trender is 2+ stages ahead of Weekly in a recovery pattern.
+
+| Submode | Trigger | Daily Cap | Why |
+|---------|---------|-----------|-----|
+| YELLOW (Improving) | Daily green while Weekly still red | 20% | Recovery underway, accumulate meaningfully |
+| YELLOW (Standard) | Warning signs, mixed structure | 17.5% | Uncertain, spread entries more |
+
+**Key insight:** YELLOW Improving lets you build positions faster during early recoveries, while standard YELLOW keeps you cautious during deterioration.
+
+---
+
+## The EJECTED State
+
+When price closes below the Weekly 21 EMA for **two consecutive days**, you enter the EJECTED state:
+
+1. **Sell ALL leverage** (TSLL, options) immediately — non-negotiable
+2. **Trim TSLA to 50%** of portfolio — hold core shares
+3. **Daily cap drops to 0%** — no new buys via normal rules
+4. **200 SMA Oversold Override activates** — only way to deploy in deeply oversold conditions
+
+**Why partial exit, not full liquidation?** The W21 EMA break signals structure damage, but the bull thesis may still be intact. You protect capital by cutting leverage and trimming, but you keep 50% core exposure for the recovery.
 
 ---
 
@@ -27,10 +78,24 @@ The daily report sets the mode based on:
 
 | Factor | What We Look At |
 |--------|-----------------|
-| **Gamma positioning** | Are dealers in positive or negative gamma? |
-| **Key levels** | Where are Call Wall, Put Wall, Gamma Strike? |
-| **Technical structure** | Weekly EMAs, trend direction |
-| **Volatility** | VIX levels, expected move |
+| **Weekly BX-Trender** | Tier 1 — the long-term trend health |
+| **Daily BX-Trender** | Tier 2 — medium-term momentum |
+| **EMA structure** | Price vs 9/13/21 EMAs on weekly and daily |
+| **HIRO** | Dealer positioning and flow direction |
+| **Gamma levels** | Call Wall, Put Wall, Gamma Strike positioning |
+
+---
+
+## The Slow Zone Modifier
+
+When price closes below Daily 21 EMA × 0.98 (2% below), the **Slow Zone** activates:
+
+- **Effect:** Halve your daily cap
+- **Example:** GREEN 30% becomes 15% while Slow Zone active
+- **Resume:** When price reclaims Daily 21 EMA
+- **Exception:** Inactive in GREEN and YELLOW (Improving) modes
+
+The Slow Zone creates a graduated response between normal accumulation and Master Eject. It slows you down without stopping you entirely.
 
 ---
 
@@ -38,31 +103,36 @@ The daily report sets the mode based on:
 
 ### ✅ Do This
 - Check the mode **before the open**
-- Size positions **within your cap**
-- Respect mode changes mid-day if noted
+- Size positions **within your daily cap**
+- Respect **max invested** limits
+- Use the **trim cap** at resistance levels
+- Adjust for Slow Zone when active
 
 ### ❌ Don't Do This
 - Ignore the mode because "you have conviction"
 - Exceed your daily cap
-- Trade aggressively in Red mode
+- Exceed max invested for your mode
+- Trade aggressively in RED mode
+- Fight the system when it says defensive
 
 ---
 
 ## Example
 
-> **Today's Mode: 🟡 YELLOW (15% cap)**
-> 
-> You have a $100,000 portfolio.
-> Maximum deployment today = $15,000.
-> 
-> If you want to take 2 positions, each should be ~$7,500 or less.
+**Today's Mode: 🟠 ORANGE (10% cap, 40% max invested, 25% trim cap)**
+
+You have a $100,000 portfolio with $60,000 cash.
+
+- **Daily cap:** $60,000 × 10% = $6,000 max deployment today
+- **Max invested:** $100,000 × 40% = $40,000 max in TSLA
+- **Current position:** $30,000 in TSLA
+- **Room to add:** $40,000 - $30,000 = $10,000 total (but only $6,000 today)
+- **Trim cap:** If TSLA hits T1, trim 25% of $30,000 = $7,500
 
 ---
 
 ## Key Takeaway
 
-The mode isn't a suggestion — it's a **risk management rule**. Green doesn't mean "buy everything." Red doesn't mean "don't trade." It means **size accordingly**.
-
----
+The mode isn't a suggestion — it's a **risk management rule**. GREEN doesn't mean "buy everything." RED doesn't mean "don't trade." It means **size accordingly** and respect the limits.
 
 *Your mode is set every morning in the Daily Report. Check it first.*

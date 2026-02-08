@@ -1,120 +1,145 @@
 ---
 title: "Slow Zone"
-description: "When momentum stalls — how to recognize it and what to do."
-readingTime: "5 min"
+description: "The sizing reducer that protects you when momentum fades."
+readingTime: "4 min"
 ---
 
 ## What Is the Slow Zone?
 
-The **Slow Zone** is a price region where momentum has stalled. Neither bulls nor bears are in control. It's a waiting game.
+The Slow Zone is a **mechanical sizing trigger** that halves your daily buy cap when price weakens. It's not a market condition you interpret — it's a specific rule that fires automatically.
+
+**Trigger:** Price closes below Daily 21 EMA × 0.98 (2% below the D21)
+
+**Effect:** Daily cap is halved
+
+**Resume:** When price reclaims the Daily 21 EMA
 
 ---
 
-## Characteristics
+## The Rule
 
-| Feature | Description |
-|---------|-------------|
-| **Low directional conviction** | No clear trend |
-| **Compressed price action** | Tight daily ranges |
-| **Mixed signals** | Conflicting indicators |
-| **Dealer neutrality** | Gamma balanced, no dominant flow |
+| Condition | Your Daily Cap |
+|-----------|---------------|
+| Price above Daily 21 EMA | Normal cap per mode |
+| Price 0-2% below Daily 21 EMA | Normal cap per mode |
+| Price >2% below Daily 21 EMA | **Half** your normal cap |
 
----
-
-## How to Identify It
-
-| Indicator | Slow Zone Signal |
-|-----------|------------------|
-| **HIRO** | Oscillating around 0, no sustained direction |
-| **Volume** | Below average, declining |
-| **EMAs** | Price chopping around 9/13, no clean trend |
-| **Range** | Daily moves <2% repeatedly |
-| **Gamma** | Near flip point, balanced positioning |
+**Example:**
+- Mode: GREEN (30% daily cap)
+- D21 EMA: $420
+- Slow Zone trigger: $420 × 0.98 = $411.60
+- TSLA closes at $408 (below $411.60)
+- Your cap: 30% → **15%** while Slow Zone active
 
 ---
 
-## Why It Happens
+## Why It Exists
 
-| Cause | Explanation |
-|-------|-------------|
-| **Waiting for catalyst** | Earnings, Fed, macro event |
-| **Exhaustion** | After a big move, market rests |
-| **Indecision** | Buyers and sellers balanced |
-| **Holiday/low liquidity** | Reduced participation |
+The Slow Zone creates a **graduated response** between normal operations and Master Eject.
 
----
+| Without Slow Zone | With Slow Zone |
+|-------------------|----------------|
+| Full buying until W21 breaks | Slows you down as momentum fades |
+| All-in or all-out | Graduated reduction |
+| Miss early recoveries if you stop buying | Still accumulate, just slower |
+| Binary decision | Continuous adjustment |
 
-## What To Do in the Slow Zone
-
-### ✅ Do This
-| Action | Reason |
-|--------|--------|
-| **Reduce position size** | Less conviction = less risk |
-| **Tighten ranges** | Fade extremes of the range |
-| **Be patient** | Don't force trades |
-| **Wait for breakout** | Let the market decide |
-
-### ❌ Don't Do This
-| Action | Reason |
-|--------|--------|
-| **Trade full size** | Whipsaws will hurt |
-| **Chase small moves** | They reverse quickly |
-| **Expect follow-through** | Breakouts fail in Slow Zone |
-| **Get frustrated** | Chop is part of the game |
+**The insight:** When price is 2%+ below the D21, momentum is weakening. You shouldn't be loading up aggressively — but you shouldn't stop buying entirely either. The Slow Zone finds the middle ground.
 
 ---
 
-## Slow Zone Trading Rules
+## When It's Inactive
 
-| Rule | Application |
-|------|-------------|
-| **Half size max** | Even in Green mode, use 50% of cap |
-| **Tight stops** | Cut losers fast |
-| **Quick profits** | Take 50-70% of normal targets |
-| **Watch for resolution** | Slow Zones end with fast moves |
+The Slow Zone is **inactive** in two modes:
+
+| Mode | Why Inactive |
+|------|--------------|
+| 🟢 GREEN | Strong momentum — brief dips below D21 are normal |
+| 🟡 YELLOW (Improving) | Recovery underway — don't slow down accumulation |
+
+In these modes, the trend is healthy enough that a dip below D21 is likely a buying opportunity, not a warning sign.
 
 ---
 
-## Exiting the Slow Zone
+## ORANGE and RED: Double Reduction
 
-The Slow Zone breaks when:
+In defensive modes, the Slow Zone stacks with already-reduced caps:
 
-| Signal | Direction |
-|--------|-----------|
-| HIRO sustains >+30% | Bullish breakout likely |
-| HIRO sustains <-30% | Bearish breakdown likely |
-| Volume spike (2x average) | Move incoming |
-| Clean break above/below range | New trend starting |
+| Mode | Normal Cap | With Slow Zone |
+|------|------------|----------------|
+| 🟠 ORANGE | 10% | 5% |
+| 🔴 RED | 5% | 2.5% |
+
+**Why?** When you're already in a defensive mode AND price is 2%+ below D21, conditions are deteriorating fast. The double reduction keeps you from catching a falling knife.
+
+---
+
+## Slow Zone vs Master Eject
+
+| | Slow Zone | Master Eject |
+|--|-----------|--------------|
+| **Anchor** | Daily 21 EMA | Weekly 21 EMA |
+| **Trigger** | 2% below anchor | Close below anchor |
+| **Effect** | Halve daily cap | Cut leverage, trim shares |
+| **Purpose** | Slow accumulation | Protect capital |
+| **Recovery** | Reclaim D21 | Reclaim W21 + rebuild structure |
+
+**Think of it this way:**
+- Slow Zone = yellow light, slow down
+- Master Eject = red light, stop and reassess
+
+---
+
+## How to Use It
+
+### When Slow Zone Activates
+
+1. **Check the calculation:** D21 × 0.98 = your trigger level
+2. **Halve your planned deployment:** If you were going to buy $10k, buy $5k
+3. **Still buy at key levels:** Slow Zone doesn't mean stop — it means slower
+4. **Watch for D21 reclaim:** That's your signal to resume normal cap
+
+### What NOT to Do
+
+| Mistake | Why It's Wrong |
+|---------|----------------|
+| Stop buying entirely | You'll miss the early recovery |
+| Ignore the Slow Zone | You'll oversize into weakness |
+| Wait for perfect entry | Slow accumulation beats timing |
+| Fight the rule | The rule exists because it works |
 
 ---
 
 ## Example
 
-> **Situation:**
-> - TSLA: $415-$420 for 4 days
-> - HIRO: -5% to +10% (oscillating)
-> - Daily volume: -30% vs average
-> - Mode: Yellow
-> 
-> **Read:** Slow Zone active
-> 
-> **Your plan:**
-> - Max 7.5% deployment (half of Yellow cap)
-> - Fade moves to $415 and $420
-> - Wait for sustained HIRO direction
-> - On breakout with volume, size up
+**Setup:**
+- Mode: 🟡 YELLOW (17.5% daily cap)
+- D21 EMA: $425
+- Slow Zone trigger: $425 × 0.98 = $416.50
+- Portfolio: $100,000 with $50,000 cash
+
+**Monday:** TSLA at $430
+- Slow Zone: Inactive
+- Daily cap: $50,000 × 17.5% = $8,750
+
+**Tuesday:** TSLA drops to $415 (below $416.50)
+- Slow Zone: **Active**
+- Daily cap: $8,750 ÷ 2 = **$4,375**
+
+**Wednesday:** TSLA at $412
+- Slow Zone: Still active
+- Continue with $4,375 cap
+
+**Thursday:** TSLA rallies to $427 (above D21)
+- Slow Zone: Deactivated
+- Daily cap: Back to $8,750
 
 ---
 
-## Key Takeaways
+## Key Takeaway
 
-| Point | Remember |
-|-------|----------|
-| **Slow Zone = patience** | Don't force it |
-| **Size down** | Half your normal size |
-| **Fade the range** | Until it breaks |
-| **Breakout = opportunity** | The resolution is tradeable |
+The Slow Zone is simple: **When price is 2%+ below the Daily 21 EMA, halve your daily cap.**
 
----
+It's not about reading the market. It's not about your opinion. It's a mechanical rule that protects you automatically.
 
-*The Slow Zone tests your discipline. Winners wait for clarity.*
+*Slow Zone = slow down, not stop. Keep accumulating, just be patient.*
