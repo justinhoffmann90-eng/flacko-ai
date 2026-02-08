@@ -161,33 +161,6 @@ export default async function WeeklyReviewPage() {
           </div>
         </div>
 
-        {/* Weekly OHLC Bar */}
-        {data.candle && (
-          <div className="bg-card border rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 text-center">
-              📊 Weekly OHLC
-            </h3>
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <p className="text-xs text-muted-foreground">Open</p>
-                <p className="text-base md:text-lg font-semibold">{formatPrice(data.candle.open)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">High</p>
-                <p className="text-base md:text-lg font-semibold text-green-500">{formatPrice(data.candle.high)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Low</p>
-                <p className="text-base md:text-lg font-semibold text-red-500">{formatPrice(data.candle.low)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Close</p>
-                <p className="text-base md:text-lg font-semibold">{formatPrice(data.candle.close)}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Key Levels Table */}
         {data.key_levels && data.key_levels.length > 0 && (
           <div className="bg-card border rounded-lg overflow-hidden">
