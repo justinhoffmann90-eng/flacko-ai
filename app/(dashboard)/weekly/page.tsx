@@ -115,7 +115,7 @@ export default async function WeeklyReviewPage() {
         <ReportToggle />
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6">
           {/* Mode */}
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Mode</p>
@@ -138,22 +138,11 @@ export default async function WeeklyReviewPage() {
             </p>
           </div>
 
-          {/* Mode Trend */}
-          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Trend</p>
-            <div className="flex items-center justify-center gap-2 mt-1 md:mt-2">
-              {getTrendIcon(data.mode_trend)}
-              <span className="text-base md:text-lg lg:text-xl font-semibold">
-                {data.mode_trend || 'Stable'}
-              </span>
-            </div>
-          </div>
-
-          {/* Master Eject */}
-          <div className="bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+          {/* Master Eject - Full Width */}
+          <div className="col-span-2 bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
               <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
-              Eject
+              Master Eject
             </p>
             <p className="text-lg md:text-xl lg:text-2xl font-bold text-red-500">
               {masterEject > 0 ? formatPrice(masterEject) : '—'}
