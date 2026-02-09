@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle } from "lucide-react";
 
-const DISCORD_INVITE_URL = "https://discord.gg/rS3wsxjt";
+const DISCORD_INVITE_URL = "https://discord.gg/WuDSbQFbfW";
 const DISCORD_CLIENT_ID = "1465761828461216028";
 const STORAGE_KEY = "discord_onboarding_dismissed";
 
