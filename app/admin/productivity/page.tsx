@@ -856,21 +856,21 @@ export default function ProductivityPage() {
         .journal-btn { background: transparent; border: 1px solid rgba(255,255,255,0.06); padding: 10px 16px; border-radius: 8px; color: #a1a1aa; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
         .journal-btn:hover { border-color: #8b5cf6; color: #fafafa; }
         .kanban { display: flex; gap: 14px; padding: 0 20px 20px; overflow-x: auto; min-height: calc(100vh - 220px); }
-        .column { flex: 0 0 320px; background: #0f0f12; border-radius: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 240px); }
+        .column { flex: 1 1 280px; min-width: 280px; background: #0f0f12; border-radius: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 240px); }
         .column-header { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; }
         .column-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
         .column-count { font-family: "JetBrains Mono", monospace; font-size: 11px; color: #52525b; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 8px; }
         .column-count.limit { color: #ef4444; background: rgba(239,68,68,0.15); }
         .column-tasks { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         .column-footer { padding: 10px; border-top: 1px solid rgba(255,255,255,0.06); }
-        .column.collapsed { flex: 0 0 60px; min-width: 60px; }
+        .column.collapsed { flex: 0 0 60px; min-width: 60px !important; }
         .column.collapsed .column-tasks, .column.collapsed .column-footer, .column.collapsed .column-count { display: none; }
         .column.collapsed .column-header { writing-mode: vertical-rl; text-orientation: mixed; padding: 16px 10px; height: 100%; border-bottom: none; }
         .collapse-btn { background: transparent; border: none; color: #52525b; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; }
         .collapse-btn:hover { color: #fafafa; background: rgba(255,255,255,0.05); }
         .add-btn { width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; color: #52525b; font-size: 12px; cursor: pointer; }
         .add-btn:hover { border-color: #8b5cf6; color: #8b5cf6; }
-        .column.today-col { flex: 0 0 420px; border: 1px solid rgba(139,92,246,0.3); background: linear-gradient(180deg, rgba(139,92,246,0.03) 0%, #0f0f12 100%); }
+        .column.today-col { flex: 1.5 1 360px; min-width: 360px; border: 1px solid rgba(139,92,246,0.3); background: linear-gradient(180deg, rgba(139,92,246,0.03) 0%, #0f0f12 100%); }
         .column.today-col .column-title { color: #8b5cf6; }
         .time-slots { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         .time-slot { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; min-height: 100px; }
@@ -954,7 +954,7 @@ export default function ProductivityPage() {
         .idea-delete:hover { color: #ef4444; }
         .idea-pin:hover { color: #eab308; }
         .idea-pin.pinned { color: #eab308; }
-        .history-view { padding: 20px; max-width: 900px; margin: 0 auto; }
+        .history-view { padding: 20px; max-width: 1400px; margin: 0 auto; }
         .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .history-title { font-size: 24px; font-weight: 700; }
         .history-tabs { display: flex; gap: 8px; }
