@@ -1,7 +1,7 @@
 import { ExtractedReportData, ParsedReportData, ReportAlert, TrafficLightMode, TierSignal, TierSignals, Positioning, LevelMapEntry } from "@/types";
 import matter from "gray-matter";
 
-export const PARSER_VERSION = "3.7.0"; // v3.7.0 trim cap, EMA extension, acceleration zone, fib levels, master eject rationale
+export const PARSER_VERSION = "4.2.0"; // v4.2.0 support v4.1 daily guide sections + Action column
 
 /**
  * Transform action text to add clarifying context for subscribers
@@ -41,7 +41,7 @@ interface FrontmatterLevelV35 {
   price: number;
   name: string;
   action: string | null;
-  type?: 'trim' | 'watch' | 'current' | 'nibble' | 'pause' | 'caution' | 'eject';
+  type?: 'trim' | 'watch' | 'current' | 'nibble' | 'add' | 'pause' | 'caution' | 'eject' | 'slow_zone';
 }
 
 // Interface for YAML frontmatter data (v3.1/v3.5)
@@ -130,6 +130,30 @@ interface ReportFrontmatter {
   prev_day_score?: number | null;  // Previous day's 100-point assessment score
   prev_day_grade?: string | null;  // A/B/C/D/F
   prev_day_system_value?: string | null;  // ADDED_VALUE/PROTECTED_CAPITAL/NEUTRAL/MINOR_COST/COST_MONEY
+
+  // v4.1 fields
+  daily_13ema?: number;
+  slow_zone?: number;
+  slow_zone_active?: boolean;
+  max_invested_pct?: number;
+  master_eject_step?: number;
+  call_alert_status?: string;
+  call_alert_setup?: string | null;
+  call_alert_priority?: string | null;
+  call_alert_conditions?: string[];
+  call_alert_spec?: {
+    delta?: string;
+    expiry?: string;
+    strike?: string;
+    budget?: string;
+  } | null;
+  bx_daily_state?: string;
+  bx_daily_histogram?: number;
+  bx_weekly_state?: string;
+  bx_weekly_histogram?: number;
+  bx_4h_state?: string;
+  bx_1h_state?: string;
+  data_source?: string;
 }
 
 interface ParseResult {
@@ -199,6 +223,12 @@ function parseSections(markdown: string, warnings: string[]): ParsedReportData {
     risk_alerts: "",
     previous_review: "",
     disclaimer: "",
+    indicator_dashboard: "",
+    pattern_statistics: "",
+    call_options_alert: "",
+    mode_change_triggers: "",
+    market_flow_context: "",
+    framework_reminder: "",
   };
 
   // Updated section markers to match actual report format (v2 and v3)
@@ -208,14 +238,20 @@ function parseSections(markdown: string, warnings: string[]): ParsedReportData {
     { key: "previous_review", pattern: /##\s*\d*\.?\s*(?:📊|✅)?\s*Previous Day|##\s*\d*\.?\s*Yesterday/i },
     { key: "qqq_context", pattern: /##\s*\d*\.?\s*🌐?\s*QQQ|##\s*\d*\.?\s*Macro Context/i },
     { key: "regime_assessment", pattern: /##\s*\d*\.?\s*🚦?\s*(?:Regime Status|Mode)/i },
-    { key: "claude_take", pattern: /##\s*\d*\.?\s*Claude's Take/i },
+    { key: "claude_take", pattern: /##\s*\d*\.?\s*(?:🧠)?\s*(?:Flacko AI's Take|Claude's Take)/i },
     { key: "entry_quality", pattern: /##\s*\d*\.?\s*Should You Be Buying|##\s*\d*\.?\s*Entry Quality/i },
-    { key: "game_plan", pattern: /##\s*\d*\.?\s*(?:💡)?\s*(?:The Game Plan|Game Plan|Bottom Line)/i },
-    { key: "position_guidance", pattern: /##\s*\d*\.?\s*(?:💰|📊)?\s*(?:Position Sizing|Position|Today's Positioning)/i },
+    { key: "game_plan", pattern: /##\s*\d*\.?\s*(?:💡|🎯)?\s*(?:The Game Plan|Game Plan|Bottom Line|Tomorrow's Gameplan)/i },
+    { key: "position_guidance", pattern: /##\s*\d*\.?\s*(?:💰|📊)?\s*(?:Position Sizing|Position|Today's Positioning|Positioning for)/i },
     { key: "key_levels", pattern: /##\s*\d*\.?\s*(?:📍)?\s*(?:Key Levels|Levels Map)/i },
     { key: "risk_alerts", pattern: /##\s*\d*\.?\s*(?:🚨|🔔)?\s*Alerts/i },
     { key: "technical_analysis", pattern: /##\s*\d*\.?\s*Technical Analysis/i },
     { key: "spotgamma_analysis", pattern: /##\s*\d*\.?\s*(?:⚠️|🎯)?\s*(?:Discipline|SpotGamma)/i },
+    { key: "indicator_dashboard", pattern: /##\s*\d*\.?\s*📈?\s*Indicator Dashboard/i },
+    { key: "pattern_statistics", pattern: /##\s*\d*\.?\s*📊?\s*Active Pattern Statistics/i },
+    { key: "call_options_alert", pattern: /##\s*\d*\.?\s*📞?\s*Call Options Alert/i },
+    { key: "mode_change_triggers", pattern: /##\s*\d*\.?\s*🔄?\s*Mode Change Triggers/i },
+    { key: "market_flow_context", pattern: /##\s*\d*\.?\s*📊?\s*Market.*Flow.*Context/i },
+    { key: "framework_reminder", pattern: /##\s*\d*\.?\s*🧭?\s*Framework Reminder/i },
     { key: "disclaimer", pattern: /##\s*\d*\.?\s*📸?\s*Overview|---\s*\n.*not financial advice/i },
   ];
 
@@ -567,7 +603,7 @@ function extractFromFrontmatter(
   }
 
   // v3.5 fields
-  const pause_zone = fm.pause_zone;
+  const pause_zone = fm.pause_zone ?? fm.slow_zone;
   const daily_9ema = fm.daily_9ema;
   const daily_21ema = fm.daily_21ema;
   const weekly_9ema = fm.weekly_9ema;
@@ -593,6 +629,28 @@ function extractFromFrontmatter(
   const prev_day_score = fm.prev_day_score;
   const prev_day_grade = fm.prev_day_grade;
   const prev_day_system_value = fm.prev_day_system_value;
+
+  // v4.1 fields
+  const daily_13ema = fm.daily_13ema;
+  const slow_zone = fm.slow_zone ?? fm.pause_zone;
+  const slow_zone_active = fm.slow_zone_active;
+  const max_invested_pct = fm.max_invested_pct;
+  const master_eject_step = fm.master_eject_step;
+  const call_alert = fm.call_alert_status ? {
+    status: fm.call_alert_status,
+    setup: fm.call_alert_setup ?? null,
+    priority: fm.call_alert_priority ?? null,
+    conditions: fm.call_alert_conditions || [],
+    spec: fm.call_alert_spec ?? null,
+  } : undefined;
+  const bx_states = (fm.bx_daily_state || fm.bx_weekly_state || fm.bx_4h_state || fm.bx_1h_state) ? {
+    daily: fm.bx_daily_state || '',
+    daily_histogram: fm.bx_daily_histogram ?? 0,
+    weekly: fm.bx_weekly_state || '',
+    weekly_histogram: fm.bx_weekly_histogram ?? 0,
+    four_hour: fm.bx_4h_state || '',
+    one_hour: fm.bx_1h_state || '',
+  } : undefined;
 
   // Validate required fields
   if (price.close <= 0) {
@@ -648,6 +706,14 @@ function extractFromFrontmatter(
     prev_day_score,
     prev_day_grade,
     prev_day_system_value,
+    // v4.1 fields
+    daily_13ema,
+    slow_zone,
+    slow_zone_active,
+    max_invested_pct,
+    master_eject_step,
+    call_alert,
+    bx_states,
   };
 }
 
@@ -697,7 +763,7 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type = 'downside';
     } else if (levelType === 'trim' || levelType === 'watch') {
       type = 'upside';
-    } else if (levelType === 'nibble' || levelType === 'pause' || levelType === 'caution') {
+    } else if (levelType === 'nibble' || levelType === 'pause' || levelType === 'caution' || levelType === 'slow_zone') {
       type = 'downside';
     } else if (action.includes('trim') || action.includes('breakout')) {
       type = 'upside';
@@ -1468,7 +1534,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
   // Find header line
   const headerIdx = lines.findIndex(l => 
-    l.includes('Price') && l.includes('Level') && l.includes('What To Do')
+    l.includes('Price') && l.includes('Level') && (l.includes('What To Do') || l.includes('Action'))
   );
   
   if (headerIdx === -1) return alerts;
@@ -1489,7 +1555,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
     let levelName = rowMatch[2].trim()
       .replace(/\*\*/g, '')  // Remove bold
-      .replace(/^[🎯📈⏸️🛡️⚠️❌📍]\s*/, '');  // Remove emoji prefix
+      .replace(/^[🎯📈⏸️🛡️⚠️❌📍⚡]\s*/, '');  // Remove emoji prefix
 
     const whatToDo = rowMatch[3].trim().replace(/\*\*/g, '');
 
@@ -1500,11 +1566,15 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
     const isMasterEject = levelName.toLowerCase().includes('master eject') || 
                           whatToDo.toLowerCase().includes('exit all');
 
-    // Split action and reason on em-dash
+    // Split action and reason on em-dash or double-hyphen
     let action = whatToDo;
     let explicitReason = '';
     if (whatToDo.includes('—')) {
       const parts = whatToDo.split('—');
+      action = parts[0].trim();
+      explicitReason = parts[1]?.trim() || '';
+    } else if (whatToDo.includes('--')) {
+      const parts = whatToDo.split('--');
       action = parts[0].trim();
       explicitReason = parts[1]?.trim() || '';
     }
@@ -1518,7 +1588,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
       type = 'downside';
     } else if (act.includes('trim') || act.includes('breakout') || originalLevel.includes('🎯') || originalLevel.includes('📈')) {
       type = 'upside';
-    } else if (act.includes('nibble') || act.includes('stop adding') || act.includes('support') || 
+    } else if (act.includes('nibble') || act.includes('add') || act.includes('stop adding') || act.includes('support') || 
                act.includes('pause') || act.includes('caution') || act.includes('last') ||
                originalLevel.includes('🛡️') || originalLevel.includes('⏸️') || originalLevel.includes('⚠️')) {
       type = 'downside';
