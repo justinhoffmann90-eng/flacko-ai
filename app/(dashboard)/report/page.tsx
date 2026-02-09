@@ -105,7 +105,7 @@ export default async function ReportPage() {
         <ReportToggle />
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Mode</p>
             <Badge
@@ -129,24 +129,12 @@ export default async function ReportPage() {
             )}
           </div>
 
-          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Trim Cap</p>
-            <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{trimCap}</p>
-          </div>
-
-          {extractedData?.call_alert && (
-          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Calls</p>
-            <Badge variant={callVariant} className="mt-1 md:mt-2 text-xs md:text-sm px-2 md:px-3 max-w-full truncate">{callStatus}</Badge>
-          </div>
-          )}
-
           <div className="bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
               <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
               Eject
             </p>
-            <p className="text-sm md:text-base lg:text-lg font-bold text-red-500 mt-1 md:mt-2">{ejectLabel}</p>
+            <p className="text-sm md:text-base lg:text-lg font-bold text-red-500 mt-1 md:mt-2">{formatPrice(masterEject)}</p>
           </div>
         </div>
 
