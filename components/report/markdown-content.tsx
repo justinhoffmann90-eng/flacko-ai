@@ -188,7 +188,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         components={{
           // Simple table rendering - horizontal scroll on mobile for wide tables
           table: ({ children }) => (
-            <div className="my-4 overflow-x-auto -mx-4 px-4">
+            <div className="my-4 -mx-4 px-4 max-w-full overflow-hidden">
               <table className="w-full border-collapse">{children}</table>
             </div>
           ),
@@ -202,7 +202,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           ),
           td: ({ children }) => (
             <td
-              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg ${
+              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg break-words ${
                 shouldNoWrapCell(children) ? "whitespace-nowrap" : ""
               }`}
             >
