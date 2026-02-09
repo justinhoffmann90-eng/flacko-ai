@@ -206,7 +206,7 @@ export default function LearnHubPage() {
       {/* Back to Dashboard Button - Sticky */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container mx-auto px-4 py-3">
-          <Link href="/admin/command-center">
+          <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="gap-2 -ml-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard

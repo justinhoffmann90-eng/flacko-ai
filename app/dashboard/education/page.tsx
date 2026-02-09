@@ -88,7 +88,7 @@ export default function EducationHubPage() {
       {/* Header */}
       <div className="border-b border-zinc-800">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/admin/command-center">
+          <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="gap-2 -ml-2 text-zinc-400 hover:text-white">
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
