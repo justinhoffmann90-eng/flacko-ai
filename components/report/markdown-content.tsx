@@ -1,5 +1,6 @@
 "use client";
 
+import { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -161,11 +162,26 @@ function cleanContent(raw: string): string {
 
 // Tables render as-is from markdown - no transformations
 
+function getTextContent(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getTextContent).join(" ");
+  if (typeof node === "object" && "props" in node) {
+    return getTextContent((node as { props?: { children?: ReactNode } }).props?.children);
+  }
+  return "";
+}
+
+function shouldNoWrapCell(node: ReactNode): boolean {
+  const text = getTextContent(node).replace(/\s+/g, " ").trim();
+  return /[$€£¥]\s?\d/.test(text);
+}
+
 export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
 
   return (
-    <div className="markdown-content">
+    <div className="markdown-content [&_h2]:border-t [&_h2]:border-border/30 [&_h2]:pt-6 [&_h2:first-of-type]:border-t-0 [&_h2:first-of-type]:pt-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
@@ -180,12 +196,18 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             <thead className="bg-slate-700">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-[11px] md:text-xs lg:text-sm uppercase tracking-wider text-slate-200">
+            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-xs md:text-sm uppercase tracking-wider text-slate-200">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border/50 px-3 py-2 align-top text-sm md:text-base lg:text-lg">{children}</td>
+            <td
+              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg ${
+                shouldNoWrapCell(children) ? "whitespace-nowrap" : ""
+              }`}
+            >
+              {children}
+            </td>
           ),
           tr: ({ children }) => (
             <tr className="even:bg-muted/20 hover:bg-muted/40 transition-colors">{children}</tr>
@@ -206,13 +228,13 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           ),
           // Lists
           ul: ({ children }) => (
-            <ul className="mb-4 ml-6 space-y-2 list-disc text-base md:text-lg lg:text-xl">{children}</ul>
+            <ul className="mb-4 ml-6 space-y-2 list-disc text-base md:text-lg lg:text-lg">{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-4 ml-6 space-y-4 list-decimal text-base md:text-lg lg:text-xl">{children}</ol>
+            <ol className="mb-4 ml-6 space-y-4 list-decimal text-base md:text-lg lg:text-lg">{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="text-foreground/90 pl-1 text-base md:text-lg lg:text-xl">{children}</li>
+            <li className="text-foreground/90 pl-1 text-base md:text-lg lg:text-lg">{children}</li>
           ),
           // Emphasis
           strong: ({ children }) => (
