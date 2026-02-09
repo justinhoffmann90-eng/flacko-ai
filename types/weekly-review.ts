@@ -87,7 +87,7 @@ export interface WeeklyKeyLevelV2 {
 export interface CatalystV2 {
   event: string;
   date: string;
-  days_away?: number;
+  days_away: number;
 }
 
 // Full Weekly Review Data
@@ -158,6 +158,10 @@ export interface WeeklyReviewData {
   weekly_bx_color?: string;  // "Light Green", "Dark Green", "Light Red", "Dark Red"
   weekly_bx_pattern?: string;  // "HH", "HL", "LH", "LL"
 
+  // v3.0+ BX-Trender fields
+  weekly_bx_state?: string;  // HH/HL/LH/LL
+  weekly_bx_histogram?: number;
+
   // Correction tracking
   correction_stage?: string;  // "None", "Stage 1", "Stage 2", "Stage 3"
 
@@ -177,6 +181,7 @@ export interface WeeklyReviewData {
 
   // Master Eject
   master_eject?: number;
+  master_eject_step?: number;  // 1-4
   master_eject_distance_pct?: number;
 
   // Thesis
@@ -190,6 +195,11 @@ export interface WeeklyReviewData {
   // QQQ and HIRO
   qqq_verdict?: string;  // "Supportive", "Neutral", "Headwind"
   hiro_eow?: number;  // End of week HIRO reading
+
+  // Call Options grading (v3.0+)
+  call_alert_score?: number;  // out of 25
+  call_alert_setups?: Array<{name: string; status: string; result: string; pnl_pct: number}>;
+  call_alert_running_win_rate?: number | null;
 
   // Catalysts v2
   catalysts_v2?: CatalystV2[];

@@ -17,7 +17,7 @@ import {
 } from "@/types/weekly-review";
 import matter from "gray-matter";
 
-export const WEEKLY_PARSER_VERSION = "2.0.0";
+export const WEEKLY_PARSER_VERSION = "3.0.0";
 
 // v2.0 JSON block interface
 interface WeeklyReviewJSON {
@@ -38,7 +38,13 @@ interface WeeklyReviewJSON {
   ema_extension_pct?: number;
   weekly_bx_color?: string;
   weekly_bx_pattern?: string;
+  weekly_bx_state?: string;
+  weekly_bx_histogram?: number;
   correction_stage?: string;
+  master_eject_step?: number;
+  call_alert_score?: number;
+  call_alert_setups?: Array<{name: string; status: string; result: string; pnl_pct: number}>;
+  call_alert_running_win_rate?: number | null;
   daily_scores?: number[];
   daily_system_values?: string[];
   system_value_days?: number;
@@ -277,6 +283,10 @@ function extractWeeklyData(
     result.weekly_bx_color = json.weekly_bx_color;
     result.weekly_bx_pattern = json.weekly_bx_pattern;
 
+    // v3.0+ BX-Trender state
+    result.weekly_bx_state = json.weekly_bx_state;
+    result.weekly_bx_histogram = json.weekly_bx_histogram;
+
     // Correction tracking
     result.correction_stage = json.correction_stage;
 
@@ -296,7 +306,13 @@ function extractWeeklyData(
 
     // Master Eject
     result.master_eject = json.master_eject;
+    result.master_eject_step = json.master_eject_step;
     result.master_eject_distance_pct = json.master_eject_distance_pct;
+
+    // Call Options grading
+    result.call_alert_score = json.call_alert_score;
+    result.call_alert_setups = json.call_alert_setups;
+    result.call_alert_running_win_rate = json.call_alert_running_win_rate;
 
     // Thesis
     result.thesis_status = json.thesis_status;
@@ -864,6 +880,7 @@ function extractFlackoTake(markdown: string): string | undefined {
   // Look for "The 'So What'" or "Flacko AI's Take" section
   const patterns = [
     /##\s*💡\s*The\s*["']?So\s*What["']?\s*[—-]?\s*Flacko\s*AI['']?s?\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
+    /##\s*🧠?\s*Flacko\s*AI['']?s?\s*Weekly\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
     /##\s*Flacko\s*AI['']?s?\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
     /##\s*The\s*["']?So\s*What["']?[\s\S]*?(?=##|---\s*\n\*|$)/i,
   ];
@@ -893,13 +910,12 @@ export function validateWeeklyReview(data: WeeklyReviewData): string[] {
     errors.push("Week dates are required");
   }
 
-  if (data.candle.close <= 0) {
-    errors.push("Valid candle close price is required");
+  if (data.candle.close <= 0 && (!data.close || data.close <= 0)) {
+    errors.push("Valid close price is required");
   }
 
-  if (!data.what_happened) {
-    errors.push("'What Happened' narrative is required");
-  }
+  // v3.0+ reports don't have what_happened — only validate for v1.0/v2.0
+  // Removed: what_happened requirement
 
   return errors;
 }

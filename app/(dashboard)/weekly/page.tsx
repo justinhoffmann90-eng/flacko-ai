@@ -150,6 +150,82 @@ export default async function WeeklyReviewPage() {
           </div>
         </div>
 
+
+        {/* System Scorecard */}
+        {data.weekly_avg_score && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📋 System Scorecard
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-white">{data.weekly_avg_score?.toFixed(0)}/100</span>
+                {data.weekly_grade && (
+                  <Badge variant="default" className="text-xs">{data.weekly_grade}</Badge>
+                )}
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">System Value</p>
+                  <p className="text-lg font-semibold">{data.system_value_days ?? '?'}/5 days</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">Buy Accuracy</p>
+                  <p className="text-lg font-semibold">
+                    {data.buy_levels_tested
+                      ? `${data.buy_levels_held}/${data.buy_levels_tested} (${Math.round((data.buy_levels_held! / data.buy_levels_tested) * 100)}%)`
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">Trim Accuracy</p>
+                  <p className="text-lg font-semibold">
+                    {data.trim_levels_tested
+                      ? `${data.trim_levels_effective}/${data.trim_levels_tested} (${Math.round((data.trim_levels_effective! / data.trim_levels_tested) * 100)}%)`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Call Options Grade */}
+        {data.call_alert_score != null && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📞 Call Options Grade
+              </h3>
+              <span className="text-lg font-bold text-white">{data.call_alert_score}/25</span>
+            </div>
+            {data.call_alert_setups && data.call_alert_setups.length > 0 && (
+              <div className="p-4">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left px-3 py-2 text-xs uppercase text-muted-foreground">Setup</th>
+                      <th className="text-center px-3 py-2 text-xs uppercase text-muted-foreground">Status</th>
+                      <th className="text-center px-3 py-2 text-xs uppercase text-muted-foreground">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.call_alert_setups.map((setup, idx) => (
+                      <tr key={idx} className="border-t border-border/50">
+                        <td className="px-3 py-2 text-sm font-medium">{setup.name}</td>
+                        <td className="px-3 py-2 text-sm text-center">{setup.status}</td>
+                        <td className="px-3 py-2 text-sm text-center">{setup.result}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Key Levels Table */}
         {data.key_levels && data.key_levels.length > 0 && (
           <div className="bg-card border rounded-lg overflow-hidden">
