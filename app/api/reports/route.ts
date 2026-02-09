@@ -41,8 +41,10 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const serviceSupabase = await createServiceClient();
     const devBypass = process.env.DEV_BYPASS_AUTH === "true";
+    const adminSecretHeader = request.headers.get("authorization");
+    const isAdminSecret = adminSecretHeader === `Bearer ${process.env.ADMIN_SECRET}`;
 
-    if (!devBypass) {
+    if (!devBypass && !isAdminSecret) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

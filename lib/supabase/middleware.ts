@@ -61,6 +61,14 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Report upload with admin secret (used by Clawd automation)
+  if (request.nextUrl.pathname === "/api/reports" && request.method === "POST") {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader === `Bearer ${process.env.ADMIN_SECRET}`) {
+      return supabaseResponse;
+    }
+  }
+
   // Bot API endpoints (internal use for indexing/query)
   if (request.nextUrl.pathname.startsWith("/api/bot")) {
     return supabaseResponse;
