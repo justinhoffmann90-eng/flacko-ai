@@ -214,6 +214,13 @@ export interface ExtractedReportData {
     priority: string | null;
     conditions: string[];
     spec: { delta?: string; expiry?: string; strike?: string; budget?: string } | null;
+    backtest?: { avg_return?: string; win_rate?: string; n?: number; period?: string };
+    trigger_next?: string;
+    also_watching?: string;
+    stop_logic?: string;
+    mode_context?: string;
+    trim_guidance?: string;
+    clears_when?: string;
   };
   bx_states?: {
     daily: string;

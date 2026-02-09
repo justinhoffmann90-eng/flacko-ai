@@ -8,6 +8,7 @@ import { MarkdownContent } from "@/components/report/markdown-content";
 import { ReportToggle } from "@/components/report/report-toggle";
 import { ExtractedReportData } from "@/types";
 import { AlertTriangle } from "lucide-react";
+import { CallOptionsWidget } from "@/components/report/call-options-widget";
 
 interface ReportRow {
   id: string;
@@ -137,6 +138,11 @@ export default async function ReportPage() {
             <p className="text-sm md:text-base lg:text-lg font-bold text-red-500 mt-1 md:mt-2">{formatPrice(masterEject)}</p>
           </div>
         </div>
+
+        {/* Call Options Alert Widget */}
+        {extractedData?.call_alert && (
+          <CallOptionsWidget data={extractedData.call_alert} />
+        )}
 
         {/* Full Report Content */}
         <div className="bg-card border rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
