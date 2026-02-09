@@ -181,7 +181,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
 
   return (
-    <div className="markdown-content [&_h2]:border-t [&_h2]:border-border/30 [&_h2]:pt-6 [&_h2:first-of-type]:border-t-0 [&_h2:first-of-type]:pt-0">
+    <div className="markdown-content [&_h2]:border-t [&_h2]:border-slate-600/60 [&_h2]:pt-8 [&_h2:first-of-type]:border-t-0 [&_h2:first-of-type]:pt-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
@@ -193,7 +193,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-slate-700">{children}</thead>
+            <thead className="bg-slate-700/80">{children}</thead>
           ),
           th: ({ children }) => (
             <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-xs md:text-sm uppercase tracking-wider text-slate-200">
@@ -217,7 +217,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mt-8 mb-3 text-foreground flex items-center gap-2">{children}</h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mt-10 mb-4 text-foreground flex items-center gap-2">{children}</h2>
           ),
           h3: ({ children }) => (
             <h3 className="text-base md:text-lg lg:text-xl font-semibold mt-5 mb-2 text-foreground/90">{children}</h3>
@@ -261,7 +261,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           },
           // Blockquotes - for Flacko AI's Take sections
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/60 pl-4 py-3 my-5 bg-primary/5 rounded-r-lg">
+            <blockquote className="border-l-4 border-primary pl-5 py-4 my-6 bg-primary/10 rounded-r-lg">
               {children}
             </blockquote>
           ),
