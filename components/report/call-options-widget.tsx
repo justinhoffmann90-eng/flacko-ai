@@ -97,7 +97,7 @@ export function CallOptionsWidget({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-green-400">ACTIVE</span>
+                <span className="text-xs text-white/40 mr-1">📞 Call Options</span><span className="text-base font-bold text-green-400">ACTIVE</span>
                 <span className="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded font-mono">BETA</span>
               </div>
               <p className="text-sm text-white/90">
@@ -168,7 +168,7 @@ export function CallOptionsWidget({
             <Eye className="h-5 w-5 text-yellow-400" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-yellow-400">WATCHING</span>
+                <span className="text-xs text-white/40 mr-1">📞 Call Options</span><span className="text-base font-bold text-yellow-400">WATCHING</span>
                 <span className="text-xs bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded font-mono">BETA</span>
               </div>
               {setupName && (
@@ -230,7 +230,7 @@ export function CallOptionsWidget({
             <ShieldAlert className="h-5 w-5 text-red-400" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-red-400">AVOID</span>
+                <span className="text-xs text-white/40 mr-1">📞 Call Options</span><span className="text-base font-bold text-red-400">AVOID</span>
                 <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-mono">BETA</span>
               </div>
               {setupName && (
@@ -298,7 +298,7 @@ export function CallOptionsWidget({
           <Minus className="h-5 w-5 text-white/30" />
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-semibold text-white/50">NO SIGNAL</span>
+              <span className="text-xs text-white/40 mr-1">📞 Call Options</span><span className="text-base font-semibold text-white/50">NO SIGNAL</span>
               <span className="text-xs bg-white/5 text-white/30 px-1.5 py-0.5 rounded font-mono">BETA</span>
             </div>
             <p className="text-sm text-white/40">No call-specific trigger today. Continue per mode rules.</p>
