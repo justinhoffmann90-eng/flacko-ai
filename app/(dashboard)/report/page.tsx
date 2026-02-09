@@ -88,7 +88,7 @@ export default async function ReportPage() {
   const ejectStep = extractedData?.master_eject_step;
   const putWall = extractedData?.key_levels?.put_wall;
   const ejectLabel = ejectStep
-    ? `Step ${ejectStep}: ${formatPrice(masterEject)}${putWall ? `→${formatPrice(putWall)}` : ""}`
+    ? `Step ${ejectStep}: ${formatPrice(masterEject)}${putWall && putWall !== masterEject ? `→${formatPrice(putWall)}` : ""}`
     : formatPrice(masterEject);
 
   // Format date as "Thursday, Jan 29"
@@ -137,7 +137,7 @@ export default async function ReportPage() {
           {extractedData?.call_alert && (
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Calls</p>
-            <Badge variant={callVariant} className="mt-1 md:mt-2 text-sm md:text-base px-3 md:px-4">{callStatus}</Badge>
+            <Badge variant={callVariant} className="mt-1 md:mt-2 text-xs md:text-sm px-2 md:px-3 max-w-full truncate">{callStatus}</Badge>
           </div>
           )}
 
