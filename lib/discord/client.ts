@@ -7,6 +7,7 @@ const DISCORD_ALERTS_WEBHOOK_URL = process.env.DISCORD_ALERTS_WEBHOOK_URL;
 
 export interface DiscordEmbed {
   title?: string;
+  url?: string;
   description?: string;
   color?: number;
   fields?: Array<{
@@ -23,6 +24,7 @@ export interface DiscordEmbed {
 export interface DiscordMessage {
   content?: string;
   embeds?: DiscordEmbed[];
+  username?: string;
 }
 
 export async function sendDiscordMessage(message: DiscordMessage): Promise<boolean> {
@@ -114,9 +116,10 @@ export async function sendReportNotification(message: DiscordMessage): Promise<b
 }
 
 // Color codes for embeds (decimal format)
-export const DISCORD_COLORS = {
-  green: 0x22c55e,
-  yellow: 0xeab308,
-  red: 0xef4444,
+export const DISCORD_COLORS: Record<string, number> = {
+  green: 5763719,    // #57F287
+  yellow: 16776960,  // #FFFF00
+  orange: 16744192,  // #FFA500
+  red: 15158332,     // #E74C3C
   blue: 0x3b82f6,
 };

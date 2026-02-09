@@ -299,11 +299,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Discord #reports notification disabled — posted manually with curated template
-    // to avoid duplicate/stale auto-posts on every upload.
-    // TODO: Re-enable once template is updated to match new format.
-    // const discordMessage = getNewReportDiscordMessage({ ... });
-    // await sendReportNotification(discordMessage);
+    // Send Discord #reports notification with curated template
+    const discordMessage = getNewReportDiscordMessage({
+      mode: extracted_data.mode?.current || "yellow",
+      reportDate: today,
+      closePrice: extracted_data.price?.close || 0,
+      changePct: extracted_data.price?.change_pct || 0,
+      alerts: extracted_data.alerts || [],
+      positioning: extracted_data.positioning,
+      masterEject: extracted_data.master_eject?.price,
+      modeSummary: extracted_data.mode?.summary,
+      flackoTake: extracted_data.flacko_take,
+      scenarios: extracted_data.scenarios,
+    });
+    await sendReportNotification(discordMessage);
 
     // Auto-refresh Discord bot knowledge base with new report
     try {
