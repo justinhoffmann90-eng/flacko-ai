@@ -14,6 +14,7 @@ import { EducationHubCard } from "@/components/dashboard/education-hub-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
+import { CallOptionsWidget } from "@/components/report/call-options-widget";
 
 interface ExtractedData {
   mode?: { current: string; label: string };
@@ -22,6 +23,19 @@ interface ExtractedData {
   tiers?: TierSignals;
   positioning?: Positioning;
   levels_map?: LevelMapEntry[];
+  call_alert?: {
+    status: string;
+    setup?: string | null;
+    priority?: string | null;
+    conditions?: string[];
+    backtest?: { avg_return?: string; win_rate?: string; n?: number; period?: string };
+    trigger_next?: string;
+    also_watching?: string;
+    stop_logic?: string;
+    mode_context?: string;
+    trim_guidance?: string;
+    clears_when?: string;
+  };
 }
 
 interface Report {
@@ -227,6 +241,14 @@ export default async function DashboardPage() {
         <div className="md:grid md:grid-cols-2 md:gap-8 lg:gap-10 space-y-4 md:space-y-0">
           {/* Left column */}
           <div className="space-y-4">
+            {/* Call Options Widget */}
+            {extractedData?.call_alert && (
+              <CallOptionsWidget
+                data={extractedData.call_alert}
+                reportDate={report ? formatDateShort(report.report_date) : undefined}
+              />
+            )}
+
             {/* Positioning Card */}
             {positioning && (
               <PositioningCard
@@ -251,9 +273,6 @@ export default async function DashboardPage() {
 
           {/* Right column */}
           <div className="space-y-4">
-            {/* Education Hub */}
-            <EducationHubCard />
-
             {/* Upcoming Catalysts */}
             {upcomingCatalysts.length > 0 && (
               <Card className="p-4 md:p-6 lg:p-8">
@@ -294,6 +313,9 @@ export default async function DashboardPage() {
                 </div>
               </Card>
             )}
+
+            {/* Education Hub */}
+            <EducationHubCard />
 
             {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
             {!devBypass && !cashAvailable && (
