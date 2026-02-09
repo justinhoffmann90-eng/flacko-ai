@@ -299,20 +299,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send Discord #reports notification with curated template
-    const discordMessage = getNewReportDiscordMessage({
-      mode: extracted_data.mode?.current || "yellow",
-      reportDate: today,
-      closePrice: extracted_data.price?.close || 0,
-      changePct: extracted_data.price?.change_pct || 0,
-      alerts: extracted_data.alerts || [],
-      positioning: extracted_data.positioning,
-      masterEject: extracted_data.master_eject?.price,
-      modeSummary: extracted_data.mode?.summary,
-      flackoTake: extracted_data.flacko_take,
-      scenarios: extracted_data.scenarios,
-    });
-    await sendReportNotification(discordMessage);
+    // Discord #reports notification — DISABLED during iterative editing.
+    // Re-uploads during the same day cause duplicate posts.
+    // Post manually via webhook after final version is confirmed.
+    // Template is ready in getNewReportDiscordMessage() when we want to re-enable.
+    // const discordMessage = getNewReportDiscordMessage({ ... });
+    // await sendReportNotification(discordMessage);
 
     // Auto-refresh Discord bot knowledge base with new report
     try {
