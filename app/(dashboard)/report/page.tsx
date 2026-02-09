@@ -141,7 +141,7 @@ export default async function ReportPage() {
 
         {/* Call Options Alert Widget */}
         {extractedData?.call_alert && (
-          <CallOptionsWidget data={extractedData.call_alert} />
+          <CallOptionsWidget data={extractedData.call_alert} reportDate={`${dayName}, ${monthDay}`} />
         )}
 
         {/* Full Report Content */}

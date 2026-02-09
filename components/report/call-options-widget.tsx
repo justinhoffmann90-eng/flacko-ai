@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Eye, ShieldAlert, Minus } from "lucide-react";
+import { Phone, Eye, ShieldAlert, Minus, ChevronDown, ChevronUp } from "lucide-react";
 
 interface CallAlertData {
   status: string;
@@ -23,72 +24,133 @@ interface CallAlertData {
   spec?: { delta?: string; expiry?: string; strike?: string; budget?: string } | null;
 }
 
-function formatSetupName(setup: string | null | undefined): string {
-  if (!setup) return "";
-  return setup
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+const SETUP_NAMES: Record<string, string> = {
+  GREEN_SHOOTS: "Green Shoots Reversal",
+  TREND_CONTINUATION: "Trend Continuation",
+  OVERSOLD_GENERATIONAL: "Oversold Generational",
+  OVERSOLD_DEEP_VALUE: "Oversold Deep Value",
+  REGIME_SHIFT: "Regime Shift",
+  DAILY_TREND_RIDE: "Daily Trend Ride",
+  MOMENTUM_FLIP: "Momentum Flip",
+  AVOID_EXTENDED: "Extended & Fading",
+  AVOID_DOWNTREND: "Accelerating Downtrend",
+};
+
+const SETUP_PRIORITIES: Record<string, string> = {
+  GREEN_SHOOTS: "A+",
+  TREND_CONTINUATION: "A",
+  OVERSOLD_GENERATIONAL: "S-Tier",
+  OVERSOLD_DEEP_VALUE: "A+",
+  REGIME_SHIFT: "A",
+  DAILY_TREND_RIDE: "B+",
+  MOMENTUM_FLIP: "B+",
+};
+
+function getSetupName(key: string | null | undefined): string {
+  if (!key) return "";
+  return SETUP_NAMES[key] || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function CallOptionsWidget({ data }: { data: CallAlertData | undefined | null }) {
+function getSetupPriority(key: string | null | undefined, explicit?: string | null): string {
+  if (explicit) return explicit;
+  if (!key) return "";
+  return SETUP_PRIORITIES[key] || "";
+}
+
+export function CallOptionsWidget({
+  data,
+  reportDate,
+}: {
+  data: CallAlertData | undefined | null;
+  reportDate?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
   if (!data) return null;
 
   const status = (data.status || "NO_SIGNAL").toUpperCase();
+  const setupName = getSetupName(data.setup);
+  const priority = getSetupPriority(data.setup, data.priority);
+
+  const hasDetails =
+    (data.conditions && data.conditions.length > 0) ||
+    data.backtest ||
+    data.stop_logic ||
+    data.trigger_next ||
+    data.trim_guidance ||
+    data.clears_when;
 
   // ACTIVE
   if (status === "ACTIVE") {
     return (
-      <div className="bg-card border border-green-500/30 rounded-lg p-4 md:p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-green-400" />
-            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Call Options</span>
+      <div className="bg-[#1a2332] border border-green-500/40 rounded-lg overflow-hidden">
+        {/* Hero status bar */}
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Phone className="h-5 w-5 text-green-400" />
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-green-400 rounded-full animate-ping" />
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-green-400 rounded-full" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-green-400">ACTIVE</span>
+                <span className="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded font-mono">BETA</span>
+              </div>
+              <p className="text-sm text-white/90">
+                {setupName}
+                {priority && <span className="text-green-400/70 ml-1.5">({priority})</span>}
+              </p>
+            </div>
           </div>
-          <Badge variant="green" className="animate-pulse text-xs px-2 py-0.5">ACTIVE</Badge>
+          <div className="flex items-center gap-2">
+            {reportDate && (
+              <span className="text-[10px] text-white/30 hidden sm:block">Updated {reportDate}</span>
+            )}
+            {hasDetails && (
+              expanded ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />
+            )}
+          </div>
         </div>
 
-        {(data.setup || data.priority) && (
-          <p className="text-base md:text-lg font-bold text-green-400 mb-2">
-            {formatSetupName(data.setup)}
-            {data.priority && <span className="text-sm font-normal text-green-400/70 ml-2">({data.priority})</span>}
-          </p>
-        )}
+        {/* Expanded details */}
+        {expanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-green-500/20 space-y-3">
+            {data.conditions && data.conditions.length > 0 && (
+              <div>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Conditions Met</p>
+                <ul className="space-y-0.5">
+                  {data.conditions.map((c, i) => (
+                    <li key={i} className="text-sm text-green-200/80 flex items-start gap-1.5">
+                      <span className="text-green-400 mt-0.5 text-xs">✓</span>
+                      <span>{c}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        {data.conditions && data.conditions.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs text-muted-foreground mb-1">Conditions Met</p>
-            <ul className="space-y-0.5">
-              {data.conditions.map((c, i) => (
-                <li key={i} className="text-sm text-green-300/90 flex items-start gap-1.5">
-                  <span className="text-green-400 mt-0.5">✓</span>
-                  <span>{c}</span>
-                </li>
-              ))}
-            </ul>
+            {data.backtest && (
+              <div className="flex items-center gap-3 text-xs bg-green-500/10 rounded px-3 py-2 font-mono">
+                {data.backtest.avg_return && <span className="text-green-300">{data.backtest.avg_return} avg</span>}
+                {data.backtest.win_rate && <><span className="text-white/20">|</span><span className="text-white/70">{data.backtest.win_rate} win</span></>}
+                {data.backtest.n && <><span className="text-white/20">|</span><span className="text-white/50">N={data.backtest.n}</span></>}
+              </div>
+            )}
+
+            {data.stop_logic && (
+              <p className="text-xs text-red-400/80">
+                <span className="font-semibold">Invalidates:</span> {data.stop_logic}
+              </p>
+            )}
+
+            {data.mode_context && (
+              <p className="text-xs text-white/40">Mode: {data.mode_context}</p>
+            )}
           </div>
-        )}
-
-        {data.backtest && (
-          <div className="bg-green-500/10 rounded px-3 py-2 mb-3">
-            <p className="text-xs text-muted-foreground mb-0.5">Backtest Edge</p>
-            <p className="text-sm font-medium">
-              {data.backtest.avg_return} avg {data.backtest.period} return
-              {data.backtest.win_rate && <> · {data.backtest.win_rate} win rate</>}
-              {data.backtest.n && <> · N={data.backtest.n}</>}
-            </p>
-          </div>
-        )}
-
-        {data.stop_logic && (
-          <p className="text-xs text-red-400/80 mb-1">
-            <span className="font-semibold">Invalidates if:</span> {data.stop_logic}
-          </p>
-        )}
-
-        {data.mode_context && (
-          <p className="text-xs text-muted-foreground">
-            Mode: {data.mode_context}
-          </p>
         )}
       </div>
     );
@@ -97,46 +159,60 @@ export function CallOptionsWidget({ data }: { data: CallAlertData | undefined | 
   // WATCHING
   if (status === "WATCHING") {
     return (
-      <div className="bg-card border border-yellow-500/30 rounded-lg p-4 md:p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Eye className="h-4 w-4 text-yellow-400" />
-            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Call Options</span>
+      <div className="bg-[#1a2332] border border-yellow-500/30 rounded-lg overflow-hidden">
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className="flex items-center gap-3">
+            <Eye className="h-5 w-5 text-yellow-400" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-yellow-400">WATCHING</span>
+                <span className="text-xs bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded font-mono">BETA</span>
+              </div>
+              {setupName && (
+                <p className="text-sm text-white/90">Approaching {setupName}</p>
+              )}
+            </div>
           </div>
-          <Badge variant="yellow" className="text-xs px-2 py-0.5">WATCHING</Badge>
+          <div className="flex items-center gap-2">
+            {reportDate && (
+              <span className="text-[10px] text-white/30 hidden sm:block">Updated {reportDate}</span>
+            )}
+            {hasDetails && (
+              expanded ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />
+            )}
+          </div>
         </div>
 
-        {data.setup && (
-          <p className="text-base md:text-lg font-semibold text-yellow-400 mb-2">
-            Approaching {formatSetupName(data.setup)}
-          </p>
-        )}
+        {expanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-yellow-500/20 space-y-3">
+            {data.conditions && data.conditions.length > 0 && (
+              <div>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Current Conditions</p>
+                <ul className="space-y-0.5">
+                  {data.conditions.map((c, i) => (
+                    <li key={i} className="text-sm text-yellow-200/70 flex items-start gap-1.5">
+                      <span className="text-yellow-400 mt-0.5 text-xs">◦</span>
+                      <span>{c}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        {data.conditions && data.conditions.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs text-muted-foreground mb-1">Current Conditions</p>
-            <ul className="space-y-0.5">
-              {data.conditions.map((c, i) => (
-                <li key={i} className="text-sm text-yellow-300/80 flex items-start gap-1.5">
-                  <span className="text-yellow-400 mt-0.5">◦</span>
-                  <span>{c}</span>
-                </li>
-              ))}
-            </ul>
+            {data.trigger_next && (
+              <div className="bg-yellow-500/10 rounded px-3 py-2">
+                <p className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Triggers When</p>
+                <p className="text-sm text-yellow-200">{data.trigger_next}</p>
+              </div>
+            )}
+
+            {data.also_watching && (
+              <p className="text-xs text-white/40">Also watching: {data.also_watching}</p>
+            )}
           </div>
-        )}
-
-        {data.trigger_next && (
-          <div className="bg-yellow-500/10 rounded px-3 py-2 mb-2">
-            <p className="text-xs text-muted-foreground mb-0.5">Triggers When</p>
-            <p className="text-sm font-medium">{data.trigger_next}</p>
-          </div>
-        )}
-
-        {data.also_watching && (
-          <p className="text-xs text-muted-foreground">
-            Also watching: {data.also_watching}
-          </p>
         )}
       </div>
     );
@@ -145,76 +221,93 @@ export function CallOptionsWidget({ data }: { data: CallAlertData | undefined | 
   // AVOID
   if (status === "AVOID") {
     return (
-      <div className="bg-card border border-red-500/30 rounded-lg p-4 md:p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-red-400" />
-            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Call Options</span>
+      <div className="bg-[#1a2332] border border-red-500/30 rounded-lg overflow-hidden">
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-5 w-5 text-red-400" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-red-400">AVOID</span>
+                <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-mono">BETA</span>
+              </div>
+              {setupName && (
+                <p className="text-sm text-white/90">{setupName}</p>
+              )}
+            </div>
           </div>
-          <Badge variant="red" className="text-xs px-2 py-0.5">AVOID</Badge>
+          <div className="flex items-center gap-2">
+            {reportDate && (
+              <span className="text-[10px] text-white/30 hidden sm:block">Updated {reportDate}</span>
+            )}
+            {hasDetails && (
+              expanded ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />
+            )}
+          </div>
         </div>
 
-        {data.setup && (
-          <p className="text-base md:text-lg font-semibold text-red-400 mb-2">
-            {formatSetupName(data.setup)}
-          </p>
-        )}
+        {expanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-red-500/20 space-y-3">
+            {data.conditions && data.conditions.length > 0 && (
+              <ul className="space-y-0.5">
+                {data.conditions.map((c, i) => (
+                  <li key={i} className="text-sm text-red-200/70 flex items-start gap-1.5">
+                    <span className="text-red-400 mt-0.5 text-xs">✕</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
-        {data.conditions && data.conditions.length > 0 && (
-          <div className="mb-3">
-            <ul className="space-y-0.5">
-              {data.conditions.map((c, i) => (
-                <li key={i} className="text-sm text-red-300/80 flex items-start gap-1.5">
-                  <span className="text-red-400 mt-0.5">✕</span>
-                  <span>{c}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+            {data.backtest && (
+              <div className="flex items-center gap-3 text-xs bg-red-500/10 rounded px-3 py-2 font-mono">
+                {data.backtest.avg_return && <span className="text-red-300">{data.backtest.avg_return} avg</span>}
+                {data.backtest.win_rate && <><span className="text-white/20">|</span><span className="text-white/70">{data.backtest.win_rate} win</span></>}
+                {data.backtest.n && <><span className="text-white/20">|</span><span className="text-white/50">N={data.backtest.n}</span></>}
+              </div>
+            )}
 
-        {data.backtest && (
-          <div className="bg-red-500/10 rounded px-3 py-2 mb-3">
-            <p className="text-xs text-muted-foreground mb-0.5">Backtest Evidence</p>
-            <p className="text-sm font-medium">
-              {data.backtest.avg_return} avg {data.backtest.period} return
-              {data.backtest.win_rate && <> · {data.backtest.win_rate} win rate</>}
+            {data.trim_guidance && (
+              <p className="text-xs text-yellow-400/80">
+                <span className="font-semibold">Holding calls?</span> {data.trim_guidance}
+              </p>
+            )}
+
+            {data.clears_when && (
+              <p className="text-xs text-white/40">
+                <span className="font-semibold text-white/50">Clears when:</span> {data.clears_when}
+              </p>
+            )}
+
+            <p className="text-[11px] text-red-400/50 italic">
+              Keeping you out of negative-EV trades IS the value.
             </p>
           </div>
         )}
-
-        {data.trim_guidance && (
-          <p className="text-xs text-yellow-400/80 mb-1">
-            <span className="font-semibold">If holding calls:</span> {data.trim_guidance}
-          </p>
-        )}
-
-        {data.clears_when && (
-          <p className="text-xs text-muted-foreground mb-2">
-            <span className="font-semibold">Clears when:</span> {data.clears_when}
-          </p>
-        )}
-
-        <p className="text-xs text-red-400/60 italic">
-          Keeping you out of negative-EV trades IS the value.
-        </p>
       </div>
     );
   }
 
-  // NO_SIGNAL (default)
+  // NO_SIGNAL
   return (
-    <div className="bg-card border border-border/50 rounded-lg p-4 md:p-5">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Minus className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Call Options</span>
+    <div className="bg-[#1a2332] border border-white/10 rounded-lg px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Minus className="h-5 w-5 text-white/30" />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold text-white/50">NO SIGNAL</span>
+              <span className="text-xs bg-white/5 text-white/30 px-1.5 py-0.5 rounded font-mono">BETA</span>
+            </div>
+            <p className="text-sm text-white/40">No call-specific trigger today. Continue per mode rules.</p>
+          </div>
         </div>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">NO SIGNAL</span>
+        {reportDate && (
+          <span className="text-[10px] text-white/20 hidden sm:block">Updated {reportDate}</span>
+        )}
       </div>
-      <p className="text-sm text-muted-foreground">
-        No call-specific trigger today. Continue holding existing positions per mode rules.
-      </p>
     </div>
   );
 }
