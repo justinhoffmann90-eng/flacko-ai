@@ -134,10 +134,12 @@ export default async function ReportPage() {
             <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{trimCap}</p>
           </div>
 
+          {extractedData?.call_alert && (
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Calls</p>
             <Badge variant={callVariant} className="mt-1 md:mt-2 text-sm md:text-base px-3 md:px-4">{callStatus}</Badge>
           </div>
+          )}
 
           <div className="bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
