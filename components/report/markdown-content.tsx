@@ -189,7 +189,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           // Simple table rendering - horizontal scroll on mobile for wide tables
           table: ({ children }) => (
             <div className="my-4 overflow-x-auto -mx-4 px-4">
-              <table className="w-full border-collapse min-w-max">{children}</table>
+              <table className="w-full border-collapse">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
