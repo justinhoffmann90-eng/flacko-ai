@@ -174,7 +174,8 @@ function getTextContent(node: ReactNode): string {
 
 function shouldNoWrapCell(node: ReactNode): boolean {
   const text = getTextContent(node).replace(/\s+/g, " ").trim();
-  return /[$€£¥]\s?\d/.test(text);
+  // Only nowrap short price-like cells (e.g. "$421", "$405.50"), not long descriptions
+  return /[$€£¥]\s?\d/.test(text) && text.length < 30;
 }
 
 export function MarkdownContent({ content }: MarkdownContentProps) {
