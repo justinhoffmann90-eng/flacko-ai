@@ -103,7 +103,7 @@ export default async function WeeklyReviewPage() {
 
   const data = review.extracted_data;
   const weekRange = formatWeekRange(review.week_start, review.week_end);
-  const mode = data.mode || "yellow";
+  const mode = (data.mode || "yellow").toLowerCase();
   const changePct = data.candle?.change_pct ?? data.change_pct ?? 0;
   const masterEject = data.master_eject || 0;
 
