@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cleanup-grace-periods",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/orb/compute",
+      "schedule": "30 21 * * 1-5"
     }
   ]
 }
