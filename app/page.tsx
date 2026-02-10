@@ -222,8 +222,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <p className="text-sm text-zinc-400">
-                price hits a key level → you get pinged with what to do and how to size. 
-                no chart-watching required. go live your life.
+                every 60 seconds during market hours, the system checks tsla against your report levels. hit a trim zone or buy level? email + discord alert fires with the level name, action, and why it matters — before you check the chart. the system watches so you don't have to.
               </p>
             </div>
 
