@@ -99,14 +99,15 @@ function HitRateRing({ pctPos, size = 52 }: { pctPos: number; size?: number }) {
   );
 }
 
-function ReturnBar({ value, label, maxAbs = 15 }: { value: number | null; label: string; maxAbs?: number }) {
+function ReturnBar({ value, label, maxAbs = 15, isDesktop = false }: { value: number | null; label: string; maxAbs?: number; isDesktop?: boolean }) {
   const v = value ?? 0;
   const widthPct = Math.min(100, (Math.abs(v) / maxAbs) * 100);
   const positive = v >= 0;
+  const desktopFont = (mobilePx: number) => (isDesktop ? Math.round(mobilePx * 1.2) : mobilePx);
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ width: 34, fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{label}</div>
+      <div style={{ width: 34, fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{label}</div>
       <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(255,255,255,0.05)", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.12)" }} />
         <div
@@ -221,6 +222,16 @@ export default function OrbClient() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[] }>>({});
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
+
+  const desktopFont = (mobilePx: number) => (isDesktop ? Math.round(mobilePx * 1.2) : mobilePx);
 
   useEffect(() => {
     const load = async () => {
@@ -279,26 +290,35 @@ export default function OrbClient() {
       <div className="max-w-3xl mx-auto">
         <div className="mb-6" style={{ animation: "fadeIn .4s ease" }}>
           <div className="flex items-center gap-2 mb-1">
-            <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.03em", background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Orb</h1>
-            <span className="ml-auto" style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
+            <h1 style={{ fontSize: desktopFont(30), fontWeight: 800, letterSpacing: "-0.03em", background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Orb</h1>
+            <span className="ml-auto" style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
           </div>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 4 avoid signals • 905 bars backtested • TSLA</p>
+          <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 4 avoid signals • 905 bars backtested • TSLA</p>
         </div>
 
-        {featured && (
-          <div className="mb-5" style={{ border: `1px solid rgba(34,197,94,0.2)`, background: "linear-gradient(135deg, rgba(34,197,94,0.09) 0%, rgba(59,130,246,0.03) 100%)", borderRadius: 14, padding: 16, animation: "fadeIn .45s ease" }}>
+        {featured ? (
+          <div className="mb-5" style={{ border: `1px solid rgba(34,197,94,0.2)`, background: "linear-gradient(135deg, rgba(34,197,94,0.09) 0%, rgba(59,130,246,0.03) 100%)", borderRadius: 14, padding: isDesktop ? "28px 32px" : 16, animation: "fadeIn .45s ease" }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ SHIELDS UP"}</span>
+              <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ SHIELDS UP"}</span>
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4" style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 10 }}>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: "#22c55e" }}>{featured.backtest_avg_return_20d != null ? `${featured.backtest_avg_return_20d > 0 ? "+" : ""}${featured.backtest_avg_return_20d.toFixed(1)}%` : "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div></div>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_win_rate_20d != null ? `${featured.backtest_win_rate_20d}%` : "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>HIT RATE</div></div>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_n ?? "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>INSTANCES</div></div>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: featured.type === "buy" ? "#22c55e" : "#ef4444" }}>{featured.type.toUpperCase()}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>SETUP TYPE</div></div>
+            <div style={{ fontSize: desktopFont(20), fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
+            <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
+            <div className={`grid grid-cols-2 sm:grid-cols-4 mt-4 ${isDesktop ? "gap-4" : "gap-2"}`} style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: isDesktop ? 14 : 10 }}>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: "#22c55e" }}>{featured.backtest_avg_return_20d != null ? `${featured.backtest_avg_return_20d > 0 ? "+" : ""}${featured.backtest_avg_return_20d.toFixed(1)}%` : "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div></div>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_win_rate_20d != null ? `${featured.backtest_win_rate_20d}%` : "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>HIT RATE</div></div>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_n ?? "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>INSTANCES</div></div>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: featured.type === "buy" ? "#22c55e" : "#ef4444" }}>{featured.type.toUpperCase()}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>SETUP TYPE</div></div>
             </div>
+          </div>
+        ) : (
+          <div className="mb-5" style={{ border: "1px solid rgba(163,163,163,0.2)", background: "linear-gradient(135deg, rgba(63,63,70,0.28) 0%, rgba(24,24,27,0.3) 100%)", borderRadius: 14, padding: isDesktop ? "28px 32px" : 16, animation: "fadeIn .45s ease" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-zinc-500" />
+              <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontFamily: "'JetBrains Mono', monospace" }}>🛡️ RETREAT!</span>
+            </div>
+            <div style={{ fontSize: desktopFont(20), fontWeight: 800, letterSpacing: "-0.02em" }}>No active signals right now</div>
+            <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.5)", marginTop: 4 }}>Orb is in all-clear mode and monitoring for new entries.</p>
           </div>
         )}
 
@@ -318,7 +338,7 @@ export default function OrbClient() {
                 borderRadius: 8,
                 padding: "8px 10px",
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 11,
+                fontSize: desktopFont(11),
                 fontWeight: 600,
                 letterSpacing: "0.04em",
                 color: filter === t.key ? "#f0f0f0" : "rgba(255,255,255,0.35)",
@@ -330,7 +350,7 @@ export default function OrbClient() {
           ))}
         </div>
 
-        <div className="space-y-2">
+        <div className={isDesktop ? "space-y-3" : "space-y-2"}>
           {filtered.map((row, index) => {
             const status = row.state?.status || "inactive";
             const sc = statusConfig[status];
@@ -349,11 +369,11 @@ export default function OrbClient() {
                   animation: `fadeIn .4s ease ${index * 0.08}s both`,
                 }}
               >
-                <button onClick={() => openSetup(row.id)} className="w-full text-left p-4 transition-colors" style={{ background: "transparent" }}>
+                <button onClick={() => openSetup(row.id)} className="w-full text-left transition-colors" style={{ background: "transparent", padding: isDesktop ? "28px 30px" : 16 }} >
                   <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`} style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`} style={{ fontSize: desktopFont(10), fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
                           <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} ${isActive ? "animate-pulse" : ""}`} />
                           {isActive && row.type === "buy" ? "💣 CANNONS" : isActive && row.type === "avoid" ? "🛡️ SHIELDS UP" : sc.label}
                         </span>
@@ -361,7 +381,7 @@ export default function OrbClient() {
                           <span
                             className="inline-flex items-center px-2 py-0.5 rounded-full"
                             style={{
-                              fontSize: 10,
+                              fontSize: desktopFont(10),
                               letterSpacing: "0.08em",
                               fontWeight: 700,
                               fontFamily: "'JetBrains Mono', monospace",
@@ -373,16 +393,16 @@ export default function OrbClient() {
                             {row.stance.toUpperCase()}
                           </span>
                         )}
-                        <span style={{ fontSize: 9, letterSpacing: "0.08em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>{row.type.toUpperCase()} #{row.number}</span>
+                        <span style={{ fontSize: desktopFont(9), letterSpacing: "0.08em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>{row.type.toUpperCase()} #{row.number}</span>
                       </div>
 
-                      <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
-                      <p className="orb-body-copy" style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
+                      <h3 style={{ fontSize: desktopFont(18), fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
+                      <p className="orb-body-copy" style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
 
                       {!!row.category_tags?.length && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {row.category_tags.map((tag) => (
-                            <span key={tag} style={{ fontSize: 10, borderRadius: 999, padding: "2px 8px", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)", fontFamily: "'JetBrains Mono', monospace" }}>{tag}</span>
+                            <span key={tag} style={{ fontSize: desktopFont(10), borderRadius: 999, padding: isDesktop ? "4px 10px" : "2px 8px", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)", fontFamily: "'JetBrains Mono', monospace" }}>{tag}</span>
                           ))}
                         </div>
                       )}
@@ -392,13 +412,13 @@ export default function OrbClient() {
                       <div className="text-center">
                         <div className="sm:hidden"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={40} /></div>
                         <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
-                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
+                        <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
                       </div>
                       <div className="text-right">
                         <div className="text-[20px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
                           {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
                         </div>
-                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
+                        <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
                       </div>
                       <div style={{ color: "rgba(255,255,255,0.35)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .25s ease" }}>▾</div>
                     </div>
@@ -406,23 +426,23 @@ export default function OrbClient() {
                 </button>
 
                 {expanded && (
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 16px 16px", animation: "slideDown .25s ease" }}>
-                    <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
-                    {row.public_description && <p className="orb-body-copy" style={{ fontSize: 13, color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: 12 }}>{row.public_description}</p>}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: isDesktop ? "18px 24px 22px" : "14px 16px 16px", animation: "slideDown .25s ease" }}>
+                    <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 6, fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
+                    {row.public_description && <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>{row.public_description}</p>}
 
                     {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
 
                     {row.framework === "fixed-horizon" && row.backtest_n && (
-                      <div className="mt-3">
-                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>FORWARD RETURNS · N={row.backtest_n}</p>
-                        <div className="space-y-2">
+                      <div className={isDesktop ? "mt-4" : "mt-3"}>
+                        <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>FORWARD RETURNS · N={row.backtest_n}</p>
+                        <div className={isDesktop ? "space-y-3" : "space-y-2"}>
                           {[
                             { k: "5D", avg: row.backtest_avg_return_5d },
                             { k: "10D", avg: row.backtest_avg_return_10d },
                             { k: "20D", avg: row.backtest_avg_return_20d },
                             { k: "60D", avg: row.backtest_avg_return_60d },
                           ].filter((h) => h.avg != null).map((h) => (
-                            <ReturnBar key={h.k} label={h.k} value={h.avg} />
+                            <ReturnBar key={h.k} label={h.k} value={h.avg} isDesktop={isDesktop} />
                           ))}
                         </div>
                       </div>
@@ -437,8 +457,8 @@ export default function OrbClient() {
                     )}
 
                     {row.livePerformance && row.livePerformance.total >= 3 && (
-                      <div className="mt-3">
-                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>LIVE VS BACKTEST</p>
+                      <div className={isDesktop ? "mt-4" : "mt-3"}>
+                        <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>LIVE VS BACKTEST</p>
                         <div className="grid grid-cols-4 gap-2 text-xs">
                           <div className="p-2 bg-zinc-900/70 border border-white/5 rounded text-center"><div className="text-zinc-500">Metric</div><div className="text-zinc-400">Win Rate</div><div className="text-zinc-400">Avg Return</div></div>
                           <div className="p-2 bg-zinc-900/70 border border-white/5 rounded text-center"><div className="text-zinc-500">Backtest</div><div className="text-zinc-300 font-mono">{row.backtest_win_rate_20d}%</div><div className="text-zinc-300 font-mono">{row.backtest_avg_return_20d}%</div></div>
@@ -449,7 +469,7 @@ export default function OrbClient() {
                     )}
 
                     <div className="mt-3">
-                      <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES</p>
+                      <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES</p>
                       {history?.signals?.length ? (
                         <div className="space-y-1">
                           {history.signals.slice(0, 5).map((signal: any, i: number) => {
@@ -464,17 +484,17 @@ export default function OrbClient() {
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 8,
-                                  padding: "6px 8px",
+                                  padding: isDesktop ? "8px 10px" : "6px 8px",
                                   borderRadius: 6,
                                   background: isLive ? "rgba(34,197,94,0.06)" : "transparent",
                                   border: isLive ? "1px solid rgba(34,197,94,0.15)" : "1px solid transparent",
                                 }}
                               >
                                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: modeColor(signal?.mode), flexShrink: 0 }} />
-                                <div style={{ width: 84, fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                <div style={{ width: 84, fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
                                   {formatSignalDate(signal?.signal_date || signal?.date || signal?.created_at)}
                                 </div>
-                                <div style={{ width: 62, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                <div style={{ width: 62, fontSize: desktopFont(11), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
                                   {signal?.price != null ? `$${Number(signal.price).toFixed(2)}` : signal?.signal_price != null ? `$${Number(signal.signal_price).toFixed(2)}` : "—"}
                                 </div>
                                 <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: 12 }}>
@@ -486,10 +506,10 @@ export default function OrbClient() {
                                     const c = Number(col.val);
                                     return (
                                       <div key={col.label} style={{ textAlign: "right", minWidth: 40 }}>
-                                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
+                                        <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
                                         <div
                                           style={{
-                                            fontSize: 11,
+                                            fontSize: desktopFont(11),
                                             fontWeight: 600,
                                             fontFamily: "'JetBrains Mono', monospace",
                                             color: isLive ? "rgba(255,255,255,0.35)" : Number.isFinite(c) ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.35)",
@@ -507,7 +527,7 @@ export default function OrbClient() {
                         </div>
                       ) : (
                         <p className="orb-body-copy" style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", lineHeight: 1.5 }}>
-                          Signal history will populate as the Orb tracks live signals.
+                          Instances will appear here as signals activate. The Orb is freshly deployed -- check back soon.
                         </p>
                       )}
                     </div>
@@ -565,7 +585,7 @@ export default function OrbClient() {
           })}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-zinc-800/50" style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>
+        <div className="mt-6 pt-4 border-t border-zinc-800/50" style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>
           <p>Data: 905 TSLA daily bars (Jul 2022 - Feb 2026) | BX-Trender computed from OHLCV | SMI: 10/3/3</p>
           <p className="mt-1">Past performance does not guarantee future results. All statistics are from backtesting.</p>
         </div>
