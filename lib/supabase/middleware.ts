@@ -61,6 +61,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Orb API endpoints (cron-triggered, use Bearer token auth)
+  if (request.nextUrl.pathname.startsWith("/api/orb")) {
+    return supabaseResponse;
+  }
+
   // Report upload with admin secret (used by Clawd automation)
   if (request.nextUrl.pathname === "/api/reports" && request.method === "POST") {
     const authHeader = request.headers.get("authorization");
