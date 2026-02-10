@@ -52,7 +52,7 @@ type Trade = {
 };
 
 const statusConfig: Record<string, { label: string; dot: string; text: string; border: string; bg: string; glow: string; color: string }> = {
-  active: { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5", glow: "shadow-[0_0_20px_rgba(34,197,94,0.15)]", color: "#22c55e" },  // label overridden dynamically for buy=CANNONS / avoid=SHIELDS UP
+  active: { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5", glow: "shadow-[0_0_20px_rgba(34,197,94,0.15)]", color: "#22c55e" },
   watching: { label: "WATCHING", dot: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/5", glow: "", color: "#eab308" },
   inactive: { label: "INACTIVE", dot: "bg-zinc-600", text: "text-zinc-500", border: "border-zinc-700/50", bg: "bg-zinc-900/30", glow: "", color: "#6b7280" },
 };
@@ -300,7 +300,7 @@ export default function OrbClient() {
           <div className="mb-5" style={{ border: `1px solid rgba(34,197,94,0.2)`, background: "linear-gradient(135deg, rgba(34,197,94,0.09) 0%, rgba(59,130,246,0.03) 100%)", borderRadius: 14, padding: isDesktop ? "28px 32px" : 16, animation: "fadeIn .45s ease" }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ SHIELDS UP"}</span>
+              <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ RETREAT!"}</span>
             </div>
             <div style={{ fontSize: desktopFont(20), fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
             <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
@@ -359,6 +359,21 @@ export default function OrbClient() {
             const history = historyBySetup[row.id];
             const openTrade = history?.trades.find((t) => t.status === "open") || null;
 
+            const badge = (() => {
+              if (status === "active") {
+                if (row.stance === "offensive") {
+                  return { label: "💣 ACTIVE - FIRE THE CANNONS", dot: "bg-emerald-500", text: "text-emerald-300", bg: "bg-emerald-500/15", border: "border border-emerald-500/35" };
+                }
+                return { label: "🛡️ ACTIVE - RETREAT", dot: "bg-red-500", text: "text-red-300", bg: "bg-red-500/15", border: "border border-red-500/35" };
+              }
+
+              if (status === "watching") {
+                return { label: "WATCHING", dot: "bg-amber-500", text: "text-amber-300", bg: "bg-amber-500/15", border: "border border-amber-500/35" };
+              }
+
+              return { label: "INACTIVE", dot: "bg-zinc-500", text: "text-zinc-400", bg: "bg-zinc-500/10", border: "border border-zinc-600/35" };
+            })();
+
             return (
               <div
                 key={row.id}
@@ -373,26 +388,10 @@ export default function OrbClient() {
                   <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`} style={{ fontSize: desktopFont(10), fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} ${isActive ? "animate-pulse" : ""}`} />
-                          {isActive && row.type === "buy" ? "💣 CANNONS" : isActive && row.type === "avoid" ? "🛡️ SHIELDS UP" : sc.label}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} ${badge.border}`} style={{ fontSize: desktopFont(10), fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${isActive ? "animate-pulse" : ""}`} />
+                          {badge.label}
                         </span>
-                        {!!row.stance && (
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-full"
-                            style={{
-                              fontSize: desktopFont(10),
-                              letterSpacing: "0.08em",
-                              fontWeight: 700,
-                              fontFamily: "'JetBrains Mono', monospace",
-                              color: row.stance === "offensive" ? "#86efac" : "#fca5a5",
-                              background: row.stance === "offensive" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
-                              border: `1px solid ${row.stance === "offensive" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)"}`,
-                            }}
-                          >
-                            {row.stance.toUpperCase()}
-                          </span>
-                        )}
                         <span style={{ fontSize: desktopFont(9), letterSpacing: "0.08em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>{row.type.toUpperCase()} #{row.number}</span>
                       </div>
 
