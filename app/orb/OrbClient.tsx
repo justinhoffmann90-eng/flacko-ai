@@ -28,6 +28,9 @@ type OrbRow = {
   description: string | null;
   state: any;
   livePerformance: { wins: number; total: number; avgReturn: number } | null;
+  _admin?: boolean;
+  conditions?: any;
+  eval_logic?: any;
 };
 
 type Trade = {
@@ -47,29 +50,91 @@ type Trade = {
   status: "open" | "closed";
 };
 
-const statusConfig: Record<string, { label: string; dot: string; text: string; border: string; bg: string; glow: string }> = {
-  active: { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5", glow: "shadow-lg shadow-emerald-500/20" },
-  watching: { label: "WATCHING", dot: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/5", glow: "" },
-  inactive: { label: "INACTIVE", dot: "bg-zinc-600", text: "text-zinc-500", border: "border-zinc-700/50", bg: "bg-zinc-900/30", glow: "" },
+const statusConfig: Record<string, { label: string; dot: string; text: string; border: string; bg: string; glow: string; color: string }> = {
+  active: { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5", glow: "shadow-[0_0_20px_rgba(34,197,94,0.15)]", color: "#22c55e" },
+  watching: { label: "WATCHING", dot: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/5", glow: "", color: "#eab308" },
+  inactive: { label: "INACTIVE", dot: "bg-zinc-600", text: "text-zinc-500", border: "border-zinc-700/50", bg: "bg-zinc-900/30", glow: "", color: "#6b7280" },
 };
 
-function GaugeBar({ value, min, max, thresholds }: { value: number; min: number; max: number; thresholds?: { value: number; label: string }[] }) {
-  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
-  const color = value < -40 ? "#ef4444" : value < 0 ? "#f59e0b" : value < 50 ? "#22c55e" : "#3b82f6";
+function HitRateRing({ pctPos, size = 52 }: { pctPos: number; size?: number }) {
+  const safePct = Number.isFinite(pctPos) ? Math.max(0, Math.min(100, pctPos)) : 0;
+  const radius = (size - 8) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (safePct / 100) * circumference;
+  const color = safePct >= 65 ? "#22c55e" : safePct >= 50 ? "#eab308" : "#ef4444";
+
   return (
-    <div className="mb-1">
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
-        {thresholds?.map((t, i) => {
-          const tPct = ((t.value - min) / (max - min)) * 100;
-          return <div key={i} className="absolute top-0 bottom-0 w-px bg-zinc-600" style={{ left: `${tPct}%` }} />;
-        })}
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+    <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={4} />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={color}
+        strokeWidth={4}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        style={{ transition: "stroke-dashoffset 0.8s ease" }}
+      />
+      <text
+        x={size / 2}
+        y={size / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        style={{
+          transform: "rotate(90deg)",
+          transformOrigin: "center",
+          fill: color,
+          fontSize: 10,
+          fontWeight: 700,
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
+        {Math.round(safePct)}%
+      </text>
+    </svg>
+  );
+}
+
+function ReturnBar({ value, label, maxAbs = 15 }: { value: number | null; label: string; maxAbs?: number }) {
+  const v = value ?? 0;
+  const widthPct = Math.min(100, (Math.abs(v) / maxAbs) * 100);
+  const positive = v >= 0;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ width: 34, fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{label}</div>
+      <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(255,255,255,0.05)", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.12)" }} />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            width: `${widthPct / 2}%`,
+            left: positive ? "50%" : `${50 - widthPct / 2}%`,
+            borderRadius: 4,
+            background: positive
+              ? "linear-gradient(90deg, rgba(34,197,94,0.35), rgba(34,197,94,0.9))"
+              : "linear-gradient(270deg, rgba(239,68,68,0.35), rgba(239,68,68,0.9))",
+          }}
+        />
       </div>
-      {thresholds && (
-        <div className="flex justify-between text-[10px] mt-0.5 text-zinc-600">
-          {thresholds.map((t, i) => <span key={i}>{t.label}</span>)}
-        </div>
-      )}
+      <div
+        style={{
+          width: 58,
+          textAlign: "right",
+          fontSize: 12,
+          fontWeight: 700,
+          color: positive ? "#22c55e" : "#ef4444",
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
+        {positive ? "+" : ""}
+        {v.toFixed(1)}%
+      </div>
     </div>
   );
 }
@@ -85,115 +150,44 @@ function ActiveTradeCard({ row, trade }: { row: OrbRow; trade: Trade | null }) {
     : null;
 
   return (
-    <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 space-y-2">
-      <div className="flex items-center gap-2">
+    <div style={{ border: "1px solid rgba(34,197,94,0.25)", background: "rgba(34,197,94,0.06)", borderRadius: 10, padding: 12 }}>
+      <div className="flex items-center gap-2 mb-2">
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Live Trade</span>
+        <span style={{ fontSize: 10, letterSpacing: "0.1em", color: "#22c55e", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>LIVE TRADE</span>
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-        <div className="text-zinc-500">Entry</div>
-        <div className="text-white font-mono">${trade.entry_price.toFixed(2)} ({trade.entry_date})</div>
-        <div className="text-zinc-500">Day</div>
-        <div className="text-white font-mono">{trade.days_active}{row.gauge_median_days ? ` of ~${row.gauge_median_days} median` : ""}</div>
-        <div className="text-zinc-500">Return</div>
-        <div className={`font-mono font-bold ${trade.current_return_pct >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-          {trade.current_return_pct >= 0 ? "+" : ""}{trade.current_return_pct.toFixed(2)}%
-        </div>
-        <div className="text-zinc-500">Max Up</div>
-        <div className="text-emerald-400 font-mono">+{(trade.max_return_pct || 0).toFixed(2)}%</div>
-        <div className="text-zinc-500">Max Down</div>
-        <div className="text-red-400 font-mono">{(trade.max_drawdown_pct || 0).toFixed(2)}%</div>
+        <div className="text-zinc-500">Entry</div><div className="text-white font-mono">${trade.entry_price.toFixed(2)} ({trade.entry_date})</div>
+        <div className="text-zinc-500">Day</div><div className="text-white font-mono">{trade.days_active}{row.gauge_median_days ? ` of ~${row.gauge_median_days} median` : ""}</div>
+        <div className="text-zinc-500">Return</div><div className={`font-mono font-bold ${trade.current_return_pct >= 0 ? "text-emerald-400" : "text-red-400"}`}>{trade.current_return_pct >= 0 ? "+" : ""}{trade.current_return_pct.toFixed(2)}%</div>
+        <div className="text-zinc-500">Max Up</div><div className="text-emerald-400 font-mono">+{(trade.max_return_pct || 0).toFixed(2)}%</div>
+        <div className="text-zinc-500">Max Down</div><div className="text-red-400 font-mono">{(trade.max_drawdown_pct || 0).toFixed(2)}%</div>
       </div>
       {isGauge && gaugeCurrent != null && (
-        <div className="pt-1">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-zinc-500">SMI Progress</span>
-            <span className="text-amber-400 font-mono">{gaugeProgressPct}% to target</span>
+        <div className="pt-2">
+          <div className="flex justify-between text-xs mb-1"><span className="text-zinc-500">SMI Progress</span><span className="text-amber-400 font-mono">{gaugeProgressPct}% to target</span></div>
+          <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+            <div className="h-full rounded-full bg-amber-400" style={{ width: `${Math.max(0, Math.min(100, Number(gaugeProgressPct || 0)))}%` }} />
           </div>
-          <GaugeBar
-            value={gaugeCurrent}
-            min={-100}
-            max={100}
-            thresholds={[
-              { value: gaugeEntry ?? -60, label: `${gaugeEntry ?? -60} entry` },
-              { value: 0, label: "0" },
-              { value: gaugeTarget ?? 30, label: `${gaugeTarget ?? 30} target` },
-            ]}
-          />
-          <div className="flex justify-between text-[10px] text-zinc-600 mt-0.5">
-            <span>Entry SMI: {gaugeEntry?.toFixed(1)}</span>
-            <span>Current: {gaugeCurrent?.toFixed(1)}</span>
-          </div>
-        </div>
-      )}
-      {row.backtest_avg_return_20d != null && (
-        <div className="text-[10px] text-zinc-600 pt-1 border-t border-zinc-800/50">
-          Backtest avg: {row.backtest_avg_return_20d > 0 ? "+" : ""}{row.backtest_avg_return_20d}% over ~{row.gauge_median_days || "N/A"} days | {row.backtest_win_rate_20d}% win rate (N={row.backtest_n})
+          <div className="flex justify-between text-[10px] text-zinc-600 mt-1"><span>Entry SMI: {gaugeEntry?.toFixed(1)}</span><span>Current: {gaugeCurrent?.toFixed(1)}</span></div>
         </div>
       )}
     </div>
   );
 }
 
-function ClosedTradeCard({ trade, row }: { trade: Trade; row: OrbRow }) {
+function ClosedTradeCard({ trade }: { trade: Trade; row: OrbRow }) {
   const isWin = trade.is_win;
   return (
-    <div className={`p-2.5 rounded-lg border text-xs ${isWin ? "border-emerald-500/10 bg-emerald-500/5" : "border-red-500/10 bg-red-500/5"}`}>
-      <div className="flex items-center gap-2 mb-1">
-        <span className={isWin ? "text-emerald-400" : "text-red-400"}>{isWin ? "✅" : "❌"}</span>
-        <span className="text-zinc-400">{trade.entry_date} → {trade.exit_date}</span>
+    <div style={{ border: `1px solid ${isWin ? "rgba(34,197,94,0.18)" : "rgba(239,68,68,0.18)"}`, background: isWin ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)", borderRadius: 8, padding: 10 }}>
+      <div className="flex items-center gap-2 mb-1 text-xs">
+        <span className={isWin ? "text-emerald-400" : "text-red-400"}>{isWin ? "●" : "●"}</span>
+        <span className="text-zinc-400 font-mono">{trade.entry_date} → {trade.exit_date}</span>
         <span className="text-zinc-600">|</span>
-        <span className="text-zinc-400">{trade.days_active}d</span>
+        <span className="text-zinc-500">{trade.days_active}d</span>
       </div>
-      <div className="flex gap-4">
-        <span className="text-zinc-500">${trade.entry_price} → ${trade.exit_price}</span>
-        <span className={`font-mono font-bold ${(trade.final_return_pct || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-          {(trade.final_return_pct || 0) >= 0 ? "+" : ""}{(trade.final_return_pct || 0).toFixed(2)}%
-        </span>
-        <span className="text-zinc-600">Max: +{(trade.max_return_pct || 0).toFixed(1)}% / {(trade.max_drawdown_pct || 0).toFixed(1)}%</span>
-      </div>
-      {trade.exit_reason && <div className="text-zinc-600 mt-0.5">Exit: {trade.exit_reason.replace(/_/g, " ")}</div>}
-    </div>
-  );
-}
-
-function CumulativeStats({ rows }: { rows: OrbRow[] }) {
-  const allLive = rows.filter(r => r.livePerformance && r.livePerformance.total > 0);
-  if (allLive.length === 0) return null;
-
-  const buys = allLive.filter(r => r.type === "buy");
-  const avoids = allLive.filter(r => r.type === "avoid");
-
-  const buyStats = buys.reduce((acc, r) => {
-    const lp = r.livePerformance!;
-    return { wins: acc.wins + lp.wins, total: acc.total + lp.total, sumReturn: acc.sumReturn + lp.avgReturn * lp.total };
-  }, { wins: 0, total: 0, sumReturn: 0 });
-
-  const avoidStats = avoids.reduce((acc, r) => {
-    const lp = r.livePerformance!;
-    return { wins: acc.wins + lp.wins, total: acc.total + lp.total, sumReturn: acc.sumReturn + lp.avgReturn * lp.total };
-  }, { wins: 0, total: 0, sumReturn: 0 });
-
-  return (
-    <div className="mb-4 p-3 rounded-lg border border-zinc-800/50 bg-zinc-900/30">
-      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">🔮 Live Track Record</p>
-      <div className="grid grid-cols-2 gap-3 text-xs">
-        {buyStats.total > 0 && (
-          <div>
-            <div className="text-emerald-400 font-bold mb-1">Buy Signals</div>
-            <div className="text-zinc-400">Completed: {buyStats.total} | Wins: {buyStats.wins}</div>
-            <div className="text-zinc-400">Win Rate: {(buyStats.wins / buyStats.total * 100).toFixed(1)}%</div>
-            <div className="text-zinc-400">Avg Return: {(buyStats.sumReturn / buyStats.total).toFixed(1)}%</div>
-          </div>
-        )}
-        {avoidStats.total > 0 && (
-          <div>
-            <div className="text-red-400 font-bold mb-1">Avoid Signals</div>
-            <div className="text-zinc-400">Completed: {avoidStats.total} | Correct: {avoidStats.wins}</div>
-            <div className="text-zinc-400">Accuracy: {(avoidStats.wins / avoidStats.total * 100).toFixed(1)}%</div>
-            <div className="text-zinc-400">Avg Decline: {(avoidStats.sumReturn / avoidStats.total).toFixed(1)}%</div>
-          </div>
-        )}
+      <div className="flex gap-4 text-xs">
+        <span className="text-zinc-500 font-mono">${trade.entry_price} → ${trade.exit_price}</span>
+        <span className={`font-mono font-bold ${(trade.final_return_pct || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>{(trade.final_return_pct || 0) >= 0 ? "+" : ""}{(trade.final_return_pct || 0).toFixed(2)}%</span>
       </div>
     </div>
   );
@@ -236,9 +230,8 @@ export default function OrbClient() {
     return out.sort((a, b) => rank(a.state?.status || "inactive") - rank(b.state?.status || "inactive"));
   }, [rows, filter]);
 
-  const activeBuys = rows.filter((r) => r.type === "buy" && r.state?.status === "active").length;
-  const activeAvoids = rows.filter((r) => r.type === "avoid" && r.state?.status === "active").length;
-  const watching = rows.filter((r) => r.state?.status === "watching").length;
+  const activeSetups = rows.filter((r) => r.state?.status === "active");
+  const featured = activeSetups[0] || null;
 
   const openSetup = async (setupId: string) => {
     setExpandedId((prev) => (prev === setupId ? null : setupId));
@@ -250,265 +243,237 @@ export default function OrbClient() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-lg font-bold tracking-tight">🔮 Orb</h1>
-          <span className="text-xs text-zinc-600 font-mono ml-auto">Live Signal Tracker</span>
-        </div>
-        <p className="text-xs text-zinc-500">11 buy setups + 4 avoid signals • 905 bars backtested • TSLA</p>
-      </div>
+    <div className="min-h-screen p-4" style={{ background: "#0a0a0c", color: "#f0f0f0", fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 1000px; } }
+      `}</style>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className={`p-3 rounded-lg border ${activeBuys > 0 ? "border-emerald-500/30 bg-emerald-500/5" : "border-zinc-800 bg-zinc-900/50"}`}>
-          <div className="text-xs text-zinc-500">Buy Signals</div>
-          <div className={`text-2xl font-bold font-mono ${activeBuys > 0 ? "text-emerald-400" : "text-zinc-600"}`}>{activeBuys}</div>
-          <div className="text-xs text-zinc-600">active</div>
-        </div>
-        <div className={`p-3 rounded-lg border ${activeAvoids > 0 ? "border-red-500/30 bg-red-500/5" : "border-zinc-800 bg-zinc-900/50"}`}>
-          <div className="text-xs text-zinc-500">Avoid Signals</div>
-          <div className={`text-2xl font-bold font-mono ${activeAvoids > 0 ? "text-red-400" : "text-zinc-600"}`}>{activeAvoids}</div>
-          <div className="text-xs text-zinc-600">active</div>
-        </div>
-        <div className={`p-3 rounded-lg border ${watching > 0 ? "border-amber-500/30 bg-amber-500/5" : "border-zinc-800 bg-zinc-900/50"}`}>
-          <div className="text-xs text-zinc-500">Watching</div>
-          <div className={`text-2xl font-bold font-mono ${watching > 0 ? "text-amber-400" : "text-zinc-600"}`}>{watching}</div>
-          <div className="text-xs text-zinc-600">developing</div>
-        </div>
-      </div>
-
-      {/* Cumulative track record */}
-      <CumulativeStats rows={rows} />
-
-      {/* Active alert banner */}
-      {(activeBuys > 0 || activeAvoids > 0) && (
-        <div className={`mb-4 p-3 rounded-lg border ${activeAvoids > 0 ? "border-red-500/20 bg-red-500/5" : "border-emerald-500/20 bg-emerald-500/5"}`}>
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-6" style={{ animation: "fadeIn .4s ease" }}>
           <div className="flex items-center gap-2 mb-1">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${activeAvoids > 0 ? "bg-red-500" : "bg-emerald-500"}`} />
-            <span className={`text-xs font-bold uppercase tracking-wider ${activeAvoids > 0 ? "text-red-400" : "text-emerald-400"}`}>
-              {activeAvoids > 0 ? "Avoid Signal Active" : "Buy Signal Active"}
-            </span>
+            <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.03em", background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Orb</h1>
+            <span className="ml-auto" style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
           </div>
-          {rows.filter(r => r.type === "avoid" && r.state?.status === "active").map(s => (
-            <p key={s.id} className="text-xs text-zinc-300">
-              <span className="text-red-400 font-semibold">{s.public_name || s.name}</span> -- {s.state?.inactive_reason || s.state?.watching_reason || "Active"}
-            </p>
-          ))}
-          {rows.filter(r => r.type === "buy" && r.state?.status === "active").map(s => (
-            <p key={s.id} className="text-xs text-zinc-300 mt-1">
-              <span className="text-emerald-400 font-semibold">{s.public_name || s.name}</span> -- Day {s.state?.active_day || "?"}{s.gauge_median_days ? ` of ~${s.gauge_median_days} median` : ""}. Win rate: {s.backtest_win_rate_20d}%.
-            </p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 4 avoid signals • 905 bars backtested • TSLA</p>
+        </div>
+
+        {featured && (
+          <div className="mb-5" style={{ border: `1px solid rgba(34,197,94,0.2)`, background: "linear-gradient(135deg, rgba(34,197,94,0.09) 0%, rgba(59,130,246,0.03) 100%)", borderRadius: 14, padding: 16, animation: "fadeIn .45s ease" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "#22c55e", fontFamily: "'JetBrains Mono', monospace" }}>FEATURED ACTIVE SIGNAL</span>
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
+            <div className="grid grid-cols-4 gap-2 mt-4" style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 10 }}>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: "#22c55e" }}>{featured.backtest_avg_return_20d != null ? `${featured.backtest_avg_return_20d > 0 ? "+" : ""}${featured.backtest_avg_return_20d.toFixed(1)}%` : "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div></div>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_win_rate_20d != null ? `${featured.backtest_win_rate_20d}%` : "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>HIT RATE</div></div>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_n ?? "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>INSTANCES</div></div>
+              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: featured.type === "buy" ? "#22c55e" : "#ef4444" }}>{featured.type.toUpperCase()}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>SETUP TYPE</div></div>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, display: "flex", gap: 4 }}>
+          {[
+            { key: "all", label: "All Setups" },
+            { key: "active", label: "Active / Watching" },
+            { key: "buy", label: "Buy" },
+            { key: "avoid", label: "Avoid" },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setFilter(t.key as any)}
+              style={{
+                flex: 1,
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 10px",
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                color: filter === t.key ? "#f0f0f0" : "rgba(255,255,255,0.35)",
+                background: filter === t.key ? "rgba(255,255,255,0.08)" : "transparent",
+              }}
+            >
+              {t.label}
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Filter tabs */}
-      <div className="flex gap-1 mb-3">
-        {[
-          { key: "all", label: "All Setups" },
-          { key: "active", label: "Active / Watching" },
-          { key: "buy", label: "Buy" },
-          { key: "avoid", label: "Avoid" },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setFilter(t.key as any)}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${filter === t.key ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        <div className="space-y-2">
+          {filtered.map((row, index) => {
+            const status = row.state?.status || "inactive";
+            const sc = statusConfig[status];
+            const expanded = expandedId === row.id;
+            const isActive = status === "active";
+            const history = historyBySetup[row.id];
+            const openTrade = history?.trades.find((t) => t.status === "open") || null;
+            const closedTrades = history?.trades.filter((t) => t.status === "closed") || [];
 
-      {/* Setup Cards */}
-      <div className="space-y-2">
-        {filtered.map((row) => {
-          const status = row.state?.status || "inactive";
-          const sc = statusConfig[status];
-          const expanded = expandedId === row.id;
-          const isActive = status === "active";
-          const history = historyBySetup[row.id];
-          const openTrade = history?.trades.find(t => t.status === "open") || null;
-          const closedTrades = history?.trades.filter(t => t.status === "closed") || [];
-
-          return (
-            <div key={row.id} className={`rounded-xl border ${sc.border} ${sc.bg} overflow-hidden transition-all duration-300 ${isActive ? sc.glow : ""}`}>
-              <button onClick={() => openSetup(row.id)} className="w-full text-left p-4 flex items-start gap-3 hover:bg-white/[0.02] transition-colors">
-                <div className={`mt-1 w-2 h-2 rounded-full ${sc.dot} ${isActive ? "animate-pulse" : ""}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${row.type === "buy" ? "bg-emerald-900/40 text-emerald-400" : "bg-red-900/40 text-red-400"}`}>
-                      {row.type === "buy" ? `BUY #${row.number}` : `AVOID #${row.number}`}
-                    </span>
-                    <h3 className="text-white font-semibold text-sm">{row.public_name || row.name}</h3>
-                    <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${sc.text}`}>{sc.label}</span>
-                    {row.grade && row.grade !== "AVOID" && <span className="text-xs text-zinc-500 font-mono">{row.grade}</span>}
-                  </div>
-                  {row.one_liner && <p className="mt-1 text-xs text-zinc-400">{row.one_liner}</p>}
-                  {!!row.category_tags?.length && (
-                    <div className="flex flex-wrap gap-1.5 mt-1.5">
-                      {row.category_tags.map((tag) => (
-                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800/80 text-zinc-300">
-                          {tag}
+            return (
+              <div
+                key={row.id}
+                className={`rounded-xl border overflow-hidden transition-all duration-300 ${expanded ? sc.glow : ""}`}
+                style={{
+                  borderColor: expanded ? sc.color : "rgba(255,255,255,0.06)",
+                  background: expanded ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+                  animation: `fadeIn .4s ease ${index * 0.08}s both`,
+                }}
+              >
+                <button onClick={() => openSetup(row.id)} className="w-full text-left p-4 transition-colors" style={{ background: "transparent" }}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`} style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} ${isActive ? "animate-pulse" : ""}`} />
+                          {sc.label}
                         </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex gap-3 mt-1.5 text-xs">
-                    <span className={sc.text}>{row.backtest_win_rate_20d ?? "-"}% win</span>
-                    <span className="text-zinc-500">|</span>
-                    <span className="text-zinc-400">N={row.backtest_n ?? "-"}</span>
-                    <span className="text-zinc-500">|</span>
-                    <span className="text-zinc-500">{row.framework}</span>
-                  </div>
-                  {/* Inline active trade summary */}
-                  {isActive && row.state?.entry_price && (
-                    <div className="mt-2 flex gap-4 text-xs">
-                      <span className="text-zinc-400">Entry: <span className="text-white font-mono">${row.state.entry_price}</span></span>
-                      <span className="text-zinc-400">Day: <span className="text-white font-mono">{row.state.active_day || 1}</span></span>
-                      {row.state.gauge_current_value != null && (
-                        <span className="text-zinc-400">SMI: <span className="text-amber-400 font-mono">{Number(row.state.gauge_current_value).toFixed(1)}</span> → {row.state.gauge_target_value} target</span>
+                        <span style={{ fontSize: 9, letterSpacing: "0.08em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>{row.type.toUpperCase()} #{row.number}</span>
+                      </div>
+
+                      <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
+
+                      {!!row.category_tags?.length && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {row.category_tags.map((tag) => (
+                            <span key={tag} style={{ fontSize: 10, borderRadius: 999, padding: "2px 8px", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)", fontFamily: "'JetBrains Mono', monospace" }}>{tag}</span>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  )}
-                  {/* Inactive reason */}
-                  {!isActive && status === "watching" && row.state?.watching_reason && (
-                    <p className="mt-1.5 text-xs text-zinc-600 truncate">{row.state.watching_reason}</p>
-                  )}
-                  {!isActive && status === "inactive" && row.state?.inactive_reason && (
-                    <p className="mt-1.5 text-xs text-zinc-600 truncate">{row.state.inactive_reason}</p>
-                  )}
-                </div>
-                <svg className={`w-4 h-4 text-zinc-600 mt-1 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
 
-              {expanded && (
-                <div className="px-4 pb-4 border-t border-zinc-800/50 space-y-3 pt-3">
-                  {row.public_description && <p className="text-xs text-zinc-400 italic">{row.public_description}</p>}
+                    <div className="flex items-center gap-3">
+                      <div className="text-center">
+                        <HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} />
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
+                      </div>
+                      <div className="text-right">
+                        <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                          {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
+                        </div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
+                      </div>
+                      <div style={{ color: "rgba(255,255,255,0.35)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .25s ease" }}>▾</div>
+                    </div>
+                  </div>
+                </button>
 
-                  {/* Active trade card */}
-                  {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
+                {expanded && (
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 16px 16px", animation: "slideDown .25s ease" }}>
+                    <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
+                    {row.public_description && <p style={{ fontSize: 13, color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: 12 }}>{row.public_description}</p>}
 
-                  {/* Horizons (fixed-horizon setups) */}
-                  {row.framework === "fixed-horizon" && row.backtest_n && (
-                    <div>
-                      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Forward Returns (backtest)</p>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { k: "5d", win: row.backtest_win_rate_5d, avg: row.backtest_avg_return_5d },
-                          { k: "10d", win: row.backtest_win_rate_10d, avg: row.backtest_avg_return_10d },
-                          { k: "20d", win: row.backtest_win_rate_20d, avg: row.backtest_avg_return_20d },
-                          { k: "60d", win: row.backtest_win_rate_60d, avg: row.backtest_avg_return_60d },
-                        ].filter(h => h.win != null).map((h) => (
-                          <div key={h.k} className="text-center p-2 rounded bg-zinc-800/50">
-                            <div className="text-xs text-zinc-500 mb-0.5">{h.k}</div>
-                            <div className={`text-sm font-mono font-bold ${(h.avg || 0) > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                              {(h.avg || 0) > 0 ? "+" : ""}{(h.avg || 0).toFixed(1)}%
-                            </div>
-                            <div className="text-xs text-zinc-500">{h.win}% win</div>
+                    {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
+
+                    {row.framework === "fixed-horizon" && row.backtest_n && (
+                      <div className="mt-3">
+                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>FORWARD RETURNS · N={row.backtest_n}</p>
+                        <div className="space-y-2">
+                          {[
+                            { k: "5D", avg: row.backtest_avg_return_5d },
+                            { k: "10D", avg: row.backtest_avg_return_10d },
+                            { k: "20D", avg: row.backtest_avg_return_20d },
+                            { k: "60D", avg: row.backtest_avg_return_60d },
+                          ].filter((h) => h.avg != null).map((h) => (
+                            <ReturnBar key={h.k} label={h.k} value={h.avg} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {row.framework === "gauge-to-target" && !isActive && row.gauge_median_days && (
+                      <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                        <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Median Return</div><div className={`font-mono font-bold ${(row.gauge_median_return || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>{(row.gauge_median_return || 0) >= 0 ? "+" : ""}{row.gauge_median_return}%</div></div>
+                        <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Median Days</div><div className="text-white font-mono font-bold">{row.gauge_median_days}</div></div>
+                        <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Sample</div><div className="text-white font-mono font-bold">N={row.backtest_n}</div></div>
+                      </div>
+                    )}
+
+                    {row.livePerformance && row.livePerformance.total >= 3 && (
+                      <div className="mt-3">
+                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>LIVE VS BACKTEST</p>
+                        <div className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="p-2 bg-zinc-900/70 border border-white/5 rounded text-center"><div className="text-zinc-500">Metric</div><div className="text-zinc-400">Win Rate</div><div className="text-zinc-400">Avg Return</div></div>
+                          <div className="p-2 bg-zinc-900/70 border border-white/5 rounded text-center"><div className="text-zinc-500">Backtest</div><div className="text-zinc-300 font-mono">{row.backtest_win_rate_20d}%</div><div className="text-zinc-300 font-mono">{row.backtest_avg_return_20d}%</div></div>
+                          <div className="p-2 bg-zinc-900/70 border border-white/5 rounded text-center"><div className="text-zinc-500">Live</div><div className="text-white font-mono font-bold">{(row.livePerformance.wins / row.livePerformance.total * 100).toFixed(1)}%</div><div className="text-white font-mono font-bold">{row.livePerformance.avgReturn.toFixed(1)}%</div></div>
+                          <div className="p-2 bg-zinc-900/70 border border-white/5 rounded text-center"><div className="text-zinc-500">N</div><div className="text-zinc-400">{row.backtest_n}</div><div className="text-zinc-400">{row.livePerformance.total}</div></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {closedTrades.length > 0 && (
+                      <div className="mt-3">
+                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES ({closedTrades.length})</p>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                          {closedTrades.slice(0, 10).map((t) => (
+                            <ClosedTradeCard key={t.id} trade={t} row={row} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Admin-only indicator details */}
+                    {row._admin && (
+                      <div className="mt-3 p-3 rounded-lg" style={{ background: "rgba(139, 92, 246, 0.06)", border: "1px solid rgba(139, 92, 246, 0.2)" }}>
+                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(139, 92, 246, 0.6)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>🔒 ADMIN · INDICATOR DETAILS</p>
+                        {row.name && row.name !== row.public_name && (
+                          <div className="mb-2">
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Internal: </span>
+                            <span style={{ fontSize: 12, color: "rgba(139, 92, 246, 0.8)", fontFamily: "'JetBrains Mono', monospace" }}>{row.name}</span>
                           </div>
-                        ))}
+                        )}
+                        {row.description && (
+                          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.5, marginBottom: 8 }}>{row.description}</p>
+                        )}
+                        {row.conditions && (
+                          <div className="mb-2">
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Conditions: </span>
+                            <pre style={{ fontSize: 11, color: "rgba(139, 92, 246, 0.7)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
+                              {typeof row.conditions === "string" ? row.conditions : JSON.stringify(row.conditions, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {row.eval_logic && (
+                          <div className="mb-2">
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Eval Logic: </span>
+                            <pre style={{ fontSize: 11, color: "rgba(139, 92, 246, 0.7)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
+                              {typeof row.eval_logic === "string" ? row.eval_logic : JSON.stringify(row.eval_logic, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {row.state?.gauge_current_value != null && (
+                          <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+                            <div><span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Gauge Entry: </span><span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_entry_value}</span></div>
+                            <div><span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Current: </span><span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_current_value}</span></div>
+                            <div><span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Target: </span><span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_target_value}</span></div>
+                          </div>
+                        )}
+                        {row.state?.entry_indicator_values && (
+                          <div className="mt-2">
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Entry Indicators: </span>
+                            <pre style={{ fontSize: 11, color: "rgba(139, 92, 246, 0.7)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
+                              {JSON.stringify(row.state.entry_indicator_values, null, 2)}
+                            </pre>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-                  {/* Gauge stats (gauge-to-target setups, when not active) */}
-                  {row.framework === "gauge-to-target" && !isActive && row.gauge_median_days && (
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="p-2 bg-zinc-800/50 rounded text-center">
-                        <div className="text-zinc-500">Median Return</div>
-                        <div className={`font-mono font-bold ${(row.gauge_median_return || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                          {(row.gauge_median_return || 0) >= 0 ? "+" : ""}{row.gauge_median_return}%
-                        </div>
-                      </div>
-                      <div className="p-2 bg-zinc-800/50 rounded text-center">
-                        <div className="text-zinc-500">Median Days</div>
-                        <div className="text-white font-mono font-bold">{row.gauge_median_days}</div>
-                      </div>
-                      <div className="p-2 bg-zinc-800/50 rounded text-center">
-                        <div className="text-zinc-500">Sample</div>
-                        <div className="text-white font-mono font-bold">N={row.backtest_n}</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Live vs Backtest comparison (3+ completed trades) */}
-                  {row.livePerformance && row.livePerformance.total >= 3 && (
-                    <div>
-                      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Live vs Backtest</p>
-                      <div className="grid grid-cols-4 gap-2 text-xs">
-                        <div className="p-2 bg-zinc-800/50 rounded text-center">
-                          <div className="text-zinc-500 mb-0.5">Metric</div>
-                          <div className="text-zinc-400">Win Rate</div>
-                          <div className="text-zinc-400">Avg Return</div>
-                        </div>
-                        <div className="p-2 bg-zinc-800/50 rounded text-center">
-                          <div className="text-zinc-500 mb-0.5">Backtest</div>
-                          <div className="text-zinc-300 font-mono">{row.backtest_win_rate_20d}%</div>
-                          <div className="text-zinc-300 font-mono">{row.backtest_avg_return_20d}%</div>
-                        </div>
-                        <div className="p-2 bg-zinc-800/50 rounded text-center">
-                          <div className="text-zinc-500 mb-0.5">Live</div>
-                          <div className="text-white font-mono font-bold">{(row.livePerformance.wins / row.livePerformance.total * 100).toFixed(1)}%</div>
-                          <div className="text-white font-mono font-bold">{row.livePerformance.avgReturn.toFixed(1)}%</div>
-                        </div>
-                        <div className="p-2 bg-zinc-800/50 rounded text-center">
-                          <div className="text-zinc-500 mb-0.5">N</div>
-                          <div className="text-zinc-400">{row.backtest_n}</div>
-                          <div className="text-zinc-400">{row.livePerformance.total}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Simple live stats (< 3 completed trades) */}
-                  {row.livePerformance && row.livePerformance.total > 0 && row.livePerformance.total < 3 && (
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="p-2 bg-zinc-800/50 rounded text-center">
-                        <div className="text-zinc-500">Live Wins</div>
-                        <div className="text-white font-mono font-bold">{row.livePerformance.wins}/{row.livePerformance.total}</div>
-                      </div>
-                      <div className="p-2 bg-zinc-800/50 rounded text-center">
-                        <div className="text-zinc-500">Live Avg</div>
-                        <div className={`font-mono font-bold ${row.livePerformance.avgReturn >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                          {row.livePerformance.avgReturn >= 0 ? "+" : ""}{row.livePerformance.avgReturn.toFixed(2)}%
-                        </div>
-                      </div>
-                      <div className="p-2 bg-zinc-800/50 rounded text-center">
-                        <div className="text-zinc-500">Backtest 20d</div>
-                        <div className={`font-mono font-bold ${(row.backtest_avg_return_20d || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                          {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Closed trade log */}
-                  {closedTrades.length > 0 && (
-                    <div>
-                      <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Trade History ({closedTrades.length})</p>
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                        {closedTrades.slice(0, 10).map(t => (
-                          <ClosedTradeCard key={t.id} trade={t} row={row} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer */}
-      <div className="mt-6 pt-4 border-t border-zinc-800/50 text-xs text-zinc-600">
-        <p>Data: 905 TSLA daily bars (Jul 2022 - Feb 2026) | BX-Trender computed from OHLCV | SMI: 10/3/3</p>
-        <p className="mt-1">Past performance does not guarantee future results. All statistics are from backtesting.</p>
+        <div className="mt-6 pt-4 border-t border-zinc-800/50" style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>
+          <p>Data: 905 TSLA daily bars (Jul 2022 - Feb 2026) | BX-Trender computed from OHLCV | SMI: 10/3/3</p>
+          <p className="mt-1">Past performance does not guarantee future results. All statistics are from backtesting.</p>
+        </div>
       </div>
     </div>
   );

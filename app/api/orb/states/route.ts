@@ -1,11 +1,23 @@
-import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID || "";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Check if requester is admin
+    let isAdmin = false;
+    try {
+      const authClient = await createClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user && user.id === ADMIN_USER_ID) {
+        isAdmin = true;
+      }
+    } catch {}
+
     const supabase = await createServiceClient();
 
     const { data: definitions, error: definitionsError } = await supabase
@@ -46,26 +58,47 @@ export async function GET() {
     const merged = (definitions || []).map((def) => {
       const state = (states || []).find((s) => s.setup_id === def.id);
       const live = livePerformance[def.id];
-      const { conditions, eval_logic, ...publicDef } = def;
+      const { conditions, eval_logic, ...rest } = def;
+
+      // Strip internal fields for non-admin users
+      const { name: internalName, description: internalDesc, ...publicDef } = rest;
+
+      const baseState = state
+        ? {
+            status: state.status,
+            active_since: state.active_since,
+            active_day: state.active_day,
+            entry_price: state.entry_price,
+            gauge_progress_pct: state.gauge_progress_pct,
+            watching_reason: state.watching_reason,
+            current_price: state.current_price,
+            updated_at: state.updated_at,
+            inactive_reason: state.inactive_reason,
+          }
+        : null;
+
+      if (isAdmin) {
+        return {
+          ...rest,
+          conditions,
+          eval_logic,
+          state: state
+            ? {
+                ...baseState,
+                gauge_current_value: state.gauge_current_value,
+                gauge_target_value: state.gauge_target_value,
+                gauge_entry_value: state.gauge_entry_value,
+                entry_indicator_values: state.entry_indicator_values,
+              }
+            : null,
+          livePerformance: live || null,
+          _admin: true,
+        };
+      }
 
       return {
         ...publicDef,
-        state: state
-          ? {
-              status: state.status,
-              active_since: state.active_since,
-              active_day: state.active_day,
-              entry_price: state.entry_price,
-              gauge_progress_pct: state.gauge_progress_pct,
-              watching_reason: state.watching_reason,
-              current_price: state.current_price,
-              updated_at: state.updated_at,
-              inactive_reason: state.inactive_reason,
-              gauge_current_value: state.gauge_current_value,
-              gauge_target_value: state.gauge_target_value,
-              gauge_entry_value: state.gauge_entry_value,
-            }
-          : null,
+        state: baseState,
         livePerformance: live || null,
       };
     });
