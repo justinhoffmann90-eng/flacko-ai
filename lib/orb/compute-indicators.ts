@@ -2,8 +2,6 @@
 // SMI: Stochastic Momentum Index (K=10, D=3, Smooth=3)
 // RSI: 14-period, EMA-smoothed (matches TradingView)
 
-import yahooFinance from "yahoo-finance2";
-
 function ema(data: number[], span: number): number[] {
   const k = 2 / (span + 1);
   const result = [data[0]];
@@ -81,13 +79,29 @@ export async function computeIndicators(ticker: string) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 600);
 
-  const result = await yahooFinance.chart(ticker, {
-    period1: startDate,
-    period2: endDate,
-    interval: "1d",
+  const period1 = Math.floor(startDate.getTime() / 1000);
+  const period2 = Math.floor(endDate.getTime() / 1000);
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${period2}&interval=1d`;
+  const resp = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" },
   });
-
-  const quotes = (result.quotes || []).filter((q: any) => q.close != null && q.high != null && q.low != null && q.open != null);
+  if (!resp.ok) throw new Error(`Yahoo Finance HTTP ${resp.status}: ${await resp.text()}`);
+  const json = await resp.json();
+  const chart = json.chart?.result?.[0];
+  if (!chart) throw new Error("No chart data returned from Yahoo Finance");
+  
+  const timestamps = chart.timestamp || [];
+  const q = chart.indicators?.quote?.[0] || {};
+  const rawQuotes = timestamps.map((t: number, i: number) => ({
+    date: new Date(t * 1000),
+    open: q.open?.[i],
+    high: q.high?.[i],
+    low: q.low?.[i],
+    close: q.close?.[i],
+    volume: q.volume?.[i],
+  }));
+  
+  const quotes = rawQuotes.filter((r: any) => r.close != null && r.high != null && r.low != null && r.open != null);
   if (quotes.length < 220) {
     throw new Error("Not enough OHLCV data to compute Orb indicators");
   }
