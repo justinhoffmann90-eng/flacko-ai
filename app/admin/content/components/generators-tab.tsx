@@ -205,6 +205,7 @@ export function GeneratorsTab() {
                 JSON.stringify(updatedTypes)
               );
             }}
+            onDelete={() => handleDeleteCustomType(customType.key)}
           />
         ))}
       </div>

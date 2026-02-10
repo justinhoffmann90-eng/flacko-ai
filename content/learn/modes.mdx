@@ -1,138 +1,79 @@
 ---
 title: "Modes"
 description: "The risk dial that controls your position sizing every day."
-readingTime: "5 min"
+readingTime: "6 min"
 ---
 
-## The Five Modes
+## The Six Modes
 
-Modes are your **daily risk dial**. Before you trade, check the mode — it tells you how much capital you can deploy and how much you can hold.
+Modes are your **daily risk dial**. Before you trade, check the mode first — it tells you how much you can deploy, how much you can hold, and how aggressively you should trim.
 
-| Mode | Daily Cap | Max Invested | Trim Cap | Posture |
-|------|-----------|--------------|----------|---------|
-| 🟢 **GREEN** | 30% | 85% | 10% | Full send — all timeframes aligned bullish |
-| 🟡 **YELLOW (Improving)** | 20% | 70% | 20% | Daily leading weekly in recovery — meaningful accumulation |
-| 🟡 **YELLOW** | 17.5% | 60% | 20% | Warning signs present — controlled accumulation at key levels |
-| 🟠 **ORANGE** | 10% | 40% | 25% | Multiple warnings — small nibbles only at key support |
-| 🔴 **RED** | 5% | 20% | 30% | Breakdown confirmed — nibbles at extreme support only |
-| ⬛ **EJECTED** | 0%* | 50% core | N/A | Below W21 for 2 closes — hold core, oversold override only |
+| Mode | Daily Buy Cap | Max Invested Cap | Trim Cap | Slow Zone Effect |
+|------|---------------|------------------|----------|------------------|
+| 🟢 **GREEN** | 30% rulebook (subscriber view: **up to 25%**) | 85% | 10% per level | Inactive |
+| 🟡 **YELLOW (Improving)** | 20% | 70% | **15%** | Inactive |
+| 🟡 **YELLOW** | 17.5% | 60% | 20% | Halves cap to 8.75% |
+| 🟠 **ORANGE** | 10% | 40% | 25% | Reduces to 2.5% |
+| 🔴 **RED** | 5% | 20% | 30% | Reduces to 1.25% |
+| ⬛ **EJECTED** | 0% (oversold override only) | 50% core hold | N/A | N/A |
 
-*EJECTED mode allows deployment only via the 200 SMA Oversold Override.
+> **Subscriber simplification:** Daily reports use simplified caps for pace and consistency (GREEN 25%, YELLOW 15%, ORANGE 10%, RED 5%).
+
+---
+
+## Important Label Notes
+
+- **YELLOW (Improving)** is a valid documented state.
+- **ORANGE (Improving)** is also valid and can appear when **Tier 1 (Weekly) is LL** and **Tier 2 (Daily) is HL**.
+
+These improving labels mean internals are stabilizing, even if the broader structure is still defensive.
 
 ---
 
 ## Understanding the Caps
 
-### Daily Cap
-How much of your **available cash** you can deploy in a single day.
+### Daily Buy Cap
+How much of your **available cash** you can deploy in one day.
 
-**Example:** GREEN mode with $100,000 cash = $30,000 max deployment today.
-
-**Why it matters:** Caps force you to spread entries over multiple days. In YELLOW, you need 5-6 days to reach max invested. This protects you from going all-in before a correction deepens.
-
-### Max Invested
-The maximum percentage of your portfolio that should be in TSLA positions.
-
-**Example:** ORANGE mode = 40% max invested. If you have $200,000, max $80,000 in TSLA.
-
-**Why it matters:** Even if you have cash and daily cap available, you shouldn't exceed your max invested limit for the current mode. This prevents overexposure when conditions are deteriorating.
+### Max Invested Cap
+The maximum share of your **total portfolio** that can be in TSLA exposure for that mode.
 
 ### Trim Cap
-How much of your **remaining position** to trim at each resistance level.
-
-**Example:** ORANGE mode = 25% trim cap. If you hold $40,000 in TSLA and hit T1, trim $10,000.
-
-**Why it matters:** In defensive modes, bounces are suspect. Higher trim caps help you lock in gains faster. In GREEN, you let winners run with smaller trims.
+How much of your **remaining position** to trim at each T-level.
 
 ---
 
-## YELLOW Improving vs Standard YELLOW
+## Slow Zone Modifier
 
-**YELLOW (Improving)** is a submode that triggers when the Daily BX-Trender is 2+ stages ahead of Weekly in a recovery pattern.
+**Trigger:** Price closes below **Daily 21 EMA × 0.98**  
+**Resume:** When price reclaims the Daily 21 EMA
 
-| Submode | Trigger | Daily Cap | Why |
-|---------|---------|-----------|-----|
-| YELLOW (Improving) | Daily green while Weekly still red | 20% | Recovery underway, accumulate meaningfully |
-| YELLOW (Standard) | Warning signs, mixed structure | 17.5% | Uncertain, spread entries more |
+| Mode Group | Slow Zone Impact |
+|-----------|------------------|
+| GREEN, YELLOW (Improving) | Inactive |
+| YELLOW | Halves daily cap |
+| ORANGE, RED | Reduces to **25% of normal cap** (not 50%) |
 
-**Key insight:** YELLOW Improving lets you build positions faster during early recoveries, while standard YELLOW keeps you cautious during deterioration.
-
----
-
-## The EJECTED State
-
-When price closes below the Weekly 21 EMA for **two consecutive days**, you enter the EJECTED state:
-
-1. **Sell ALL leverage** (TSLL, options) immediately — non-negotiable
-2. **Trim TSLA to 50%** of portfolio — hold core shares
-3. **Daily cap drops to 0%** — no new buys via normal rules
-4. **200 SMA Oversold Override activates** — only way to deploy in deeply oversold conditions
-
-**Why partial exit, not full liquidation?** The W21 EMA break signals structure damage, but the bull thesis may still be intact. You protect capital by cutting leverage and trimming, but you keep 50% core exposure for the recovery.
+**Examples:**
+- YELLOW: 17.5% → 8.75%
+- ORANGE: 10% → 2.5%
+- RED: 5% → 1.25%
 
 ---
 
-## How Modes Are Set
+## EJECTED Is a Defense State, Not Full Liquidation
 
-The daily report sets the mode based on:
+When Weekly 21 EMA breaks and confirms:
+1. Cut all leverage first
+2. Trim TSLA to 50%
+3. Keep core exposure
+4. Only add through oversold override rules
 
-| Factor | What We Look At |
-|--------|-----------------|
-| **Weekly BX-Trender** | Tier 1 — the long-term trend health |
-| **Daily BX-Trender** | Tier 2 — medium-term momentum |
-| **EMA structure** | Price vs 9/13/21 EMAs on weekly and daily |
-| **HIRO** | Dealer positioning and flow direction |
-| **Gamma levels** | Call Wall, Put Wall, Gamma Strike positioning |
-
----
-
-## The Slow Zone Modifier
-
-When price closes below Daily 21 EMA × 0.98 (2% below), the **Slow Zone** activates:
-
-- **Effect:** Halve your daily cap
-- **Example:** GREEN 30% becomes 15% while Slow Zone active
-- **Resume:** When price reclaims Daily 21 EMA
-- **Exception:** Inactive in GREEN and YELLOW (Improving) modes
-
-The Slow Zone creates a graduated response between normal accumulation and Master Eject. It slows you down without stopping you entirely.
-
----
-
-## How to Use Modes
-
-### ✅ Do This
-- Check the mode **before the open**
-- Size positions **within your daily cap**
-- Respect **max invested** limits
-- Use the **trim cap** at resistance levels
-- Adjust for Slow Zone when active
-
-### ❌ Don't Do This
-- Ignore the mode because "you have conviction"
-- Exceed your daily cap
-- Exceed max invested for your mode
-- Trade aggressively in RED mode
-- Fight the system when it says defensive
-
----
-
-## Example
-
-**Today's Mode: 🟠 ORANGE (10% cap, 40% max invested, 25% trim cap)**
-
-You have a $100,000 portfolio with $60,000 cash.
-
-- **Daily cap:** $60,000 × 10% = $6,000 max deployment today
-- **Max invested:** $100,000 × 40% = $40,000 max in TSLA
-- **Current position:** $30,000 in TSLA
-- **Room to add:** $40,000 - $30,000 = $10,000 total (but only $6,000 today)
-- **Trim cap:** If TSLA hits T1, trim 25% of $30,000 = $7,500
+This is graduated defense, not panic liquidation.
 
 ---
 
 ## Key Takeaway
 
-The mode isn't a suggestion — it's a **risk management rule**. GREEN doesn't mean "buy everything." RED doesn't mean "don't trade." It means **size accordingly** and respect the limits.
-
-*Your mode is set every morning in the Daily Report. Check it first.*
+Mode is not commentary — it's your **position-sizing rule set** for the day.  
+Start with the mode, then apply daily cap, max invested cap, trim cap, and Slow Zone exactly.

@@ -1,0 +1,115 @@
+---
+title: "Call Options"
+description: "How the Call Options system works and how to read its daily status."
+readingTime: "5 min"
+---
+
+## What the Call Options System Is
+
+The Call Options system is a **separate signal engine** from the share-buying framework.
+
+- Separate signals
+- Separate budget
+- Separate risk decisions
+
+It is evaluated daily with a rule-based decision tree.
+
+---
+
+## State Labels
+
+| State | Color | Meaning |
+|------|-------|---------|
+| **ACTIVE** | Green | Conditions support call setups |
+| **WATCHING** | Amber | Mixed conditions; monitor for confirmation |
+| **AVOID** | Red | Conditions are unfavorable for calls |
+| **NO_SIGNAL** | Gray | No valid setup or trigger currently active |
+
+---
+
+## Decision Tree Logic (First Match Wins)
+
+The system runs in sequence each day:
+
+1. **Avoid conditions checked first**
+2. Oversold override logic checked next
+3. Buy setup conditions checked
+4. First valid branch sets the daily state
+
+This prevents conflicting interpretations and forces one clear output.
+
+---
+
+## The 2 Avoid Signals
+
+| Avoid Signal | General Description |
+|-------------|---------------------|
+| **Extended & Fading** | Price stretched while momentum/participation weakens |
+| **Accelerating Downtrend** | Downward structure strengthening too quickly for long calls |
+
+If either avoid condition is met, the system prioritizes defense.
+
+---
+
+## The 7 Buy Setup Families
+
+The model includes seven buy setup types (names and broad intent):
+
+| Setup Family | General Intent |
+|-------------|----------------|
+| **Reclaim Setup** | Regain key structure after weakness |
+| **Support Bounce Setup** | Hold-and-react at major support |
+| **Gamma Alignment Setup** | Favorable dealer positioning and level alignment |
+| **Trend Continuation Setup** | Existing uptrend resumes after consolidation |
+| **Breakout Confirmation Setup** | Resistance clears with follow-through |
+| **Oversold Reversal Setup** | Mean-reversion rebound with confirmation |
+| **Momentum Expansion Setup** | Improving participation supports continuation |
+
+The engine is backed by analysis across **829 trading days**.
+
+---
+
+## How to Read the Dashboard Widget
+
+The Call Options widget gives a quick operational read:
+
+- Current state (ACTIVE / WATCHING / AVOID / NO_SIGNAL)
+- Brief rationale for the state
+- Any caution tags (e.g., avoid condition active)
+
+Use this as your options posture header before selecting trades.
+
+---
+
+## What the System Does NOT Tell You
+
+This system does **not** currently validate exact contract selection details, including:
+
+- Delta
+- Expiry
+- Strike selection
+
+You still need contract-level risk management.
+
+---
+
+## Relationship to the Share System
+
+Call options and shares are connected by market context but managed separately.
+
+| Layer | Purpose |
+|------|---------|
+| Share system | Core accumulation/distribution via mode caps |
+| Call system | Tactical options exposure via separate state engine |
+
+Do not treat call signals as permission to override share-mode sizing rules.
+
+---
+
+## Key Takeaway
+
+The Call Options system is a structured, separate decision layer:
+- Avoid first
+- Then setup evaluation
+- One clear daily state
+- Separate budget from share caps

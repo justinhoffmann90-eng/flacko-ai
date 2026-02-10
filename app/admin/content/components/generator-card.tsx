@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wand2, Copy, Trash2, Edit3, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +37,7 @@ interface GeneratorCardProps {
   label: string;
   storageKey: string;
   onTitleChange?: (newTitle: string) => void;
+  onDelete?: () => void;
 }
 
 const defaultSubtitles: Record<string, string> = {
@@ -50,7 +51,7 @@ const defaultSubtitles: Record<string, string> = {
   hiro_alert: "Real-time HIRO reading and dealer positioning",
 };
 
-export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: GeneratorCardProps) {
+export function GeneratorCard({ contentKey, label, storageKey, onTitleChange, onDelete }: GeneratorCardProps) {
   const [output, setOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -64,6 +65,7 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Get current user
   useEffect(() => {
@@ -113,7 +115,7 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
   // Load custom title from cloud/localStorage
   useEffect(() => {
     if (!userId) return;
-    
+
     const loadData = async () => {
       try {
         // Try cloud first
@@ -122,12 +124,12 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
           .select("renamed_titles")
           .eq("user_id", userId)
           .single();
-        
+
         if (cloudData?.renamed_titles && cloudData.renamed_titles[contentKey]) {
           setTitle(cloudData.renamed_titles[contentKey]);
           return;
         }
-        
+
         // Fallback to localStorage
         const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
         if (renamedTitles) {
@@ -140,14 +142,14 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
         console.error("Failed to load title:", err);
       }
     };
-    
+
     loadData();
   }, [contentKey, userId]);
 
   // Load custom subtitle from cloud/localStorage
   useEffect(() => {
     if (!userId) return;
-    
+
     const loadData = async () => {
       try {
         // Try cloud first
@@ -156,12 +158,12 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
           .select("custom_subtitles")
           .eq("user_id", userId)
           .single();
-        
+
         if (cloudData?.custom_subtitles && cloudData.custom_subtitles[contentKey]) {
           setSubtitle(cloudData.custom_subtitles[contentKey]);
           return;
         }
-        
+
         // Fallback to localStorage
         const customSubtitles = localStorage.getItem("content-hub-subtitles");
         if (customSubtitles) {
@@ -174,7 +176,7 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
         console.error("Failed to load subtitle:", err);
       }
     };
-    
+
     loadData();
   }, [contentKey, userId]);
 
@@ -194,17 +196,23 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     }
   }, [isEditingSubtitle]);
 
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const timeout = setTimeout(() => setConfirmDelete(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [confirmDelete]);
+
   const saveTitle = async (newTitle: string) => {
     const trimmedTitle = newTitle.trim();
     if (trimmedTitle && trimmedTitle !== label) {
       setTitle(trimmedTitle);
-      
+
       // Update localStorage
       const renamedTitles = localStorage.getItem("content-hub-renamed-titles");
       const titles = renamedTitles ? JSON.parse(renamedTitles) : {};
       titles[contentKey] = trimmedTitle;
       localStorage.setItem("content-hub-renamed-titles", JSON.stringify(titles));
-      
+
       // Sync to cloud
       if (userId) {
         try {
@@ -219,7 +227,7 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
           console.error("Failed to sync title:", err);
         }
       }
-      
+
       onTitleChange?.(trimmedTitle);
     } else if (!trimmedTitle) {
       setTitle(label);
@@ -241,13 +249,13 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
     const defaultSubtitle = defaultSubtitles[contentKey] || "";
     if (trimmedSubtitle && trimmedSubtitle !== defaultSubtitle) {
       setSubtitle(trimmedSubtitle);
-      
+
       // Update localStorage
       const customSubtitles = localStorage.getItem("content-hub-subtitles");
       const subtitles = customSubtitles ? JSON.parse(customSubtitles) : {};
       subtitles[contentKey] = trimmedSubtitle;
       localStorage.setItem("content-hub-subtitles", JSON.stringify(subtitles));
-      
+
       // Sync to cloud
       if (userId) {
         try {
@@ -279,18 +287,39 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    
-    // Get the prompt (custom or default)
-    const customPrompt = localStorage.getItem(storageKey);
-    const basePrompt = customPrompt || getDefaultPrompt(contentKey);
-    
-    // Inject report data into the prompt
-    const prompt = reportData ? injectReportData(basePrompt, reportData) : basePrompt;
-    
-    // Show the injected prompt as output so user can copy and use with their AI
-    // In production, this would call an AI API
-    setOutput(`📋 PROMPT WITH LIVE DATA:\n\n${prompt}\n\n---\n\n💡 Copy this prompt and paste into ChatGPT, Claude, or your preferred AI to generate the content.`);
-    setIsGenerating(false);
+
+    try {
+      // Get the prompt (custom or default)
+      const customPrompt = localStorage.getItem(storageKey);
+      const basePrompt = customPrompt || getDefaultPrompt(contentKey);
+
+      // Inject report data into the prompt
+      const prompt = reportData ? injectReportData(basePrompt, reportData) : basePrompt;
+
+      const response = await fetch("/api/content/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          contentKey,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to generate content");
+      }
+
+      setOutput(data?.content || "");
+    } catch (error) {
+      console.error("Content generation failed:", error);
+      setOutput(`Failed to generate content. ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopy = async () => {
@@ -301,6 +330,16 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
 
   const handleClear = () => {
     setOutput("");
+    setConfirmDelete(false);
+  };
+
+  const handleDeleteClick = () => {
+    if (!onDelete) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    onDelete();
   };
 
   return (
@@ -386,7 +425,7 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
             />
           ) : (
             <div className="w-full h-full min-h-[150px] bg-zinc-900/30 border border-zinc-800 rounded-md flex items-center justify-center text-zinc-600 text-sm">
-              Click Generate to create prompt with live data
+              Click Generate to create AI content with live data
             </div>
           )}
         </div>
@@ -402,17 +441,17 @@ export function GeneratorCard({ contentKey, label, storageKey, onTitleChange }: 
             <Edit3 className="w-4 h-4" />
             Edit Prompt
           </Button>
-          
+
           {output && (
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleClear}
-                className="flex items-center gap-2 text-zinc-500 hover:text-red-400"
+                onClick={onDelete ? handleDeleteClick : handleClear}
+                className={`flex items-center gap-2 ${onDelete ? "text-zinc-500 hover:text-red-500" : "text-zinc-500 hover:text-red-400"}`}
               >
                 <Trash2 className="w-4 h-4" />
-                Clear
+                {onDelete ? (confirmDelete ? "Click again to confirm" : "Delete") : "Clear"}
               </Button>
               <Button
                 variant="ghost"

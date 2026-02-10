@@ -4,142 +4,61 @@ description: "The sizing reducer that protects you when momentum fades."
 readingTime: "4 min"
 ---
 
-## What Is the Slow Zone?
+## What Is Slow Zone?
 
-The Slow Zone is a **mechanical sizing trigger** that halves your daily buy cap when price weakens. It's not a market condition you interpret — it's a specific rule that fires automatically.
+Slow Zone is a **mechanical position-sizing modifier**.
 
-**Trigger:** Price closes below Daily 21 EMA × 0.98 (2% below the D21)
-
-**Effect:** Daily cap is halved
-
-**Resume:** When price reclaims the Daily 21 EMA
+- **Trigger:** Price closes below **Daily 21 EMA × 0.98**
+- **Resume:** Price reclaims Daily 21 EMA
+- **Purpose:** Reduce buying speed when trend quality weakens
 
 ---
 
-## The Rule
+## Core Rule
 
-| Condition | Your Daily Cap |
-|-----------|---------------|
-| Price above Daily 21 EMA | Normal cap per mode |
-| Price 0-2% below Daily 21 EMA | Normal cap per mode |
-| Price >2% below Daily 21 EMA | **Half** your normal cap |
+In standard operation, Slow Zone halves your daily cap.  
+But ORANGE and RED are special:
 
-**Example:**
-- Mode: GREEN (30% daily cap)
-- D21 EMA: $420
-- Slow Zone trigger: $420 × 0.98 = $411.60
-- TSLA closes at $408 (below $411.60)
-- Your cap: 30% → **15%** while Slow Zone active
+- **YELLOW:** 50% of normal cap
+- **ORANGE/RED:** **25% of normal cap** (not 50%)
 
 ---
 
-## Why It Exists
+## Slow Zone Caps by Mode
 
-The Slow Zone creates a **graduated response** between normal operations and Master Eject.
-
-| Without Slow Zone | With Slow Zone |
-|-------------------|----------------|
-| Full buying until W21 breaks | Slows you down as momentum fades |
-| All-in or all-out | Graduated reduction |
-| Miss early recoveries if you stop buying | Still accumulate, just slower |
-| Binary decision | Continuous adjustment |
-
-**The insight:** When price is 2%+ below the D21, momentum is weakening. You shouldn't be loading up aggressively — but you shouldn't stop buying entirely either. The Slow Zone finds the middle ground.
+| Mode | Normal Daily Cap | Slow Zone Daily Cap |
+|------|------------------|---------------------|
+| 🟢 GREEN | 30% (subscriber view 25%) | Inactive |
+| 🟡 YELLOW (Improving) | 20% | Inactive |
+| 🟡 YELLOW | 17.5% | 8.75% |
+| 🟠 ORANGE | 10% | **2.5%** |
+| 🔴 RED | 5% | **1.25%** |
 
 ---
 
-## When It's Inactive
+## Why ORANGE and RED Are Different
 
-The Slow Zone is **inactive** in two modes:
-
-| Mode | Why Inactive |
-|------|--------------|
-| 🟢 GREEN | Strong momentum — brief dips below D21 are normal |
-| 🟡 YELLOW (Improving) | Recovery underway — don't slow down accumulation |
-
-In these modes, the trend is healthy enough that a dip below D21 is likely a buying opportunity, not a warning sign.
-
----
-
-## ORANGE and RED: Double Reduction
-
-In defensive modes, the Slow Zone stacks with already-reduced caps:
-
-| Mode | Normal Cap | With Slow Zone |
-|------|------------|----------------|
-| 🟠 ORANGE | 10% | 5% |
-| 🔴 RED | 5% | 2.5% |
-
-**Why?** When you're already in a defensive mode AND price is 2%+ below D21, conditions are deteriorating fast. The double reduction keeps you from catching a falling knife.
+In ORANGE/RED, risk is already elevated. If Slow Zone also triggers, conditions are deteriorating fast.  
+So the system cuts pace harder — to one-quarter of normal.
 
 ---
 
 ## Slow Zone vs Master Eject
 
-| | Slow Zone | Master Eject |
-|--|-----------|--------------|
-| **Anchor** | Daily 21 EMA | Weekly 21 EMA |
-| **Trigger** | 2% below anchor | Close below anchor |
-| **Effect** | Halve daily cap | Cut leverage, trim shares |
-| **Purpose** | Slow accumulation | Protect capital |
-| **Recovery** | Reclaim D21 | Reclaim W21 + rebuild structure |
-
-**Think of it this way:**
-- Slow Zone = yellow light, slow down
-- Master Eject = red light, stop and reassess
-
----
-
-## How to Use It
-
-### When Slow Zone Activates
-
-1. **Check the calculation:** D21 × 0.98 = your trigger level
-2. **Halve your planned deployment:** If you were going to buy $10k, buy $5k
-3. **Still buy at key levels:** Slow Zone doesn't mean stop — it means slower
-4. **Watch for D21 reclaim:** That's your signal to resume normal cap
-
-### What NOT to Do
-
-| Mistake | Why It's Wrong |
-|---------|----------------|
-| Stop buying entirely | You'll miss the early recovery |
-| Ignore the Slow Zone | You'll oversize into weakness |
-| Wait for perfect entry | Slow accumulation beats timing |
-| Fight the rule | The rule exists because it works |
-
----
-
-## Example
-
-**Setup:**
-- Mode: 🟡 YELLOW (17.5% daily cap)
-- D21 EMA: $425
-- Slow Zone trigger: $425 × 0.98 = $416.50
-- Portfolio: $100,000 with $50,000 cash
-
-**Monday:** TSLA at $430
-- Slow Zone: Inactive
-- Daily cap: $50,000 × 17.5% = $8,750
-
-**Tuesday:** TSLA drops to $415 (below $416.50)
-- Slow Zone: **Active**
-- Daily cap: $8,750 ÷ 2 = **$4,375**
-
-**Wednesday:** TSLA at $412
-- Slow Zone: Still active
-- Continue with $4,375 cap
-
-**Thursday:** TSLA rallies to $427 (above D21)
-- Slow Zone: Deactivated
-- Daily cap: Back to $8,750
+| Feature | Slow Zone | Master Eject |
+|---------|-----------|--------------|
+| Anchor | Daily 21 EMA | Weekly 21 EMA |
+| Trigger Type | D21 × 0.98 close breach | W21 close/confirm breach |
+| Primary Effect | Reduce daily buy cap | Cut leverage, move to defense |
+| Goal | Slow accumulation | Protect portfolio structure |
 
 ---
 
 ## Key Takeaway
 
-The Slow Zone is simple: **When price is 2%+ below the Daily 21 EMA, halve your daily cap.**
+Slow Zone is a pacing rule, not an opinion:
+- YELLOW slows to half
+- ORANGE/RED slow to one-quarter
+- GREEN and YELLOW (Improving) ignore it
 
-It's not about reading the market. It's not about your opinion. It's a mechanical rule that protects you automatically.
-
-*Slow Zone = slow down, not stop. Keep accumulating, just be patient.*
+Use it exactly as written to avoid oversizing into weakening structure.

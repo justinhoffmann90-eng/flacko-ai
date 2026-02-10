@@ -1,202 +1,105 @@
 ---
 title: "Position Sizing"
 description: "How to size positions based on mode, max invested, and market conditions."
-readingTime: "6 min"
+readingTime: "7 min"
 ---
 
 ## The Golden Rule
 
-**Never exceed your mode caps — daily OR max invested.**
-
-Everything else flows from this.
+**Never exceed your mode caps — daily or max invested.**
 
 ---
 
 ## The Three Caps
 
-Every mode has three caps that work together:
-
 | Cap Type | What It Limits | Calculated From |
 |----------|----------------|-----------------|
-| **Daily Cap** | How much you can deploy today | % of available cash |
-| **Max Invested** | How much you can hold total | % of portfolio |
-| **Trim Cap** | How much you trim at resistance | % of remaining position |
+| **Daily Buy Cap** | How much you can deploy today | % of available cash |
+| **Max Invested Cap** | How much total TSLA exposure you can hold | % of total portfolio |
+| **Trim Cap** | How much to reduce at each trim level | % of remaining position |
 
 ---
 
 ## Mode Caps Reference
 
-| Mode | Daily Cap | Max Invested | Trim Cap |
-|------|-----------|--------------|----------|
-| 🟢 GREEN | 30% | 85% | 10% |
-| 🟡 YELLOW (Improving) | 20% | 70% | 20% |
+| Mode | Daily Buy Cap | Max Invested Cap | Trim Cap |
+|------|---------------|------------------|----------|
+| 🟢 GREEN | 30% rulebook (subscriber view: up to 25%) | 85% | 10% |
+| 🟡 YELLOW (Improving) | 20% | 70% | **15%** |
 | 🟡 YELLOW | 17.5% | 60% | 20% |
 | 🟠 ORANGE | 10% | 40% | 25% |
 | 🔴 RED | 5% | 20% | 30% |
-| ⬛ EJECTED | 0%* | 50% | N/A |
-
-*EJECTED allows deployment only via 200 SMA Override.
+| ⬛ EJECTED | 0% (oversold override only) | 50% core hold | N/A |
 
 ---
 
-## How Daily Cap Works
+## Slow Zone Adjustment
 
-**Daily cap = % of your available cash, not your portfolio.**
+When price closes below **D21 EMA × 0.98**, Slow Zone applies.
 
-**Example: YELLOW mode (17.5% cap)**
-- Portfolio: $100,000
-- Current TSLA position: $40,000
-- Available cash: $60,000
-- Daily cap: $60,000 × 17.5% = **$10,500**
-
-**The key insight:** As you deploy cash, your daily cap in dollar terms shrinks. This naturally paces your entries.
-
----
-
-## How Max Invested Works
-
-**Max invested = % of your total portfolio in TSLA positions.**
-
-**Example: ORANGE mode (40% max)**
-- Portfolio: $100,000
-- Max TSLA position: $40,000
-- Current position: $35,000
-- Room to add: $5,000
-
-**Even if you have cash and daily cap available**, you can't exceed max invested. This prevents overexposure in deteriorating conditions.
-
----
-
-## The Slow Zone Modifier
-
-When price is 2%+ below the Daily 21 EMA, the Slow Zone **halves** your daily cap.
-
-| Mode | Normal Cap | With Slow Zone |
-|------|------------|----------------|
-| 🟢 GREEN | 30% | 15% |
+| Mode | Normal Cap | Slow Zone Cap |
+|------|------------|---------------|
 | 🟡 YELLOW | 17.5% | 8.75% |
-| 🟠 ORANGE | 10% | 5% |
-| 🔴 RED | 5% | 2.5% |
+| 🟠 ORANGE | 10% | **2.5%** |
+| 🔴 RED | 5% | **1.25%** |
 
-**Slow Zone is inactive** in GREEN and YELLOW (Improving) modes.
-
----
-
-## Position Sizing Framework
-
-### Step 1: Check Your Mode
-Look at today's report for the current mode.
-
-### Step 2: Calculate Daily Cap
-```
-Daily Cap = Available Cash × Mode %
-```
-If Slow Zone active, halve the result.
-
-### Step 3: Check Max Invested
-```
-Room to Add = (Portfolio × Max Invested %) - Current Position
-```
-Your actual cap is the LOWER of daily cap and room to add.
-
-### Step 4: Determine Conviction
-| Conviction | % of Cap to Use |
-|------------|-----------------|
-| High (strong setup, multiple confirmations) | 75-100% |
-| Medium (decent setup, some confluence) | 50-75% |
-| Low (speculative, single signal) | 25-50% |
-
-### Step 5: Calculate Position
-```
-Position Size = Daily Cap × Conviction %
-```
+- Slow Zone is inactive in GREEN and YELLOW (Improving).
+- In ORANGE/RED, Slow Zone reduces to **25% of normal cap** (not 50%).
 
 ---
 
-## Example: Full Calculation
+## Calculation Framework
 
-**Setup:**
-- Portfolio: $200,000
-- Current TSLA position: $50,000
-- Available cash: $150,000
-- Mode: YELLOW (17.5% cap, 60% max invested)
-- Slow Zone: Active (price 3% below D21)
-- Conviction: Medium (60%)
+### Step 1: Calculate Daily Cap
+`Daily Buy Capacity = Available Cash × Mode Daily Cap`
 
-**Step 1:** Mode = YELLOW
+### Step 2: Calculate Max Room
+`Max Room = (Portfolio × Max Invested Cap) - Current Exposure`
 
-**Step 2:** Daily Cap
-- Base: $150,000 × 17.5% = $26,250
-- Slow Zone halves it: $26,250 ÷ 2 = **$13,125**
-
-**Step 3:** Max Invested Check
-- Max position: $200,000 × 60% = $120,000
-- Current: $50,000
-- Room: $120,000 - $50,000 = **$70,000**
-
-**Step 4:** Cap = lower of $13,125 and $70,000 = **$13,125**
-
-**Step 5:** Position
-- Conviction 60%: $13,125 × 60% = **$7,875**
-
-**Result:** You can deploy up to $7,875 today.
+### Step 3: Use the Lower Number
+Your actionable buy size is the lower of:
+- daily buy capacity, or
+- max room
 
 ---
 
-## Scaling In
+## Max Invested Caps Are Tiered Guidance
 
-Don't deploy your full cap in one trade. Scale in:
+Mode downgrades are managed progressively in most cases.
 
-| Entry | % of Position | When |
-|-------|---------------|------|
-| First | 40-50% | Initial signal, level touches |
-| Second | 30-40% | Confirmation, level holds |
-| Third | 20-30% | Strength, breakout confirmed |
+| Transition | Guidance |
+|------------|----------|
+| GREEN → YELLOW | No forced selling; slower buying pace usually self-corrects |
+| YELLOW → ORANGE | Soft recommendation to reduce if above ~50-60% |
+| ORANGE → RED | Strong suggestion to work toward ~20-30% |
+| Any mode → EJECTED | Mandatory: remove leverage, trim to 50% core |
 
-**Why scale?**
-- Reduces bad entry risk
-- Improves average cost
-- Lets you react to new information
-- Keeps cash available for better setups
+**Key point:** Except EJECTED rules, max invested caps are primarily **risk guidance**, not auto-liquidation triggers.
 
 ---
 
-## When to Size Down
+## Example
 
-Even within your cap, size down for:
+**Portfolio:** $200,000  
+**Cash:** $120,000  
+**Current TSLA exposure:** $70,000  
+**Mode:** ORANGE
 
-| Situation | Use This Much of Cap |
-|-----------|---------------------|
-| Late to the move | 50% |
-| Conflicting signals | 50% |
-| Near resistance | 50% |
-| Multiple open positions | 50-75% |
-| High VIX (>25) | 50-75% |
-| First position after EJECTED | 50% |
+- Daily buy capacity: $120,000 × 10% = $12,000
+- Max room: ($200,000 × 40%) - $70,000 = $10,000
+- Actionable max today: **$10,000**
 
----
-
-## Common Mistakes
-
-| Mistake | Fix |
-|---------|-----|
-| Ignoring max invested | Check BEFORE deploying |
-| Same size every trade | Adjust for mode + conviction |
-| Ignoring Slow Zone | Halve cap when active |
-| Going all-in on first entry | Scale in 3 entries |
-| No cash reserve | Always keep some available |
+If Slow Zone is active in ORANGE:
+- Adjusted daily capacity: $120,000 × 2.5% = $3,000
+- Actionable max: **$3,000**
 
 ---
 
-## Key Takeaways
+## Key Takeaway
 
-| Principle | Remember |
-|-----------|----------|
-| **Daily cap** | How much you can deploy TODAY |
-| **Max invested** | How much you can hold TOTAL |
-| **Trim cap** | How much you sell at each level |
-| **Slow Zone** | Halves daily cap when active |
-| **Scale in** | 3 entries beat 1 |
-| **Cash is position** | Always keep some available |
+Correct sizing is a 3-part check:
+1. Mode cap
+2. Slow Zone adjustment
+3. Max invested room
 
-*Size to survive. The best trade is the one you can hold.*
+If all three align, you deploy. If not, you wait.

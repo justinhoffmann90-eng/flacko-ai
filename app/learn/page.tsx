@@ -236,7 +236,7 @@ export default function LearnHubPage() {
                 </Link>
               </Button>
               <Button asChild variant="outline" className="h-10 sm:h-11 px-4 sm:px-6 w-full sm:w-auto">
-                <Link href="/pricing">Get full access</Link>
+                <Link href="/signup">Get full access</Link>
               </Button>
             </div>
           </div>
@@ -328,7 +328,7 @@ export default function LearnHubPage() {
               Get daily reports, real-time alerts, and the full system.
             </p>
             <Button asChild className="mt-4 h-10 sm:h-11 px-6 sm:px-8 w-full sm:w-auto">
-              <Link href="/pricing">
+              <Link href="/signup">
                 View plans
               </Link>
             </Button>
