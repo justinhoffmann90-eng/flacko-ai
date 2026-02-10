@@ -99,7 +99,7 @@ function HitRateRing({ pctPos, size = 52 }: { pctPos: number; size?: number }) {
   );
 }
 
-function ReturnBar({ value, label, maxAbs = 15, isDesktop = false }: { value: number | null; label: string; maxAbs?: number; isDesktop?: boolean }) {
+function ReturnBar({ value, label, maxAbs = 15, isDesktop = false, showLabel = true }: { value: number | null; label: string; maxAbs?: number; isDesktop?: boolean; showLabel?: boolean }) {
   const v = value ?? 0;
   const widthPct = Math.min(100, (Math.abs(v) / maxAbs) * 100);
   const positive = v >= 0;
@@ -107,7 +107,7 @@ function ReturnBar({ value, label, maxAbs = 15, isDesktop = false }: { value: nu
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ width: 34, fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{label}</div>
+      {showLabel && <div style={{ width: 34, fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{label}</div>}
       <div style={{ flex: 1, height: 8, borderRadius: 4, background: "rgba(255,255,255,0.05)", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.12)" }} />
         <div
@@ -437,12 +437,22 @@ export default function OrbClient() {
                         <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>FORWARD RETURNS · N={row.backtest_n}</p>
                         <div className={isDesktop ? "space-y-3" : "space-y-2"}>
                           {[
-                            { k: "5D", avg: row.backtest_avg_return_5d },
-                            { k: "10D", avg: row.backtest_avg_return_10d },
-                            { k: "20D", avg: row.backtest_avg_return_20d },
-                            { k: "60D", avg: row.backtest_avg_return_60d },
+                            { k: "5D", avg: row.backtest_avg_return_5d, win: row.backtest_win_rate_5d },
+                            { k: "10D", avg: row.backtest_avg_return_10d, win: row.backtest_win_rate_10d },
+                            { k: "20D", avg: row.backtest_avg_return_20d, win: row.backtest_win_rate_20d },
+                            { k: "60D", avg: row.backtest_avg_return_60d, win: row.backtest_win_rate_60d },
                           ].filter((h) => h.avg != null).map((h) => (
-                            <ReturnBar key={h.k} label={h.k} value={h.avg} isDesktop={isDesktop} />
+                            <div key={h.k} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 34, fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                {h.k}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <ReturnBar label={h.k} value={h.avg} isDesktop={isDesktop} showLabel={false} />
+                              </div>
+                              <div style={{ flexShrink: 0 }}>
+                                <HitRateRing pctPos={h.win ?? 0} size={30} />
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>
