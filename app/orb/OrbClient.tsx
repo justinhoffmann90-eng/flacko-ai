@@ -9,6 +9,7 @@ type OrbRow = {
   public_name: string | null;
   number: number;
   type: "buy" | "avoid";
+  stance: "offensive" | "defensive" | null;
   framework: "fixed-horizon" | "gauge-to-target";
   grade: string | null;
   category_tags: string[] | null;
@@ -51,7 +52,7 @@ type Trade = {
 };
 
 const statusConfig: Record<string, { label: string; dot: string; text: string; border: string; bg: string; glow: string; color: string }> = {
-  active: { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5", glow: "shadow-[0_0_20px_rgba(34,197,94,0.15)]", color: "#22c55e" },
+  active: { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/5", glow: "shadow-[0_0_20px_rgba(34,197,94,0.15)]", color: "#22c55e" },  // label overridden dynamically for buy=CANNONS / avoid=SHIELDS UP
   watching: { label: "WATCHING", dot: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/5", glow: "", color: "#eab308" },
   inactive: { label: "INACTIVE", dot: "bg-zinc-600", text: "text-zinc-500", border: "border-zinc-700/50", bg: "bg-zinc-900/30", glow: "", color: "#6b7280" },
 };
@@ -193,6 +194,28 @@ function ClosedTradeCard({ trade }: { trade: Trade; row: OrbRow }) {
   );
 }
 
+const modeColor = (mode: string | null | undefined) => {
+  const m = String(mode || "").toUpperCase();
+  if (m === "GREEN") return "#22c55e";
+  if (m === "YELLOW") return "#eab308";
+  if (m === "YELLOW_IMP") return "#a3e635";
+  if (m === "ORANGE") return "#f97316";
+  if (m === "RED") return "#ef4444";
+  return "#6b7280";
+};
+
+const formatSignalDate = (value: any) => {
+  if (!value) return "—";
+  const s = String(value);
+  return s.length >= 10 ? s.slice(0, 10) : s;
+};
+
+const formatPct = (value: any) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+};
+
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -248,6 +271,9 @@ export default function OrbClient() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
         @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 1000px; } }
+        @media (max-width: 639px) {
+          .orb-body-copy { font-size: 12px !important; }
+        }
       `}</style>
 
       <div className="max-w-3xl mx-auto">
@@ -263,11 +289,11 @@ export default function OrbClient() {
           <div className="mb-5" style={{ border: `1px solid rgba(34,197,94,0.2)`, background: "linear-gradient(135deg, rgba(34,197,94,0.09) 0%, rgba(59,130,246,0.03) 100%)", borderRadius: 14, padding: 16, animation: "fadeIn .45s ease" }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "#22c55e", fontFamily: "'JetBrains Mono', monospace" }}>FEATURED ACTIVE SIGNAL</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ SHIELDS UP"}</span>
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
-            <div className="grid grid-cols-4 gap-2 mt-4" style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 10 }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4" style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 10 }}>
               <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: "#22c55e" }}>{featured.backtest_avg_return_20d != null ? `${featured.backtest_avg_return_20d > 0 ? "+" : ""}${featured.backtest_avg_return_20d.toFixed(1)}%` : "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div></div>
               <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_win_rate_20d != null ? `${featured.backtest_win_rate_20d}%` : "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>HIT RATE</div></div>
               <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_n ?? "—"}</div><div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>INSTANCES</div></div>
@@ -276,7 +302,7 @@ export default function OrbClient() {
           </div>
         )}
 
-        <div className="mb-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, display: "flex", gap: 4 }}>
+        <div className="mb-4 flex flex-col sm:flex-row" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, gap: 4 }}>
           {[
             { key: "all", label: "All Setups" },
             { key: "active", label: "Active / Watching" },
@@ -312,7 +338,6 @@ export default function OrbClient() {
             const isActive = status === "active";
             const history = historyBySetup[row.id];
             const openTrade = history?.trades.find((t) => t.status === "open") || null;
-            const closedTrades = history?.trades.filter((t) => t.status === "closed") || [];
 
             return (
               <div
@@ -325,18 +350,34 @@ export default function OrbClient() {
                 }}
               >
                 <button onClick={() => openSetup(row.id)} className="w-full text-left p-4 transition-colors" style={{ background: "transparent" }}>
-                  <div className="flex items-start gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`} style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
                           <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} ${isActive ? "animate-pulse" : ""}`} />
-                          {sc.label}
+                          {isActive && row.type === "buy" ? "💣 CANNONS" : isActive && row.type === "avoid" ? "🛡️ SHIELDS UP" : sc.label}
                         </span>
+                        {!!row.stance && (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full"
+                            style={{
+                              fontSize: 10,
+                              letterSpacing: "0.08em",
+                              fontWeight: 700,
+                              fontFamily: "'JetBrains Mono', monospace",
+                              color: row.stance === "offensive" ? "#86efac" : "#fca5a5",
+                              background: row.stance === "offensive" ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                              border: `1px solid ${row.stance === "offensive" ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)"}`,
+                            }}
+                          >
+                            {row.stance.toUpperCase()}
+                          </span>
+                        )}
                         <span style={{ fontSize: 9, letterSpacing: "0.08em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>{row.type.toUpperCase()} #{row.number}</span>
                       </div>
 
                       <h3 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
-                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
+                      <p className="orb-body-copy" style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
 
                       {!!row.category_tags?.length && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
@@ -347,13 +388,14 @@ export default function OrbClient() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between sm:justify-start gap-3">
                       <div className="text-center">
-                        <HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} />
+                        <div className="sm:hidden"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={40} /></div>
+                        <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
                         <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
                       </div>
                       <div className="text-right">
-                        <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                        <div className="text-[20px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
                           {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
                         </div>
                         <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
@@ -366,7 +408,7 @@ export default function OrbClient() {
                 {expanded && (
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 16px 16px", animation: "slideDown .25s ease" }}>
                     <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
-                    {row.public_description && <p style={{ fontSize: 13, color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: 12 }}>{row.public_description}</p>}
+                    {row.public_description && <p className="orb-body-copy" style={{ fontSize: 13, color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: 12 }}>{row.public_description}</p>}
 
                     {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
 
@@ -406,16 +448,69 @@ export default function OrbClient() {
                       </div>
                     )}
 
-                    {closedTrades.length > 0 && (
-                      <div className="mt-3">
-                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES ({closedTrades.length})</p>
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                          {closedTrades.slice(0, 10).map((t) => (
-                            <ClosedTradeCard key={t.id} trade={t} row={row} />
-                          ))}
+                    <div className="mt-3">
+                      <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES</p>
+                      {history?.signals?.length ? (
+                        <div className="space-y-1">
+                          {history.signals.slice(0, 5).map((signal: any, i: number) => {
+                            const isLive = signal?.live === true || signal?.status === "open" || [signal?.ret_5d, signal?.ret_10d, signal?.ret_20d].every((v: any) => v == null);
+                            const r5 = signal?.ret_5d ?? signal?.return_5d ?? signal?.forward_5d;
+                            const r10 = signal?.ret_10d ?? signal?.return_10d ?? signal?.forward_10d;
+                            const r20 = signal?.ret_20d ?? signal?.return_20d ?? signal?.forward_20d;
+                            return (
+                              <div
+                                key={signal?.id || `${row.id}-signal-${i}`}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  padding: "6px 8px",
+                                  borderRadius: 6,
+                                  background: isLive ? "rgba(34,197,94,0.06)" : "transparent",
+                                  border: isLive ? "1px solid rgba(34,197,94,0.15)" : "1px solid transparent",
+                                }}
+                              >
+                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: modeColor(signal?.mode), flexShrink: 0 }} />
+                                <div style={{ width: 84, fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                  {formatSignalDate(signal?.signal_date || signal?.date || signal?.created_at)}
+                                </div>
+                                <div style={{ width: 62, fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                  {signal?.price != null ? `$${Number(signal.price).toFixed(2)}` : signal?.signal_price != null ? `$${Number(signal.signal_price).toFixed(2)}` : "—"}
+                                </div>
+                                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                                  {[
+                                    { label: "5D", val: r5 },
+                                    { label: "10D", val: r10 },
+                                    { label: "20D", val: r20 },
+                                  ].map((col) => {
+                                    const c = Number(col.val);
+                                    return (
+                                      <div key={col.label} style={{ textAlign: "right", minWidth: 40 }}>
+                                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
+                                        <div
+                                          style={{
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            fontFamily: "'JetBrains Mono', monospace",
+                                            color: isLive ? "rgba(255,255,255,0.35)" : Number.isFinite(c) ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.35)",
+                                          }}
+                                        >
+                                          {isLive ? "⟳" : formatPct(col.val)}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <p className="orb-body-copy" style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", lineHeight: 1.5 }}>
+                          Signal history will populate as the Orb tracks live signals.
+                        </p>
+                      )}
+                    </div>
 
                     {/* Admin-only indicator details */}
                     {row._admin && (
