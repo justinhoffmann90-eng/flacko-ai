@@ -81,8 +81,7 @@ export async function computeIndicators(ticker: string) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 600);
 
-  const yf: any = yahooFinance as any;
-  const result = await yf.chart(ticker, {
+  const result = await yahooFinance.chart(ticker, {
     period1: startDate,
     period2: endDate,
     interval: "1d",
