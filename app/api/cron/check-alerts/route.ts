@@ -8,6 +8,8 @@ import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getAlertEmailHtml } from "@/lib/resend/templates";
 import { TrafficLightMode, ReportAlert } from "@/types";
 
+export const maxDuration = 30;
+
 // Telegram backup notification for critical failures
 async function sendTelegramBackup(message: string): Promise<boolean> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -304,49 +306,6 @@ export async function GET(request: Request) {
       putWall: extractedData.key_levels.put_wall,
     } : undefined;
 
-    // Send Discord alert (single message to #alerts channel)
-    const discordMessage = getAlertDiscordMessage({
-      alerts: Array.from(uniqueAlerts.values()),
-      mode: extractedData?.mode?.current || "yellow",
-      positioning: extractedData?.positioning?.posture || "",
-      keyLevels: discordKeyLevels,
-      masterEject: extractedData?.master_eject?.price,
-    });
-
-    const discordSent = await sendAlertMessage(discordMessage);
-    
-    // Log the delivery attempt
-    await logAlertDelivery(
-      supabase,
-      "alerts",
-      discordSent,
-      triggeredAlerts.length,
-      currentPrice,
-      discordSent ? undefined : "Discord webhook failed"
-    );
-
-    // CRITICAL: If Discord failed, send backup via Telegram
-    if (!discordSent) {
-      const alertList = Array.from(uniqueAlerts.values())
-        .map(a => `• $${a.price} - ${a.level_name}`)
-        .join("\n");
-      
-      const backupMessage = `🚨 <b>DISCORD ALERT FAILED</b> 🚨\n\nTSLA: $${currentPrice.toFixed(2)}\n\nAlerts that should have fired:\n${alertList}\n\n⚠️ Discord webhook is broken. Check Vercel env vars.`;
-      
-      const telegramSent = await sendTelegramBackup(backupMessage);
-      
-      console.error(`Discord alert failed! Telegram backup: ${telegramSent ? "sent" : "also failed"}`);
-      
-      return NextResponse.json({
-        success: false,
-        price: currentPrice,
-        triggeredCount: triggeredAlerts.length,
-        discordSent: false,
-        telegramBackup: telegramSent,
-        error: "Discord delivery failed - backup notification attempted",
-      });
-    }
-
     // Create in-app notifications for all affected users
     const userIds = new Set(triggeredAlerts.map((a) => a.user_id));
     for (const userId of userIds) {
@@ -364,28 +323,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // Send email alerts to ALL active subscribers with email_alerts enabled
-    // Batch query to avoid N+1: fetch subscribers with their settings and email in one go
-    const { data: subscribersWithDetails } = await supabase
-      .from("subscriptions")
-      .select(`
-        user_id,
-        users!inner(id, email),
-        user_settings(email_alerts)
-      `)
-      .in("status", ["active", "comped"]);
-
-    // Flatten and filter to subscribers with email alerts enabled
-    const eligibleSubscribers = (subscribersWithDetails || []).filter((sub) => {
-      const settings = (sub as any).user_settings;
-      // Default to true if no settings or email_alerts not explicitly set
-      const emailAlertsEnabled = !settings || (settings as any).email_alerts !== false;
-      const email = (sub as any).users?.email;
-      return emailAlertsEnabled && email;
-    });
-
-    console.log(`Checking email alerts for ${eligibleSubscribers.length} eligible subscribers`);
-
     // Build the alerts array once (same for all users)
     const alertsToSend = Array.from(uniqueAlerts.values());
 
@@ -400,60 +337,153 @@ export async function GET(request: Request) {
 
     let emailsSent = 0;
     let emailsFailed = 0;
-    for (const sub of eligibleSubscribers) {
-      const userEmail = (sub as any).users?.email as string;
 
-      try {
-        const html = getAlertEmailHtml({
-          userName: userEmail.split("@")[0],
-          alerts: alertsToSend,
-          currentPrice,
-          mode: extractedData?.mode?.current || "yellow",
-          reportDate: report.report_date,
-          keyLevels,
-          positioning: extractedData?.positioning?.posture,
-        });
+    // Send email alerts to ALL active subscribers with email_alerts enabled
+    // Batch query to avoid N+1: fetch subscribers with their settings and email in one go
+    try {
+      // Query subscribers and their emails (user_settings queried separately - no FK to subscriptions)
+      const { data: subscribersWithDetails } = await supabase
+        .from("subscriptions")
+        .select(`
+          user_id,
+          users!inner(id, email)
+        `)
+        .in("status", ["active", "comped"]);
 
-        await resend.emails.send({
-          from: EMAIL_FROM,
-          to: userEmail,
-          subject: `TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
-          html,
-        });
+      // Get all user_settings to check email_alerts preference
+      const userIds = (subscribersWithDetails || []).map((s: any) => s.user_id);
+      const { data: allSettings } = await supabase
+        .from("user_settings")
+        .select("user_id, email_alerts")
+        .in("user_id", userIds);
+      
+      const settingsMap = new Map((allSettings || []).map((s: any) => [s.user_id, s]));
 
-        emailsSent++;
-        console.log(`Email alert sent to ${userEmail}`);
-      } catch (emailError) {
-        emailsFailed++;
-        console.error(`Failed to send email to ${userEmail}:`, emailError);
+      // Filter to subscribers with email alerts enabled
+      const eligibleSubscribers = (subscribersWithDetails || []).filter((sub) => {
+        const settings = settingsMap.get((sub as any).user_id);
+        // Default to true if no settings or email_alerts not explicitly set
+        const emailAlertsEnabled = !settings || (settings as any).email_alerts !== false;
+        const email = (sub as any).users?.email;
+        return emailAlertsEnabled && email;
+      });
+
+      console.log(`Checking email alerts for ${eligibleSubscribers.length} eligible subscribers`);
+
+      for (const sub of eligibleSubscribers) {
+        const userEmail = (sub as any).users?.email as string;
+        const userId = (sub as any).user_id as string;
+
+        try {
+          const html = getAlertEmailHtml({
+            userName: userEmail.split("@")[0],
+            alerts: alertsToSend,
+            currentPrice,
+            mode: extractedData?.mode?.current || "yellow",
+            reportDate: report.report_date,
+            keyLevels,
+            positioning: extractedData?.positioning?.posture,
+          });
+
+          await resend.emails.send({
+            from: EMAIL_FROM,
+            to: userEmail,
+            subject: `TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
+            html,
+          });
+
+          emailsSent++;
+          console.log(`Email alert sent to ${userEmail}`);
+
+          const triggeredAlertIdsForUser = triggeredAlerts
+            .filter((a) => a.user_id === userId)
+            .map((a) => a.id);
+
+          if (triggeredAlertIdsForUser.length > 0) {
+            await supabase
+              .from("report_alerts")
+              .update({
+                email_sent_at: new Date().toISOString(),
+              })
+              .in("id", triggeredAlertIdsForUser);
+          }
+        } catch (emailError) {
+          emailsFailed++;
+          console.error(`Failed to send email to ${userEmail}:`, emailError);
+        }
       }
+
+      console.log(`📧 Sent email alerts to ${emailsSent} subscribers`);
+
+      // ALERT if email delivery had failures
+      if (emailsFailed > 0) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+        if (botToken && chatId) {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `⚠️ <b>EMAIL ALERTS PARTIALLY FAILED</b>\n\n${emailsSent} sent, ${emailsFailed} failed\n\nCheck Vercel logs for details.`,
+              parse_mode: "HTML",
+            }),
+          }).catch(e => console.error("Failed to send email failure notification:", e));
+        }
+      }
+    } catch (emailDeliveryError) {
+      emailsFailed++;
+      console.error("Email delivery section failed:", emailDeliveryError);
     }
 
-    console.log(`📧 Sent email alerts to ${emailsSent} subscribers`);
+    // Send Discord alert (single message to #alerts channel)
+    const discordMessage = getAlertDiscordMessage({
+      alerts: alertsToSend,
+      mode: extractedData?.mode?.current || "yellow",
+      positioning: extractedData?.positioning?.posture || "",
+      keyLevels: discordKeyLevels,
+      masterEject: extractedData?.key_levels?.master_eject,
+    });
 
-    // ALERT if email delivery had failures
-    if (emailsFailed > 0) {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
-      if (botToken && chatId) {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `⚠️ <b>EMAIL ALERTS PARTIALLY FAILED</b>\n\n${emailsSent} sent, ${emailsFailed} failed\n\nCheck Vercel logs for details.`,
-            parse_mode: "HTML",
-          }),
-        }).catch(e => console.error("Failed to send email failure notification:", e));
+    let discordSent = false;
+    let telegramBackup = false;
+
+    try {
+      discordSent = await sendAlertMessage(discordMessage);
+
+      // Log the delivery attempt
+      await logAlertDelivery(
+        supabase,
+        "alerts",
+        discordSent,
+        triggeredAlerts.length,
+        currentPrice,
+        discordSent ? undefined : "Discord webhook failed"
+      );
+
+      // CRITICAL: If Discord failed, send backup via Telegram
+      if (!discordSent) {
+        const alertList = alertsToSend
+          .map(a => `• $${a.price} - ${a.level_name}`)
+          .join("\n");
+
+        const backupMessage = `🚨 <b>DISCORD ALERT FAILED</b> 🚨\n\nTSLA: $${currentPrice.toFixed(2)}\n\nAlerts that should have fired:\n${alertList}\n\n⚠️ Discord webhook is broken. Check Vercel env vars.`;
+
+        telegramBackup = await sendTelegramBackup(backupMessage);
+        console.error(`Discord alert failed! Telegram backup: ${telegramBackup ? "sent" : "also failed"}`);
       }
+    } catch (discordError) {
+      console.error("Discord delivery section failed:", discordError);
     }
 
     return NextResponse.json({
       success: true,
       price: currentPrice,
       triggeredCount: triggeredAlerts.length,
-      discordSent: true,
+      discordSent,
+      telegramBackup,
       emailsSent,
+      emailsFailed,
     });
   } catch (error) {
     console.error("Alert check error:", error);
