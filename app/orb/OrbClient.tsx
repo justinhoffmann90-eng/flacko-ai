@@ -157,10 +157,23 @@ function ActiveTradeCard({ row, trade }: { row: OrbRow; trade: Trade | null }) {
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
         <span style={{ fontSize: 10, letterSpacing: "0.1em", color: "#22c55e", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>LIVE TRADE</span>
       </div>
+      <div style={{ fontSize: 17, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: "#f4f4f5", marginBottom: 4 }}>
+        {formatActivationLine({ date: trade.entry_date, price: trade.entry_price, prefix: "Activated:", withYear: true })}
+      </div>
+      <div
+        style={{
+          fontSize: 16,
+          fontWeight: 800,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: trade.current_return_pct >= 0 ? "#22c55e" : "#ef4444",
+          marginBottom: 8,
+        }}
+      >
+        Current Return: {trade.current_return_pct >= 0 ? "+" : ""}
+        {trade.current_return_pct.toFixed(2)}%
+      </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-        <div className="text-zinc-500">Entry</div><div className="text-white font-mono">${trade.entry_price.toFixed(2)} ({trade.entry_date})</div>
         <div className="text-zinc-500">Day</div><div className="text-white font-mono">{trade.days_active}{row.gauge_median_days ? ` of ~${row.gauge_median_days} median` : ""}</div>
-        <div className="text-zinc-500">Return</div><div className={`font-mono font-bold ${trade.current_return_pct >= 0 ? "text-emerald-400" : "text-red-400"}`}>{trade.current_return_pct >= 0 ? "+" : ""}{trade.current_return_pct.toFixed(2)}%</div>
         <div className="text-zinc-500">Max Up</div><div className="text-emerald-400 font-mono">+{(trade.max_return_pct || 0).toFixed(2)}%</div>
         <div className="text-zinc-500">Max Down</div><div className="text-red-400 font-mono">{(trade.max_drawdown_pct || 0).toFixed(2)}%</div>
       </div>
@@ -217,6 +230,37 @@ const formatPct = (value: any) => {
   return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 };
 
+const formatActivationDate = (value: any, withYear = false) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    const s = String(value);
+    return s.length >= 10 ? s.slice(0, 10) : s;
+  }
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(withYear ? { year: "numeric" } : {}),
+  });
+};
+
+const formatActivationLine = ({
+  date,
+  price,
+  prefix = "Triggered",
+  withYear = false,
+}: {
+  date: any;
+  price: any;
+  prefix?: string;
+  withYear?: boolean;
+}) => {
+  const hasPrice = Number.isFinite(Number(price));
+  const dateText = formatActivationDate(date, withYear);
+  if (!hasPrice) return `${prefix} ${dateText}`;
+  return `${prefix} ${dateText} @ $${Number(price).toFixed(2)}`;
+};
+
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -266,6 +310,13 @@ export default function OrbClient() {
 
   const activeSetups = rows.filter((r) => r.state?.status === "active");
   const featured = activeSetups[0] || null;
+  const featuredActivationLine = featured
+    ? formatActivationLine({
+        date: featured.state?.entry_date,
+        price: featured.state?.entry_price,
+        prefix: "Triggered",
+      })
+    : null;
 
   const openSetup = async (setupId: string) => {
     setExpandedId((prev) => (prev === setupId ? null : setupId));
@@ -303,6 +354,19 @@ export default function OrbClient() {
               <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ RETREAT!"}</span>
             </div>
             <div style={{ fontSize: desktopFont(20), fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
+            {featuredActivationLine && (
+              <div
+                style={{
+                  fontSize: desktopFont(12),
+                  marginTop: 4,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontWeight: 700,
+                  color: featured.type === "buy" ? "#22c55e" : "#ef4444",
+                }}
+              >
+                {featuredActivationLine}
+              </div>
+            )}
             <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
             <div className={`grid grid-cols-2 sm:grid-cols-4 mt-4 ${isDesktop ? "gap-4" : "gap-2"}`} style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: isDesktop ? 14 : 10 }}>
               <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: "#22c55e" }}>{featured.backtest_avg_return_20d != null ? `${featured.backtest_avg_return_20d > 0 ? "+" : ""}${featured.backtest_avg_return_20d.toFixed(1)}%` : "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div></div>
@@ -358,6 +422,16 @@ export default function OrbClient() {
             const isActive = status === "active";
             const history = historyBySetup[row.id];
             const openTrade = history?.trades.find((t) => t.status === "open") || null;
+            const collapsedEntryPrice = row.state?.entry_price;
+            const collapsedEntryDate = row.state?.entry_date;
+            const collapsedActivationLine =
+              isActive && collapsedEntryDate
+                ? formatActivationLine({
+                    date: collapsedEntryDate,
+                    price: collapsedEntryPrice,
+                    prefix: "Triggered",
+                  })
+                : null;
 
             const badge = (() => {
               if (status === "active") {
@@ -397,6 +471,19 @@ export default function OrbClient() {
 
                       <h3 style={{ fontSize: desktopFont(18), fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
                       <p className="orb-body-copy" style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
+                      {collapsedActivationLine && (
+                        <div
+                          style={{
+                            fontSize: desktopFont(12),
+                            marginTop: 6,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontWeight: 700,
+                            color: row.type === "buy" ? "#22c55e" : "#ef4444",
+                          }}
+                        >
+                          {collapsedActivationLine}
+                        </div>
+                      )}
 
                       {!!row.category_tags?.length && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
