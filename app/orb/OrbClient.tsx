@@ -308,15 +308,6 @@ export default function OrbClient() {
     return out.sort((a, b) => rank(a.state?.status || "inactive") - rank(b.state?.status || "inactive"));
   }, [rows, filter]);
 
-  const activeSetups = rows.filter((r) => r.state?.status === "active");
-  const featured = activeSetups[0] || null;
-  const featuredActivationLine = featured
-    ? formatActivationLine({
-        date: featured.state?.entry_date,
-        price: featured.state?.entry_price,
-        prefix: "Triggered",
-      })
-    : null;
 
   const openSetup = async (setupId: string) => {
     setExpandedId((prev) => (prev === setupId ? null : setupId));
@@ -347,46 +338,9 @@ export default function OrbClient() {
           <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 4 avoid signals • 905 bars backtested • TSLA</p>
         </div>
 
-        {featured ? (
-          <div className="mb-5" style={{ border: `1px solid rgba(34,197,94,0.2)`, background: "linear-gradient(135deg, rgba(34,197,94,0.09) 0%, rgba(59,130,246,0.03) 100%)", borderRadius: 14, padding: isDesktop ? "28px 32px" : 16, animation: "fadeIn .45s ease" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: featured.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>{featured.type === "buy" ? "💣 FIRE THE CANNONS" : "🛡️ RETREAT!"}</span>
-            </div>
-            <div style={{ fontSize: desktopFont(20), fontWeight: 800, letterSpacing: "-0.02em" }}>{featured.public_name || featured.name}</div>
-            {featuredActivationLine && (
-              <div
-                style={{
-                  fontSize: desktopFont(12),
-                  marginTop: 4,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontWeight: 700,
-                  color: featured.type === "buy" ? "#22c55e" : "#ef4444",
-                }}
-              >
-                {featuredActivationLine}
-              </div>
-            )}
-            <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{featured.one_liner || featured.state?.watching_reason || featured.state?.inactive_reason || "Signal currently active."}</p>
-            <div className={`grid grid-cols-2 sm:grid-cols-4 mt-4 ${isDesktop ? "gap-4" : "gap-2"}`} style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: isDesktop ? 14 : 10 }}>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: "#22c55e" }}>{featured.backtest_avg_return_20d != null ? `${featured.backtest_avg_return_20d > 0 ? "+" : ""}${featured.backtest_avg_return_20d.toFixed(1)}%` : "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div></div>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_win_rate_20d != null ? `${featured.backtest_win_rate_20d}%` : "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>HIT RATE</div></div>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>{featured.backtest_n ?? "—"}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>INSTANCES</div></div>
-              <div className="text-center"><div style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: featured.type === "buy" ? "#22c55e" : "#ef4444" }}>{featured.type.toUpperCase()}</div><div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>SETUP TYPE</div></div>
-            </div>
-          </div>
-        ) : (
-          <div className="mb-5" style={{ border: "1px solid rgba(163,163,163,0.2)", background: "linear-gradient(135deg, rgba(63,63,70,0.28) 0%, rgba(24,24,27,0.3) 100%)", borderRadius: 14, padding: isDesktop ? "28px 32px" : 16, animation: "fadeIn .45s ease" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-zinc-500" />
-              <span style={{ fontSize: desktopFont(10), fontWeight: 700, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontFamily: "'JetBrains Mono', monospace" }}>🛡️ RETREAT!</span>
-            </div>
-            <div style={{ fontSize: desktopFont(20), fontWeight: 800, letterSpacing: "-0.02em" }}>No active signals right now</div>
-            <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.5)", marginTop: 4 }}>Orb is in all-clear mode and monitoring for new entries.</p>
-          </div>
-        )}
 
-        <div className="mb-4 flex flex-col sm:flex-row" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, gap: 4 }}>
+        <div className="mb-4 flex flex-wrap" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, gap: 6 }}>
+
           {[
             { key: "all", label: "All Setups" },
             { key: "active", label: "Active / Watching" },
@@ -397,12 +351,13 @@ export default function OrbClient() {
               key={t.key}
               onClick={() => setFilter(t.key as any)}
               style={{
-                flex: 1,
+                flex: "1 1 160px",
                 border: "none",
                 borderRadius: 8,
-                padding: "8px 10px",
+                padding: "10px 12px",
+                minHeight: 44,
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: desktopFont(11),
+                fontSize: isDesktop ? desktopFont(11) : 10,
                 fontWeight: 600,
                 letterSpacing: "0.04em",
                 color: filter === t.key ? "#f0f0f0" : "rgba(255,255,255,0.35)",
@@ -458,7 +413,7 @@ export default function OrbClient() {
                   animation: `fadeIn .4s ease ${index * 0.08}s both`,
                 }}
               >
-                <button onClick={() => openSetup(row.id)} className="w-full text-left transition-colors" style={{ background: "transparent", padding: isDesktop ? "28px 30px" : 16 }} >
+                <button onClick={() => openSetup(row.id)} className="w-full text-left transition-colors" style={{ background: "transparent", padding: isDesktop ? "28px 30px" : "14px 16px" }} >
                   <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -474,8 +429,11 @@ export default function OrbClient() {
                       {collapsedActivationLine && (
                         <div
                           style={{
-                            fontSize: desktopFont(12),
+                            fontSize: isDesktop ? desktopFont(12) : 11,
                             marginTop: 6,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                             fontFamily: "'JetBrains Mono', monospace",
                             fontWeight: 700,
                             color: row.type === "buy" ? "#22c55e" : "#ef4444",
@@ -494,14 +452,13 @@ export default function OrbClient() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-start gap-3">
+                    <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
                       <div className="text-center">
-                        <div className="sm:hidden"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={40} /></div>
-                        <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
+                        <HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={isDesktop ? 52 : 36} />
                         <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[20px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                        <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
                           {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
                         </div>
                         <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
@@ -536,7 +493,7 @@ export default function OrbClient() {
                                 <ReturnBar label={h.k} value={h.avg} isDesktop={isDesktop} showLabel={false} />
                               </div>
                               <div style={{ flexShrink: 0 }}>
-                                <HitRateRing pctPos={h.win ?? 0} size={30} />
+                                <HitRateRing pctPos={h.win ?? 0} size={isDesktop ? 30 : 24} />
                               </div>
                             </div>
                           ))}
@@ -605,7 +562,7 @@ export default function OrbClient() {
                                         <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
                                         <div
                                           style={{
-                                            fontSize: desktopFont(11),
+                                            fontSize: isDesktop ? desktopFont(11) : 10,
                                             fontWeight: 600,
                                             fontFamily: "'JetBrains Mono', monospace",
                                             color: isLive ? "rgba(255,255,255,0.35)" : Number.isFinite(c) ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.35)",
