@@ -455,7 +455,8 @@ export default function OrbClient() {
 
                     <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
                       <div className="text-center">
-                        <HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={isDesktop ? 52 : 36} />
+                        <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
+                        <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_win_rate_20d ?? 0) >= 65 ? "#22c55e" : (row.backtest_win_rate_20d ?? 0) >= 50 ? "#eab308" : "#ef4444" }}>{Math.round(row.backtest_win_rate_20d ?? 0)}%</div>
                         <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
                       </div>
                       <div className="text-right">
@@ -506,8 +507,11 @@ export default function OrbClient() {
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <ReturnBar label={h.k} value={h.avg} isDesktop={isDesktop} showLabel={false} />
                               </div>
-                              <div style={{ fontSize: isDesktop ? 11 : 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (h.win ?? 0) >= 65 ? "#22c55e" : (h.win ?? 0) >= 50 ? "#eab308" : "#ef4444", flexShrink: 0, minWidth: isDesktop ? 36 : 28, textAlign: "right" }}>
-                                {Math.round(h.win ?? 0)}%
+                              <div style={{ flexShrink: 0, minWidth: isDesktop ? 42 : 34, textAlign: "right" }}>
+                                <div style={{ fontSize: isDesktop ? 11 : 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (h.win ?? 0) >= 65 ? "#22c55e" : (h.win ?? 0) >= 50 ? "#eab308" : "#ef4444", lineHeight: 1 }}>
+                                  {Math.round(h.win ?? 0)}%
+                                </div>
+                                <div style={{ fontSize: isDesktop ? 8 : 7, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, marginTop: 2 }}>WIN</div>
                               </div>
                             </div>
                           ))}
@@ -559,10 +563,10 @@ export default function OrbClient() {
                               >
                                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: modeColor(signal?.mode), flexShrink: 0 }} />
                                 <div style={{ fontSize: isDesktop ? desktopFont(11) : 10, color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
-                                  {formatSignalDate(signal?.signal_date || signal?.date || signal?.created_at)}
+                                  {formatSignalDate(signal?.event_date || signal?.signal_date || signal?.date || signal?.created_at)}
                                 </div>
                                 <div style={{ fontSize: isDesktop ? desktopFont(11) : 10, color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
-                                  {signal?.price != null ? `$${Number(signal.price).toFixed(0)}` : signal?.signal_price != null ? `$${Number(signal.signal_price).toFixed(0)}` : "—"}
+                                  {signal?.event_price != null ? `$${Number(signal.event_price).toFixed(0)}` : signal?.price != null ? `$${Number(signal.price).toFixed(0)}` : signal?.signal_price != null ? `$${Number(signal.signal_price).toFixed(0)}` : "—"}
                                 </div>
                                 <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: isDesktop ? 12 : 6 }}>
                                   {[
