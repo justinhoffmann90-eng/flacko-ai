@@ -485,15 +485,15 @@ export default function OrbClient() {
                             { k: "20D", avg: row.backtest_avg_return_20d, win: row.backtest_win_rate_20d },
                             { k: "60D", avg: row.backtest_avg_return_60d, win: row.backtest_win_rate_60d },
                           ].filter((h) => h.avg != null).map((h) => (
-                            <div key={h.k} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 34, fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                            <div key={h.k} style={{ display: "flex", alignItems: "center", gap: isDesktop ? 10 : 6, overflow: "hidden" }}>
+                              <div style={{ width: isDesktop ? 34 : 28, fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
                                 {h.k}
                               </div>
-                              <div style={{ flex: 1 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
                                 <ReturnBar label={h.k} value={h.avg} isDesktop={isDesktop} showLabel={false} />
                               </div>
-                              <div style={{ flexShrink: 0 }}>
-                                <HitRateRing pctPos={h.win ?? 0} size={isDesktop ? 30 : 24} />
+                              <div style={{ fontSize: isDesktop ? 11 : 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (h.win ?? 0) >= 65 ? "#22c55e" : (h.win ?? 0) >= 50 ? "#eab308" : "#ef4444", flexShrink: 0, minWidth: isDesktop ? 36 : 28, textAlign: "right" }}>
+                                {Math.round(h.win ?? 0)}%
                               </div>
                             </div>
                           ))}
@@ -544,13 +544,13 @@ export default function OrbClient() {
                                 }}
                               >
                                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: modeColor(signal?.mode), flexShrink: 0 }} />
-                                <div style={{ width: 84, fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
+                                <div style={{ fontSize: isDesktop ? desktopFont(11) : 10, color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
                                   {formatSignalDate(signal?.signal_date || signal?.date || signal?.created_at)}
                                 </div>
-                                <div style={{ width: 62, fontSize: desktopFont(11), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
-                                  {signal?.price != null ? `$${Number(signal.price).toFixed(2)}` : signal?.signal_price != null ? `$${Number(signal.signal_price).toFixed(2)}` : "—"}
+                                <div style={{ fontSize: isDesktop ? desktopFont(11) : 10, color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                  {signal?.price != null ? `$${Number(signal.price).toFixed(0)}` : signal?.signal_price != null ? `$${Number(signal.signal_price).toFixed(0)}` : "—"}
                                 </div>
-                                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: isDesktop ? 12 : 6 }}>
                                   {[
                                     { label: "5D", val: r5 },
                                     { label: "10D", val: r10 },
@@ -558,11 +558,11 @@ export default function OrbClient() {
                                   ].map((col) => {
                                     const c = Number(col.val);
                                     return (
-                                      <div key={col.label} style={{ textAlign: "right", minWidth: 40 }}>
-                                        <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
+                                      <div key={col.label} style={{ textAlign: "right", minWidth: isDesktop ? 40 : 28 }}>
+                                        <div style={{ fontSize: isDesktop ? desktopFont(9) : 8, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
                                         <div
                                           style={{
-                                            fontSize: isDesktop ? desktopFont(11) : 10,
+                                            fontSize: isDesktop ? desktopFont(11) : 9,
                                             fontWeight: 600,
                                             fontFamily: "'JetBrains Mono', monospace",
                                             color: isLive ? "rgba(255,255,255,0.35)" : Number.isFinite(c) ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.35)",
