@@ -546,10 +546,10 @@ export default function OrbClient() {
 
                     <div className="mt-3">
                       <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES</p>
-                      {history?.signals?.length || history?.backtest?.length ? (
+                      {history?.signals?.filter((s: any) => s?.event_type === "activated").length || history?.backtest?.length ? (
                         <div className="space-y-1">
-                          {history?.signals?.slice(0, 5).map((signal: any, i: number) => {
-                            const isLive = signal?.live === true || signal?.status === "open" || [signal?.ret_5d, signal?.ret_10d, signal?.ret_20d].every((v: any) => v == null);
+                          {history?.signals?.filter((s: any) => s?.event_type === "activated" && [s?.ret_5d, s?.ret_10d, s?.ret_20d].some((v: any) => v != null)).slice(0, 5).map((signal: any, i: number) => {
+                            const isLive = false;
                             const r5 = signal?.ret_5d ?? signal?.return_5d ?? signal?.forward_5d;
                             const r10 = signal?.ret_10d ?? signal?.return_10d ?? signal?.forward_10d;
                             const r20 = signal?.ret_20d ?? signal?.return_20d ?? signal?.forward_20d;
