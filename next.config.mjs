@@ -25,6 +25,19 @@ const nextConfig = {
       },
     ];
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // yahoo-finance2 pulls in @gadicc/fetch-mock-cache which references
+      // a file-system store module that doesn't exist in production builds.
+      // This tells webpack to treat it as an empty module.
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@gadicc/fetch-mock-cache/stores/fs.ts': false,
+        '@gadicc/fetch-mock-cache': false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
