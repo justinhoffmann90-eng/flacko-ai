@@ -601,7 +601,7 @@ export default function OrbClient() {
                             );
                           })}
 
-                          {history?.backtest?.slice(0, 10).map((inst: any, i: number) => (
+                          {history?.backtest?.filter((inst: any) => inst.ret_5d != null || inst.ret_10d != null || inst.ret_20d != null).slice(0, 10).map((inst: any, i: number) => (
                             <div
                               key={inst.id || `${row.id}-backtest-${i}`}
                               style={{
