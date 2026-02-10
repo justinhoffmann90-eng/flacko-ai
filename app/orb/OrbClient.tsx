@@ -6,11 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 type OrbRow = {
   id: string;
   name: string;
+  public_name: string | null;
   number: number;
   type: "buy" | "avoid";
   framework: "fixed-horizon" | "gauge-to-target";
   grade: string | null;
-  conditions: string[];
+  category_tags: string[] | null;
+  one_liner: string | null;
+  public_description: string | null;
   backtest_n: number | null;
   backtest_win_rate_5d: number | null;
   backtest_avg_return_5d: number | null;
@@ -290,12 +293,12 @@ export default function OrbClient() {
           </div>
           {rows.filter(r => r.type === "avoid" && r.state?.status === "active").map(s => (
             <p key={s.id} className="text-xs text-zinc-300">
-              <span className="text-red-400 font-semibold">{s.name}</span> -- {s.state?.inactive_reason || s.state?.watching_reason || "Active"}
+              <span className="text-red-400 font-semibold">{s.public_name || s.name}</span> -- {s.state?.inactive_reason || s.state?.watching_reason || "Active"}
             </p>
           ))}
           {rows.filter(r => r.type === "buy" && r.state?.status === "active").map(s => (
             <p key={s.id} className="text-xs text-zinc-300 mt-1">
-              <span className="text-emerald-400 font-semibold">{s.name}</span> -- Day {s.state?.active_day || "?"}{s.gauge_median_days ? ` of ~${s.gauge_median_days} median` : ""}. Win rate: {s.backtest_win_rate_20d}%.
+              <span className="text-emerald-400 font-semibold">{s.public_name || s.name}</span> -- Day {s.state?.active_day || "?"}{s.gauge_median_days ? ` of ~${s.gauge_median_days} median` : ""}. Win rate: {s.backtest_win_rate_20d}%.
             </p>
           ))}
         </div>
@@ -339,10 +342,20 @@ export default function OrbClient() {
                     <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${row.type === "buy" ? "bg-emerald-900/40 text-emerald-400" : "bg-red-900/40 text-red-400"}`}>
                       {row.type === "buy" ? `BUY #${row.number}` : `AVOID #${row.number}`}
                     </span>
-                    <h3 className="text-white font-semibold text-sm">{row.name}</h3>
+                    <h3 className="text-white font-semibold text-sm">{row.public_name || row.name}</h3>
                     <span className={`text-xs font-mono px-2 py-0.5 rounded-full ${sc.text}`}>{sc.label}</span>
                     {row.grade && row.grade !== "AVOID" && <span className="text-xs text-zinc-500 font-mono">{row.grade}</span>}
                   </div>
+                  {row.one_liner && <p className="mt-1 text-xs text-zinc-400">{row.one_liner}</p>}
+                  {!!row.category_tags?.length && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {row.category_tags.map((tag) => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800/80 text-zinc-300">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex gap-3 mt-1.5 text-xs">
                     <span className={sc.text}>{row.backtest_win_rate_20d ?? "-"}% win</span>
                     <span className="text-zinc-500">|</span>
@@ -375,17 +388,7 @@ export default function OrbClient() {
 
               {expanded && (
                 <div className="px-4 pb-4 border-t border-zinc-800/50 space-y-3 pt-3">
-                  {/* Conditions */}
-                  <div>
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1.5">Conditions</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(row.conditions || []).map((c, i) => (
-                        <span key={i} className="text-xs px-2 py-1 rounded bg-zinc-800/80 text-zinc-300 font-mono">{c}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {row.description && <p className="text-xs text-zinc-400 italic">{row.description}</p>}
+                  {row.public_description && <p className="text-xs text-zinc-400 italic">{row.public_description}</p>}
 
                   {/* Active trade card */}
                   {isActive && <ActiveTradeCard row={row} trade={openTrade} />}

@@ -46,9 +46,26 @@ export async function GET() {
     const merged = (definitions || []).map((def) => {
       const state = (states || []).find((s) => s.setup_id === def.id);
       const live = livePerformance[def.id];
+      const { conditions, eval_logic, ...publicDef } = def;
+
       return {
-        ...def,
-        state: state || null,
+        ...publicDef,
+        state: state
+          ? {
+              status: state.status,
+              active_since: state.active_since,
+              active_day: state.active_day,
+              entry_price: state.entry_price,
+              gauge_progress_pct: state.gauge_progress_pct,
+              watching_reason: state.watching_reason,
+              current_price: state.current_price,
+              updated_at: state.updated_at,
+              inactive_reason: state.inactive_reason,
+              gauge_current_value: state.gauge_current_value,
+              gauge_target_value: state.gauge_target_value,
+              gauge_entry_value: state.gauge_entry_value,
+            }
+          : null,
         livePerformance: live || null,
       };
     });
