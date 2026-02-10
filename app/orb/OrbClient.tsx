@@ -264,7 +264,7 @@ const formatActivationLine = ({
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[] }>>({});
+  const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[]; backtest: any[] }>>({});
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
   const [isDesktop, setIsDesktop] = useState(false);
   const [adminDescToggle, setAdminDescToggle] = useState<Record<string, boolean>>({});
@@ -315,7 +315,7 @@ export default function OrbClient() {
     if (!historyBySetup[setupId]) {
       const res = await fetch(`/api/orb/history/${setupId}`, { cache: "no-store" });
       const data = await res.json();
-      setHistoryBySetup((prev) => ({ ...prev, [setupId]: { trades: data.trades || [], signals: data.signals || [] } }));
+      setHistoryBySetup((prev) => ({ ...prev, [setupId]: { trades: data.trades || [], signals: data.signals || [], backtest: data.backtest || [] } }));
     }
   };
 
@@ -546,9 +546,9 @@ export default function OrbClient() {
 
                     <div className="mt-3">
                       <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>RECENT INSTANCES</p>
-                      {history?.signals?.length ? (
+                      {history?.signals?.length || history?.backtest?.length ? (
                         <div className="space-y-1">
-                          {history.signals.slice(0, 5).map((signal: any, i: number) => {
+                          {history?.signals?.slice(0, 5).map((signal: any, i: number) => {
                             const isLive = signal?.live === true || signal?.status === "open" || [signal?.ret_5d, signal?.ret_10d, signal?.ret_20d].every((v: any) => v == null);
                             const r5 = signal?.ret_5d ?? signal?.return_5d ?? signal?.forward_5d;
                             const r10 = signal?.ret_10d ?? signal?.return_10d ?? signal?.forward_10d;
@@ -600,6 +600,52 @@ export default function OrbClient() {
                               </div>
                             );
                           })}
+
+                          {history?.backtest?.slice(0, 10).map((inst: any, i: number) => (
+                            <div
+                              key={inst.id || `${row.id}-backtest-${i}`}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: isDesktop ? "8px 10px" : "6px 8px",
+                                borderRadius: 6,
+                                background: "transparent",
+                                border: "1px solid transparent",
+                              }}
+                            >
+                              <div style={{ fontSize: isDesktop ? desktopFont(11) : 10, color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                {formatSignalDate(inst.signal_date)}
+                              </div>
+                              <div style={{ fontSize: isDesktop ? desktopFont(11) : 10, color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                ${Number(inst.signal_price).toFixed(0)}
+                              </div>
+                              <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", gap: isDesktop ? 12 : 6 }}>
+                                {[
+                                  { label: "5D", val: inst.ret_5d },
+                                  { label: "10D", val: inst.ret_10d },
+                                  { label: "20D", val: inst.ret_20d },
+                                ].map((col) => {
+                                  const c = Number(col.val);
+                                  return (
+                                    <div key={col.label} style={{ textAlign: "right", minWidth: isDesktop ? 40 : 28 }}>
+                                      <div style={{ fontSize: isDesktop ? desktopFont(9) : 8, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>{col.label}</div>
+                                      <div
+                                        style={{
+                                          fontSize: isDesktop ? desktopFont(11) : 9,
+                                          fontWeight: 600,
+                                          fontFamily: "'JetBrains Mono', monospace",
+                                          color: col.val != null ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.2)",
+                                        }}
+                                      >
+                                        {col.val != null ? `${c >= 0 ? "+" : ""}${c.toFixed(1)}%` : "—"}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <p className="orb-body-copy" style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", lineHeight: 1.5 }}>

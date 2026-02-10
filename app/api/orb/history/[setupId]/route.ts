@@ -26,7 +26,18 @@ export async function GET(_request: Request, { params }: { params: { setupId: st
       return NextResponse.json({ error: signalsError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ trades: trades || [], signals: signals || [] });
+    const { data: backtestInstances, error: backtestError } = await supabase
+      .from("orb_backtest_instances")
+      .select("*")
+      .eq("setup_id", params.setupId)
+      .order("signal_date", { ascending: false })
+      .limit(20);
+
+    if (backtestError) {
+      return NextResponse.json({ error: backtestError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ trades: trades || [], signals: signals || [], backtest: backtestInstances || [] });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
