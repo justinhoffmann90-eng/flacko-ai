@@ -10,6 +10,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    serverComponentsExternalPackages: ['yahoo-finance2'],
   },
   async headers() {
     return [
@@ -24,18 +25,6 @@ const nextConfig = {
         ],
       },
     ];
-  },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // yahoo-finance2 v2.13 pulls @gadicc/fetch-mock-cache which has a
-      // fs.ts store that webpack can't resolve. Mark as external to skip bundling.
-      config.externals = config.externals || [];
-      config.externals.push({
-        '@gadicc/fetch-mock-cache/stores/fs.ts': 'commonjs @gadicc/fetch-mock-cache/stores/fs.ts',
-        '@gadicc/fetch-mock-cache': 'commonjs @gadicc/fetch-mock-cache',
-      });
-    }
-    return config;
   },
 };
 
