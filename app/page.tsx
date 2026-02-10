@@ -711,7 +711,7 @@ export default function LandingPage() {
           <div>
             <FAQItem
               question="how is the report created?"
-              answer="the system combines a trained framework built on years of tsla-specific trading philosophy with real-time data feeds costing over $500/month. each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from spotgamma. the ai synthesizes all of this into a single daily read on regime, levels, and positioning. it's not a gut call. it's a systematic process that runs the same way every day."
+              answer="the system combines a trained framework built on years of tsla-specific trading philosophy with real-time data feeds costing over $700/month. each report pulls from multi-timeframe technical analysis, momentum and trend indicators, market structure assessment, and institutional options flow data from spotgamma. the ai synthesizes all of this into a single daily read on regime, levels, and positioning. it's not a gut call. it's a systematic process that runs the same way every day."
             />
             <FAQItem
               question="how is the regime mode determined?"
