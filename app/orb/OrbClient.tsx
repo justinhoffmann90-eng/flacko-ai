@@ -267,6 +267,7 @@ export default function OrbClient() {
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[] }>>({});
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
   const [isDesktop, setIsDesktop] = useState(false);
+  const [adminDescToggle, setAdminDescToggle] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
@@ -470,8 +471,21 @@ export default function OrbClient() {
 
                 {expanded && (
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: isDesktop ? "18px 24px 22px" : "14px 16px 16px", animation: "slideDown .25s ease" }}>
-                    <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 6, fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
-                    {row.public_description && <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>{row.public_description}</p>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isDesktop ? 10 : 6 }}>
+                      <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
+                      {row._admin && row.description && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setAdminDescToggle(prev => ({ ...prev, [row.id]: !prev[row.id] })); }}
+                          style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, border: "1px solid rgba(139,92,246,0.3)", background: adminDescToggle[row.id] ? "rgba(139,92,246,0.2)" : "transparent", color: "rgba(139,92,246,0.7)", fontFamily: "'JetBrains Mono', monospace", cursor: "pointer", letterSpacing: "0.05em" }}
+                        >
+                          {adminDescToggle[row.id] ? "🔒 FULL" : "PUBLIC"}
+                        </button>
+                      )}
+                    </div>
+                    {(adminDescToggle[row.id] && row._admin && row.description)
+                      ? <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(139,92,246,0.6)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>{row.description}</p>
+                      : row.public_description && <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>{row.public_description}</p>
+                    }
 
                     {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
 
