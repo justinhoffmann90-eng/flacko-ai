@@ -11,6 +11,7 @@ import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { PositioningCard } from "@/components/dashboard/positioning-card";
 import { EducationHubCard } from "@/components/dashboard/education-hub-card";
+import { OrbSignalsCard } from "@/components/dashboard/orb-signals-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
@@ -313,6 +314,9 @@ export default async function DashboardPage() {
                 </div>
               </Card>
             )}
+
+            {/* Orb Active Signals */}
+            <OrbSignalsCard />
 
             {/* Education Hub */}
             <EducationHubCard />

@@ -10,7 +10,7 @@ import {
   FileText,
   MessageSquare,
   Calendar,
-  GraduationCap,
+  Radar,
 } from "lucide-react";
 
 const navItems = [
@@ -20,9 +20,9 @@ const navItems = [
     icon: Home,
   },
   {
-    href: "/learn",
-    label: "Learn",
-    icon: GraduationCap,
+    href: "/orb",
+    label: "Orb",
+    icon: Radar,
   },
   {
     href: "/report",
