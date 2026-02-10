@@ -145,17 +145,45 @@ async function runCompute() {
         });
 
         if (newStatus === "active" && prevStatus !== "active") {
-          await supabase.from("orb_tracker").insert({
-            setup_id: result.setup_id,
-            entry_date: indicators.date,
-            entry_price: indicators.close,
-            entry_indicators: indicators,
-            current_return_pct: 0,
-            max_return_pct: 0,
-            max_drawdown_pct: 0,
-            days_active: 1,
-            status: "open",
-          });
+          // Flicker protection: if same setup was closed within 5 trading days, reopen it
+          const { data: recentClosed } = await supabase
+            .from("orb_tracker")
+            .select("*")
+            .eq("setup_id", result.setup_id)
+            .eq("status", "closed")
+            .order("exit_date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const fiveDaysAgo = new Date();
+          fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 7); // ~5 trading days
+          const recentlyClosedDate = recentClosed?.exit_date ? new Date(recentClosed.exit_date) : null;
+
+          if (recentClosed && recentlyClosedDate && recentlyClosedDate >= fiveDaysAgo) {
+            // Reopen the recent trade instead of creating a new one
+            await supabase.from("orb_tracker").update({
+              exit_date: null,
+              exit_price: null,
+              exit_reason: null,
+              exit_indicators: null,
+              final_return_pct: null,
+              is_win: null,
+              status: "open",
+              updated_at: new Date().toISOString(),
+            }).eq("id", recentClosed.id);
+          } else {
+            await supabase.from("orb_tracker").insert({
+              setup_id: result.setup_id,
+              entry_date: indicators.date,
+              entry_price: indicators.close,
+              entry_indicators: indicators,
+              current_return_pct: 0,
+              max_return_pct: 0,
+              max_drawdown_pct: 0,
+              days_active: 1,
+              status: "open",
+            });
+          }
         }
 
         if (prevStatus === "active" && newStatus !== "active") {
@@ -203,16 +231,39 @@ async function runCompute() {
 
         if (openTrade) {
           const currentReturn = ((indicators.close / openTrade.entry_price) - 1) * 100;
-          await supabase
-            .from("orb_tracker")
-            .update({
-              current_return_pct: currentReturn,
-              max_return_pct: Math.max(openTrade.max_return_pct || 0, currentReturn),
-              max_drawdown_pct: Math.min(openTrade.max_drawdown_pct || 0, currentReturn),
-              days_active: (openTrade.days_active || 0) + 1,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", openTrade.id);
+          const newDaysActive = (openTrade.days_active || 0) + 1;
+
+          // Gauge timeout: close after 60 trading days
+          const isGauge = ["smi-oversold-gauge", "smi-overbought"].includes(result.setup_id);
+          if (isGauge && newDaysActive >= 60) {
+            await supabase
+              .from("orb_tracker")
+              .update({
+                exit_date: indicators.date,
+                exit_price: indicators.close,
+                exit_reason: "timeout",
+                final_return_pct: currentReturn,
+                is_win: result.setup_id === "smi-oversold-gauge" ? currentReturn > 0 : currentReturn < 0,
+                status: "closed",
+                days_active: newDaysActive,
+                current_return_pct: currentReturn,
+                max_return_pct: Math.max(openTrade.max_return_pct || 0, currentReturn),
+                max_drawdown_pct: Math.min(openTrade.max_drawdown_pct || 0, currentReturn),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", openTrade.id);
+          } else {
+            await supabase
+              .from("orb_tracker")
+              .update({
+                current_return_pct: currentReturn,
+                max_return_pct: Math.max(openTrade.max_return_pct || 0, currentReturn),
+                max_drawdown_pct: Math.min(openTrade.max_drawdown_pct || 0, currentReturn),
+                days_active: newDaysActive,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", openTrade.id);
+          }
         }
       }
     }
