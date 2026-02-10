@@ -242,6 +242,11 @@ export default async function DashboardPage() {
         <div className="md:grid md:grid-cols-2 md:gap-8 lg:gap-10 space-y-4 md:space-y-0">
           {/* Left column */}
           <div className="space-y-4">
+            {/* Orb Signals - mobile only (above call options) */}
+            <div className="md:hidden">
+              <OrbSignalsCard />
+            </div>
+
             {/* Call Options Widget */}
             {extractedData?.call_alert && (
               <CallOptionsWidget
@@ -315,8 +320,10 @@ export default async function DashboardPage() {
               </Card>
             )}
 
-            {/* Orb Active Signals */}
-            <OrbSignalsCard />
+            {/* Orb Active Signals - desktop only (mobile renders above) */}
+            <div className="hidden md:block">
+              <OrbSignalsCard />
+            </div>
 
             {/* Education Hub */}
             <EducationHubCard />
