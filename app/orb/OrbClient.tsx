@@ -261,6 +261,26 @@ const formatActivationLine = ({
   return `${prefix} ${dateText} @ $${Number(price).toFixed(2)}`;
 };
 
+/** Pick the best timeframe for a setup tile.
+ *  Offensive → highest avg return. Defensive → most negative avg return. */
+function bestTimeframe(row: OrbRow): { label: string; win: number; avg: number } {
+  const periods: { label: string; win: number | null; avg: number | null }[] = [
+    { label: "5D", win: row.backtest_win_rate_5d, avg: row.backtest_avg_return_5d },
+    { label: "10D", win: row.backtest_win_rate_10d, avg: row.backtest_avg_return_10d },
+    { label: "20D", win: row.backtest_win_rate_20d, avg: row.backtest_avg_return_20d },
+    { label: "60D", win: row.backtest_win_rate_60d, avg: row.backtest_avg_return_60d },
+  ];
+  const valid = periods.filter(p => p.avg != null && p.win != null);
+  if (!valid.length) return { label: "20D", win: 0, avg: 0 };
+  const isDefensive = row.stance === "defensive";
+  const best = valid.reduce((a, b) => {
+    const aVal = a.avg!;
+    const bVal = b.avg!;
+    return isDefensive ? (bVal < aVal ? b : a) : (bVal > aVal ? b : a);
+  });
+  return { label: best.label, win: best.win ?? 0, avg: best.avg ?? 0 };
+}
+
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -529,9 +549,11 @@ export default function OrbClient() {
                           <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: "#22c55e" }}>{row.stance === "defensive" ? "75" : "68"}%</div>
                           <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>GAUGE</div>
                         </>) : (<>
-                          <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
-                          <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_win_rate_20d ?? 0) >= 65 ? "#22c55e" : (row.backtest_win_rate_20d ?? 0) >= 50 ? "#eab308" : "#ef4444" }}>{Math.round(row.backtest_win_rate_20d ?? 0)}%</div>
-                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
+                          {(() => { const bt = bestTimeframe(row); return (<>
+                          <div className="hidden sm:block"><HitRateRing pctPos={bt.win} size={52} /></div>
+                          <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: bt.win >= 65 ? "#22c55e" : bt.win >= 50 ? "#eab308" : "#ef4444" }}>{Math.round(bt.win)}%</div>
+                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{bt.label} HIT</div>
+                          </>); })()}
                         </>)}
                       </div>
                       <div className="text-right">
@@ -541,10 +563,12 @@ export default function OrbClient() {
                           </div>
                           <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>MEDIAN</div>
                         </>) : (<>
-                          <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
-                            {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
+                          {(() => { const bt = bestTimeframe(row); return (<>
+                          <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: bt.avg >= 0 ? "#22c55e" : "#ef4444" }}>
+                            {bt.avg >= 0 ? "+" : ""}{bt.avg.toFixed(1)}%
                           </div>
-                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
+                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG {bt.label}</div>
+                          </>); })()}
                         </>)}
                       </div>
                       <div style={{ color: "rgba(255,255,255,0.35)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .25s ease" }}>▾</div>
