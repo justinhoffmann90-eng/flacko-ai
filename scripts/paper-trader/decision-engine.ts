@@ -235,6 +235,24 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     };
   }
   
+  // Bootstrap ramp phase — temporary until base position is built
+  // Bootstrap ramp: if current exposure is below 50% of mode's max invested cap,
+  // Taylor is in "ramp mode" — she should deploy daily cap at current price
+  // without requiring proximity to support levels. 
+  // Once she reaches 50% of target, normal rules (require support) apply.
+  const maxInvestedCap = MAX_INVESTED[mode] || 0.60;
+  const tslaValue = context.multiPortfolio.tsla?.value || 0;
+  const tsllValue = context.multiPortfolio.tsll?.value || 0;
+  const currentExposure = (tslaValue + tsllValue) / context.multiPortfolio.totalValue;
+  const isRamping = currentExposure < (maxInvestedCap * 0.50);
+  
+  if (isRamping) {
+    reasoning.push(`ramp mode: exposure ${(currentExposure * 100).toFixed(0)}% vs target ${(maxInvestedCap * 100).toFixed(0)}% — building base position`);
+    // Skip the nearResistance block (don't hold just because near resistance during ramp)
+    // Skip the nearSupport requirement (buy at market during ramp)
+    // Still respect: Orb zone blocks, RED mode, max invested cap, Slow Zone, daily trade limit
+  }
+  
   // Check HIRO - avoid entry if heavy selling (lower quartile)
   if (hiro.percentile30Day < 25) {
     reasoning.push(`hiro in lower quartile (${hiro.percentile30Day.toFixed(0)}%) — heavy selling`);
@@ -248,7 +266,7 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     reasoning.push(`price near support: ${nearSupport.level} ($${nearSupport.price.toFixed(2)})`);
   }
   
-  if (nearResistance.isNear) {
+  if (!isRamping && nearResistance.isNear) {
     reasoning.push(`price near resistance: ${nearResistance.level} — wait for breakout or pullback`);
     return {
       action: 'hold',
@@ -259,10 +277,6 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   }
   
   // Check max invested cap before entry
-  const maxInvestedCap = MAX_INVESTED[mode] || 0.60;
-  const tslaValue = context.multiPortfolio.tsla?.value || 0;
-  const tsllValue = context.multiPortfolio.tsll?.value || 0;
-  const currentExposure = (tslaValue + tsllValue) / context.multiPortfolio.totalValue;
   
   if (currentExposure >= maxInvestedCap) {
     reasoning.push(`at max invested cap for ${mode} mode (${(maxInvestedCap * 100).toFixed(0)}%)`);
@@ -342,7 +356,7 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     shares,
     price,
     reasoning,
-    confidence: nearSupport.isNear ? 'high' : 'medium',
+    confidence: (nearSupport.isNear || isRamping) ? 'high' : 'medium',
     targetPrice,
     stopPrice,
     isOverride,
