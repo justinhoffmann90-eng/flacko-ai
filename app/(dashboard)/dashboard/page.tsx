@@ -247,13 +247,7 @@ export default async function DashboardPage() {
               <OrbSignalsCard />
             </div>
 
-            {/* Call Options Widget */}
-            {extractedData?.call_alert && (
-              <CallOptionsWidget
-                data={extractedData.call_alert}
-                reportDate={report ? formatDateShort(report.report_date) : undefined}
-              />
-            )}
+            {/* Call Options Widget — replaced by Orb Score */}
 
             {/* Positioning Card */}
             {positioning && (
