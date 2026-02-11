@@ -1,8 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { redirect } from "next/navigation";
-import OrbClient from "./OrbClient";
+import dynamic from "next/dynamic";
 import type { Metadata } from "next";
+
+// Lazy-load the heavy OrbClient component (1171 lines, lots of state/rendering logic)
+const OrbClient = dynamic(() => import("./OrbClient"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen p-4 bg-[#0a0a0c] flex items-center justify-center">
+      <div className="text-center space-y-3">
+        <div className="w-12 h-12 border-4 border-zinc-700 border-t-emerald-500 rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-zinc-400 font-mono">Loading Orb signals...</p>
+      </div>
+    </div>
+  ),
+});
 
 export const metadata: Metadata = {
   title: "Orb - Live Signal Tracker | Flacko AI",
