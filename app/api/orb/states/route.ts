@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID || "bf0babb8-2559-4498-ab3a-1039079bb70d";
+const ADMIN_USER_ID = (process.env.ADMIN_USER_ID || "bf0babb8-2559-4498-ab3a-1039079bb70d").trim();
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,8 +22,7 @@ export async function GET(request: NextRequest) {
     if (!isAdmin && adminParam && adminParam === ADMIN_USER_ID) {
       isAdmin = true;
     }
-    // Debug header so we can check
-    console.log("ADMIN_CHECK", { isAdmin, adminParam, envId: ADMIN_USER_ID?.slice(0, 8), match: adminParam === ADMIN_USER_ID });
+    // Admin param check complete
 
     const supabase = await createServiceClient();
 
@@ -111,9 +110,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const resp = NextResponse.json(merged);
-    resp.headers.set("x-admin-debug", JSON.stringify({ isAdmin, envLen: ADMIN_USER_ID?.length, paramLen: request.nextUrl.searchParams.get("admin")?.length }));
-    return resp;
+    return NextResponse.json(merged);
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
