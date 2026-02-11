@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
         isAdmin = true;
       }
     } catch {}
+    // Fallback: check admin query param with secret
+    if (!isAdmin && request.nextUrl.searchParams.get("admin") === ADMIN_USER_ID) {
+      isAdmin = true;
+    }
 
     const supabase = await createServiceClient();
 
