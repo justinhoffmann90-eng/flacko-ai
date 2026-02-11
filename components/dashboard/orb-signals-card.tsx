@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Radar, ArrowRight } from "lucide-react";
+import { Radar, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 
 interface OrbSignal {
   id: string;
@@ -21,8 +21,23 @@ interface OrbSignal {
   } | null;
 }
 
+interface OrbScore {
+  value: number;
+  zone: string;
+  prevZone: string | null;
+  date: string;
+}
+
+const ZONE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; glow: string }> = {
+  FULL_SEND: { label: "FULL SEND", color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/30", glow: "shadow-green-500/20" },
+  NEUTRAL: { label: "NEUTRAL", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", glow: "shadow-yellow-500/20" },
+  CAUTION: { label: "CAUTION", color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", glow: "shadow-orange-500/20" },
+  DEFENSIVE: { label: "DEFENSIVE", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", glow: "shadow-red-500/20" },
+};
+
 export function OrbSignalsCard() {
   const [signals, setSignals] = useState<OrbSignal[]>([]);
+  const [score, setScore] = useState<OrbScore | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +49,7 @@ export function OrbSignalsCard() {
           (s: OrbSignal) => s.state?.status === "active"
         );
         setSignals(active);
+        if (data?.score) setScore(data.score);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -42,71 +58,87 @@ export function OrbSignalsCard() {
   if (loading) {
     return (
       <Card className="p-4 md:p-6 animate-pulse">
-        <div className="h-16 bg-muted rounded" />
+        <div className="h-20 bg-muted rounded" />
       </Card>
     );
   }
 
-  const hasActive = signals.length > 0;
+  const zone = score ? ZONE_CONFIG[score.zone] || ZONE_CONFIG.NEUTRAL : null;
+  const buySignals = signals.filter((s) => s.type === "buy");
+  const avoidSignals = signals.filter((s) => s.type === "avoid");
 
   return (
     <Link href="/orb">
       <Card
-        className={`p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer ${
-          hasActive ? "border-green-500/30 bg-green-500/5" : "border-muted"
+        className={`p-4 md:p-6 hover:bg-accent/50 transition-all cursor-pointer ${
+          zone ? `${zone.border} ${zone.bg}` : "border-muted"
         }`}
       >
+        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Radar
-              className={`h-5 w-5 md:h-6 md:w-6 ${
-                hasActive ? "text-green-500" : "text-muted-foreground"
-              }`}
+              className={`h-5 w-5 ${zone ? zone.color : "text-muted-foreground"}`}
             />
-            <h3 className="font-semibold text-sm md:text-lg">Orb Signals</h3>
+            <h3 className="font-semibold text-sm md:text-base">The Orb</h3>
           </div>
-          <div className="flex items-center gap-1 text-xs md:text-sm text-primary">
-            View all <ArrowRight className="h-3 w-3" />
+          <div className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+            Explore <ArrowRight className="h-3 w-3" />
           </div>
         </div>
 
-        {hasActive ? (
-          <div className="space-y-2">
-            {signals.map((signal) => (
+        {/* Score Zone */}
+        {zone && score && (
+          <div className="flex items-center gap-3 mb-3">
+            <span className={`text-lg md:text-xl font-bold font-mono ${zone.color}`}>
+              {zone.label}
+            </span>
+            <span className="text-xs text-muted-foreground font-mono">
+              {score.value.toFixed(2)}
+            </span>
+          </div>
+        )}
+
+        {/* Active Signals */}
+        {signals.length > 0 ? (
+          <div className="space-y-1.5">
+            {buySignals.map((signal) => (
               <div
                 key={signal.id}
-                className="flex items-center gap-3 p-2 rounded-lg bg-green-500/10"
+                className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-green-500/8 border border-green-500/10"
               >
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm md:text-base font-medium truncate">
-                      {signal.type === "buy" ? "💣" : "🛡️"} {signal.public_name}
-                    </span>
-                    <span
-                      className={`text-[10px] md:text-xs px-1.5 py-0.5 rounded font-mono font-bold ${
-                        signal.type === "buy"
-                          ? "bg-green-500/20 text-green-500"
-                          : "bg-red-500/20 text-red-500"
-                      }`}
-                    >
-                      {signal.type === "buy" ? "FIRE THE CANNONS" : "RETREAT"}
-                    </span>
-                  </div>
-                  {signal.state?.entry_price && (signal.state?.active_since || signal.state?.entry_date) && (
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      Triggered {signal.state.active_since || signal.state.entry_date} @ ${signal.state.entry_price.toFixed(2)}
-                    </p>
-                  )}
+                <div className="flex items-center gap-2 min-w-0">
+                  <TrendingUp className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {signal.public_name}
+                  </span>
                 </div>
+                <span className="text-[10px] font-mono text-green-500/80 flex-shrink-0 ml-2">
+                  BUY
+                </span>
+              </div>
+            ))}
+            {avoidSignals.map((signal) => (
+              <div
+                key={signal.id}
+                className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-red-500/8 border border-red-500/10"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <TrendingDown className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {signal.public_name}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-red-500/80 flex-shrink-0 ml-2">
+                  AVOID
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">
-            <p>No active signals right now.</p>
-            <p className="text-xs mt-1">11 buy setups + 6 avoid signals being tracked</p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            No active signals — 17 setups being tracked
+          </p>
         )}
       </Card>
     </Link>
