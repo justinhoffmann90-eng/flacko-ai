@@ -1143,41 +1143,14 @@ export default function OrbClient() {
                       )}
                     </div>
 
-                    {/* Signal conditions - visible to all users */}
-                    {(row.conditions || row.eval_logic || row.state?.gauge_current_value != null || row.state?.entry_indicator_values) && (
+                    {/* Gauge progress for gauge-type setups - clean display */}
+                    {row.state?.gauge_current_value != null && (
                       <div className="mt-3 p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                        <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>HOW IT WORKS</p>
-                        {row.conditions && (
-                          <div className="mb-2">
-                            <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Conditions: </span>
-                            <pre style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
-                              {typeof row.conditions === "string" ? row.conditions : JSON.stringify(row.conditions, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                        {row.eval_logic && (
-                          <div className="mb-2">
-                            <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Eval Logic: </span>
-                            <pre style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
-                              {typeof row.eval_logic === "string" ? row.eval_logic : JSON.stringify(row.eval_logic, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                        {row.state?.gauge_current_value != null && (
-                          <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" }}>
-                            <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Gauge Entry: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_entry_value}</span></div>
-                            <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Current: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_current_value}</span></div>
-                            <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Target: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_target_value}</span></div>
-                          </div>
-                        )}
-                        {row.state?.entry_indicator_values && (
-                          <div className="mt-2">
-                            <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Entry Indicators: </span>
-                            <pre style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
-                              {JSON.stringify(row.state.entry_indicator_values, null, 2)}
-                            </pre>
-                          </div>
-                        )}
+                        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                          <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Entry: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_entry_value}</span></div>
+                          <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Current: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_current_value}</span></div>
+                          <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Target: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_target_value}</span></div>
+                        </div>
                       </div>
                     )}
                   </div>
