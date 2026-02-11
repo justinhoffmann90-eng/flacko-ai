@@ -511,7 +511,7 @@ export default function OrbClient() {
                           <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${isActive ? "animate-pulse" : ""}`} />
                           {badge.label}
                         </span>
-                        <span style={{ fontSize: desktopFont(9), letterSpacing: "0.08em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>{row.type.toUpperCase()} #{row.number}</span>
+                        <span style={{ fontSize: desktopFont(9), letterSpacing: "0.08em", color: row.type === "buy" ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{row.type.toUpperCase()} #{row.number}</span>
                       </div>
 
                       <h3 style={{ fontSize: desktopFont(18), fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
