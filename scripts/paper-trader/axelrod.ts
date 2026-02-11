@@ -18,7 +18,7 @@ const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL
 let webhookClient: WebhookClient | null = null;
 
 const AXELROD_USERNAME = 'Axe';
-const AXELROD_AVATAR = 'https://api.dicebear.com/9.x/initials/png?seed=BA&backgroundColor=dc2626&textColor=ffffff&fontSize=42';
+const AXELROD_AVATAR = 'https://www.flacko.ai/avatars/axe.jpg';
 
 const AXELROD_SYSTEM_PROMPT = `You are Bobby Axelrod from Billions — but you're commenting on a paper trading bot's moves in a Discord channel.
 
