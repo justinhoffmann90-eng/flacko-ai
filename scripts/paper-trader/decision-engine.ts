@@ -492,14 +492,21 @@ function checkNearResistance(
  * Determine target price for trade
  */
 function determineTarget(currentPrice: number, report: DailyReport): number {
-  // Primary target is gamma strike or call wall
-  if (report.gammaStrike > currentPrice) {
-    return report.gammaStrike;
+  // Use nearest resistance level above price from report
+  const levels = report.levels || [];
+  const resistanceLevels = levels
+    .filter(l => l.price > currentPrice && (l.type === 'trim' || l.type === 'target'))
+    .sort((a, b) => a.price - b.price);
+  
+  // First resistance above current price
+  if (resistanceLevels.length > 0) {
+    return resistanceLevels[0].price;
   }
-  if (report.callWall > currentPrice) {
-    return report.callWall;
-  }
-  // Fallback: 2% above current
+  
+  // Fallback to gamma strike or call wall
+  if (report.gammaStrike > currentPrice) return report.gammaStrike;
+  if (report.callWall > currentPrice) return report.callWall;
+  
   return currentPrice * 1.02;
 }
 
