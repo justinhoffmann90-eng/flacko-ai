@@ -571,7 +571,7 @@ export default function OrbClient() {
 
                     {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
 
-                    {row.framework === "fixed-horizon" && row.backtest_n && (
+                    {row.backtest_n && (
                       <div className={isDesktop ? "mt-4" : "mt-3"}>
                         <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>FORWARD RETURNS · N={row.backtest_n}</p>
                         <div className={isDesktop ? "space-y-3" : "space-y-2"}>
