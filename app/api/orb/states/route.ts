@@ -118,12 +118,23 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    // Fetch last zone transition timestamp
+    const { data: lastTransition } = await supabase
+      .from("orb_signal_log")
+      .select("event_date, notes")
+      .eq("setup_id", "orb-score")
+      .eq("event_type", "zone_transition")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     return NextResponse.json({
       score: latestIndicator ? {
         value: latestIndicator.orb_score,
         zone: latestIndicator.orb_zone,
         prevZone: latestIndicator.orb_zone_prev,
         date: latestIndicator.date,
+        zoneChangedAt: lastTransition?.event_date || null,
       } : null,
       setups: merged,
     });

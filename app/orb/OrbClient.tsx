@@ -284,6 +284,7 @@ function bestTimeframe(row: OrbRow): { label: string; win: number; avg: number }
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [orbScore, setOrbScore] = useState<{ value: number; zone: string; prevZone: string | null; date: string } | null>(null);
+  const [scoreExpanded, setScoreExpanded] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[]; backtest: any[] }>>({});
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
@@ -447,42 +448,163 @@ export default function OrbClient() {
 
         {/* Orb Score Widget */}
         {orbScore && (() => {
-          const zoneConfig: Record<string, { emoji: string; label: string; hex: string; description: string }> = {
-            FULL_SEND:  { emoji: "🟢", label: "FULL SEND",  hex: "#22c55e", description: "Multiple strong buys, no avoids. Deploy leveraged." },
-            NEUTRAL:    { emoji: "⚪", label: "NEUTRAL",     hex: "#d4d4d8", description: "Normal conditions. Hold existing, don't add." },
-            CAUTION:    { emoji: "🟡", label: "CAUTION",     hex: "#eab308", description: "Avoid signals present. Take profits, reduce leverage." },
-            DEFENSIVE:  { emoji: "🔴", label: "DEFENSIVE",   hex: "#ef4444", description: "Multiple avoids. Cash. Wait." },
+          const zoneConfig: Record<string, { emoji: string; label: string; hex: string; action: string; statsLine: string; description: string; whatToWatch: string }> = {
+            FULL_SEND: {
+              emoji: "🟢", label: "FULL SEND", hex: "#22c55e",
+              action: "Deploy leveraged positions.",
+              statsLine: "+6.22% avg at 20d \u00b7 66% win \u00b7 15% of trading days",
+              description: "Multiple bullish signals are firing simultaneously and nothing is warning. Momentum, trend structure, and positioning are all aligned. These are the strongest conditions TSLA produces. The top 10% of FULL SEND outcomes exceed +30% at 20 days.",
+              whatToWatch: "When buy signals deactivate and the score drops to NEUTRAL, don't panic. FULL SEND \u2192 NEUTRAL transitions still average +5.65% over 20 days. The rally doesn't end the moment the score changes.",
+            },
+            NEUTRAL: {
+              emoji: "\u26aa", label: "NEUTRAL", hex: "#d4d4d8",
+              action: "Hold. Don't add, don't trim.",
+              statsLine: "+4.22% avg at 20d \u00b7 52% win \u00b7 51% of trading days",
+              description: "Normal TSLA. No strong signals in either direction. The trend may be intact but nothing is compelling enough to justify adding risk or reducing it. The long-term drift works in your favor here.",
+              whatToWatch: "NEUTRAL \u2192 FULL SEND transitions (+5.15% avg at 20d) are your signal to start deploying. NEUTRAL \u2192 CAUTION transitions (-0.51% avg at 20d) are your signal to start tightening.",
+            },
+            CAUTION: {
+              emoji: "🟡", label: "CAUTION", hex: "#eab308",
+              action: "Take profits on leveraged. Don't add.",
+              statsLine: "-1.24% avg at 20d \u00b7 41% win \u00b7 24% of trading days",
+              description: "Warning signals are active. The trend is showing stress -- the kind of deterioration that historically leads to below-average or negative outcomes. A -1.24% avg on stock translates to roughly -2.5% to -4% on 2x ETFs and worse on near-term options.",
+              whatToWatch: "CAUTION \u2192 DEFENSIVE transitions are the worst (-5.27% avg at 20d). If the score keeps dropping, get out. CAUTION \u2192 NEUTRAL means the warning passed.",
+            },
+            DEFENSIVE: {
+              emoji: "🔴", label: "DEFENSIVE", hex: "#ef4444",
+              action: "Cash. No leveraged exposure. Wait.",
+              statsLine: "-1.84% avg at 20d \u00b7 43% win \u00b7 10% of trading days",
+              description: "Multiple warning signals are firing. The trend is broken or breaking. These periods produce the corrections TSLA is famous for. The -6.73% avg at 60 days means this isn't a quick dip -- it's structural deterioration.",
+              whatToWatch: "Do NOT re-enter when the score ticks up to CAUTION (still -4.75% at 20d). Wait for DEFENSIVE \u2192 NEUTRAL (+3.94% avg at 20d). That's the real 'worst is over' signal.",
+            },
           };
           const zc = zoneConfig[orbScore.zone] || zoneConfig.NEUTRAL;
-          return (
-            <div className="mb-4" style={{
-              background: `linear-gradient(135deg, ${zc.hex}08, ${zc.hex}15)`,
-              border: `1px solid ${zc.hex}30`,
-              borderRadius: 14,
-              padding: isDesktop ? "20px 24px" : "16px 18px",
-              animation: "fadeIn .4s ease",
-            }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div style={{ fontSize: desktopFont(10), letterSpacing: "0.12em", color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>ORB SCORE</div>
-                  <div className="flex items-center gap-3">
-                    <span style={{ fontSize: desktopFont(32), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1 }}>
-                      {zc.emoji} {zc.label}
-                    </span>
+          const activeSetups = rows.filter(r => r.state?.status === "active");
+          const watchingSetups = rows.filter(r => r.state?.status === "watching");
+          return (<>
+            {/* Main Score Widget */}
+            <button
+              onClick={() => setScoreExpanded(!scoreExpanded)}
+              className="w-full text-left mb-2"
+              style={{
+                background: `linear-gradient(135deg, ${zc.hex}06, ${zc.hex}12)`,
+                border: `1px solid ${zc.hex}25`,
+                borderRadius: 14,
+                padding: isDesktop ? "20px 24px" : "16px 18px",
+                animation: "fadeIn .4s ease",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: desktopFont(10), letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>ORB SCORE</div>
+              <div className="flex items-center justify-between gap-4">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: desktopFont(26), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1, marginBottom: 6 }}>
+                    {zc.emoji} {zc.label}
                   </div>
-                  <p style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.45)", marginTop: 6, fontFamily: "'Inter', system-ui", lineHeight: 1.4 }}>{zc.description}</p>
+                  <div style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.6)", fontFamily: "'Inter', system-ui", lineHeight: 1.4 }}>{zc.action}</div>
+                  <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginTop: 6 }}>{zc.statsLine}</div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: desktopFont(28), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1 }}>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: desktopFont(24), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1 }}>
                     {orbScore.value >= 0 ? "+" : ""}{orbScore.value.toFixed(2)}
                   </div>
-                  <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
+                  <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
                     {orbScore.date}
                   </div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 6, transform: scoreExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s ease" }}>&#x25BE; details</div>
                 </div>
               </div>
+            </button>
+
+            {/* Zone Detail Drawer */}
+            {scoreExpanded && (
+              <div style={{
+                background: `rgba(255,255,255,0.02)`,
+                border: `1px solid ${zc.hex}15`,
+                borderRadius: 12,
+                padding: isDesktop ? "18px 22px" : "14px 16px",
+                marginBottom: 8,
+                animation: "slideDown .25s ease",
+              }}>
+                <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>WHAT IT MEANS</p>
+                <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.55)", lineHeight: 1.6, marginBottom: 14 }}>{zc.description}</p>
+                
+                <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>WHAT TO WATCH FOR</p>
+                <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.55)", lineHeight: 1.6, marginBottom: 14 }}>{zc.whatToWatch}</p>
+
+                {activeSetups.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>ACTIVE SIGNALS ({activeSetups.length})</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeSetups.map(s => (
+                        <span key={s.id} style={{ fontSize: desktopFont(10), padding: "3px 8px", borderRadius: 6, background: s.type === "buy" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${s.type === "buy" ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`, color: s.type === "buy" ? "#22c55e" : "#ef4444", fontFamily: "'JetBrains Mono', monospace" }}>
+                          {s.public_name || s.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {watchingSetups.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>WATCHING ({watchingSetups.length})</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {watchingSetups.map(s => (
+                        <span key={s.id} style={{ fontSize: desktopFont(10), padding: "3px 8px", borderRadius: 6, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.15)", color: "rgba(234,179,8,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
+                          {s.public_name || s.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <a href="/learn/orb-score" style={{ display: "inline-block", marginTop: 14, fontSize: desktopFont(11), color: zc.hex, fontFamily: "'JetBrains Mono', monospace", textDecoration: "none", opacity: 0.7 }}>
+                  Full analysis &rarr;
+                </a>
+              </div>
+            )}
+
+            {/* Zone Summary Table — always visible */}
+            <div className="mb-4" style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.05)",
+              borderRadius: 10,
+              padding: isDesktop ? "12px 16px" : "10px 12px",
+              animation: "fadeIn .5s ease",
+            }}>
+              {([
+                { zone: "FULL_SEND", emoji: "🟢", label: "FULL SEND", ret: "+6.22%", win: "66%", days: "15%", hex: "#22c55e" },
+                { zone: "NEUTRAL", emoji: "\u26aa", label: "NEUTRAL", ret: "+4.22%", win: "52%", days: "51%", hex: "#d4d4d8" },
+                { zone: "CAUTION", emoji: "🟡", label: "CAUTION", ret: "-1.24%", win: "41%", days: "24%", hex: "#eab308" },
+                { zone: "DEFENSIVE", emoji: "🔴", label: "DEFENSIVE", ret: "-1.84%", win: "43%", days: "10%", hex: "#ef4444" },
+              ] as const).map((z, i) => {
+                const isCurrentZone = orbScore.zone === z.zone;
+                return (
+                  <div key={z.zone} className="flex items-center" style={{
+                    padding: isDesktop ? "8px 6px" : "6px 4px",
+                    borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                    background: isCurrentZone ? `${z.hex}08` : "transparent",
+                    borderRadius: isCurrentZone ? 6 : 0,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: desktopFont(11), fontWeight: isCurrentZone ? 700 : 500, color: isCurrentZone ? z.hex : "rgba(255,255,255,0.45)", fontFamily: "'JetBrains Mono', monospace" }}>
+                        {z.emoji} {z.label} {isCurrentZone && "\u25C0"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: isDesktop ? 20 : 12, flexShrink: 0 }}>
+                      <span style={{ fontSize: desktopFont(10), color: z.ret.startsWith("+") ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, minWidth: 50, textAlign: "right" }}>{z.ret}</span>
+                      <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", minWidth: 28, textAlign: "right" }}>{z.win}</span>
+                      <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace", minWidth: 28, textAlign: "right" }}>{z.days}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-end gap-2" style={{ padding: "4px 4px 0", opacity: 0.3 }}>
+                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.4)" }}>20d avg</span>
+                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.4)", minWidth: 28, textAlign: "right" }}>win%</span>
+                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.4)", minWidth: 28, textAlign: "right" }}>freq</span>
+              </div>
             </div>
-          );
+          </>);
         })()}
 
         <div className="mb-4 flex flex-wrap" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, gap: 6 }}>
