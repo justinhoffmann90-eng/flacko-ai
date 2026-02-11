@@ -523,15 +523,28 @@ export default function OrbClient() {
 
                     <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
                       <div className="text-center">
-                        <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
-                        <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_win_rate_20d ?? 0) >= 65 ? "#22c55e" : (row.backtest_win_rate_20d ?? 0) >= 50 ? "#eab308" : "#ef4444" }}>{Math.round(row.backtest_win_rate_20d ?? 0)}%</div>
-                        <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
+                        {row.framework === "gauge-to-target" ? (<>
+                          <div className="hidden sm:block"><HitRateRing pctPos={row.stance === "defensive" ? 75 : 68} size={52} /></div>
+                          <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: "#22c55e" }}>{row.stance === "defensive" ? "75" : "68"}%</div>
+                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>GAUGE</div>
+                        </>) : (<>
+                          <div className="hidden sm:block"><HitRateRing pctPos={row.backtest_win_rate_20d ?? 0} size={52} /></div>
+                          <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_win_rate_20d ?? 0) >= 65 ? "#22c55e" : (row.backtest_win_rate_20d ?? 0) >= 50 ? "#eab308" : "#ef4444" }}>{Math.round(row.backtest_win_rate_20d ?? 0)}%</div>
+                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
+                        </>)}
                       </div>
                       <div className="text-right">
-                        <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
-                          {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
-                        </div>
-                        <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
+                        {row.framework === "gauge-to-target" ? (<>
+                          <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.gauge_median_return || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                            {(row.gauge_median_return || 0) >= 0 ? "+" : ""}{(row.gauge_median_return || 0).toFixed(1)}%
+                          </div>
+                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>MEDIAN</div>
+                        </>) : (<>
+                          <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                            {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
+                          </div>
+                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
+                        </>)}
                       </div>
                       <div style={{ color: "rgba(255,255,255,0.35)", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .25s ease" }}>▾</div>
                     </div>
