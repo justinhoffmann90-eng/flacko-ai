@@ -99,10 +99,10 @@ function HitRateRing({ pctPos, size = 52 }: { pctPos: number; size?: number }) {
   );
 }
 
-function ReturnBar({ value, label, maxAbs = 15, isDesktop = false, showLabel = true, defensive = false }: { value: number | null; label: string; maxAbs?: number; isDesktop?: boolean; showLabel?: boolean; defensive?: boolean }) {
+function ReturnBar({ value, label, maxAbs = 15, isDesktop = false, showLabel = true }: { value: number | null; label: string; maxAbs?: number; isDesktop?: boolean; showLabel?: boolean }) {
   const v = value ?? 0;
   const widthPct = Math.min(100, (Math.abs(v) / maxAbs) * 100);
-  const positive = defensive ? v <= 0 : v >= 0;
+  const positive = v >= 0;
   const desktopFont = (mobilePx: number) => (isDesktop ? Math.round(mobilePx * 1.2) : mobilePx);
 
   return (
@@ -466,7 +466,7 @@ export default function OrbClient() {
                         <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>20D HIT</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: row.stance === "defensive" ? ((row.backtest_avg_return_20d || 0) <= 0 ? "#22c55e" : "#ef4444") : ((row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444") }}>
+                        <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.backtest_avg_return_20d || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
                           {(row.backtest_avg_return_20d || 0) >= 0 ? "+" : ""}{(row.backtest_avg_return_20d || 0).toFixed(1)}%
                         </div>
                         <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG 20D</div>
@@ -511,7 +511,7 @@ export default function OrbClient() {
                                 {h.k}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <ReturnBar label={h.k} value={h.avg} isDesktop={isDesktop} showLabel={false} defensive={row.stance === "defensive"} />
+                                <ReturnBar label={h.k} value={h.avg} isDesktop={isDesktop} showLabel={false} />
                               </div>
                               <div style={{ flexShrink: 0, minWidth: isDesktop ? 42 : 34, textAlign: "right" }}>
                                 <div style={{ fontSize: isDesktop ? 11 : 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: (h.win ?? 0) >= 65 ? "#22c55e" : (h.win ?? 0) >= 50 ? "#eab308" : "#ef4444", lineHeight: 1 }}>
@@ -589,7 +589,7 @@ export default function OrbClient() {
                                             fontSize: isDesktop ? desktopFont(11) : 9,
                                             fontWeight: 600,
                                             fontFamily: "'JetBrains Mono', monospace",
-                                            color: isLive ? "rgba(255,255,255,0.35)" : Number.isFinite(c) ? (row.stance === "defensive" ? (c <= 0 ? "#22c55e" : "#ef4444") : (c >= 0 ? "#22c55e" : "#ef4444")) : "rgba(255,255,255,0.35)",
+                                            color: isLive ? "rgba(255,255,255,0.35)" : Number.isFinite(c) ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.35)",
                                           }}
                                         >
                                           {isLive ? "⟳" : formatPct(col.val)}
@@ -636,7 +636,7 @@ export default function OrbClient() {
                                           fontSize: isDesktop ? desktopFont(11) : 9,
                                           fontWeight: 600,
                                           fontFamily: "'JetBrains Mono', monospace",
-                                          color: col.val != null ? (row.stance === "defensive" ? (c <= 0 ? "#22c55e" : "#ef4444") : (c >= 0 ? "#22c55e" : "#ef4444")) : "rgba(255,255,255,0.2)",
+                                          color: col.val != null ? (c >= 0 ? "#22c55e" : "#ef4444") : "rgba(255,255,255,0.2)",
                                         }}
                                       >
                                         {col.val != null ? `${c >= 0 ? "+" : ""}${c.toFixed(1)}%` : "—"}
