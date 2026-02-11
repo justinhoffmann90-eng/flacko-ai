@@ -5,6 +5,7 @@ import { computeIndicators } from "@/lib/orb/compute-indicators";
 import { evaluateAllSetups, PreviousState, suggestMode } from "@/lib/orb/evaluate-setups";
 import { sendAlert } from "@/lib/orb/alerts";
 import { computeOrbScore, assignZone, transitionMessage } from "@/lib/orb/score";
+import { sendDownsideZoneAlert } from "@/lib/orb/zone-alerts";
 
 export const maxDuration = 30;
 
@@ -320,6 +321,12 @@ async function runCompute() {
         new_status: orbZone,
         notes: msg,
       });
+
+      // Send downside zone alert email to subscribers
+      const alertResult = await sendDownsideZoneAlert(supabase, prevZone, orbZone, indicators.date);
+      if (alertResult.sent) {
+        console.log(`[ORB_ZONE_ALERT] ${alertResult.reason}`);
+      }
     }
 
     const modeSuggestion = suggestMode(
