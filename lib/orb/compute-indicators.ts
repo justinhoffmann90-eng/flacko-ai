@@ -59,7 +59,7 @@ function smi(close: number[], high: number[], low: number[], kLength = 10, dLeng
   return { smi: smiValues, signal: smiSignal };
 }
 
-function bxTrender(close: number[], l1 = 5, l2 = 20, l3 = 15): number[] {
+function bxTrender(close: number[], l1 = 5, l2 = 20, l3 = 5): number[] {
   const emaFast = ema(close, l1);
   const emaSlow = ema(close, l2);
   const diff = emaFast.map((f, i) => f - emaSlow[i]);
@@ -111,7 +111,7 @@ export async function computeIndicators(ticker: string) {
   const highs = quotes.map((q: any) => q.high as number);
   const lows = quotes.map((q: any) => q.low as number);
 
-  const bx = bxTrender(closes, 5, 20, 15);
+  const bx = bxTrender(closes, 5, 20, 5);
   const rsiValues = rsi(closes, 14);
   const smiResult = smi(closes, highs, lows, 10, 3, 3);
   const ema9 = ema(closes, 9);
@@ -140,7 +140,7 @@ export async function computeIndicators(ticker: string) {
   }
 
   const wCloses = weeklyBars.map((w) => w.close);
-  const wBx = bxTrender(wCloses, 5, 20, 15);
+  const wBx = bxTrender(wCloses, 5, 20, 5);
   const wEma9 = ema(wCloses, 9);
   const wEma13 = ema(wCloses, 13);
   const wEma21 = ema(wCloses, 21);
