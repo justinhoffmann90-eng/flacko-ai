@@ -565,7 +565,7 @@ export default function OrbClient() {
                   <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
                     {orbScore.date}
                   </div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginTop: 6, transform: scoreExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s ease" }}>&#x25BE; details</div>
+                  <div style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.45)", marginTop: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.05em", transform: scoreExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s ease" }}>&#x25BE; details</div>
                 </div>
               </div>
             </button>
