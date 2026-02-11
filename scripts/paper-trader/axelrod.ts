@@ -2,7 +2,7 @@
  * Axelrod — Commentary Engine for Paper Trading Bot
  * 
  * Bobby Axelrod provides substantive market commentary on every Taylor post.
- * Uses LLM to generate contextual, informative reactions with Axelrod's voice.
+ * 100% template-driven. NO external API calls. All analysis from trade data.
  * 
  * Taylor posts → 3-5s delay → Axelrod reacts.
  * Taylor NEVER responds to Axelrod. One-way dynamic.
@@ -11,108 +11,11 @@
 import { WebhookClient } from 'discord.js';
 import type { TSLAQuote, HIROData, DailyReport, OrbData, MultiPortfolio, Trade } from './types';
 
-// Same webhook, different persona
-// Axe has his own webhook — avatar/name controlled from Discord settings
+// Axe's own webhook — avatar/name controlled from Discord settings
 const AXE_WEBHOOK_URL = process.env.AXE_WEBHOOK_URL
   || 'https://discord.com/api/webhooks/1471207800238506157/AVmjV5NUoUg9URenzZxRSawYs-xUuTh5qlx3kIWRt2jRnAgNWO2m72HdG8kJH1WIIlrw';
 
 let webhookClient: WebhookClient | null = null;
-
-// Name and avatar controlled from Discord webhook settings — no code changes needed
-
-const AXELROD_SYSTEM_PROMPT = `You are Bobby Axelrod from Billions — but you're commenting on a paper trading bot's moves in a Discord channel.
-
-Your role: You are the VALIDATION LAYER. Your job is to check whether Taylor's decisions and commentary actually make sense given the data. You cross-reference the trade against the levels, the Orb zone, the flow data, the mode — and you call out anything that doesn't add up. When the logic is sound, you explain WHY it's sound so subscribers learn something. When something is off, you flag it clearly.
-
-Your personality:
-- Confident, sharp, sometimes cutting — but always backed by real insight
-- You respect good trades and call out risky ones honestly
-- You size up risk/reward like a pro. You think in probabilities, not certainties.
-- You reference real market dynamics: gamma positioning, dealer flows, support/resistance, catalysts
-- You have opinions. "I'd have sized bigger." "That stop is too tight." "This is the right read."
-- You're not a cheerleader. If the trade contradicts the data, say so. If it's brilliant, give credit.
-- You occasionally reference the bigger picture — macro, sentiment, what other players are doing
-- You're entertaining but INFORMATIVE. Every comment teaches something.
-
-Validation checks you should run:
-- Does the trade direction match the Orb zone? (e.g., buying in CAUTION = flag it)
-- Does the entry price align with a key level from the report? Or is it in no-man's-land?
-- Does the position size match the mode guidance? (GREEN=25%, YELLOW=15%, ORANGE=10%, RED=5%)
-- Is HIRO flow confirming or diverging from the trade direction?
-- Is the instrument choice correct for the zone? (TSLL only in FULL_SEND)
-- Does the stop/target make sense relative to key levels?
-- Are there catalysts (earnings, CPI, FOMC) that add risk Taylor didn't mention?
-- If Taylor is holding through a zone downgrade, is that justified?
-
-When validating:
-- If everything checks out: explain the confluence — "Three things line up here: ..."
-- If something's off: flag it specifically — "The Orb says NEUTRAL but Taylor's sizing like it's FULL SEND. That's a 2x overweight."
-- If there's hidden risk: surface it — "CPI prints in 14 hours and this position has no hedge."
-
-Voice rules:
-- Write in first person. You're Bobby Axelrod.
-- No emojis (maybe one occasionally for emphasis)
-- No headers or formatting — just prose, like you're talking across the desk
-- Length depends on what's happening. Quick validation for routine stuff, detailed breakdown for trades.
-- Don't repeat what Taylor just said. Validate it, challenge it, or confirm it.
-- Never address Taylor directly or expect a response. You're talking to the room.
-
-You will receive:
-1. Taylor's post (what was just posted to Discord)
-2. Full market context (price, levels, Orb zone, HIRO, report data, portfolio)
-
-SYSTEM KNOWLEDGE (source of truth — use this to validate Taylor):
-
-Modes & Daily Caps:
-- GREEN: up to 25% daily cap. Favorable conditions.
-- YELLOW: 15% or less. Proceed with caution.
-- ORANGE: 10% or less. Elevated caution.
-- RED: 5% or less. Defensive, nibbles only.
-- Trim cap: 25% of remaining per level hit.
-
-Slow Zone:
-- A price level (from the daily report) where the cap reduces to 2.5%.
-- If price is in the Slow Zone, even a GREEN mode becomes constrained. Flag any trades that ignore Slow Zone.
-- It's called "Slow Zone" (NOT "Pause Zone" — rebranded Jan 30, 2026).
-
-Master Eject (MULTI-STEP):
-- The master eject is NOT a single "exit everything" level.
-- It can have multiple steps, e.g.: Step 1 at $423.75 = "cut leverage, hold shares" / Step 2 at $380 = "trim to 50%"
-- The ACTION for each eject level comes from the daily report. Never assume "exit all."
-- Validate that Taylor follows the correct step for the current price.
-
-Alert Levels Structure:
-- T1-T4: Trim targets (resistance levels where you take profit)
-- S1-S2: Support/buy zones (where you add position)
-- Each level has a specific action: "Nibble 10% of cap", "Trim 25% of remaining", etc.
-- Validate entries happen near S levels and exits near T levels. Buying at T levels or selling at S levels = flag it.
-
-Orb Zones (from backtested data):
-- FULL_SEND: Multiple buy signals active, no avoids. Avg +6.2% at 20 days (66% win rate). Use TSLL (2x leverage).
-- NEUTRAL: Mixed signals. Hold existing, no urgency. Use TSLA shares only.
-- CAUTION: Avoid signals outweigh buys. Avg -1.2% at 20 days (41% win rate). No new buys. Trim TSLL first.
-- DEFENSIVE: Multiple avoids active. Avg -1.8% at 20 days. Exit ALL TSLL immediately. Protect capital.
-
-TSLL Rules:
-- TSLL (2x leveraged TSLA ETF) is ONLY used in FULL_SEND zone.
-- TSLL position size = 50% of mode allocation (because 2x = same notional exposure).
-- Zone drops from FULL_SEND to NEUTRAL: hold existing TSLL, no new TSLL.
-- Zone drops to CAUTION: sell TSLL before trimming TSLA.
-- Zone drops to DEFENSIVE: liquidate ALL TSLL immediately regardless of P&L.
-
-HIRO (Hedging Impact on Real-time Options):
-- Positive HIRO = dealers buying = bullish flow support
-- Negative HIRO = dealers selling/hedging = bearish pressure
-- Context matters: HIRO in upper quartile of 30-day range = strong conviction. Lower quartile = caution.
-- HIRO divergence from price (price up but HIRO negative) is a warning signal.
-
-Gamma Regime:
-- Above Key Gamma Strike = positive gamma. Dealers buy dips, sell rips. Stabilizing.
-- Below Key Gamma Strike = negative gamma. Dealers amplify moves. Volatile.
-
-Key Gamma Strike is in the report. If Taylor enters a position below the gamma strike, flag the increased volatility risk.
-
-Cross-reference everything. Give your verdict. No preamble — just start talking.`;
 
 interface AxelrodContext {
   taylorPost: string;
@@ -138,180 +41,206 @@ export function initAxelrod(): boolean {
 }
 
 /**
- * Generate Axelrod's commentary via LLM
+ * Generate Axelrod's commentary — pure data analysis, no LLM
  */
-async function generateCommentary(context: AxelrodContext): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY;
+function generateCommentary(ctx: AxelrodContext): string {
+  const lines: string[] = [];
   
-  // Build context message
-  let contextMsg = `Taylor just posted this to Discord:\n\n---\n${context.taylorPost}\n---\n\n`;
+  // Determine what kind of post this is
+  const isEntry = ctx.trade?.action === 'buy';
+  const isExit = ctx.trade?.action === 'sell';
+  const isMarketOpen = ctx.taylorPost.includes('market open');
   
-  if (context.quote) {
-    contextMsg += `Current market data:\n`;
-    contextMsg += `TSLA: $${context.quote.price.toFixed(2)} (${context.quote.changePercent >= 0 ? '+' : ''}${context.quote.changePercent.toFixed(2)}% today)\n`;
-    contextMsg += `Volume: ${(context.quote.volume / 1000000).toFixed(1)}M\n`;
-    contextMsg += `Day range: $${context.quote.low.toFixed(2)} - $${context.quote.high.toFixed(2)}\n`;
+  if (isEntry && ctx.trade && ctx.report && ctx.orb) {
+    lines.push(...generateEntryValidation(ctx));
+  } else if (isExit && ctx.trade) {
+    lines.push(...generateExitValidation(ctx));
+  } else if (isMarketOpen) {
+    lines.push(...generateMarketOpenReaction(ctx));
+  } else {
+    return ''; // Don't comment on routine updates
   }
   
-  if (context.report) {
-    contextMsg += `\nDaily Report context:\n`;
-    contextMsg += `Mode: ${context.report.mode} | Tier: ${context.report.tier}\n`;
-    contextMsg += `Key SpotGamma levels: Gamma Strike $${context.report.gammaStrike}, Put Wall $${context.report.putWall}, Hedge Wall $${context.report.hedgeWall}, Call Wall $${context.report.callWall}\n`;
-    contextMsg += `Master Eject: $${context.report.masterEject}\n`;
-    if (context.report.levels && context.report.levels.length > 0) {
-      contextMsg += `Full alert levels from report:\n`;
-      for (const level of context.report.levels) {
-        contextMsg += `  ${level.name}: $${level.price} (${level.type})\n`;
-      }
-    }
-    if (context.report.commentary) {
-      contextMsg += `Report commentary: ${context.report.commentary}\n`;
-    }
-  }
-  
-  if (context.hiro) {
-    const readingM = context.hiro.reading / 1000000;
-    contextMsg += `\nHIRO: ${readingM >= 0 ? '+' : ''}${readingM.toFixed(0)}M (${context.hiro.percentile30Day.toFixed(0)}th percentile, ${context.hiro.character})\n`;
-  }
-  
-  if (context.orb) {
-    contextMsg += `\nOrb Score: ${context.orb.score.toFixed(3)} (${context.orb.zone})\n`;
-    const active = context.orb.activeSetups.filter(s => s.status === 'active');
-    const watching = context.orb.activeSetups.filter(s => s.status === 'watching');
-    if (active.length > 0) contextMsg += `Active setups: ${active.map(s => s.setup_id).join(', ')}\n`;
-    if (watching.length > 0) contextMsg += `Watching: ${watching.map(s => s.setup_id).join(', ')}\n`;
-  }
-  
-  if (context.portfolio) {
-    contextMsg += `\nPortfolio: $${context.portfolio.totalValue.toFixed(0)} total`;
-    if (context.portfolio.tsla) {
-      contextMsg += ` | TSLA: ${context.portfolio.tsla.shares} shares @ $${context.portfolio.tsla.avgCost.toFixed(2)} (${context.portfolio.tsla.pnlPercent >= 0 ? '+' : ''}${context.portfolio.tsla.pnlPercent.toFixed(1)}%)`;
-    }
-    if (context.portfolio.tsll) {
-      contextMsg += ` | TSLL: ${context.portfolio.tsll.shares} shares @ $${context.portfolio.tsll.avgCost.toFixed(2)} (${context.portfolio.tsll.pnlPercent >= 0 ? '+' : ''}${context.portfolio.tsll.pnlPercent.toFixed(1)}%)`;
-    }
-    contextMsg += `\n`;
-  }
-
-  if (context.trade) {
-    contextMsg += `\nTrade details: ${context.trade.action.toUpperCase()} ${context.trade.shares} ${context.trade.instrument} @ $${context.trade.price.toFixed(2)}`;
-    if (context.trade.realizedPnl) contextMsg += ` | Realized P&L: $${context.trade.realizedPnl.toFixed(2)}`;
-    if (context.trade.orbActiveSetups && context.trade.orbActiveSetups.length > 0) {
-      contextMsg += `\nOrb setups at entry: ${context.trade.orbActiveSetups.map(s => s.setup_id).join(', ')}`;
-    }
-    contextMsg += `\n`;
-  }
-
-  // Try XAI (Grok) first — always available in env
-  if (process.env.XAI_API_KEY) {
-    return await generateViaXAI(contextMsg);
-  } else if (process.env.ANTHROPIC_API_KEY) {
-    return await generateViaAnthropic(contextMsg);
-  } else if (process.env.OPENAI_API_KEY) {
-    return await generateViaOpenAI(contextMsg);
-  }
-  
-  console.warn('No LLM API key for Axelrod commentary');
-  return '';
+  return lines.join(' ');
 }
 
 /**
- * Generate via XAI Grok
+ * Validate an entry trade — the core of Axe's job
  */
-async function generateViaXAI(contextMsg: string): Promise<string> {
-  try {
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'grok-3-mini-fast',
-        max_tokens: 800,
-        messages: [
-          { role: 'system', content: AXELROD_SYSTEM_PROMPT },
-          { role: 'user', content: contextMsg },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`XAI API error: ${response.status} — ${errText}`);
-    }
-
-    const data = await response.json() as any;
-    return data.choices?.[0]?.message?.content || '';
-  } catch (error) {
-    console.error('XAI Axelrod generation failed:', error);
-    return '';
+function generateEntryValidation(ctx: AxelrodContext): string[] {
+  const lines: string[] = [];
+  const { trade, report, orb, hiro, quote } = ctx;
+  if (!trade || !report || !orb) return [];
+  
+  const price = trade.price;
+  const mode = report.mode;
+  const zone = orb.zone;
+  
+  // --- MODE vs SIZE CHECK ---
+  const modeCaps: Record<string, number> = { GREEN: 25, YELLOW: 15, ORANGE: 10, RED: 5 };
+  const maxCap = modeCaps[mode] || 15;
+  const actualPct = (trade.totalValue / 100000) * 100;
+  
+  if (actualPct > maxCap * 1.2) {
+    lines.push(`Taylor's sizing at ${actualPct.toFixed(0)}% — that's above the ${maxCap}% cap for ${mode} mode. Aggressive.`);
+  } else if (actualPct < maxCap * 0.5) {
+    lines.push(`Only ${actualPct.toFixed(0)}% deployed in ${mode} mode. Conservative. She's leaving room, which tells you she's not fully convicted.`);
   }
+  
+  // --- ORB ZONE vs INSTRUMENT CHECK ---
+  if (trade.instrument === 'TSLL' && zone !== 'FULL_SEND') {
+    lines.push(`Hold on — she's buying TSLL in ${zone} zone? Leveraged positions are only cleared in FULL_SEND. That's a rule violation.`);
+  } else if (trade.instrument === 'TSLA' && zone === 'FULL_SEND') {
+    lines.push(`FULL_SEND zone and she's going shares instead of TSLL. Playing it safe. I'd take the leverage here — that's what the signal is for.`);
+  }
+  
+  if (zone === 'CAUTION' || zone === 'DEFENSIVE') {
+    lines.push(`Buying in ${zone} conditions. The Orb says sit on your hands. If she's right, it's a great entry. If she's wrong, the system literally warned her.`);
+  }
+  
+  // --- MASTER EJECT PROXIMITY ---
+  const ejectDist = ((price - report.masterEject) / price) * 100;
+  if (ejectDist < 0.5 && ejectDist >= 0) {
+    lines.push(`She's ${ejectDist.toFixed(1)}% from the eject level. That's threading a needle. One bad candle and this is a forced exit. The risk/reward better be worth it.`);
+  } else if (ejectDist < 0) {
+    lines.push(`Price is BELOW master eject. Why is she buying? The system says no longs here. Full stop.`);
+  }
+  
+  // --- GAMMA REGIME ---
+  if (report.gammaStrike > 0) {
+    if (price < report.gammaStrike) {
+      lines.push(`We're below the gamma strike ($${report.gammaStrike.toFixed(0)}). Negative gamma territory — dealers amplify moves both ways. Expect volatility. That stop needs to be respected.`);
+    } else {
+      lines.push(`Above gamma strike. Positive gamma regime — dealers are stabilizing. That's a tailwind for holding.`);
+    }
+  }
+  
+  // --- HIRO FLOW ---
+  if (hiro) {
+    const pctl = hiro.percentile30Day;
+    const readingM = hiro.reading / 1000000;
+    
+    if (pctl < 25 && trade.action === 'buy') {
+      lines.push(`HIRO is in the bottom quartile (${pctl.toFixed(0)}th pctl, ${readingM.toFixed(0)}M). Institutional flow is selling. Buying against the flow — she better have strong conviction on the levels.`);
+    } else if (pctl > 75) {
+      lines.push(`Flow is backing this up. HIRO at ${pctl.toFixed(0)}th percentile — institutions are buying. That's the kind of confirmation you want on an entry.`);
+    } else if (pctl >= 40 && pctl <= 60) {
+      lines.push(`Flow is flat — HIRO at ${pctl.toFixed(0)}th percentile. No strong edge from the options market. This is a levels play, not a flow play.`);
+    }
+    
+    // Divergence check
+    if (quote && quote.changePercent > 0.5 && readingM < -100) {
+      lines.push(`Interesting divergence here — price is green but HIRO is negative. Smart money hedging into the rally. Keep that in mind.`);
+    } else if (quote && quote.changePercent < -0.5 && readingM > 100) {
+      lines.push(`Price is red but HIRO is positive — dealers buying the dip. That's usually a sign the selloff is running out of steam.`);
+    }
+  }
+  
+  // --- ACTIVE SETUPS ---
+  const activeSetups = orb.activeSetups.filter(s => s.status === 'active');
+  if (activeSetups.length >= 3) {
+    lines.push(`${activeSetups.length} Orb setups active simultaneously. That's signal convergence. When the system is this aligned, the forward returns are historically strong.`);
+  } else if (activeSetups.length === 0) {
+    lines.push(`Zero active Orb setups. She's buying on levels alone, no signal backing. That's discretionary, not systematic.`);
+  }
+  
+  // --- KEY LEVEL PROXIMITY ---
+  const levels = report.levels || [];
+  const nearestSupport = levels.filter(l => l.price < price).sort((a, b) => b.price - a.price)[0];
+  const nearestResist = levels.filter(l => l.price > price).sort((a, b) => a.price - b.price)[0];
+  
+  if (nearestSupport && (price - nearestSupport.price) / price < 0.005) {
+    lines.push(`Entry right at ${nearestSupport.name} ($${nearestSupport.price.toFixed(0)}). That's discipline — buying the level, not chasing.`);
+  } else if (nearestResist && (nearestResist.price - price) / price < 0.005) {
+    lines.push(`She's buying into resistance at ${nearestResist.name} ($${nearestResist.price.toFixed(0)}). Needs a clean break to work. I'd wait for confirmation.`);
+  }
+  
+  // --- VERDICT ---
+  const flags = lines.filter(l => l.includes('?') || l.includes('violation') || l.includes('BELOW') || l.includes('against'));
+  if (flags.length === 0 && lines.length > 0) {
+    lines.push(`The logic checks out. Levels, flow, and signal are aligned. Clean entry.`);
+  } else if (flags.length >= 2) {
+    lines.push(`Multiple flags here. She's pushing against the system on this one. Let's see if she's right.`);
+  }
+  
+  return lines;
 }
 
 /**
- * Generate via Anthropic Claude (API key)
+ * Validate an exit trade
  */
-async function generateViaAnthropic(contextMsg: string): Promise<string> {
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY!,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 800,
-        system: AXELROD_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: contextMsg }],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`);
+function generateExitValidation(ctx: AxelrodContext): string[] {
+  const lines: string[] = [];
+  const { trade } = ctx;
+  if (!trade) return [];
+  
+  const pnl = trade.realizedPnl || 0;
+  const pnlPct = trade.totalValue > 0 ? (pnl / trade.totalValue) * 100 : 0;
+  
+  if (pnl > 0) {
+    if (pnlPct > 3) {
+      lines.push(`${pnlPct.toFixed(1)}% on the trade. That's a solid hit. Taking profit at the right level separates the pros from the bagholders.`);
+    } else {
+      lines.push(`Small win — ${pnlPct.toFixed(1)}%. Sometimes the best trade is the one you don't overstay.`);
     }
-
-    const data = await response.json();
-    return data.content?.[0]?.text || '';
-  } catch (error) {
-    console.error('Anthropic Axelrod generation failed:', error);
-    return '';
+  } else {
+    if (pnlPct > -2) {
+      lines.push(`Small loss, ${pnlPct.toFixed(1)}%. That's what stops are for. The system works because the losses stay small.`);
+    } else {
+      lines.push(`${pnlPct.toFixed(1)}% loss. Painful but controlled. The worst thing you can do is turn a small loss into a big one. She cut it. That's the right call.`);
+    }
   }
+  
+  // Check if exit was forced by system
+  if (ctx.orb && (ctx.orb.zone === 'DEFENSIVE' || ctx.orb.zone === 'CAUTION')) {
+    lines.push(`Orb went ${ctx.orb.zone} — this wasn't discretionary, this was the system talking. You follow the system or you don't. She followed it.`);
+  }
+  
+  return lines;
 }
 
 /**
- * Generate via OpenAI
+ * React to market open
  */
-async function generateViaOpenAI(contextMsg: string): Promise<string> {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 800,
-        messages: [
-          { role: 'system', content: AXELROD_SYSTEM_PROMPT },
-          { role: 'user', content: contextMsg },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || '';
-  } catch (error) {
-    console.error('OpenAI Axelrod generation failed:', error);
-    return '';
+function generateMarketOpenReaction(ctx: AxelrodContext): string[] {
+  const lines: string[] = [];
+  const { report, orb, quote, hiro } = ctx;
+  
+  if (!report || !orb || !quote) return [];
+  
+  const mode = report.mode;
+  const zone = orb.zone;
+  const ejectDist = ((quote.price - report.masterEject) / quote.price) * 100;
+  
+  // Set the scene
+  if (mode === 'RED' || mode === 'ORANGE') {
+    lines.push(`${mode} mode. The system is telling you to be careful. Most traders lose money trying to be heroes in these conditions. Small bets, tight stops.`);
+  } else if (mode === 'GREEN' && zone === 'FULL_SEND') {
+    lines.push(`Green mode, FULL_SEND zone. Everything aligned. This is the environment where you push.`);
+  } else {
+    lines.push(`${mode} mode, ${zone} zone. Mixed signals. The money today is in patience — wait for the setup, don't force it.`);
   }
+  
+  if (ejectDist < 1) {
+    lines.push(`Eject level at $${report.masterEject.toFixed(2)} — that's ${ejectDist.toFixed(1)}% away. One wrong move and the emergency brake triggers. Not a day for heroics.`);
+  }
+  
+  if (hiro) {
+    const pctl = hiro.percentile30Day;
+    if (pctl > 70) {
+      lines.push(`Flow is strong out of the gate — institutions are buying. That matters.`);
+    } else if (pctl < 30) {
+      lines.push(`Flow is weak. Dealers selling. Watch for traps on any early bounce.`);
+    }
+  }
+  
+  // Active setups
+  const active = orb.activeSetups.filter(s => s.status === 'active');
+  if (active.length > 0) {
+    lines.push(`Active setups: ${active.map(s => s.setup_id.replace(/-/g, ' ')).join(', ')}. Let them work.`);
+  }
+  
+  return lines;
 }
 
 /**
@@ -325,22 +254,17 @@ export async function postAxelrodCommentary(context: AxelrodContext): Promise<vo
   if (!webhookClient) return;
 
   try {
-    // Generate commentary
-    const commentary = await generateCommentary(context);
+    const commentary = generateCommentary(context);
     if (!commentary) return;
 
     // Wait 3-5 seconds after Taylor's post
     const delay = 3000 + Math.random() * 2000;
     await new Promise(resolve => setTimeout(resolve, delay));
 
-    // Post as Axelrod
-    await webhookClient.send({
-      content: commentary,
-    });
+    await webhookClient.send({ content: commentary });
 
     console.log('🎩 axelrod commentary posted');
   } catch (error) {
     console.error('Error posting Axelrod commentary:', error);
-    // Don't throw — Axelrod failing shouldn't break Taylor
   }
 }
