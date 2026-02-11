@@ -9,10 +9,10 @@
 export type OrbZone = "FULL_SEND" | "NEUTRAL" | "CAUTION" | "DEFENSIVE";
 
 export const ZONE_CONFIG: Record<OrbZone, { emoji: string; label: string; color: string; hex: string; description: string }> = {
-  FULL_SEND:  { emoji: "🟢", label: "FULL SEND",  color: "text-emerald-400", hex: "#22c55e", description: "Multiple strong buys, no avoids. Deploy leveraged." },
-  NEUTRAL:    { emoji: "⚪", label: "NEUTRAL",     color: "text-zinc-300",    hex: "#d4d4d8", description: "Normal conditions. Hold existing, don't add." },
-  CAUTION:    { emoji: "🟡", label: "CAUTION",     color: "text-amber-400",   hex: "#eab308", description: "Avoid signals present. Take profits, reduce leverage." },
-  DEFENSIVE:  { emoji: "🔴", label: "DEFENSIVE",   color: "text-red-400",     hex: "#ef4444", description: "Multiple avoids. Cash. Wait." },
+  FULL_SEND:  { emoji: "🟢", label: "FULL SEND",  color: "text-emerald-400", hex: "#22c55e", description: "Multiple buy signals converging with no avoids active. The structure favors adding exposure and deploying leveraged positions. Historically averages +6.2% over 20 days (66% win rate) and +16.3% over 60 days." },
+  NEUTRAL:    { emoji: "⚪", label: "NEUTRAL",     color: "text-zinc-300",    hex: "#d4d4d8", description: "Mixed or baseline conditions. Hold existing positions at current size -- no urgency to add or trim. The setup environment isn't giving a clear edge in either direction." },
+  CAUTION:    { emoji: "🟡", label: "CAUTION",     color: "text-amber-400",   hex: "#eab308", description: "Avoid signals are outweighing buy signals. Take partial profits, reduce leverage, and tighten stops. Forward returns from CAUTION historically average -1.2% over 20 days (41% win rate)." },
+  DEFENSIVE:  { emoji: "🔴", label: "DEFENSIVE",   color: "text-red-400",     hex: "#ef4444", description: "Multiple avoid signals are active and the structure is hostile. Raise cash, cut leverage, protect capital. Forward returns from DEFENSIVE average -1.8% over 20 days (43% win) and -6.7% over 60 days." },
 };
 
 export const SETUP_TYPES: Record<string, "buy" | "avoid"> = {
@@ -64,14 +64,14 @@ export function assignZone(score: number): OrbZone {
 export function transitionMessage(from: OrbZone, to: OrbZone): string {
   const key = `${from}->${to}`;
   const messages: Record<string, string> = {
-    "NEUTRAL->FULL_SEND": "Score shifted to FULL SEND. Multiple buy signals active, no avoids. Historically +6.2% avg over 20 days with 66% win rate. Favorable for leveraged positions.",
-    "FULL_SEND->NEUTRAL": "Score shifted from FULL SEND to NEUTRAL. Conditions are still positive -- hold positions, no need to trim. Just not exceptional anymore.",
-    "NEUTRAL->CAUTION": "Score shifted to CAUTION. Avoid signals are present. Consider taking profits and reducing leverage. Historically negative forward returns from here.",
-    "CAUTION->NEUTRAL": "Score improved to NEUTRAL. Conditions normalizing. Still not a buy signal -- wait for confirmation before adding.",
-    "CAUTION->DEFENSIVE": "Score dropped to DEFENSIVE. Multiple avoid signals active. Reduce exposure, raise cash. Historically -5.3% over 20 days from this transition.",
-    "DEFENSIVE->CAUTION": "Score ticked up from DEFENSIVE to CAUTION. Still unfavorable -- wait for NEUTRAL before reloading. The data says CAUTION after DEFENSIVE is still negative.",
-    "DEFENSIVE->NEUTRAL": "Score jumped from DEFENSIVE to NEUTRAL. This is the reload signal. The worst appears to be over. Historically +3.9% over 20 days.",
-    "FULL_SEND->CAUTION": "Score dropped from FULL SEND to CAUTION. Sharp shift -- take profits on leveraged positions. Conditions deteriorating.",
+    "NEUTRAL->FULL_SEND": "Score shifted to FULL SEND. Multiple buy signals are converging without opposition. This is the go-leveraged trigger -- historically TSLA averages +5.7% over 20 days (61% win) and +13.2% over 60 days (66% win) from this transition. Deploy size.",
+    "FULL_SEND->NEUTRAL": "Score shifted from FULL SEND to NEUTRAL. Don't panic -- this is NOT a sell signal. Forward returns from this transition are still strongly positive (+6.0% at 20D, 62% win). The exceptional window has closed, but the environment is still constructive. Hold positions, no need to trim.",
+    "NEUTRAL->CAUTION": "Score shifted to CAUTION. Avoid signals are building. The damage starts showing at 10 days (-0.6%, 43% win) and stays negative through 20 days. Consider taking partial profits and reducing leverage. Wait for a return to NEUTRAL before adding back.",
+    "CAUTION->NEUTRAL": "Score improved to NEUTRAL. Conditions are normalizing, but don't rush to reload. Forward returns after this transition are muted at 10 days (-1.1%) and only turn slightly positive by 20 days (+1.2%). The signal is: stop bleeding, not start buying. Wait for FULL SEND to add meaningfully.",
+    "CAUTION->DEFENSIVE": "Score dropped to DEFENSIVE. This is the get-out trigger. The damage is fast -- historically -4.5% within 10 days (only 32% win rate). Cut leverage, raise cash, and protect capital. Don't try to pick the bottom here.",
+    "DEFENSIVE->CAUTION": "Score ticked up from DEFENSIVE to CAUTION. This is NOT 'the worst is over' -- it's a trap. CAUTION after DEFENSIVE historically still averages -4.8% over 20 days (44% win). Stay patient and wait for NEUTRAL before re-entering.",
+    "DEFENSIVE->NEUTRAL": "Score jumped from DEFENSIVE to NEUTRAL. This IS the reload signal. When the score clears DEFENSIVE and reaches NEUTRAL, the worst is over. Historically +3.9% over 20 days (67% win). Begin rebuilding positions.",
+    "FULL_SEND->CAUTION": "Score dropped sharply from FULL SEND to CAUTION. Rare and sudden deterioration -- conditions have flipped. Take profits on leveraged positions immediately. The environment that supported aggression is gone.",
   };
   return messages[key] || `Orb Score shifted from ${ZONE_CONFIG[from].label} to ${ZONE_CONFIG[to].label}.`;
 }
