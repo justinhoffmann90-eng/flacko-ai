@@ -18,8 +18,9 @@ import type {
 } from './types';
 import { getMarketStatus } from './data-feed';
 
-const DISCORD_TOKEN = process.env.PAPER_TRADER_DISCORD_TOKEN || '';
-const DISCORD_CHANNEL_ID = process.env.PAPER_TRADER_CHANNEL_ID || '';
+// Webhook URL — can be set via env or defaults to #axe-capital
+const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL 
+  || 'https://discord.com/api/webhooks/1471201795404595414/ENwqrjgFHWk387SQ7jYqv6sHCFNTAicwkztTzd367xkDNowmWOHPJXn82e4-vpaKpHph';
 
 let webhookClient: WebhookClient | null = null;
 
@@ -27,16 +28,8 @@ let webhookClient: WebhookClient | null = null;
  * Initialize Discord webhook client
  */
 export function initDiscord(): boolean {
-  if (!DISCORD_TOKEN || !DISCORD_CHANNEL_ID) {
-    console.error('Discord credentials not configured');
-    return false;
-  }
-  
   try {
-    webhookClient = new WebhookClient({
-      id: DISCORD_CHANNEL_ID,
-      token: DISCORD_TOKEN,
-    });
+    webhookClient = new WebhookClient({ url: DISCORD_WEBHOOK_URL });
     return true;
   } catch (error) {
     console.error('Failed to initialize Discord webhook:', error);

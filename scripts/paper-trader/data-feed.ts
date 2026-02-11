@@ -96,48 +96,54 @@ export async function fetchTSLLPrice(): Promise<TSLAQuote> {
 }
 
 /**
- * Fetch Orb Score from Supabase — reads PRE-COMPUTED values.
- * The Orb compute route (/api/orb/compute) writes orb_score and orb_zone
- * to orb_daily_indicators. We just read. Never recompute.
+ * Fetch Orb Score from Supabase orb_setup_states and compute score/zone inline.
  */
 export async function fetchOrbScore(): Promise<OrbData> {
   try {
-    // 1. Read the latest computed score + zone from orb_daily_indicators
-    const { data: scoreRow, error: scoreError } = await supabase
-      .from('orb_daily_indicators')
-      .select('orb_score, orb_zone, date')
-      .order('date', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (scoreError) throw scoreError;
-
-    // 2. Read active setup states (for display in Discord messages only)
-    const { data: states, error: statesError } = await supabase
+    const { data: states, error } = await supabase
       .from('orb_setup_states')
       .select('setup_id, status');
 
-    if (statesError) throw statesError;
+    if (error) throw error;
 
-    const activeSetups = (states || [])
+    const setupStates = states || [];
+
+    let score = 0;
+    for (const snap of setupStates) {
+      const type = SETUP_TYPES[snap.setup_id];
+      if (!type) continue;
+      const w = WEIGHTS[snap.setup_id] || 0.3;
+      const dir = type === 'buy' ? 1 : -1;
+      if (snap.status === 'active') score += dir * w;
+      else if (snap.status === 'watching') score += dir * w * 0.3;
+    }
+    score = Math.round(score * 1000) / 1000;
+
+    let zone: OrbZone;
+    if (score >= THRESHOLDS.FULL_SEND) zone = 'FULL_SEND';
+    else if (score >= THRESHOLDS.NEUTRAL) zone = 'NEUTRAL';
+    else if (score >= THRESHOLDS.CAUTION) zone = 'CAUTION';
+    else zone = 'DEFENSIVE';
+
+    const activeSetups = setupStates
       .filter(s => s.status === 'active' || s.status === 'watching')
       .map(s => ({
         setup_id: s.setup_id,
         status: s.status,
+        type: (SETUP_TYPES[s.setup_id] || 'buy') as 'buy' | 'avoid',
       }));
 
     return {
-      score: scoreRow?.orb_score ?? 0,
-      zone: (scoreRow?.orb_zone ?? 'NEUTRAL') as OrbZone,
+      score,
+      zone,
       activeSetups,
       timestamp: new Date(),
     };
   } catch (error) {
     console.error('Error fetching Orb score:', error);
-    // Return defensive fallback
     return {
       score: -1.0,
-      zone: "DEFENSIVE",
+      zone: 'DEFENSIVE',
       activeSetups: [],
       timestamp: new Date(),
     };

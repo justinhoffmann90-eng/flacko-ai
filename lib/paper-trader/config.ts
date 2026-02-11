@@ -68,8 +68,6 @@ export function validateEnv(): { valid: boolean; missing: string[] } {
   const required = [
     'SUPABASE_URL',
     'SUPABASE_SERVICE_KEY',
-    'PAPER_TRADER_DISCORD_TOKEN',
-    'PAPER_TRADER_CHANNEL_ID',
   ];
   
   const missing = required.filter(v => !process.env[v]);
