@@ -268,6 +268,30 @@ async function runCompute() {
       }
     }
 
+    // Store daily atoms: one row per setup per day (append-only, never overwritten)
+    const snapshotRows = results.map((result) => {
+      const prev = prevMap.get(result.setup_id);
+      const newStatus = result.is_active ? "active" : result.is_watching ? "watching" : "inactive";
+      return {
+        date: indicators.date,
+        setup_id: result.setup_id,
+        status: newStatus,
+        entry_price: newStatus === "active" ? (prev?.entry_price ?? indicators.close) : null,
+        active_day: newStatus === "active" ? ((prevStates || []).find((s: any) => s.setup_id === result.setup_id)?.active_day || 0) + (prev?.status === "active" ? 1 : 1) : null,
+        conditions_met: result.conditions_met ?? null,
+        reason: result.reason || null,
+        gauge_current_value: result.gauge_current_value ?? null,
+        gauge_progress_pct: result.gauge_current_value !== undefined
+          ? (() => {
+              const entry = (result.gauge_entry_value ?? prev?.gauge_entry_value ?? 0) as number;
+              const target = (result.gauge_target_value ?? 30) as number;
+              return target === entry ? 100 : ((result.gauge_current_value! - entry) / (target - entry)) * 100;
+            })()
+          : null,
+      };
+    });
+    await supabase.from("orb_daily_snapshots").upsert(snapshotRows, { onConflict: "date,setup_id" });
+
     const modeSuggestion = suggestMode(
       indicators,
       results.filter((r) => r.is_active)
