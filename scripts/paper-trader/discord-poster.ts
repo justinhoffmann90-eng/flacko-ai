@@ -205,10 +205,17 @@ export async function postEntryAlert(
   // Generate Taylor's commentary
   const commentary = generateEntryCommentary(trade, report, orb, reasoningArray);
   
-  let content = `⚔️ paper flacko — **ENTRY** — ${timeStr} ct\n\n`;
+  const overrideTag = trade.isOverride ? ` ⚡ OVERRIDE` : '';
+  let content = `⚔️ paper flacko — **ENTRY${overrideTag}** — ${timeStr} ct\n\n`;
   
   // Trade details — clean, no duplication
   content += `**${trade.instrument}** — bought ${trade.shares} shares @ $${trade.price.toFixed(2)}\n`;
+  
+  // Override explanation
+  if (trade.isOverride && trade.overrideSetups?.length) {
+    const setupNames = trade.overrideSetups.map(s => s.replace(/-/g, ' ')).join(', ');
+    content += `⚡ override: ${setupNames} active — TSLL deployed in NEUTRAL zone\n`;
+  }
   const isMulti = 'tsla' in portfolio;
   const totalPortfolio = isMulti ? (portfolio as MultiPortfolio).totalValue : (portfolio as Portfolio).totalValue;
   const cashBefore = (isMulti ? (portfolio as MultiPortfolio).cash : (portfolio as Portfolio).cash) + trade.totalValue;

@@ -92,6 +92,9 @@ export interface Trade {
   orbScore?: number;
   orbZone?: string;
   orbActiveSetups?: { setup_id: string; status: string }[];
+  // Override tracking
+  isOverride?: boolean;
+  overrideSetups?: string[];
 }
 
 export interface DailyPerformance {
@@ -131,6 +134,8 @@ export interface TradeSignal {
   confidence: 'high' | 'medium' | 'low';
   targetPrice?: number;
   stopPrice?: number;
+  isOverride?: boolean;
+  overrideSetups?: string[];
 }
 
 // Multi-instrument portfolio tracking

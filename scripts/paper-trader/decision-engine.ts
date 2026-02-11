@@ -166,7 +166,30 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   }
   
   // Determine instrument based on Orb zone
-  const instrument = zoneConfig.instrument!;
+  let instrument = zoneConfig.instrument!;
+  
+  // ⚡ OVERRIDE: High-conviction dip buys upgrade NEUTRAL to TSLL
+  const OVERRIDE_SETUPS = ['oversold-extreme', 'deep-value', 'capitulation'];
+  const activeSetups = orb.activeSetups.filter(s => s.status === 'active');
+  const activeOverrides = activeSetups.filter(s => OVERRIDE_SETUPS.includes(s.setup_id));
+  let isOverride = false;
+  
+  if (orb.zone === 'NEUTRAL' && activeOverrides.length > 0) {
+    instrument = 'TSLL';
+    isOverride = true;
+    const overrideNames = activeOverrides.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
+    reasoning.push(`⚡ OVERRIDE: ${overrideNames} active — upgrading to TSLL`);
+    
+    // Note dirty/clean Capitulation for journal
+    const hasCap = activeOverrides.some(s => s.setup_id === 'capitulation');
+    const hasDualLL = activeSetups.some(s => s.setup_id === 'dual-ll' && s.status === 'active');
+    if (hasCap && hasDualLL) {
+      reasoning.push(`dirty capitulation (dual LL active) — historically weaker (+6.2% avg 20d) but still positive. sized accordingly.`);
+    } else if (hasCap) {
+      reasoning.push(`clean capitulation — historically explosive (+59.7% avg 20d). high conviction.`);
+    }
+  }
+  
   const instrumentQuote = instrument === 'TSLL' ? tsllQuote : quote;
   const price = instrumentQuote.price;
   
@@ -290,6 +313,8 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     confidence: nearSupport.isNear ? 'high' : 'medium',
     targetPrice,
     stopPrice,
+    isOverride,
+    overrideSetups: activeOverrides.map(s => s.setup_id),
   };
 }
 

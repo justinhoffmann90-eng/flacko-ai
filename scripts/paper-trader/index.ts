@@ -410,6 +410,8 @@ async function executeBuy(
     orbScore: orb.score,
     orbZone: orb.zone,
     orbActiveSetups: orb.activeSetups,
+    isOverride: signal.isOverride,
+    overrideSetups: signal.overrideSetups,
   };
   
   await recordTrade(trade);
