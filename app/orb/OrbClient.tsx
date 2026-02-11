@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type OrbRow = {
@@ -268,6 +268,10 @@ export default function OrbClient() {
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
   const [isDesktop, setIsDesktop] = useState(false);
   const [adminDescToggle, setAdminDescToggle] = useState<Record<string, boolean>>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const pullStartY = useRef<number | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
@@ -278,19 +282,47 @@ export default function OrbClient() {
 
   const desktopFont = (mobilePx: number) => (isDesktop ? Math.round(mobilePx * 1.2) : mobilePx);
 
+  const loadData = useCallback(async () => {
+    const res = await fetch("/api/orb/states", { cache: "no-store" });
+    const data = await res.json();
+    setRows(Array.isArray(data) ? data : []);
+  }, []);
+
+  // Pull-to-refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (pullStartY.current === null) return;
+    const dy = e.touches[0].clientY - pullStartY.current;
+    if (dy > 0 && containerRef.current && containerRef.current.scrollTop <= 0) {
+      setPullDistance(Math.min(dy * 0.5, 80));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance > 50 && !refreshing) {
+      setRefreshing(true);
+      setPullDistance(50);
+      await loadData();
+      setHistoryBySetup({});
+      setRefreshing(false);
+    }
+    setPullDistance(0);
+    pullStartY.current = null;
+  }, [pullDistance, refreshing, loadData]);
+
   useEffect(() => {
-    const load = async () => {
-      const res = await fetch("/api/orb/states", { cache: "no-store" });
-      const data = await res.json();
-      setRows(Array.isArray(data) ? data : []);
-    };
-    load();
+    loadData();
 
     const supabase = createClient();
     const channel = supabase
       .channel("orb-setup-states")
       .on("postgres_changes", { event: "*", schema: "public", table: "orb_setup_states" }, () => {
-        load();
+        loadData();
       })
       .subscribe();
 
@@ -320,7 +352,37 @@ export default function OrbClient() {
   };
 
   return (
-    <div className="min-h-screen p-4" style={{ background: "#0a0a0c", color: "#f0f0f0", fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div
+      ref={containerRef}
+      className="min-h-screen p-4"
+      style={{ background: "#0a0a0c", color: "#f0f0f0", fontFamily: "'Inter', system-ui, sans-serif", overscrollBehavior: "none" }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="flex items-center justify-center transition-all"
+          style={{
+            height: refreshing ? 50 : pullDistance,
+            overflow: "hidden",
+            marginBottom: 8,
+          }}
+        >
+          <div
+            className={refreshing ? "animate-spin" : ""}
+            style={{
+              width: 24,
+              height: 24,
+              border: "2px solid rgba(255,255,255,0.15)",
+              borderTopColor: pullDistance > 50 || refreshing ? "#22c55e" : "rgba(255,255,255,0.4)",
+              borderRadius: "50%",
+              opacity: Math.min(pullDistance / 50, 1),
+            }}
+          />
+        </div>
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
