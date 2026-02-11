@@ -18,9 +18,12 @@ export async function GET(request: NextRequest) {
       }
     } catch {}
     // Fallback: check admin query param with secret
-    if (!isAdmin && request.nextUrl.searchParams.get("admin") === ADMIN_USER_ID) {
+    const adminParam = request.nextUrl.searchParams.get("admin");
+    if (!isAdmin && adminParam && adminParam === ADMIN_USER_ID) {
       isAdmin = true;
     }
+    // Debug header so we can check
+    console.log("ADMIN_CHECK", { isAdmin, adminParam, envId: ADMIN_USER_ID?.slice(0, 8), match: adminParam === ADMIN_USER_ID });
 
     const supabase = await createServiceClient();
 
@@ -108,7 +111,9 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json(merged);
+    const resp = NextResponse.json(merged);
+    resp.headers.set("x-admin-debug", JSON.stringify({ isAdmin, envLen: ADMIN_USER_ID?.length, paramLen: request.nextUrl.searchParams.get("admin")?.length }));
+    return resp;
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
