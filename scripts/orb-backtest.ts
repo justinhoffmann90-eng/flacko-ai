@@ -417,6 +417,17 @@ async function main() {
     if (error) throw error;
   }
 
+  // Update gauge columns for SMI gauge setups
+  for (const g of gaugeResults) {
+    const { error } = await supabase.from("orb_backtest_instances").update({
+      gauge_days: g.gauge_days,
+      gauge_return: g.gauge_return,
+      gauge_completed: g.gauge_completed,
+    }).match({ setup_id: g.setup_id, signal_date: g.signal_date });
+    if (error) console.error(`Gauge update error for ${g.setup_id} ${g.signal_date}:`, error.message);
+  }
+  if (gaugeResults.length) console.log(`Updated ${gaugeResults.length} gauge measurements`);
+
   const counts: Record<string, number> = {};
   for (const inst of instances) counts[inst.setup_id] = (counts[inst.setup_id] || 0) + 1;
 
