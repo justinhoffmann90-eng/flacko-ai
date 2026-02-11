@@ -105,6 +105,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               onClick={() => haptic('light')}
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full space-y-1.5 pt-2 transition-all press-scale-sm",

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
@@ -54,7 +55,7 @@ export default function DashboardLayout({
   );
 }
 
-// Desktop nav link component
+// Desktop nav link component - uses Link for automatic prefetching
 function DesktopNavLink({ 
   href, 
   icon, 
@@ -69,8 +70,9 @@ function DesktopNavLink({
   const isActive = currentPath === href;
   
   return (
-    <a
+    <Link
       href={href}
+      prefetch={true}
       className={`group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors ${
         isActive 
           ? "bg-primary/10 text-primary" 
@@ -79,7 +81,7 @@ function DesktopNavLink({
     >
       <NavIcon name={icon} className={`mr-4 h-6 w-6 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
       {label}
-    </a>
+    </Link>
   );
 }
 
