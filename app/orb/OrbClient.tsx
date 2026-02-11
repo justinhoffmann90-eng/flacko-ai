@@ -412,10 +412,11 @@ export default function OrbClient() {
             return (
               <div
                 key={row.id}
-                className={`rounded-xl border overflow-hidden transition-all duration-300 ${expanded ? sc.glow : ""}`}
+                className={`rounded-xl border overflow-hidden transition-all duration-300 ${expanded ? sc.glow : isActive ? "ring-1 ring-opacity-40" : ""}`}
                 style={{
-                  borderColor: expanded ? sc.color : "rgba(255,255,255,0.06)",
-                  background: expanded ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+                  borderColor: isActive ? (row.stance === "offensive" ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)") : expanded ? sc.color : "rgba(255,255,255,0.06)",
+                  background: isActive ? (row.stance === "offensive" ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)") : expanded ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+                  boxShadow: isActive ? (row.stance === "offensive" ? "0 0 20px rgba(16,185,129,0.15), 0 0 40px rgba(16,185,129,0.05)" : "0 0 20px rgba(239,68,68,0.15), 0 0 40px rgba(239,68,68,0.05)") : "none",
                   animation: `fadeIn .4s ease ${index * 0.08}s both`,
                 }}
               >
