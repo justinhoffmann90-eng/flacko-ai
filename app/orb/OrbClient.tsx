@@ -494,7 +494,7 @@ export default function OrbClient() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
               </a>
             )}
-            <h1 style={{ fontSize: desktopFont(30), fontWeight: 800, letterSpacing: "-0.03em", background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔮 Orb</h1>
+            <h1 style={{ fontSize: desktopFont(30), fontWeight: 800, letterSpacing: "-0.03em" }}><span>🔮</span><span style={{ background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}> Orb</span></h1>
             <span className="ml-auto" style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
           </div>
           <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 6 avoid signals • TSLA</p>
