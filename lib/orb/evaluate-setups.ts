@@ -264,16 +264,16 @@ function evaluateRegimeShift(ind: Indicators): SetupResult {
 }
 
 function evaluateDeepValue(ind: Indicators, oversoldExtremeActive: boolean): SetupResult {
-  const inZone = ind.sma200_dist > -30 && ind.sma200_dist < -20;
+  const inZone = ind.sma200_dist > -20 && ind.sma200_dist < -10;
   const bxHL = ind.bx_daily_state === "HL";
   const notGenerational = !oversoldExtremeActive;
   const isActive = inZone && bxHL && notGenerational;
-  const isWatching = (inZone && ind.bx_daily_state === "LL") || (ind.sma200_dist > -35 && ind.sma200_dist < -20 && bxHL);
+  const isWatching = (inZone && ind.bx_daily_state === "LL") || (ind.sma200_dist > -25 && ind.sma200_dist < -10 && bxHL);
   return {
     setup_id: "deep-value",
     is_active: isActive,
     is_watching: isWatching && !isActive,
-    conditions_met: { sma200_neg30_to_neg20: inZone, bx_hl: bxHL, not_generational: notGenerational },
+    conditions_met: { sma200_neg20_to_neg10: inZone, bx_hl: bxHL, not_generational: notGenerational },
     reason: isActive
       ? `200 SMA at ${ind.sma200_dist.toFixed(1)}% + BX HL - DEEP VALUE`
       : `200 SMA at ${ind.sma200_dist.toFixed(1)}%, BX: ${ind.bx_daily_state}`,
@@ -282,36 +282,36 @@ function evaluateDeepValue(ind: Indicators, oversoldExtremeActive: boolean): Set
 
 function evaluateGreenShoots(ind: Indicators): SetupResult {
   const transition = ind.bx_daily_state === "HL" && ind.bx_daily_state_prev === "LL";
-  const oversoldConfirm = ind.rsi < 35 || (ind.smi_bull_cross && ind.smi < -40);
-  const isActive = transition && oversoldConfirm;
-  const isWatching = ind.bx_daily_state === "LL" && (ind.rsi < 40 || ind.smi < -30);
+  const below200 = ind.sma200_dist < 0;
+  const isActive = transition && below200;
+  const isWatching = ind.bx_daily_state === "LL" && below200;
   return {
     setup_id: "green-shoots",
     is_active: isActive,
     is_watching: isWatching,
-    conditions_met: { ll_to_hl: transition, rsi_below_35: ind.rsi < 35, smi_bull_cross_below_neg40: ind.smi_bull_cross && ind.smi < -40 },
+    conditions_met: { ll_to_hl: transition, below_200sma: below200 },
     reason: isActive
-      ? `BX flipped LL->HL + oversold confirm (RSI ${ind.rsi.toFixed(1)}, SMI ${ind.smi.toFixed(1)}) - GREEN SHOOTS`
+      ? `BX flipped LL->HL below 200 SMA (${ind.sma200_dist.toFixed(1)}%) - GREEN SHOOTS`
       : isWatching
-      ? `BX in LL, RSI ${ind.rsi.toFixed(1)}, SMI ${ind.smi.toFixed(1)} - watching for flip`
-      : `BX: ${ind.bx_daily_state}, RSI: ${ind.rsi.toFixed(1)}`,
+      ? `BX in LL below 200 SMA (${ind.sma200_dist.toFixed(1)}%) - watching for flip`
+      : `BX: ${ind.bx_daily_state}, 200 SMA: ${ind.sma200_dist.toFixed(1)}%`,
   };
 }
 
 function evaluateMomentumFlip(ind: Indicators): SetupResult {
   const transition = ind.bx_daily_state === "HH" && ind.bx_daily_state_prev === "HL";
-  const rsiRoom = ind.rsi < 55; // optional quality filter (not required by source)
-  const isActive = transition;
-  const isWatching = ind.bx_daily_state === "HL";
+  const rsiRoom = ind.rsi < 55;
+  const isActive = transition && rsiRoom;
+  const isWatching = ind.bx_daily_state === "HL" && rsiRoom;
   return {
     setup_id: "momentum-flip",
     is_active: isActive,
     is_watching: isWatching,
-    conditions_met: { hl_to_hh: transition, rsi_below_55_bonus: rsiRoom },
+    conditions_met: { hl_to_hh: transition, rsi_below_55: rsiRoom },
     reason: isActive
-      ? `BX flipped HL->HH${rsiRoom ? ` + RSI ${ind.rsi.toFixed(1)} (room to run)` : ` (RSI ${ind.rsi.toFixed(1)})`}`
+      ? `BX flipped HL->HH + RSI ${ind.rsi.toFixed(1)} (room to run)`
       : isWatching
-      ? `BX in HL - one flip from trigger (RSI ${ind.rsi.toFixed(1)})`
+      ? `BX in HL + RSI ${ind.rsi.toFixed(1)} - one flip from trigger`
       : `BX: ${ind.bx_daily_state}, RSI: ${ind.rsi.toFixed(1)}`,
   };
 }
@@ -474,20 +474,14 @@ function evaluateDualLL(ind: Indicators): SetupResult {
 }
 
 function evaluateOverextended(ind: Indicators): SetupResult {
-  const bxLH = ind.bx_daily_state === "LH";
-  const rsiOverbought = ind.rsi > 70;
-  const sma200Extended = ind.sma200_dist > 25;
-  const condCount = [bxLH, rsiOverbought, sma200Extended].filter(Boolean).length;
-  const isActive = condCount >= 2;
-  const isWatching = condCount === 1 && (sma200Extended || rsiOverbought);
+  const isActive = ind.sma200_dist > 25;
+  const isWatching = ind.sma200_dist > 20 && ind.sma200_dist <= 25;
   return {
     setup_id: "overextended",
     is_active: isActive,
     is_watching: isWatching,
-    conditions_met: { bx_lh: bxLH, rsi_above_70: rsiOverbought, above_25pct_200sma: sma200Extended },
-    reason: isActive
-      ? `AVOID - Extended & Fading (${condCount}/3: ${bxLH ? "BX LH" : ""}${rsiOverbought ? " RSI>70" : ""}${sma200Extended ? " >25% SMA200" : ""})`
-      : `${condCount}/3 extended conditions (BX: ${ind.bx_daily_state}, RSI: ${ind.rsi.toFixed(1)}, SMA200: ${ind.sma200_dist.toFixed(1)}%)`,
+    conditions_met: { above_25pct_200sma: isActive },
+    reason: isActive ? `AVOID - Price ${ind.sma200_dist.toFixed(1)}% above 200 SMA (>25%)` : `200 SMA distance: ${ind.sma200_dist.toFixed(1)}%`,
   };
 }
 
