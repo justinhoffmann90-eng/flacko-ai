@@ -539,52 +539,72 @@ export async function postMarketOpen(
     content += `\nflow: HIRO ${readingStr} (${hiro.percentile30Day.toFixed(0)}th pctl) — ${describeHiro(hiro)}`;
   }
   
-  // Today's gameplan — specific, data-driven
+  // Today's gameplan — specific buy/sell actions with prices and sizing
   content += `\n\n**today's plan:**\n`;
   
   if (report) {
     const ejectDist = ((quote.price - report.masterEject) / quote.price) * 100;
+    const mode = report.mode;
+    const modeCaps: Record<string, number> = { GREEN: 25, YELLOW: 15, ORANGE: 10, RED: 5 };
+    const maxCap = modeCaps[mode] || 15;
     
-    // Instrument context
+    // Instrument
     const OVERRIDE_SETUPS = ['oversold-extreme', 'deep-value', 'capitulation'];
     const activeOverrides = activeSetups.filter(s => OVERRIDE_SETUPS.includes(s.setup_id));
+    let instrument = 'TSLA';
+    if (orb.zone === 'FULL_SEND') instrument = 'TSLL';
+    else if (orb.zone === 'NEUTRAL' && activeOverrides.length > 0) instrument = 'TSLL';
     
-    if (orb.zone === 'FULL_SEND') {
-      content += `TSLL cleared. Looking to deploy at support levels with conviction.\n`;
-    } else if (activeOverrides.length > 0) {
-      const names = activeOverrides.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
-      content += `⚡ Override active (${names}) — TSLL deployed despite NEUTRAL zone.\n`;
-    } else if (orb.zone === 'NEUTRAL') {
-      content += `Shares only. No leverage until Orb shifts or override fires.\n`;
-    } else if (orb.zone === 'CAUTION') {
-      content += `No new buys. Taking profits on leverage if we have any.\n`;
+    // BUY plan
+    if (orb.zone === 'CAUTION' || orb.zone === 'DEFENSIVE') {
+      content += `**buys:** none. ${orb.zone} zone — sitting in cash.\n`;
     } else {
-      content += `Defensive. Cash is the position. Waiting for the turn.\n`;
+      const supports = (report.levels || []).filter(l => l.type === 'nibble' && l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
+      
+      if (supports.length > 0) {
+        const buyLevel = supports[0];
+        const distPct = ((quote.price - buyLevel.price) / quote.price * 100).toFixed(1);
+        content += `**buys:** ${instrument} at ${buyLevel.name} ($${buyLevel.price.toFixed(0)}, ${distPct}% below) — ${maxCap}% of cash per ${mode} mode cap\n`;
+        if (supports.length > 1) {
+          const buyLevel2 = supports[1];
+          content += `next buy: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — ${buyLevel2.action || 'add to position'}\n`;
+        }
+      } else {
+        content += `**buys:** no support levels between here and eject. need a pullback to get involved.\n`;
+      }
+      
+      if (activeOverrides.length > 0) {
+        const names = activeOverrides.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
+        content += `⚡ override active (${names}) — using TSLL instead of shares\n`;
+      }
     }
     
-    // Key levels to watch
-    const supports = (report.levels || []).filter(l => l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
-    const resistances = (report.levels || []).filter(l => l.price > quote.price).sort((a, b) => a.price - b.price);
-    
-    if (supports.length > 0) {
-      content += `watching below: ${supports.slice(0, 2).map(l => `${l.name} $${l.price.toFixed(0)}`).join(', ')}\n`;
+    // SELL plan
+    const trims = (report.levels || []).filter(l => l.type === 'trim' && l.price > quote.price).sort((a, b) => a.price - b.price);
+    if (trims.length > 0) {
+      const trimLevel = trims[0];
+      const distPct = ((trimLevel.price - quote.price) / quote.price * 100).toFixed(1);
+      content += `**sells:** trim 25% at ${trimLevel.name} ($${trimLevel.price.toFixed(0)}, ${distPct}% above)\n`;
+    } else {
+      content += `**sells:** no trim targets above. holding for now.\n`;
     }
-    if (resistances.length > 0) {
-      content += `watching above: ${resistances.slice(0, 2).map(l => `${l.name} $${l.price.toFixed(0)}`).join(', ')}\n`;
-    }
     
-    // Eject proximity warning
+    // EJECT plan
+    content += `**eject:** $${report.masterEject.toFixed(2)}`;
     if (ejectDist < 1) {
-      content += `⚠️ eject at $${report.masterEject.toFixed(2)} is ${ejectDist.toFixed(1)}% away. tight leash today.\n`;
+      content += ` ⚠️ ${ejectDist.toFixed(1)}% away — sell all leverage, trim to 50%`;
+    } else {
+      content += ` (${ejectDist.toFixed(1)}% away) — sell all leverage, trim to 50%`;
     }
+    content += `\n`;
     
-    // HIRO context for plan
+    // HIRO context
     if (hiro) {
       const readingM = hiro.reading / 1000000;
       if (readingM < -200) {
-        content += `flow is negative — need to see HIRO improve before adding aggressively.\n`;
+        content += `flow is negative — sizing conservatively until HIRO improves.\n`;
       } else if (readingM > 200) {
-        content += `flow is supportive — institutional buying backs any entries at levels.\n`;
+        content += `flow confirms — institutional buying supports entries at levels.\n`;
       }
     }
   } else {
