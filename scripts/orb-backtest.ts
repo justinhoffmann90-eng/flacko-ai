@@ -203,7 +203,7 @@ async function main() {
         high: Math.max(...slice.map((q) => q.high)),
         low: Math.min(...slice.map((q) => q.low)),
         close: slice[slice.length - 1].close,
-        date: slice[slice.length - 1].date,
+        date: slice[0].date, // Use FIRST day (Monday) to match TradingView request.security("W")
       });
       weekStart = i;
     }

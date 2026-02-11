@@ -133,7 +133,7 @@ export async function computeIndicators(ticker: string) {
         high: Math.max(...slice.map((q: any) => q.high as number)),
         low: Math.min(...slice.map((q: any) => q.low as number)),
         close: slice[slice.length - 1].close as number,
-        date: slice[slice.length - 1].date as Date,
+        date: slice[0].date as Date, // Use FIRST day (Monday) to match TradingView request.security("W")
       });
       weekStart = i;
     }
