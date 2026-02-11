@@ -58,7 +58,7 @@ import type { Trade, Portfolio, MultiPortfolio, TradeSignal, OrbZone, Instrument
 
 // Bot configuration
 const CONFIG = {
-  STARTING_CAPITAL: 100000,
+  STARTING_CAPITAL: 1000000,
   UPDATE_INTERVAL_MS: 15 * 60 * 1000, // 15 minutes
   HIRO_INTERVAL_MS: 60 * 60 * 1000,   // 1 hour
   MAX_POSITIONS_PER_DAY: 2,
@@ -74,10 +74,10 @@ let marketClosePosted = false;
 let weeklyReportPosted = false;
 
 // Current session state (multi-instrument)
-// Starting with 40% baseline TSLA position (~$40k @ $350/share = 114 shares)
+// Starting with 40% baseline TSLA position (~$400k @ $350/share = 1,142 shares)
 let sessionState = {
-  cash: 60000,              // 60% cash
-  sharesHeld: 114,          // TSLA shares (~$40k baseline position)
+  cash: 600000,             // 60% cash ($600,000)
+  sharesHeld: 1142,         // TSLA shares (~$400k baseline position)
   avgCost: 350.00,          // TSLA avg cost
   tsllShares: 0,            // TSLL shares
   tsllAvgCost: 0,           // TSLL avg cost

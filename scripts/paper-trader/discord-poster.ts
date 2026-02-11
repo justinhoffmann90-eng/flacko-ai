@@ -49,10 +49,18 @@ export function initDiscord(): boolean {
 }
 
 /**
- * Format number with sign
+ * Format dollar amount with commas (e.g., 1234567.89 → "1,234,567.89")
+ */
+function fmtDollar(num: number, decimals: number = 0): string {
+  return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/**
+ * Format number with sign and commas
  */
 function withSign(num: number): string {
-  return num >= 0 ? `+${num.toFixed(2)}` : num.toFixed(2);
+  const formatted = fmtDollar(Math.abs(num), 2);
+  return num >= 0 ? `+$${formatted}` : `-$${formatted}`;
 }
 
 function withSignPercent(num: number): string {
@@ -108,8 +116,8 @@ export async function postStatusUpdate(
   }).toLowerCase();
   
   let content = `⚔️ taylor — ${timeStr} ct\n\n`;
-  content += `tsla: $${quote.price.toFixed(2)} (${withSignPercent(quote.changePercent)} today)\n`;
-  content += `tsll: $${tsllQuote.price.toFixed(2)} (${withSignPercent(tsllQuote.changePercent)} today)\n`;
+  content += `tsla: $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)} today)\n`;
+  content += `tsll: $${fmtDollar(tsllQuote.price, 2)} (${withSignPercent(tsllQuote.changePercent)} today)\n`;
   
   const isMulti = 'tsla' in portfolio;
   if (isMulti) {
@@ -117,25 +125,25 @@ export async function postStatusUpdate(
     if (multi.tsla || multi.tsll) {
       content += `\npositions:\n`;
       if (multi.tsla) {
-        content += `• TSLA: ${multi.tsla.shares} shares @ $${multi.tsla.avgCost.toFixed(2)} — ${withSign(multi.tsla.unrealizedPnl)} (${withSignPercent(multi.tsla.pnlPercent)})\n`;
+        content += `• TSLA: ${multi.tsla.shares.toLocaleString()} shares @ $${fmtDollar(multi.tsla.avgCost, 2)} — ${withSign(multi.tsla.unrealizedPnl)} (${withSignPercent(multi.tsla.pnlPercent)})\n`;
       }
       if (multi.tsll) {
-        content += `• TSLL: ${multi.tsll.shares} shares @ $${multi.tsll.avgCost.toFixed(2)} — ${withSign(multi.tsll.unrealizedPnl)} (${withSignPercent(multi.tsll.pnlPercent)})\n`;
+        content += `• TSLL: ${multi.tsll.shares.toLocaleString()} shares @ $${fmtDollar(multi.tsll.avgCost, 2)} — ${withSign(multi.tsll.unrealizedPnl)} (${withSignPercent(multi.tsll.pnlPercent)})\n`;
       }
     } else {
       content += `position: FLAT\n`;
     }
-    content += `cash: $${multi.cash.toFixed(0)}\n`;
+    content += `cash: $${fmtDollar(multi.cash)}\n`;
   } else {
     const single = portfolio as Portfolio;
     if (single.position) {
       const pos = single.position;
-      content += `position: LONG ${pos.shares} shares TSLA @ $${pos.avgCost.toFixed(2)}\n`;
+      content += `position: LONG ${pos.shares.toLocaleString()} shares TSLA @ $${fmtDollar(pos.avgCost, 2)}\n`;
       content += `unrealized: ${withSign(pos.unrealizedPnl)} (${withSignPercent(pos.unrealizedPnlPercent)})\n`;
     } else {
       content += `position: FLAT\n`;
     }
-    content += `cash: $${single.cash.toFixed(0)}\n`;
+    content += `cash: $${fmtDollar(single.cash)}\n`;
   }
   
   content += `\n${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})\n`;
@@ -209,7 +217,7 @@ export async function postEntryAlert(
   let content = `⚔️ taylor — **ENTRY${overrideTag}** — ${timeStr} ct\n\n`;
   
   // Trade details — clean, no duplication
-  content += `**${trade.instrument}** — bought ${trade.shares} shares @ $${trade.price.toFixed(2)}\n`;
+  content += `**${trade.instrument}** — bought ${trade.shares.toLocaleString()} shares @ $${fmtDollar(trade.price, 2)}\n`;
   
   // Override explanation
   if (trade.isOverride && trade.overrideSetups?.length) {
@@ -223,7 +231,7 @@ export async function postEntryAlert(
   const cashAfter = cashBefore - trade.totalValue;
   const pctCashLeft = ((cashAfter / totalPortfolio) * 100).toFixed(0);
   
-  content += `size: $${trade.totalValue.toFixed(0)} (${pctUsed}% of cash)`;
+  content += `size: $${fmtDollar(trade.totalValue)} (${pctUsed}% of cash)`;
   if (report) {
     content += ` | ${report.mode} mode, tier ${report.tier}`;
   }
@@ -262,12 +270,12 @@ export async function postEntryAlert(
     content += `\nportfolio:`;
     if (multi.tsla) content += ` TSLA ${multi.tsla.shares}`;
     if (multi.tsll) content += ` | TSLL ${multi.tsll.shares}`;
-    content += ` | cash: $${multi.cash.toFixed(0)} (${cashPct}%)`;
+    content += ` | cash: $${fmtDollar(multi.cash)} (${cashPct}%)`;
   } else {
     const single = portfolio as Portfolio;
     const cashPct = ((single.cash / single.totalValue) * 100).toFixed(0);
     content += `\nportfolio: ${single.position?.shares || trade.shares} ${trade.instrument}`;
-    content += ` | cash: $${single.cash.toFixed(0)} (${cashPct}%)`;
+    content += ` | cash: $${fmtDollar(single.cash)} (${cashPct}%)`;
   }
   
   try {
@@ -378,7 +386,7 @@ export async function postExitAlert(
   const returnPct = trade.realizedPnl && trade.totalValue ? (trade.realizedPnl / trade.totalValue) * 100 : 0;
   
   let content = `⚔️ taylor — **EXIT** — ${timeStr} ct\n\n`;
-  content += `**${trade.instrument}** — sold ${trade.shares} shares @ $${trade.price.toFixed(2)}\n`;
+  content += `**${trade.instrument}** — sold ${trade.shares.toLocaleString()} shares @ $${fmtDollar(trade.price, 2)}\n`;
   content += `result: ${withSign(trade.realizedPnl || 0)} (${withSignPercent(returnPct)})\n`;
   
   // Taylor's exit commentary
@@ -397,7 +405,7 @@ export async function postExitAlert(
   } else {
     content += ` FLAT`;
   }
-  content += ` | cash: $${portfolio.cash.toFixed(0)}`;
+  content += ` | cash: $${fmtDollar(portfolio.cash)}`;
   content += `\nday p&l: ${withSign(todayPnl)} (${withSignPercent(todayPnl / 100000 * 100)})`;
   
   try {
@@ -518,7 +526,7 @@ export async function postMarketOpen(
   if (!webhookClient) return;
   
   let content = `⚔️ taylor — **market open**\n\n`;
-  content += `TSLA $${quote.price.toFixed(2)} | TSLL $${tsllQuote.price.toFixed(2)}\n`;
+  content += `TSLA $${fmtDollar(quote.price, 2)} | TSLL $${fmtDollar(tsllQuote.price, 2)}\n`;
   
   if (report) {
     content += `${modeEmoji(report.mode)} ${report.mode} mode (tier ${report.tier}) | eject: $${report.masterEject.toFixed(2)}\n`;
@@ -637,10 +645,10 @@ export async function postMarketClose(
     if (multi.tsla || multi.tsll) {
       content += `holding overnight:\n`;
       if (multi.tsla) {
-        content += `• TSLA: ${multi.tsla.shares} shares — ${withSign(multi.tsla.unrealizedPnl)}\n`;
+        content += `• TSLA: ${multi.tsla.shares.toLocaleString()} shares — ${withSign(multi.tsla.unrealizedPnl)}\n`;
       }
       if (multi.tsll) {
-        content += `• TSLL: ${multi.tsll.shares} shares — ${withSign(multi.tsll.unrealizedPnl)}\n`;
+        content += `• TSLL: ${multi.tsll.shares.toLocaleString()} shares — ${withSign(multi.tsll.unrealizedPnl)}\n`;
       }
     }
   } else {
