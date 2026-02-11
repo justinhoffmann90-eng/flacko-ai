@@ -526,7 +526,7 @@ export default function OrbClient() {
             FULL_SEND: {
               emoji: "🟢", label: "FULL SEND", hex: "#22c55e",
               action: "Deploy leveraged positions.",
-              statsLine: "+6.22% avg at 20d \u00b7 66% win \u00b7 15% of trading days",
+              statsLine: "+15.71% avg at 60d \u00b7 66% win rate \u00b7 15% of trading days",
               description: "Multiple bullish signals are firing simultaneously and nothing is warning. Momentum, trend structure, and positioning are all aligned. These are the strongest conditions TSLA produces. The top 10% of FULL SEND outcomes exceed +30% at 20 days.",
               whatToWatch: "When buy signals deactivate and the score drops to NEUTRAL, don't panic. FULL SEND \u2192 NEUTRAL transitions still average +5.65% over 20 days. The rally doesn't end the moment the score changes.",
             },
@@ -547,8 +547,8 @@ export default function OrbClient() {
             DEFENSIVE: {
               emoji: "🔴", label: "DEFENSIVE", hex: "#ef4444",
               action: "Cash. No leveraged exposure. Wait.",
-              statsLine: "-1.84% avg at 20d \u00b7 43% win \u00b7 10% of trading days",
-              description: "Multiple warning signals are firing. The trend is broken or breaking. These periods produce the corrections TSLA is famous for. The -6.73% avg at 60 days means this isn't a quick dip -- it's structural deterioration.",
+              statsLine: "-4.05% avg at 60d \u00b7 43% win rate \u00b7 10% of trading days",
+              description: "Multiple warning signals are firing. The trend is broken or breaking. These periods produce the corrections TSLA is famous for. The -4.05% avg at 60 days means this isn't a quick dip -- it's structural deterioration.",
               whatToWatch: "Do NOT re-enter when the score ticks up to CAUTION (still -4.75% at 20d). Wait for DEFENSIVE \u2192 NEUTRAL (+3.94% avg at 20d). That's the real 'worst is over' signal.",
             },
           };
