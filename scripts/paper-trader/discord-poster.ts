@@ -25,7 +25,7 @@ const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL
 let webhookClient: WebhookClient | null = null;
 
 const TAYLOR_USERNAME = 'Taylor';
-const TAYLOR_AVATAR = 'https://api.dicebear.com/9.x/initials/png?seed=TM&backgroundColor=3b82f6&textColor=ffffff&fontSize=42';
+const TAYLOR_AVATAR = 'https://www.flacko.ai/avatars/taylor.jpg';
 
 /** Helper: send as Taylor with consistent identity */
 async function sendAsTaylor(options: { content?: string; embeds?: any[] }): Promise<void> {
