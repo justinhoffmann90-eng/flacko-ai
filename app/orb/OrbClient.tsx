@@ -516,12 +516,22 @@ export default function OrbClient() {
 
                       <h3 style={{ fontSize: desktopFont(18), fontWeight: 700, letterSpacing: "-0.01em" }}>{row.public_name || row.name}</h3>
                       <p className="orb-body-copy" style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.42)", marginTop: 2 }}>{row.one_liner || "No tagline available."}</p>
-                      {status === "watching" && row.state?.watching_reason && (
-                        <p style={{ fontSize: desktopFont(11), color: "rgba(234,179,8,0.7)", marginTop: 4, fontFamily: "'JetBrains Mono', monospace" }}>👁 {row.state.watching_reason}</p>
-                      )}
-                      {status === "inactive" && row.state?.inactive_reason && (
-                        <p style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.25)", marginTop: 4, fontFamily: "'JetBrains Mono', monospace" }}>{row.state.inactive_reason}</p>
-                      )}
+                      {status === "watching" && row.state?.conditions_met && (() => {
+                        const conds = row.state.conditions_met as Record<string, boolean>;
+                        const total = Object.keys(conds).length;
+                        const met = Object.values(conds).filter(Boolean).length;
+                        return total > 0 ? (
+                          <p style={{ fontSize: desktopFont(11), color: "rgba(234,179,8,0.7)", marginTop: 4, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>👁 {met}/{total} conditions met</p>
+                        ) : null;
+                      })()}
+                      {status === "inactive" && row.state?.conditions_met && (() => {
+                        const conds = row.state.conditions_met as Record<string, boolean>;
+                        const total = Object.keys(conds).length;
+                        const met = Object.values(conds).filter(Boolean).length;
+                        return total > 0 ? (
+                          <p style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.25)", marginTop: 4, fontFamily: "'JetBrains Mono', monospace" }}>{met}/{total} conditions met</p>
+                        ) : null;
+                      })()}
                       {collapsedActivationLine && (
                         <div
                           style={{

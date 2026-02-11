@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
             entry_price: state.entry_price,
             gauge_progress_pct: state.gauge_progress_pct,
             watching_reason: state.watching_reason,
+            conditions_met: state.conditions_met,
             current_price: state.current_price,
             updated_at: state.updated_at,
             inactive_reason: state.inactive_reason,
