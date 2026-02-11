@@ -65,7 +65,7 @@ export async function updateBotState(
       realized_pnl: portfolio.realizedPnl,
       last_update_at: new Date().toISOString(),
       today_trades_count: todayTradesCount,
-      current_date: new Date().toISOString().split('T')[0],
+      bot_date: new Date().toISOString().split('T')[0],
       current_orb_zone: orbZone || null,
       current_orb_score: orbScore || null,
     }, { onConflict: 'id' });
@@ -108,7 +108,7 @@ export async function getBotState(): Promise<{
       tsllAvgCost: data.tsll_avg_cost || 0,
       realizedPnl: data.realized_pnl || 0,
       todayTradesCount: data.today_trades_count || 0,
-      currentDate: data.current_date,
+      currentDate: data.bot_date,
       currentOrbZone: data.current_orb_zone,
       currentOrbScore: data.current_orb_score,
     };

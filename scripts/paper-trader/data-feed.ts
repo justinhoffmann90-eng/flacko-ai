@@ -46,52 +46,69 @@ let lastHiroFetch = 0;
 const HIRO_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 /**
- * Fetch current TSLA price from Yahoo Finance
+ * Fetch price via Yahoo Finance chart API (more reliable than quote endpoint)
+ */
+async function fetchPriceViaChart(symbol: string): Promise<TSLAQuote> {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1m&range=1d`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+  if (!res.ok) throw new Error(`Chart API ${res.status}: ${res.statusText}`);
+  const json = await res.json() as any;
+  const meta = json.chart.result[0].meta;
+  return {
+    symbol: meta.symbol,
+    price: meta.regularMarketPrice || 0,
+    change: (meta.regularMarketPrice || 0) - (meta.previousClose || meta.chartPreviousClose || 0),
+    changePercent: meta.previousClose ? ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100 : 0,
+    volume: meta.regularMarketVolume || 0,
+    open: json.chart.result[0].indicators?.quote?.[0]?.open?.[0] || 0,
+    high: meta.regularMarketDayHigh || 0,
+    low: meta.regularMarketDayLow || 0,
+    previousClose: meta.previousClose || meta.chartPreviousClose || 0,
+    timestamp: new Date(),
+  };
+}
+
+/**
+ * Fetch current TSLA price (chart API with yahoo-finance2 fallback)
  */
 export async function fetchTSLAPrice(): Promise<TSLAQuote> {
   try {
-    const quote = await yahooFinance.quote('TSLA');
-    
-    return {
-      symbol: quote.symbol,
-      price: quote.regularMarketPrice || 0,
-      change: quote.regularMarketChange || 0,
-      changePercent: quote.regularMarketChangePercent || 0,
-      volume: quote.regularMarketVolume || 0,
-      open: quote.regularMarketOpen || 0,
-      high: quote.regularMarketDayHigh || 0,
-      low: quote.regularMarketDayLow || 0,
-      previousClose: quote.regularMarketPreviousClose || 0,
-      timestamp: new Date(),
-    };
-  } catch (error) {
-    console.error('Error fetching TSLA price:', error);
-    throw new Error(`Failed to fetch TSLA price: ${error}`);
+    return await fetchPriceViaChart('TSLA');
+  } catch {
+    try {
+      const quote = await yahooFinance.quote('TSLA');
+      return {
+        symbol: quote.symbol, price: quote.regularMarketPrice || 0,
+        change: quote.regularMarketChange || 0, changePercent: quote.regularMarketChangePercent || 0,
+        volume: quote.regularMarketVolume || 0, open: quote.regularMarketOpen || 0,
+        high: quote.regularMarketDayHigh || 0, low: quote.regularMarketDayLow || 0,
+        previousClose: quote.regularMarketPreviousClose || 0, timestamp: new Date(),
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch TSLA price: ${error}`);
+    }
   }
 }
 
 /**
- * Fetch current TSLL price from Yahoo Finance
+ * Fetch current TSLL price (chart API with yahoo-finance2 fallback)
  */
 export async function fetchTSLLPrice(): Promise<TSLAQuote> {
   try {
-    const quote = await yahooFinance.quote('TSLL');
-    
-    return {
-      symbol: quote.symbol,
-      price: quote.regularMarketPrice || 0,
-      change: quote.regularMarketChange || 0,
-      changePercent: quote.regularMarketChangePercent || 0,
-      volume: quote.regularMarketVolume || 0,
-      open: quote.regularMarketOpen || 0,
-      high: quote.regularMarketDayHigh || 0,
-      low: quote.regularMarketDayLow || 0,
-      previousClose: quote.regularMarketPreviousClose || 0,
-      timestamp: new Date(),
-    };
-  } catch (error) {
-    console.error('Error fetching TSLL price:', error);
-    throw new Error(`Failed to fetch TSLL price: ${error}`);
+    return await fetchPriceViaChart('TSLL');
+  } catch {
+    try {
+      const quote = await yahooFinance.quote('TSLL');
+      return {
+        symbol: quote.symbol, price: quote.regularMarketPrice || 0,
+        change: quote.regularMarketChange || 0, changePercent: quote.regularMarketChangePercent || 0,
+        volume: quote.regularMarketVolume || 0, open: quote.regularMarketOpen || 0,
+        high: quote.regularMarketDayHigh || 0, low: quote.regularMarketDayLow || 0,
+        previousClose: quote.regularMarketPreviousClose || 0, timestamp: new Date(),
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch TSLL price: ${error}`);
+    }
   }
 }
 
@@ -280,38 +297,65 @@ export async function fetchDailyReport(): Promise<DailyReport | null> {
     
     const { data: report, error } = await supabase
       .from('reports')
-      .select('*')
-      .eq('date', today)
+      .select('report_date, extracted_data')
+      .eq('report_date', today)
       .single();
 
     if (error || !report) {
-      console.warn('No daily report found for today:', error);
-      return null;
+      // Try most recent report if today's not found
+      const { data: latest } = await supabase
+        .from('reports')
+        .select('report_date, extracted_data')
+        .order('report_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!latest?.extracted_data) {
+        console.warn('No daily report found:', error);
+        return null;
+      }
+      console.log(`Using latest report from ${latest.report_date} (today's not uploaded yet)`);
+      return parseExtractedData(latest.report_date, latest.extracted_data);
     }
 
-    // Parse key levels from the report
-    const levels = report.key_levels || [];
-    
-    return {
-      date: report.date,
-      mode: (report.mode || 'YELLOW').toUpperCase(),
-      tier: report.tier || 2,
-      masterEject: findLevelPrice(levels, 'master_eject') || findLevelPrice(levels, 'Master Eject') || 0,
-      gammaStrike: findLevelPrice(levels, 'gamma_strike') || findLevelPrice(levels, 'Gamma Strike') || 0,
-      putWall: findLevelPrice(levels, 'put_wall') || findLevelPrice(levels, 'Put Wall') || 0,
-      hedgeWall: findLevelPrice(levels, 'hedge_wall') || findLevelPrice(levels, 'Hedge Wall') || 0,
-      callWall: findLevelPrice(levels, 'call_wall') || findLevelPrice(levels, 'Call Wall') || 0,
-      levels: levels.map((l: any) => ({
-        name: l.name || l.level,
-        price: l.price || l.value,
-        type: l.type || 'neutral',
-      })),
-      commentary: report.commentary,
-    };
+    return parseExtractedData(report.report_date, report.extracted_data);
   } catch (error) {
     console.error('Error fetching daily report:', error);
     return null;
   }
+}
+
+function parseExtractedData(date: string, ed: any): DailyReport {
+  const levels = ed.levels_map || [];
+  const mode = ed.mode?.current || ed.mode?.label || 'YELLOW';
+  
+  // Find tier from tiers array (first active tier)
+  const tier = ed.tiers?.[0]?.tier || 2;
+  
+  return {
+    date,
+    mode: mode.toUpperCase(),
+    tier,
+    masterEject: ed.master_eject?.price || findLevelByType(levels, 'eject')?.price || 0,
+    gammaStrike: ed.key_gamma_strike?.price || findLevelByName(levels, 'gamma')?.price || 0,
+    putWall: findLevelByName(levels, 'put wall')?.price || 0,
+    hedgeWall: findLevelByName(levels, 'hedge wall')?.price || 0,
+    callWall: findLevelByName(levels, 'call wall')?.price || 0,
+    levels: levels.map((l: any) => ({
+      name: l.level || l.name,
+      price: l.price,
+      type: l.type || 'neutral',
+    })),
+    commentary: ed.game_plan || '',
+  };
+}
+
+function findLevelByType(levels: any[], type: string): any {
+  return levels.find((l: any) => l.type === type);
+}
+
+function findLevelByName(levels: any[], name: string): any {
+  return levels.find((l: any) => (l.level || l.name || '').toLowerCase().includes(name.toLowerCase()));
 }
 
 /**
