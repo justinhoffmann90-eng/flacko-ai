@@ -284,7 +284,7 @@ export default function OrbClient() {
 
   const loadData = useCallback(async () => {
     const adminId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("admin") : null;
-    const res = await fetch(`/api/orb/states${adminId ? `?admin=${adminId}` : ""}`, { cache: "no-store" });
+    const res = await fetch(`/api/orb/states${adminId ? `?admin=${adminId}` : ""}`, { cache: "no-store", credentials: "include" });
     const data = await res.json();
     setRows(Array.isArray(data) ? data : []);
   }, []);
