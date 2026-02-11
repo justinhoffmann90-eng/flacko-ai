@@ -217,6 +217,14 @@ export async function computeIndicators(ticker: string) {
 
     consecutive_down: consDown,
     consecutive_up: consUp,
+    stabilization_days: (() => {
+      let days = 0;
+      for (let j = i; j > 0; j--) {
+        if (lows[j] >= lows[j - 1]) days++;
+        else break;
+      }
+      return days;
+    })(),
 
     weekly_ema9: wEma9[lastWeekIdx],
     weekly_ema13: wEma13[lastWeekIdx],

@@ -287,6 +287,14 @@ async function main() {
       price_vs_ema21: ((closes[i] - ema21[i]) / ema21[i]) * 100,
       consecutive_down: consDown,
       consecutive_up: consUp,
+      stabilization_days: (() => {
+        let days = 0;
+        for (let j = i; j > 0; j--) {
+          if (lows[j] >= lows[j - 1]) days++;
+          else break;
+        }
+        return days;
+      })(),
       weekly_ema9: wEma9[wIdx],
       weekly_ema13: wEma13[wIdx],
       weekly_ema21: wEma21[wIdx],

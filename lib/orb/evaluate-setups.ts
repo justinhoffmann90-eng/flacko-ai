@@ -26,6 +26,7 @@ export interface Indicators {
   price_vs_ema21: number;
   consecutive_down: number;
   consecutive_up: number;
+  stabilization_days: number; // consecutive days where low >= prior day's low
   weekly_emas_stacked: boolean;
   price_above_weekly_all: boolean;
   price_above_weekly_13: boolean;
@@ -223,17 +224,19 @@ function evaluateSmiOversoldGauge(ind: Indicators, prev?: PreviousState): SetupR
 }
 
 function evaluateOversoldExtreme(ind: Indicators): SetupResult {
-  const isActive = ind.sma200_dist < -40;
-  const isWatching = ind.sma200_dist < -30 && ind.sma200_dist >= -40;
+  const belowNeg40 = ind.sma200_dist < -40;
+  const stabilized = ind.stabilization_days >= 2;
+  const isActive = belowNeg40 && stabilized;
+  const isWatching = belowNeg40 && !stabilized;
   return {
     setup_id: "oversold-extreme",
     is_active: isActive,
     is_watching: isWatching,
-    conditions_met: { below_neg40_sma200: isActive },
+    conditions_met: { below_neg40_sma200: belowNeg40, stabilization: stabilized },
     reason: isActive
-      ? `Price ${ind.sma200_dist.toFixed(1)}% below 200 SMA - GENERATIONAL`
+      ? `Price ${ind.sma200_dist.toFixed(1)}% below 200 SMA + ${ind.stabilization_days}d stabilized - GENERATIONAL`
       : isWatching
-      ? `Price ${ind.sma200_dist.toFixed(1)}% below 200 SMA - approaching -40%`
+      ? `Price ${ind.sma200_dist.toFixed(1)}% below 200 SMA - waiting for stabilization (${ind.stabilization_days}d)`
       : `Price ${ind.sma200_dist.toFixed(1)}% from 200 SMA`,
   };
 }
