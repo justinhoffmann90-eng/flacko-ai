@@ -209,9 +209,16 @@ export async function postEntryAlert(
   
   // Trade details — clean, no duplication
   content += `**${trade.instrument}** — bought ${trade.shares} shares @ $${trade.price.toFixed(2)}\n`;
-  content += `size: $${trade.totalValue.toFixed(0)}`;
+  const isMulti = 'tsla' in portfolio;
+  const totalPortfolio = isMulti ? (portfolio as MultiPortfolio).totalValue : (portfolio as Portfolio).totalValue;
+  const cashBefore = (isMulti ? (portfolio as MultiPortfolio).cash : (portfolio as Portfolio).cash) + trade.totalValue;
+  const pctUsed = ((trade.totalValue / cashBefore) * 100).toFixed(1);
+  const cashAfter = cashBefore - trade.totalValue;
+  const pctCashLeft = ((cashAfter / totalPortfolio) * 100).toFixed(0);
+  
+  content += `size: $${trade.totalValue.toFixed(0)} (${pctUsed}% of cash)`;
   if (report) {
-    content += ` (${report.mode} mode, tier ${report.tier})`;
+    content += ` | ${report.mode} mode, tier ${report.tier}`;
   }
   content += `\n`;
   
@@ -241,18 +248,19 @@ export async function postEntryAlert(
   // Taylor's commentary — the WHY
   content += `\n**why this trade:**\n${commentary}\n`;
   
-  // Portfolio summary
-  const isMulti = 'tsla' in portfolio;
-  if (isMulti) {
+  // Portfolio summary with cash %
+  if ('tsla' in portfolio) {
     const multi = portfolio as MultiPortfolio;
+    const cashPct = ((multi.cash / multi.totalValue) * 100).toFixed(0);
     content += `\nportfolio:`;
     if (multi.tsla) content += ` TSLA ${multi.tsla.shares}`;
     if (multi.tsll) content += ` | TSLL ${multi.tsll.shares}`;
-    content += ` | cash: $${multi.cash.toFixed(0)}`;
+    content += ` | cash: $${multi.cash.toFixed(0)} (${cashPct}%)`;
   } else {
     const single = portfolio as Portfolio;
+    const cashPct = ((single.cash / single.totalValue) * 100).toFixed(0);
     content += `\nportfolio: ${single.position?.shares || trade.shares} ${trade.instrument}`;
-    content += ` | cash: $${single.cash.toFixed(0)}`;
+    content += ` | cash: $${single.cash.toFixed(0)} (${cashPct}%)`;
   }
   
   try {
