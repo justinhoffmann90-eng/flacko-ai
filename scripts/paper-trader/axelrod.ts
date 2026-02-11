@@ -17,7 +17,7 @@ const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL
 
 let webhookClient: WebhookClient | null = null;
 
-const AXELROD_USERNAME = 'Axelrod';
+const AXELROD_USERNAME = 'Axe';
 // TODO: Add avatar URL for Axelrod
 
 const AXELROD_SYSTEM_PROMPT = `You are Bobby Axelrod from Billions — but you're commenting on a paper trading bot's moves in a Discord channel.
