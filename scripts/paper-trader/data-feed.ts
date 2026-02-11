@@ -25,6 +25,54 @@ let hiroCache: HIROData | null = null;
 let lastHiroFetch = 0;
 const HIRO_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
+// Price cache configuration
+const PRICE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PRICE_CACHE_API = process.env.NEXT_PUBLIC_SITE_URL 
+  ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/price-cache`
+  : 'https://www.flacko.ai/api/price-cache';
+
+/**
+ * Fetch price from shared cache (Supabase price_cache table)
+ * Returns cached price if updated within 5 minutes, otherwise null
+ */
+async function fetchPriceFromCache(symbol: string): Promise<TSLAQuote | null> {
+  try {
+    const response = await fetch(PRICE_CACHE_API);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const cached = data[symbol];
+
+    if (!cached) return null;
+
+    // Check if cache is fresh (within 5 minutes)
+    const updatedAt = new Date(cached.updated_at).getTime();
+    const now = Date.now();
+    const age = now - updatedAt;
+
+    if (age > PRICE_CACHE_TTL) {
+      console.log(`Cache for ${symbol} is stale (${Math.round(age / 1000)}s old)`);
+      return null;
+    }
+
+    return {
+      symbol: cached.symbol,
+      price: Number(cached.price),
+      change: Number(cached.change || 0),
+      changePercent: Number(cached.change_percent || 0),
+      volume: Number(cached.volume || 0),
+      open: 0, // Not cached
+      high: Number(cached.high || 0),
+      low: Number(cached.low || 0),
+      previousClose: Number(cached.previous_close || 0),
+      timestamp: new Date(cached.updated_at),
+    };
+  } catch (error) {
+    console.warn(`Failed to fetch ${symbol} from cache:`, error);
+    return null;
+  }
+}
+
 /**
  * Fetch price via Yahoo Finance chart API (more reliable than quote endpoint)
  */
@@ -49,9 +97,17 @@ async function fetchPriceViaChart(symbol: string): Promise<TSLAQuote> {
 }
 
 /**
- * Fetch current TSLA price (chart API with yahoo-finance2 fallback)
+ * Fetch current TSLA price (cache-first, with Yahoo API fallback)
  */
 export async function fetchTSLAPrice(): Promise<TSLAQuote> {
+  // Try cache first
+  const cached = await fetchPriceFromCache('TSLA');
+  if (cached) {
+    console.log('Using cached TSLA price');
+    return cached;
+  }
+
+  // Fallback to direct Yahoo chart API
   try {
     return await fetchPriceViaChart('TSLA');
   } catch {
@@ -71,9 +127,17 @@ export async function fetchTSLAPrice(): Promise<TSLAQuote> {
 }
 
 /**
- * Fetch current TSLL price (chart API with yahoo-finance2 fallback)
+ * Fetch current TSLL price (cache-first, with Yahoo API fallback)
  */
 export async function fetchTSLLPrice(): Promise<TSLAQuote> {
+  // Try cache first
+  const cached = await fetchPriceFromCache('TSLL');
+  if (cached) {
+    console.log('Using cached TSLL price');
+    return cached;
+  }
+
+  // Fallback to direct Yahoo chart API
   try {
     return await fetchPriceViaChart('TSLL');
   } catch {
