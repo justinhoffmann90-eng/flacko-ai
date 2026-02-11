@@ -700,6 +700,7 @@ export default function OrbClient() {
                             const r5 = signal?.ret_5d ?? signal?.return_5d ?? signal?.forward_5d;
                             const r10 = signal?.ret_10d ?? signal?.return_10d ?? signal?.forward_10d;
                             const r20 = signal?.ret_20d ?? signal?.return_20d ?? signal?.forward_20d;
+                            const r60 = signal?.ret_60d ?? signal?.return_60d ?? signal?.forward_60d;
                             return (
                               <div
                                 key={signal?.id || `${row.id}-signal-${i}`}
@@ -725,6 +726,7 @@ export default function OrbClient() {
                                     { label: "5D", val: r5 },
                                     { label: "10D", val: r10 },
                                     { label: "20D", val: r20 },
+                                    { label: "60D", val: r60 },
                                   ].map((col) => {
                                     const c = Number(col.val);
                                     return (
@@ -772,6 +774,7 @@ export default function OrbClient() {
                                   { label: "5D", val: inst.ret_5d },
                                   { label: "10D", val: inst.ret_10d },
                                   { label: "20D", val: inst.ret_20d },
+                                  { label: "60D", val: inst.ret_60d },
                                 ].map((col) => {
                                   const c = Number(col.val);
                                   return (
