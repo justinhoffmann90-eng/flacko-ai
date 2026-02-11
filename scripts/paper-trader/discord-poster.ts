@@ -107,7 +107,7 @@ export async function postStatusUpdate(
     timeZone: 'America/Chicago',
   }).toLowerCase();
   
-  let content = `⚔️ paper flacko — ${timeStr} ct\n\n`;
+  let content = `⚔️ taylor — ${timeStr} ct\n\n`;
   content += `tsla: $${quote.price.toFixed(2)} (${withSignPercent(quote.changePercent)} today)\n`;
   content += `tsll: $${tsllQuote.price.toFixed(2)} (${withSignPercent(tsllQuote.changePercent)} today)\n`;
   
@@ -206,7 +206,7 @@ export async function postEntryAlert(
   const commentary = generateEntryCommentary(trade, report, orb, reasoningArray);
   
   const overrideTag = trade.isOverride ? ` ⚡ OVERRIDE` : '';
-  let content = `⚔️ paper flacko — **ENTRY${overrideTag}** — ${timeStr} ct\n\n`;
+  let content = `⚔️ taylor — **ENTRY${overrideTag}** — ${timeStr} ct\n\n`;
   
   // Trade details — clean, no duplication
   content += `**${trade.instrument}** — bought ${trade.shares} shares @ $${trade.price.toFixed(2)}\n`;
@@ -377,7 +377,7 @@ export async function postExitAlert(
   const isWin = (trade.realizedPnl || 0) > 0;
   const returnPct = trade.realizedPnl && trade.totalValue ? (trade.realizedPnl / trade.totalValue) * 100 : 0;
   
-  let content = `⚔️ paper flacko — **EXIT** — ${timeStr} ct\n\n`;
+  let content = `⚔️ taylor — **EXIT** — ${timeStr} ct\n\n`;
   content += `**${trade.instrument}** — sold ${trade.shares} shares @ $${trade.price.toFixed(2)}\n`;
   content += `result: ${withSign(trade.realizedPnl || 0)} (${withSignPercent(returnPct)})\n`;
   
@@ -459,7 +459,7 @@ export async function postZoneChangeAlert(
     timeZone: 'America/Chicago',
   }).toLowerCase();
   
-  let content = `⚔️ paper flacko — **ORB ZONE CHANGE** — ${timeStr} ct\n\n`;
+  let content = `⚔️ taylor — **ORB ZONE CHANGE** — ${timeStr} ct\n\n`;
   content += `${orbZoneEmoji(fromZone)} ${fromZone} → ${orbZoneEmoji(toZone)} ${toZone}\n`;
   content += `score: ${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(3)}\n\n`;
   
@@ -517,7 +517,7 @@ export async function postMarketOpen(
 ): Promise<void> {
   if (!webhookClient) return;
   
-  let content = `⚔️ paper flacko — **market open**\n\n`;
+  let content = `⚔️ taylor — **market open**\n\n`;
   content += `TSLA $${quote.price.toFixed(2)} | TSLL $${tsllQuote.price.toFixed(2)}\n`;
   
   if (report) {
@@ -629,7 +629,7 @@ export async function postMarketClose(
 ): Promise<void> {
   if (!webhookClient) return;
   
-  let content = `⚔️ paper flacko — **market close**\n\n`;
+  let content = `⚔️ taylor — **market close**\n\n`;
   
   const isMulti = 'tsla' in portfolio;
   if (isMulti) {
@@ -699,7 +699,7 @@ export async function postWeeklyReport(
   if (!webhookClient) return;
   
   const embed = new EmbedBuilder()
-    .setTitle(`⚔️ paper flacko — weekly performance`)
+    .setTitle(`⚔️ taylor — weekly performance`)
     .setDescription(`(${weekRange})`)
     .setColor(metrics.totalReturn >= 0 ? 0x00ff00 : 0xff0000)
     .addFields(
@@ -733,7 +733,7 @@ export async function postError(error: string): Promise<void> {
   
   try {
     await sendAsTaylor({
-      content: `⚔️ paper flacko — **system alert**\n\nerror: ${error}\n\ninvestigating...`,
+      content: `⚔️ taylor — **system alert**\n\nerror: ${error}\n\ninvestigating...`,
     });
   } catch (e) {
     console.error('Error posting error alert:', e);
