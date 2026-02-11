@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID || "";
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID || "bf0babb8-2559-4498-ab3a-1039079bb70d";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
