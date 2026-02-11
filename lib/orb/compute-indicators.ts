@@ -1,9 +1,19 @@
-// BX-Trender: RSI(EMA(close,5) - EMA(close,20), 15) - 50
+// BX-Trender: RSI(EMA(close,5) - EMA(close,20), 5) - 50
 // SMI: Stochastic Momentum Index (K=10, D=3, Smooth=3)
-// RSI: 14-period, EMA-smoothed (matches TradingView)
+// RSI: Wilder's smoothing (RMA) — matches TradingView ta.rsi()
 
 function ema(data: number[], span: number): number[] {
   const k = 2 / (span + 1);
+  const result = [data[0]];
+  for (let i = 1; i < data.length; i++) {
+    result.push(data[i] * k + result[i - 1] * (1 - k));
+  }
+  return result;
+}
+
+/** Wilder's smoothing (RMA) — alpha = 1/span. Used by TradingView ta.rsi(). */
+function rma(data: number[], span: number): number[] {
+  const k = 1 / span;
   const result = [data[0]];
   for (let i = 1; i < data.length; i++) {
     result.push(data[i] * k + result[i - 1] * (1 - k));
@@ -24,8 +34,8 @@ function rsi(data: number[], period = 14): number[] {
   const gains = deltas.map((d) => (d > 0 ? d : 0));
   const losses = deltas.map((d) => (d < 0 ? -d : 0));
 
-  const avgGain = ema(gains, period);
-  const avgLoss = ema(losses, period);
+  const avgGain = rma(gains, period);
+  const avgLoss = rma(losses, period);
 
   return avgGain.map((g, i) => {
     if (avgLoss[i] === 0) return 100;

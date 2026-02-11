@@ -59,6 +59,16 @@ function ema(data: number[], span: number): number[] {
   return result;
 }
 
+/** Wilder's smoothing (RMA) — alpha = 1/span. Matches TradingView ta.rsi(). */
+function rma(data: number[], span: number): number[] {
+  const k = 1 / span;
+  const result = [data[0]];
+  for (let i = 1; i < data.length; i++) {
+    result.push(data[i] * k + result[i - 1] * (1 - k));
+  }
+  return result;
+}
+
 function sma(data: number[], period: number): number[] {
   return data.map((_, i) => {
     if (i < period - 1) return Number.NaN;
@@ -72,8 +82,8 @@ function rsi(data: number[], period = 14): number[] {
   const gains = deltas.map((d) => (d > 0 ? d : 0));
   const losses = deltas.map((d) => (d < 0 ? -d : 0));
 
-  const avgGain = ema(gains, period);
-  const avgLoss = ema(losses, period);
+  const avgGain = rma(gains, period);
+  const avgLoss = rma(losses, period);
 
   return avgGain.map((g, i) => {
     if (avgLoss[i] === 0) return 100;
