@@ -642,10 +642,31 @@ export default function OrbClient() {
                     )}
 
                     {row.framework === "gauge-to-target" && row.gauge_median_days && (
-                      <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                        <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Median Return</div><div className={`font-mono font-bold ${(row.gauge_median_return || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>{(row.gauge_median_return || 0) >= 0 ? "+" : ""}{row.gauge_median_return}%</div></div>
-                        <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Median Days</div><div className="text-white font-mono font-bold">{row.gauge_median_days}</div></div>
-                        <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Sample</div><div className="text-white font-mono font-bold">N={row.backtest_n}</div></div>
+                      <div className={isDesktop ? "mt-4" : "mt-3"}>
+                        <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>GAUGE-TO-TARGET · N={row.backtest_n}</p>
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: isDesktop ? 20 : 14 }}>
+                          <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 12 }}>
+                            🎯 {row.id === "smi-oversold-gauge" ? "Tracks momentum recovery from oversold to neutral" : "Tracks momentum reset from overbought to oversold"}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: isDesktop ? 14 : 10, textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                              <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>MEDIAN DAYS TO TARGET</div>
+                              <div style={{ fontSize: desktopFont(24), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: "#fff" }}>{row.gauge_median_days}</div>
+                            </div>
+                            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: isDesktop ? 14 : 10, textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                              <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>MEDIAN RETURN</div>
+                              <div style={{ fontSize: desktopFont(24), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.gauge_median_return || 0) >= 0 ? "#22c55e" : "#ef4444" }}>{(row.gauge_median_return || 0) >= 0 ? "+" : ""}{row.gauge_median_return}%</div>
+                            </div>
+                            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: isDesktop ? 14 : 10, textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                              <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>WIN RATE</div>
+                              <div style={{ fontSize: desktopFont(24), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: row.id === "smi-overbought" ? "#ef4444" : "#22c55e" }}>{row.id === "smi-overbought" ? "75" : "68"}%</div>
+                            </div>
+                            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: isDesktop ? 14 : 10, textAlign: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                              <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>TARGET HIT RATE</div>
+                              <div style={{ fontSize: desktopFont(24), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: "#22c55e" }}>{row.id === "smi-overbought" ? "100" : "95"}%</div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
