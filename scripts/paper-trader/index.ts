@@ -74,12 +74,13 @@ let marketClosePosted = false;
 let weeklyReportPosted = false;
 
 // Current session state (multi-instrument)
+// Starting with 40% baseline TSLA position (~$40k @ $350/share = 114 shares)
 let sessionState = {
-  cash: CONFIG.STARTING_CAPITAL,
-  sharesHeld: 0,  // TSLA shares
-  avgCost: 0,      // TSLA avg cost
-  tsllShares: 0,   // TSLL shares
-  tsllAvgCost: 0,  // TSLL avg cost
+  cash: 60000,              // 60% cash
+  sharesHeld: 114,          // TSLA shares (~$40k baseline position)
+  avgCost: 350.00,          // TSLA avg cost
+  tsllShares: 0,            // TSLL shares
+  tsllAvgCost: 0,           // TSLL avg cost
   realizedPnl: 0,
   todayTradesCount: 0,
   currentDate: new Date().toISOString().split('T')[0],
