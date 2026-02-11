@@ -61,6 +61,57 @@ You will receive:
 1. Taylor's post (what was just posted to Discord)
 2. Full market context (price, levels, Orb zone, HIRO, report data, portfolio)
 
+SYSTEM KNOWLEDGE (source of truth — use this to validate Taylor):
+
+Modes & Daily Caps:
+- GREEN: up to 25% daily cap. Favorable conditions.
+- YELLOW: 15% or less. Proceed with caution.
+- ORANGE: 10% or less. Elevated caution.
+- RED: 5% or less. Defensive, nibbles only.
+- Trim cap: 25% of remaining per level hit.
+
+Slow Zone:
+- A price level (from the daily report) where the cap reduces to 2.5%.
+- If price is in the Slow Zone, even a GREEN mode becomes constrained. Flag any trades that ignore Slow Zone.
+- It's called "Slow Zone" (NOT "Pause Zone" — rebranded Jan 30, 2026).
+
+Master Eject (MULTI-STEP):
+- The master eject is NOT a single "exit everything" level.
+- It can have multiple steps, e.g.: Step 1 at $423.75 = "cut leverage, hold shares" / Step 2 at $380 = "trim to 50%"
+- The ACTION for each eject level comes from the daily report. Never assume "exit all."
+- Validate that Taylor follows the correct step for the current price.
+
+Alert Levels Structure:
+- T1-T4: Trim targets (resistance levels where you take profit)
+- S1-S2: Support/buy zones (where you add position)
+- Each level has a specific action: "Nibble 10% of cap", "Trim 25% of remaining", etc.
+- Validate entries happen near S levels and exits near T levels. Buying at T levels or selling at S levels = flag it.
+
+Orb Zones (from backtested data):
+- FULL_SEND: Multiple buy signals active, no avoids. Avg +6.2% at 20 days (66% win rate). Use TSLL (2x leverage).
+- NEUTRAL: Mixed signals. Hold existing, no urgency. Use TSLA shares only.
+- CAUTION: Avoid signals outweigh buys. Avg -1.2% at 20 days (41% win rate). No new buys. Trim TSLL first.
+- DEFENSIVE: Multiple avoids active. Avg -1.8% at 20 days. Exit ALL TSLL immediately. Protect capital.
+
+TSLL Rules:
+- TSLL (2x leveraged TSLA ETF) is ONLY used in FULL_SEND zone.
+- TSLL position size = 50% of mode allocation (because 2x = same notional exposure).
+- Zone drops from FULL_SEND to NEUTRAL: hold existing TSLL, no new TSLL.
+- Zone drops to CAUTION: sell TSLL before trimming TSLA.
+- Zone drops to DEFENSIVE: liquidate ALL TSLL immediately regardless of P&L.
+
+HIRO (Hedging Impact on Real-time Options):
+- Positive HIRO = dealers buying = bullish flow support
+- Negative HIRO = dealers selling/hedging = bearish pressure
+- Context matters: HIRO in upper quartile of 30-day range = strong conviction. Lower quartile = caution.
+- HIRO divergence from price (price up but HIRO negative) is a warning signal.
+
+Gamma Regime:
+- Above Key Gamma Strike = positive gamma. Dealers buy dips, sell rips. Stabilizing.
+- Below Key Gamma Strike = negative gamma. Dealers amplify moves. Volatile.
+
+Key Gamma Strike is in the report. If Taylor enters a position below the gamma strike, flag the increased volatility risk.
+
 Cross-reference everything. Give your verdict. No preamble — just start talking.`;
 
 interface AxelrodContext {
@@ -104,8 +155,18 @@ async function generateCommentary(context: AxelrodContext): Promise<string> {
   
   if (context.report) {
     contextMsg += `\nDaily Report context:\n`;
-    contextMsg += `Mode: ${context.report.mode}\n`;
-    contextMsg += `Key levels: Gamma Strike $${context.report.gammaStrike}, Put Wall $${context.report.putWall}, Call Wall $${context.report.callWall}, Master Eject $${context.report.masterEject}\n`;
+    contextMsg += `Mode: ${context.report.mode} | Tier: ${context.report.tier}\n`;
+    contextMsg += `Key SpotGamma levels: Gamma Strike $${context.report.gammaStrike}, Put Wall $${context.report.putWall}, Hedge Wall $${context.report.hedgeWall}, Call Wall $${context.report.callWall}\n`;
+    contextMsg += `Master Eject: $${context.report.masterEject}\n`;
+    if (context.report.levels && context.report.levels.length > 0) {
+      contextMsg += `Full alert levels from report:\n`;
+      for (const level of context.report.levels) {
+        contextMsg += `  ${level.name}: $${level.price} (${level.type})\n`;
+      }
+    }
+    if (context.report.commentary) {
+      contextMsg += `Report commentary: ${context.report.commentary}\n`;
+    }
   }
   
   if (context.hiro) {
@@ -167,7 +228,7 @@ async function generateViaAnthropic(contextMsg: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 500,
+        max_tokens: 800,
         system: AXELROD_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: contextMsg }],
       }),
@@ -198,7 +259,7 @@ async function generateViaOpenAI(contextMsg: string): Promise<string> {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 500,
+        max_tokens: 800,
         messages: [
           { role: 'system', content: AXELROD_SYSTEM_PROMPT },
           { role: 'user', content: contextMsg },
