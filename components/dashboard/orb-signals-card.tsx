@@ -30,7 +30,7 @@ interface OrbScore {
 
 const ZONE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; glow: string }> = {
   FULL_SEND: { label: "FULL SEND", color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/30", glow: "shadow-green-500/20" },
-  NEUTRAL: { label: "NEUTRAL", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/30", glow: "shadow-yellow-500/20" },
+  NEUTRAL: { label: "NEUTRAL", color: "text-white", bg: "bg-white/5", border: "border-white/20", glow: "shadow-white/10" },
   CAUTION: { label: "CAUTION", color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", glow: "shadow-orange-500/20" },
   DEFENSIVE: { label: "DEFENSIVE", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", glow: "shadow-red-500/20" },
 };
