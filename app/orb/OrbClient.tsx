@@ -612,7 +612,7 @@ export default function OrbClient() {
 
                     {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
 
-                    {row.backtest_n && (
+                    {row.backtest_n && row.framework !== "gauge-to-target" && (
                       <div className={isDesktop ? "mt-4" : "mt-3"}>
                         <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: isDesktop ? 10 : 8, fontFamily: "'JetBrains Mono', monospace" }}>FORWARD RETURNS · N={row.backtest_n}</p>
                         <div className={isDesktop ? "space-y-3" : "space-y-2"}>
@@ -641,7 +641,7 @@ export default function OrbClient() {
                       </div>
                     )}
 
-                    {row.framework === "gauge-to-target" && !isActive && row.gauge_median_days && (
+                    {row.framework === "gauge-to-target" && row.gauge_median_days && (
                       <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
                         <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Median Return</div><div className={`font-mono font-bold ${(row.gauge_median_return || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>{(row.gauge_median_return || 0) >= 0 ? "+" : ""}{row.gauge_median_return}%</div></div>
                         <div className="p-2 rounded-lg bg-zinc-900/70 border border-white/5 text-center"><div className="text-zinc-500">Median Days</div><div className="text-white font-mono font-bold">{row.gauge_median_days}</div></div>
