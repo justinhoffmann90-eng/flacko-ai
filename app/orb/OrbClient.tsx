@@ -29,7 +29,6 @@ type OrbRow = {
   description: string | null;
   state: any;
   livePerformance: { wins: number; total: number; avgReturn: number } | null;
-  _admin?: boolean;
   conditions?: any;
   eval_logic?: any;
 };
@@ -141,9 +140,13 @@ function ReturnBar({ value, label, maxAbs = 15, isDesktop = false, showLabel = t
   );
 }
 
-function ActiveTradeCard({ row, trade }: { row: OrbRow; trade: Trade | null }) {
+function ActiveTradeCard({ row, trade, livePrice }: { row: OrbRow; trade: Trade | null; livePrice: number | null }) {
   if (!trade) return null;
   const isGauge = row.framework === "gauge-to-target";
+  const hasLiveReturn = livePrice != null && Number.isFinite(trade.entry_price) && trade.entry_price > 0;
+  const displayReturn = hasLiveReturn
+    ? ((livePrice - trade.entry_price) / trade.entry_price) * 100
+    : trade.current_return_pct;
   const gaugeEntry = row.state?.gauge_entry_value;
   const gaugeCurrent = row.state?.gauge_current_value;
   const gaugeTarget = row.state?.gauge_target_value;
@@ -165,12 +168,15 @@ function ActiveTradeCard({ row, trade }: { row: OrbRow; trade: Trade | null }) {
           fontSize: 16,
           fontWeight: 800,
           fontFamily: "'JetBrains Mono', monospace",
-          color: trade.current_return_pct >= 0 ? "#22c55e" : "#ef4444",
-          marginBottom: 8,
+          color: displayReturn >= 0 ? "#22c55e" : "#ef4444",
+          marginBottom: 4,
         }}
       >
-        Current Return: {trade.current_return_pct >= 0 ? "+" : ""}
-        {trade.current_return_pct.toFixed(2)}%
+        Current Return: {displayReturn >= 0 ? "+" : ""}
+        {displayReturn.toFixed(2)}%
+      </div>
+      <div style={{ fontSize: 12, color: "#a1a1aa", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>
+        TSLA: {livePrice != null ? `$${livePrice.toFixed(2)}` : "—"}
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
         <div className="text-zinc-500">Day</div><div className="text-white font-mono">{trade.days_active}{row.gauge_median_days ? ` of ~${row.gauge_median_days} median` : ""}</div>
@@ -343,8 +349,8 @@ export default function OrbClient() {
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[]; backtest: any[] }>>({});
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
   const [isDesktop, setIsDesktop] = useState(false);
-  const [adminDescToggle, setAdminDescToggle] = useState<Record<string, boolean>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [livePrice, setLivePrice] = useState<number | null>(null);
   const pullStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -356,20 +362,34 @@ export default function OrbClient() {
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    const fetchLivePrice = async () => {
+      try {
+        const res = await fetch("/api/quote/tsla", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        const nextPrice = Number(data?.price);
+        if (mounted && Number.isFinite(nextPrice)) {
+          setLivePrice(nextPrice);
+        }
+      } catch {
+        // best-effort live quote
+      }
+    };
+
+    fetchLivePrice();
+    const interval = setInterval(fetchLivePrice, 60_000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const desktopFont = (mobilePx: number) => (isDesktop ? Math.round(mobilePx * 1.2) : mobilePx);
 
   const loadData = useCallback(async () => {
-    // Try client-side Supabase auth to detect admin
-    let adminParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("admin") : null;
-    if (!adminParam) {
-      try {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) adminParam = user.id;
-      } catch {}
-    }
-    const res = await fetch(`/api/orb/states${adminParam ? `?admin=${adminParam}` : ""}`, { cache: "no-store", credentials: "include" });
+    const res = await fetch(`/api/orb/states`, { cache: "no-store", credentials: "include" });
     const data = await res.json();
     // Handle both old (array) and new ({ score, setups }) response shapes
     if (Array.isArray(data)) {
@@ -792,6 +812,11 @@ export default function OrbClient() {
                     prefix: "Triggered",
                   })
                 : null;
+            const collapsedEntry = Number(collapsedEntryPrice);
+            const collapsedLiveReturn =
+              livePrice != null && Number.isFinite(collapsedEntry) && collapsedEntry > 0
+                ? ((livePrice - collapsedEntry) / collapsedEntry) * 100
+                : null;
 
             const badge = (() => {
               if (status === "active") {
@@ -862,6 +887,20 @@ export default function OrbClient() {
                           }}
                         >
                           {collapsedActivationLine}
+                          {collapsedLiveReturn !== null && (
+                            <span
+                              style={{
+                                fontSize: desktopFont(11),
+                                fontFamily: "'JetBrains Mono', monospace",
+                                fontWeight: 700,
+                                color: collapsedLiveReturn >= 0 ? "#22c55e" : "#ef4444",
+                                marginLeft: 8,
+                              }}
+                            >
+                              {collapsedLiveReturn >= 0 ? "+" : ""}
+                              {collapsedLiveReturn.toFixed(2)}%
+                            </span>
+                          )}
                         </div>
                       )}
 
@@ -912,21 +951,14 @@ export default function OrbClient() {
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: isDesktop ? "18px 24px 22px" : "14px 16px 16px", animation: "slideDown .25s ease" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isDesktop ? 10 : 6 }}>
                       <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
-                      {row._admin && row.description && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setAdminDescToggle(prev => ({ ...prev, [row.id]: !prev[row.id] })); }}
-                          style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, border: "1px solid rgba(139,92,246,0.3)", background: adminDescToggle[row.id] ? "rgba(139,92,246,0.2)" : "transparent", color: "rgba(139,92,246,0.7)", fontFamily: "'JetBrains Mono', monospace", cursor: "pointer", letterSpacing: "0.05em" }}
-                        >
-                          {adminDescToggle[row.id] ? "🔒 FULL" : "PUBLIC"}
-                        </button>
-                      )}
                     </div>
-                    {(adminDescToggle[row.id] && row._admin && row.description)
-                      ? <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(139,92,246,0.6)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>{row.description}</p>
-                      : row.public_description && <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>{row.public_description}</p>
-                    }
+                    {(row.description || row.public_description) && (
+                      <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>
+                        {row.description || row.public_description}
+                      </p>
+                    )}
 
-                    {isActive && <ActiveTradeCard row={row} trade={openTrade} />}
+                    {isActive && <ActiveTradeCard row={row} trade={openTrade} livePrice={livePrice} />}
 
                     {row.backtest_n && row.framework !== "gauge-to-target" && (
                       <div className={isDesktop ? "mt-4" : "mt-3"}>
@@ -1111,46 +1143,37 @@ export default function OrbClient() {
                       )}
                     </div>
 
-                    {/* Admin-only indicator details */}
-                    {row._admin && (
-                      <div className="mt-3 p-3 rounded-lg" style={{ background: "rgba(139, 92, 246, 0.06)", border: "1px solid rgba(139, 92, 246, 0.2)" }}>
-                        <p style={{ fontSize: 10, letterSpacing: "0.1em", color: "rgba(139, 92, 246, 0.6)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>🔒 ADMIN · INDICATOR DETAILS</p>
-                        {row.name && row.name !== row.public_name && (
-                          <div className="mb-2">
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Internal: </span>
-                            <span style={{ fontSize: 12, color: "rgba(139, 92, 246, 0.8)", fontFamily: "'JetBrains Mono', monospace" }}>{row.name}</span>
-                          </div>
-                        )}
-                        {row.description && (
-                          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.5, marginBottom: 8 }}>{row.description}</p>
-                        )}
+                    {/* Signal conditions - visible to all users */}
+                    {(row.conditions || row.eval_logic || row.state?.gauge_current_value != null || row.state?.entry_indicator_values) && (
+                      <div className="mt-3 p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>HOW IT WORKS</p>
                         {row.conditions && (
                           <div className="mb-2">
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Conditions: </span>
-                            <pre style={{ fontSize: 11, color: "rgba(139, 92, 246, 0.7)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
+                            <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Conditions: </span>
+                            <pre style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
                               {typeof row.conditions === "string" ? row.conditions : JSON.stringify(row.conditions, null, 2)}
                             </pre>
                           </div>
                         )}
                         {row.eval_logic && (
                           <div className="mb-2">
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Eval Logic: </span>
-                            <pre style={{ fontSize: 11, color: "rgba(139, 92, 246, 0.7)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
+                            <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Eval Logic: </span>
+                            <pre style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
                               {typeof row.eval_logic === "string" ? row.eval_logic : JSON.stringify(row.eval_logic, null, 2)}
                             </pre>
                           </div>
                         )}
                         {row.state?.gauge_current_value != null && (
-                          <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                            <div><span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Gauge Entry: </span><span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_entry_value}</span></div>
-                            <div><span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Current: </span><span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_current_value}</span></div>
-                            <div><span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Target: </span><span style={{ fontSize: 12, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_target_value}</span></div>
+                          <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" }}>
+                            <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Gauge Entry: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_entry_value}</span></div>
+                            <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Current: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_current_value}</span></div>
+                            <div><span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Target: </span><span style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>{row.state.gauge_target_value}</span></div>
                           </div>
                         )}
                         {row.state?.entry_indicator_values && (
                           <div className="mt-2">
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>Entry Indicators: </span>
-                            <pre style={{ fontSize: 11, color: "rgba(139, 92, 246, 0.7)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
+                            <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>Entry Indicators: </span>
+                            <pre style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", marginTop: 4 }}>
                               {JSON.stringify(row.state.entry_indicator_values, null, 2)}
                             </pre>
                           </div>
