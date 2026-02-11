@@ -433,7 +433,7 @@ export default function OrbClient() {
             <h1 style={{ fontSize: desktopFont(30), fontWeight: 800, letterSpacing: "-0.03em", background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Orb</h1>
             <span className="ml-auto" style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
           </div>
-          <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 4 avoid signals • 905 bars backtested • TSLA</p>
+          <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 6 avoid signals • TSLA</p>
         </div>
 
 
@@ -858,7 +858,7 @@ export default function OrbClient() {
         </div>
 
         <div className="mt-6 pt-4 border-t border-zinc-800/50" style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>
-          <p>Data: 905 TSLA daily bars (Jul 2022 - Feb 2026) | BX-Trender computed from OHLCV | SMI: 10/3/3</p>
+          <p>Data: TSLA daily bars | BX-Trender computed from OHLCV | SMI: 10/3/3</p>
           <p className="mt-1">Past performance does not guarantee future results. All statistics are from backtesting.</p>
         </div>
       </div>
