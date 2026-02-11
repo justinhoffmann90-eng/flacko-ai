@@ -180,7 +180,8 @@ export async function postEntryAlert(
   trade: Trade,
   report: DailyReport | null,
   portfolio: Portfolio | MultiPortfolio,
-  orb: OrbData
+  orb: OrbData,
+  hiro?: HIROData
 ): Promise<void> {
   if (!webhookClient) return;
   
@@ -233,8 +234,12 @@ export async function postEntryAlert(
   }
   content += `\n`;
   
-  // HIRO reference (from #hiro channel, not API)
-  content += `flow: see <#${HIRO_CHANNEL_ID}> for latest HIRO\n`;
+  // HIRO — Taylor's reading of the flow
+  if (hiro) {
+    const readingM = hiro.reading / 1000000;
+    const readingStr = readingM >= 0 ? `+$${readingM.toFixed(0)}M` : `-$${Math.abs(readingM).toFixed(0)}M`;
+    content += `flow: HIRO ${readingStr} (${hiro.percentile30Day.toFixed(0)}th pctl) — ${describeHiro(hiro)}\n`;
+  }
   
   // Taylor's commentary — the WHY
   content += `\n**why this trade:**\n${commentary}\n`;
@@ -258,6 +263,17 @@ export async function postEntryAlert(
   } catch (error) {
     console.error('Error posting entry alert:', error);
   }
+}
+
+/**
+ * Describe HIRO reading in plain English
+ */
+function describeHiro(hiro: HIROData): string {
+  if (hiro.percentile30Day >= 80) return 'strong institutional buying. flow supports longs.';
+  if (hiro.percentile30Day >= 60) return 'moderate buying pressure. flow is constructive.';
+  if (hiro.percentile30Day >= 40) return 'flow is neutral. no strong directional signal.';
+  if (hiro.percentile30Day >= 20) return 'mild selling pressure. watching for acceleration.';
+  return 'heavy selling. institutional flow is negative.';
 }
 
 /**
@@ -474,7 +490,8 @@ export async function postMarketOpen(
   quote: TSLAQuote,
   tsllQuote: TSLAQuote,
   report: DailyReport | null,
-  orb: OrbData
+  orb: OrbData,
+  hiro?: HIROData
 ): Promise<void> {
   if (!webhookClient) return;
   
@@ -505,7 +522,11 @@ export async function postMarketOpen(
     content += `Capital preservation mode. No new positions. Protecting what we have.`;
   }
   
-  content += `\nflow: see <#${HIRO_CHANNEL_ID}> for HIRO`;
+  if (hiro) {
+    const readingM = hiro.reading / 1000000;
+    const readingStr = readingM >= 0 ? `+$${readingM.toFixed(0)}M` : `-$${Math.abs(readingM).toFixed(0)}M`;
+    content += `\nflow: HIRO ${readingStr} (${hiro.percentile30Day.toFixed(0)}th pctl) — ${describeHiro(hiro)}`;
+  }
   
   try {
     await sendAsTaylor({ content });

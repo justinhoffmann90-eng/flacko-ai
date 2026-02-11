@@ -170,7 +170,7 @@ async function tradingLoop(): Promise<void> {
         fetchDailyReport(),
         fetchOrbScore(),
       ]);
-      await postMarketOpen(quote, tsllQuote, report, orb);
+      await postMarketOpen(quote, tsllQuote, report, orb, undefined);
       // Axelrod reacts to market open
       postAxelrodCommentary({
         taylorPost: `Market open. TSLA $${quote.price.toFixed(2)}, mode ${report?.mode || 'unknown'}, Orb ${orb.zone} (${orb.score.toFixed(3)}). Starting capital $100k.`,
@@ -433,7 +433,7 @@ async function executeBuy(
     tsllQuote.price,
     sessionState.realizedPnl
   );
-  await postEntryAlert(trade, report, updatedPortfolio, orb);
+  await postEntryAlert(trade, report, updatedPortfolio, orb, hiro);
   // Axelrod reacts to the entry
   postAxelrodCommentary({
     taylorPost: `ENTRY: Bought ${shares} ${instrument} @ $${price.toFixed(2)}. ${signal.reasoning.join('. ')}`,
