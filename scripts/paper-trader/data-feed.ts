@@ -174,53 +174,79 @@ export async function fetchOrbScore(): Promise<OrbData> {
 export async function fetchHIRO(): Promise<HIROData> {
   const now = Date.now();
   
-  // Return cached data if fresh
+  // Return cached data if fresh (5 min)
   if (hiroCache && (now - lastHiroFetch) < HIRO_CACHE_TTL) {
     return hiroCache;
   }
 
   try {
-    // Try to fetch from SpotGamma API
+    // Read latest HIRO from Discord #hiro-intraday channel
+    const botToken = process.env.DISCORD_BOT_TOKEN || process.env.PAPER_TRADER_DISCORD_TOKEN;
+    const HIRO_CHANNEL_ID = '1465366178099630292';
+    
     const response = await fetch(
-      'https://api.spotgamma.com/v1/hiro/tsla',
-      {
-        headers: {
-          'Authorization': `Bearer ${SPOT_GAMMA_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
+      `https://discord.com/api/v10/channels/${HIRO_CHANNEL_ID}/messages?limit=1`,
+      { headers: { 'Authorization': `Bot ${botToken}` } }
     );
 
     if (!response.ok) {
-      throw new Error(`SpotGamma API error: ${response.status}`);
+      throw new Error(`Discord API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const messages = await response.json() as any[];
+    if (!messages.length) throw new Error('No HIRO messages found');
     
+    const content = messages[0].content;
+    
+    // Parse HIRO reading from message: "HIRO: -479M" or "HIRO: +123M"
+    const hiroMatch = content.match(/HIRO:\s*([+-]?\d+)M/i);
+    if (!hiroMatch) throw new Error('Could not parse HIRO from message');
+    
+    const readingM = parseInt(hiroMatch[1]);
+    const reading = readingM * 1000000;
+    
+    // Parse 30-day range if available: "-1.1B to +1.4B"
+    const rangeMatch = content.match(/30-Day Range:\s*([+-]?[\d.]+)([BM])\s*to\s*([+-]?[\d.]+)([BM])/i);
+    let percentile30Day = 50;
+    if (rangeMatch) {
+      const low = parseFloat(rangeMatch[1]) * (rangeMatch[2] === 'B' ? 1000 : 1);
+      const high = parseFloat(rangeMatch[3]) * (rangeMatch[4] === 'B' ? 1000 : 1);
+      percentile30Day = Math.max(0, Math.min(100, ((readingM - low) / (high - low)) * 100));
+    }
+    
+    // Determine character from reading
+    let character = 'neutral';
+    if (readingM > 200) character = 'aggressive dealer buying';
+    else if (readingM > 0) character = 'mild buying';
+    else if (readingM > -200) character = 'mild selling';
+    else character = 'aggressive dealer selling';
+
     const hiroData: HIROData = {
-      reading: data.reading || 0,
-      percentile30Day: data.percentile_30day || 50,
-      character: data.character || 'neutral',
+      reading,
+      percentile30Day,
+      character,
       timestamp: new Date(),
     };
 
-    // Cache and store
     hiroCache = hiroData;
     lastHiroFetch = now;
     await cacheHIRO(hiroData);
 
     return hiroData;
   } catch (error) {
-    console.warn('SpotGamma HIRO fetch failed, using fallback:', error);
+    console.warn('HIRO fetch from Discord failed, using fallback:', error);
     
-    // Try to get cached data from Supabase
+    // Try Supabase cache
     const cached = await getCachedHIRO();
-    if (cached) {
-      return cached;
-    }
+    if (cached) return cached;
 
-    // Return mock data as last resort
-    return getMockHIRO();
+    // Last resort — but return clearly stale data, not random
+    return {
+      reading: 0,
+      percentile30Day: 50,
+      character: 'unavailable',
+      timestamp: new Date(),
+    };
   }
 }
 
