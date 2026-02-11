@@ -526,29 +526,29 @@ export default function OrbClient() {
             FULL_SEND: {
               emoji: "🟢", label: "FULL SEND", hex: "#22c55e",
               action: "Deploy leveraged positions.",
-              statsLine: "+15.71% avg at 60d \u00b7 66% win rate \u00b7 15% of trading days",
+              statsLine: "+16.28% avg at 60d \u00b7 67% win rate \u00b7 15% of trading days",
               description: "Multiple bullish signals are firing simultaneously and nothing is warning. Momentum, trend structure, and positioning are all aligned. These are the strongest conditions TSLA produces. The top 10% of FULL SEND outcomes exceed +30% at 20 days.",
               whatToWatch: "When buy signals deactivate and the score drops to NEUTRAL, don't panic. FULL SEND \u2192 NEUTRAL transitions still average +5.65% over 20 days. The rally doesn't end the moment the score changes.",
             },
             NEUTRAL: {
               emoji: "\u26aa", label: "NEUTRAL", hex: "#d4d4d8",
               action: "Hold. Don't add, don't trim.",
-              statsLine: "+4.22% avg at 20d \u00b7 52% win \u00b7 51% of trading days",
+              statsLine: "+10.44% avg at 60d \u00b7 62% win \u00b7 51% of trading days",
               description: "Normal TSLA. No strong signals in either direction. The trend may be intact but nothing is compelling enough to justify adding risk or reducing it. The long-term drift works in your favor here.",
               whatToWatch: "NEUTRAL \u2192 FULL SEND transitions (+5.15% avg at 20d) are your signal to start deploying. NEUTRAL \u2192 CAUTION transitions (-0.51% avg at 20d) are your signal to start tightening.",
             },
             CAUTION: {
               emoji: "🟡", label: "CAUTION", hex: "#eab308",
               action: "Take profits on leveraged. Don't add.",
-              statsLine: "-1.24% avg at 20d \u00b7 41% win \u00b7 24% of trading days",
+              statsLine: "-1.37% avg at 10d \u00b7 43% win \u00b7 24% of trading days",
               description: "Warning signals are active. The trend is showing stress -- the kind of deterioration that historically leads to below-average or negative outcomes. A -1.24% avg on stock translates to roughly -2.5% to -4% on 2x ETFs and worse on near-term options.",
               whatToWatch: "CAUTION \u2192 DEFENSIVE transitions are the worst (-5.27% avg at 20d). If the score keeps dropping, get out. CAUTION \u2192 NEUTRAL means the warning passed.",
             },
             DEFENSIVE: {
               emoji: "🔴", label: "DEFENSIVE", hex: "#ef4444",
               action: "Cash. No leveraged exposure. Wait.",
-              statsLine: "-4.05% avg at 60d \u00b7 43% win rate \u00b7 10% of trading days",
-              description: "Multiple warning signals are firing. The trend is broken or breaking. These periods produce the corrections TSLA is famous for. The -4.05% avg at 60 days means this isn't a quick dip -- it's structural deterioration.",
+              statsLine: "-6.73% avg at 60d \u00b7 31% win rate \u00b7 10% of trading days",
+              description: "Multiple warning signals are firing. The trend is broken or breaking. These periods produce the corrections TSLA is famous for. The -6.73% avg at 60 days means this isn't a quick dip -- it's structural deterioration.",
               whatToWatch: "Do NOT re-enter when the score ticks up to CAUTION (still -4.75% at 20d). Wait for DEFENSIVE \u2192 NEUTRAL (+3.94% avg at 20d). That's the real 'worst is over' signal.",
             },
           };
@@ -727,9 +727,9 @@ export default function OrbClient() {
                   bottomLabel: "WATCH FOR",
                 },
                 CAUTION: {
-                  setup: "Warning signals are active. The trend is under stress and historically, these periods average -1.24% at 20 days. Leverage works against you in negative expected value environments.",
+                  setup: "Warning signals are active. The trend is under stress and historically, these periods average -1.37% at 10 days. Leverage works against you in negative expected value environments.",
                   calls: "Take profits on anything short-dated (under 60 DTE). If you're holding 6-9 month calls and the thesis hasn't changed, you can hold through -- but know that drawdowns from here tend to get worse before they get better. No new entries.",
-                  leveraged: "Reduce or exit. A -1.24% move on stock is roughly -2.5% on 2x. And that's the average -- the tails are worse.",
+                  leveraged: "Reduce or exit. A -1.37% move on stock is roughly -2.7% on 2x. And that's the average -- the tails are worse.",
                   bottom: "Building the cash position you'll deploy when the Orb turns green again. Patience is the trade.",
                   bottomLabel: "WHAT YOU'RE DOING HERE",
                 },
@@ -757,10 +757,10 @@ export default function OrbClient() {
               animation: "fadeIn .5s ease",
             }}>
               {([
-                { zone: "FULL_SEND", emoji: "🟢", label: "FULL SEND", ret: "+6.22%", win: "66%", days: "15%", hex: "#22c55e" },
-                { zone: "NEUTRAL", emoji: "\u26aa", label: "NEUTRAL", ret: "+4.22%", win: "52%", days: "51%", hex: "#d4d4d8" },
-                { zone: "CAUTION", emoji: "🟡", label: "CAUTION", ret: "-1.24%", win: "41%", days: "24%", hex: "#eab308" },
-                { zone: "DEFENSIVE", emoji: "🔴", label: "DEFENSIVE", ret: "-1.84%", win: "43%", days: "10%", hex: "#ef4444" },
+                { zone: "FULL_SEND", emoji: "🟢", label: "FULL SEND", ret: "+16.28%", win: "67%", days: "15%", hex: "#22c55e", horizon: "60D" },
+                { zone: "NEUTRAL", emoji: "\u26aa", label: "NEUTRAL", ret: "+10.44%", win: "62%", days: "51%", hex: "#d4d4d8", horizon: "60D" },
+                { zone: "CAUTION", emoji: "🟡", label: "CAUTION", ret: "-1.37%", win: "43%", days: "24%", hex: "#eab308", horizon: "10D" },
+                { zone: "DEFENSIVE", emoji: "🔴", label: "DEFENSIVE", ret: "-6.73%", win: "31%", days: "10%", hex: "#ef4444", horizon: "60D" },
               ] as const).map((z, i) => {
                 const isCurrentZone = orbScore.zone === z.zone;
                 return (
@@ -776,17 +776,20 @@ export default function OrbClient() {
                       </span>
                     </div>
                     <div style={{ display: "flex", gap: isDesktop ? 20 : 12, flexShrink: 0 }}>
-                      <span style={{ fontSize: desktopFont(10), color: z.ret.startsWith("+") ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, minWidth: 50, textAlign: "right" }}>{z.ret}</span>
+                      <div style={{ minWidth: 72, textAlign: "right" }}>
+                        <span style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.5)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, marginRight: 4 }}>{z.horizon}:</span>
+                        <span style={{ fontSize: desktopFont(10), color: z.ret.startsWith("+") ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{z.ret}</span>
+                      </div>
                       <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", minWidth: 28, textAlign: "right" }}>{z.win}</span>
                       <span style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace", minWidth: 28, textAlign: "right" }}>{z.days}</span>
                     </div>
                   </div>
                 );
               })}
-              <div className="flex items-center justify-end gap-2" style={{ padding: "4px 4px 0", opacity: 0.3 }}>
-                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.4)" }}>20d avg</span>
-                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.4)", minWidth: 28, textAlign: "right" }}>win%</span>
-                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.4)", minWidth: 28, textAlign: "right" }}>freq</span>
+              <div className="flex items-center justify-end gap-2" style={{ padding: "4px 4px 0" }}>
+                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.55)", minWidth: 72, textAlign: "right" }}>avg return</span>
+                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.55)", minWidth: 28, textAlign: "right" }}>win%</span>
+                <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.55)", minWidth: 28, textAlign: "right" }}>freq</span>
               </div>
             </div>
           </>);
