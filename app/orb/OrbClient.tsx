@@ -303,8 +303,17 @@ export default function OrbClient() {
   const desktopFont = (mobilePx: number) => (isDesktop ? Math.round(mobilePx * 1.2) : mobilePx);
 
   const loadData = useCallback(async () => {
-    const adminId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("admin") : null;
-    const res = await fetch(`/api/orb/states${adminId ? `?admin=${adminId}` : ""}`, { cache: "no-store", credentials: "include" });
+    // Try client-side Supabase auth to detect admin
+    let adminParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("admin") : null;
+    if (!adminParam) {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) adminParam = user.id;
+      } catch {}
+    }
+    const res = await fetch(`/api/orb/states${adminParam ? `?admin=${adminParam}` : ""}`, { cache: "no-store", credentials: "include" });
     const data = await res.json();
     setRows(Array.isArray(data) ? data : []);
   }, []);
