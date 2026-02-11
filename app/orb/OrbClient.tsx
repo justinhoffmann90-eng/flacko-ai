@@ -700,35 +700,7 @@ export default function OrbClient() {
           </>);
         })()}
 
-        <div className="mb-4 flex flex-wrap" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, gap: 6 }}>
-
-          {[
-            { key: "all", label: "All Setups" },
-            { key: "active", label: "Active / Watching" },
-            { key: "buy", label: "Buy" },
-            { key: "avoid", label: "Avoid" },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setFilter(t.key as any)}
-              style={{
-                flex: "1 1 160px",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 12px",
-                minHeight: 44,
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: isDesktop ? desktopFont(11) : 10,
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-                color: filter === t.key ? "#f0f0f0" : "rgba(255,255,255,0.35)",
-                background: filter === t.key ? "rgba(255,255,255,0.08)" : "transparent",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Filter buttons removed — all setups shown, active sorted to top */}
 
         <div className={isDesktop ? "space-y-3" : "space-y-2"}>
           {filtered.map((row, index) => {
