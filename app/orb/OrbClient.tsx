@@ -547,12 +547,12 @@ export default function OrbClient() {
                         {row.framework === "gauge-to-target" ? (<>
                           <div className="hidden sm:block"><HitRateRing pctPos={row.stance === "defensive" ? 75 : 68} size={52} /></div>
                           <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: "#22c55e" }}>{row.stance === "defensive" ? "75" : "68"}%</div>
-                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>GAUGE</div>
+                          <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.4)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>GAUGE HIT</div>
                         </>) : (<>
                           {(() => { const bt = bestTimeframe(row); return (<>
                           <div className="hidden sm:block"><HitRateRing pctPos={bt.win} size={52} /></div>
                           <div className="sm:hidden" style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: bt.win >= 65 ? "#22c55e" : bt.win >= 50 ? "#eab308" : "#ef4444" }}>{Math.round(bt.win)}%</div>
-                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{bt.label} HIT</div>
+                          <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.4)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{bt.label} HIT</div>
                           </>); })()}
                         </>)}
                       </div>
@@ -561,13 +561,13 @@ export default function OrbClient() {
                           <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: (row.gauge_median_return || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
                             {(row.gauge_median_return || 0) >= 0 ? "+" : ""}{(row.gauge_median_return || 0).toFixed(1)}%
                           </div>
-                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>MEDIAN</div>
+                          <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.4)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>MEDIAN</div>
                         </>) : (<>
                           {(() => { const bt = bestTimeframe(row); return (<>
                           <div className="text-[18px] sm:text-[28px]" style={{ lineHeight: 1, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: bt.avg >= 0 ? "#22c55e" : "#ef4444" }}>
                             {bt.avg >= 0 ? "+" : ""}{bt.avg.toFixed(1)}%
                           </div>
-                          <div style={{ fontSize: desktopFont(9), color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>AVG {bt.label}</div>
+                          <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.4)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>AVG {bt.label}</div>
                           </>); })()}
                         </>)}
                       </div>
