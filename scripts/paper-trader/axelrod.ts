@@ -18,7 +18,7 @@ const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL
 let webhookClient: WebhookClient | null = null;
 
 const AXELROD_USERNAME = 'Axe';
-// TODO: Add avatar URL for Axelrod
+const AXELROD_AVATAR = 'https://api.dicebear.com/9.x/initials/png?seed=BA&backgroundColor=dc2626&textColor=ffffff&fontSize=42';
 
 const AXELROD_SYSTEM_PROMPT = `You are Bobby Axelrod from Billions — but you're commenting on a paper trading bot's moves in a Discord channel.
 
@@ -302,7 +302,7 @@ export async function postAxelrodCommentary(context: AxelrodContext): Promise<vo
     await webhookClient.send({
       content: commentary,
       username: AXELROD_USERNAME,
-      // avatarURL: 'https://...' // TODO: Add Axelrod avatar
+      avatarURL: AXELROD_AVATAR,
     });
 
     console.log('🎩 axelrod commentary posted');

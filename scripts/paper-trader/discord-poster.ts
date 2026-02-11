@@ -24,6 +24,19 @@ const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL
 
 let webhookClient: WebhookClient | null = null;
 
+const TAYLOR_USERNAME = 'Taylor';
+const TAYLOR_AVATAR = 'https://api.dicebear.com/9.x/initials/png?seed=TM&backgroundColor=3b82f6&textColor=ffffff&fontSize=42';
+
+/** Helper: send as Taylor with consistent identity */
+async function sendAsTaylor(options: { content?: string; embeds?: any[] }): Promise<void> {
+  if (!webhookClient) return;
+  await webhookClient.send({
+    ...options,
+    username: TAYLOR_USERNAME,
+    avatarURL: TAYLOR_AVATAR,
+  });
+}
+
 /**
  * Initialize Discord webhook client
  */
@@ -143,7 +156,7 @@ export async function postStatusUpdate(
   content += `\n\n${modeEmoji(report?.mode || 'YELLOW')} ${marketStatus.message}`;
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting status update:', error);
   }
@@ -194,7 +207,7 @@ export async function postHIROUpdate(
   content += `\nno action taken.`;
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting HIRO update:', error);
   }
@@ -267,7 +280,7 @@ export async function postEntryAlert(
   }
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting entry alert:', error);
   }
@@ -335,7 +348,7 @@ export async function postExitAlert(
   }
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting exit alert:', error);
   }
@@ -399,7 +412,7 @@ export async function postZoneChangeAlert(
   }
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting zone change alert:', error);
   }
@@ -441,7 +454,7 @@ export async function postMarketOpen(
   content += `\nscanning for setups. let's get it.`;
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting market open:', error);
   }
@@ -501,7 +514,7 @@ export async function postMarketClose(
   content += `back at it tomorrow. 🤙`;
   
   try {
-    await webhookClient.send({ content });
+    await sendAsTaylor({ content });
   } catch (error) {
     console.error('Error posting market close:', error);
   }
@@ -548,7 +561,7 @@ export async function postWeeklyReport(
     .setTimestamp();
   
   try {
-    await webhookClient.send({ embeds: [embed] });
+    await sendAsTaylor({ embeds: [embed] });
   } catch (error) {
     console.error('Error posting weekly report:', error);
   }
@@ -561,7 +574,7 @@ export async function postError(error: string): Promise<void> {
   if (!webhookClient) return;
   
   try {
-    await webhookClient.send({
+    await sendAsTaylor({
       content: `⚔️ paper flacko — **system alert**\n\nerror: ${error}\n\ninvestigating...`,
     });
   } catch (e) {
