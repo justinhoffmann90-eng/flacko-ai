@@ -171,11 +171,7 @@ async function tradingLoop(): Promise<void> {
         fetchOrbScore(),
       ]);
       await postMarketOpen(quote, tsllQuote, report, orb, undefined);
-      // Axelrod reacts to market open
-      postAxelrodCommentary({
-        taylorPost: `Market open. TSLA $${quote.price.toFixed(2)}, mode ${report?.mode || 'unknown'}, Orb ${orb.zone} (${orb.score.toFixed(3)}). Starting capital $100k.`,
-        quote, report, hiro: undefined, orb,
-      }).catch(() => {}); // non-blocking
+      // Axe only reacts to trades, not market open
       marketOpenPosted = true;
       sessionState.previousOrbZone = orb.zone;
       await logBot('info', 'market open posted', { orbZone: orb.zone, orbScore: orb.score });
@@ -254,11 +250,7 @@ async function tradingLoop(): Promise<void> {
     if (sessionState.previousOrbZone && sessionState.previousOrbZone !== orb.zone) {
       console.log(`🔄 Orb zone transition: ${sessionState.previousOrbZone} → ${orb.zone}`);
       await postZoneChangeAlert(sessionState.previousOrbZone, orb.zone, orb);
-      // Axelrod reacts to zone change
-      postAxelrodCommentary({
-        taylorPost: `ZONE CHANGE: ${sessionState.previousOrbZone} → ${orb.zone}. Score: ${orb.score.toFixed(3)}.`,
-        orb,
-      }).catch(() => {});
+      // Axe only reacts to trades, not zone changes
       sessionState.previousOrbZone = orb.zone;
     } else if (!sessionState.previousOrbZone) {
       sessionState.previousOrbZone = orb.zone;

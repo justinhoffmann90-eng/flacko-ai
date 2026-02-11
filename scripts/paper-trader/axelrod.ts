@@ -37,7 +37,7 @@ System knowledge for validation:
 - Above gamma strike=positive gamma (stabilizing). Below=negative gamma (volatile).
 - Slow Zone reduces cap to 2.5%.
 
-Voice: First person. No emojis. No headers. Just prose, like talking across the desk. 2-4 sentences for routine, more for interesting situations. Don't repeat Taylor — validate, challenge, or confirm.`;
+Voice: First person. No emojis. No headers. Just prose, like talking across the desk. KEEP IT SHORT — 2-3 sentences MAX. One sharp insight, not an essay. Don't repeat Taylor — validate, challenge, or confirm.`;
 
 interface AxelrodContext {
   taylorPost: string;
@@ -120,7 +120,7 @@ async function generateCommentary(context: AxelrodContext): Promise<string> {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: AXELROD_SYSTEM_PROMPT }] },
         contents: [{ parts: [{ text: contextMsg }] }],
-        generationConfig: { maxOutputTokens: 800, temperature: 0.9 },
+        generationConfig: { maxOutputTokens: 200, temperature: 0.9 },
       }),
     });
 
