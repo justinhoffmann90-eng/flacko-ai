@@ -15,7 +15,7 @@ import type {
   OrbZone,
   Instrument,
 } from './types';
-import { MODE_CONFIGS, TIER_MULTIPLIERS } from './types';
+import { MODE_CONFIGS, TIER_MULTIPLIERS, TRIM_CAPS, MAX_INVESTED } from './types';
 
 // Risk management constants
 const NO_NEW_POSITIONS_AFTER_HOUR = 15; // 3 PM CT
@@ -151,6 +151,9 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   const { quote, tsllQuote, hiro, report, orb, portfolio } = context;
   const reasoning: string[] = [];
   
+  // Import TradeMode type for mode variable
+  type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
+  
   // Check Orb zone — CAUTION/DEFENSIVE = no new buys
   const zoneConfig = ORB_ZONE_CONFIG[orb.zone];
   if (!zoneConfig.canBuy) {
@@ -255,6 +258,23 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     };
   }
   
+  // Check max invested cap before entry
+  const maxInvestedCap = MAX_INVESTED[mode] || 0.60;
+  const tslaValue = context.multiPortfolio.tsla?.value || 0;
+  const tsllValue = context.multiPortfolio.tsll?.value || 0;
+  const currentExposure = (tslaValue + tsllValue) / context.multiPortfolio.totalValue;
+  
+  if (currentExposure >= maxInvestedCap) {
+    reasoning.push(`at max invested cap for ${mode} mode (${(maxInvestedCap * 100).toFixed(0)}%)`);
+    reasoning.push(`current exposure: ${(currentExposure * 100).toFixed(0)}% — staying defensive`);
+    return {
+      action: 'hold',
+      price: price,
+      reasoning,
+      confidence: 'high',
+    };
+  }
+  
   // Calculate position size based on mode and tier
   const modeConfig = MODE_CONFIGS[mode] || MODE_CONFIGS.YELLOW;
   const tierMultiplier = TIER_MULTIPLIERS[tier] || 0.5;
@@ -264,6 +284,18 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   if (instrument === 'TSLL') {
     positionPercent *= 0.5;
     reasoning.push(`TSLL sizing: 50% of mode allocation (2x leverage)`);
+  }
+  
+  // Slow Zone check — reduce cap if price below D21 EMA × 0.98
+  const slowZoneLevel = report.daily_21ema ? report.daily_21ema * 0.98 : null;
+  const isSlowZoneActive = slowZoneLevel && quote.price < slowZoneLevel;
+  const isSlowZoneExempt = mode === 'GREEN' || mode === 'YELLOW_IMPROVING';
+  
+  if (isSlowZoneActive && !isSlowZoneExempt) {
+    // In ORANGE/RED, reduce to 25% of normal (not 50%)
+    const slowZoneMultiplier = (['ORANGE', 'RED'].includes(mode)) ? 0.25 : 0.5;
+    positionPercent *= slowZoneMultiplier;
+    reasoning.push(`Slow Zone active ($${slowZoneLevel.toFixed(2)}) — cap reduced to ${(slowZoneMultiplier * 100)}% of normal`);
   }
   
   const positionValue = portfolio.cash * positionPercent;
@@ -370,6 +402,34 @@ function evaluateExit(context: DecisionContext): TradeSignal {
   
   const unrealizedPnl = (currentPrice - avgCost) * shares;
   const unrealizedPnlPercent = (currentPrice / avgCost - 1) * 100;
+  
+  // Check for trim opportunities (partial profit-taking at resistance levels)
+  if (report && unrealizedPnlPercent > 0) {
+    const trimLevels = report.levels.filter(l => l.type === 'trim' && l.price > 0);
+    const crossedTrims = trimLevels.filter(t => quote.price >= t.price && avgCost < t.price);
+    
+    if (crossedTrims.length > 0) {
+      // Take first uncrossed trim (assume sequential trimming)
+      const trimLevel = crossedTrims[0];
+      const trimCapPercent = TRIM_CAPS[report.mode] || 0.20;
+      const trimShares = Math.floor(shares * trimCapPercent);
+      
+      if (trimShares > 0) {
+        reasoning.push(`trim level hit: ${trimLevel.name} ($${trimLevel.price.toFixed(2)})`);
+        reasoning.push(`trimming ${trimShares} shares (${(trimCapPercent * 100).toFixed(0)}% of remaining) — ${report.mode} mode`);
+        reasoning.push(`locking in profit on ${(trimCapPercent * 100).toFixed(0)}% while letting rest ride`);
+        
+        return {
+          action: 'sell',
+          instrument,
+          shares: trimShares,
+          price: currentPrice,
+          reasoning,
+          confidence: 'high',
+        };
+      }
+    }
+  }
   
   // Check target hit (use TSLA price for levels regardless of instrument)
   const targetHit = report && quote.price >= report.gammaStrike * (1 - TARGET_THRESHOLD_PERCENT);

@@ -11,6 +11,7 @@ import type {
   DailyReport,
   OrbData,
   OrbZone,
+  TradeMode,
 } from './types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
@@ -18,27 +19,6 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 const SPOT_GAMMA_API_KEY = process.env.SPOT_GAMMA_API_KEY || '';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-// Orb Score constants (copied from lib/orb/score.ts)
-const SETUP_TYPES: Record<string, "buy" | "avoid"> = {
-  "smi-oversold-gauge": "buy", "oversold-extreme": "buy", "regime-shift": "buy",
-  "deep-value": "buy", "green-shoots": "buy", "momentum-flip": "buy",
-  "trend-confirm": "buy", "trend-ride": "buy", "trend-continuation": "buy",
-  "goldilocks": "buy", "capitulation": "buy",
-  "smi-overbought": "avoid", "dual-ll": "avoid", "overextended": "avoid",
-  "momentum-crack": "avoid", "ema-shield-caution": "avoid", "ema-shield-break": "avoid",
-};
-
-const WEIGHTS: Record<string, number> = {
-  "oversold-extreme": 0.60, "capitulation": 0.51, "momentum-crack": 0.22,
-  "overextended": 0.49, "deep-value": 0.47, "goldilocks": 0.44,
-  "smi-overbought": 0.44, "trend-confirm": 0.43, "regime-shift": 0.28,
-  "ema-shield-caution": 0.39, "dual-ll": 0.39, "trend-ride": 0.35,
-  "momentum-flip": 0.33, "green-shoots": 0.32, "smi-oversold-gauge": 0.47,
-  "trend-continuation": 0.47, "ema-shield-break": 0.30,
-};
-
-const THRESHOLDS = { FULL_SEND: 0.686, NEUTRAL: -0.117, CAUTION: -0.729 };
 
 // Cache for HIRO data (fallback if API unavailable)
 let hiroCache: HIROData | null = null;
@@ -113,46 +93,61 @@ export async function fetchTSLLPrice(): Promise<TSLAQuote> {
 }
 
 /**
- * Fetch Orb Score from Supabase orb_setup_states and compute score/zone inline.
+ * Fetch Orb Score from Supabase orb_daily_indicators (pre-computed score + zone).
+ * Falls back to orb_setup_states if indicators table not available.
  */
 export async function fetchOrbScore(): Promise<OrbData> {
   try {
-    const { data: states, error } = await supabase
-      .from('orb_setup_states')
-      .select('setup_id, status');
+    // Try to get pre-computed score and zone from orb_daily_indicators
+    const { data: indicator, error: indicatorError } = await supabase
+      .from('orb_daily_indicators')
+      .select('orb_score, orb_zone, generated_at')
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    if (error) throw error;
+    if (!indicatorError && indicator && indicator.orb_score !== undefined) {
+      // Pre-computed score available — use it
+      const zone = (indicator.orb_zone || 'DEFENSIVE').toUpperCase() as OrbZone;
+      
+      // Still fetch active setups for context
+      const { data: states } = await supabase
+        .from('orb_setup_states')
+        .select('setup_id, status, setup_type');
 
-    const setupStates = states || [];
+      const activeSetups = (states || [])
+        .filter(s => s.status === 'active' || s.status === 'watching')
+        .map(s => ({
+          setup_id: s.setup_id,
+          status: s.status,
+        }));
 
-    let score = 0;
-    for (const snap of setupStates) {
-      const type = SETUP_TYPES[snap.setup_id];
-      if (!type) continue;
-      const w = WEIGHTS[snap.setup_id] || 0.3;
-      const dir = type === 'buy' ? 1 : -1;
-      if (snap.status === 'active') score += dir * w;
-      else if (snap.status === 'watching') score += dir * w * 0.3;
+      return {
+        score: indicator.orb_score,
+        zone,
+        activeSetups,
+        timestamp: new Date(indicator.generated_at),
+      };
     }
-    score = Math.round(score * 1000) / 1000;
 
-    let zone: OrbZone;
-    if (score >= THRESHOLDS.FULL_SEND) zone = 'FULL_SEND';
-    else if (score >= THRESHOLDS.NEUTRAL) zone = 'NEUTRAL';
-    else if (score >= THRESHOLDS.CAUTION) zone = 'CAUTION';
-    else zone = 'DEFENSIVE';
+    // Fallback: query orb_setup_states and compute locally
+    // (but do NOT hardcode weights/thresholds — read from config table or fail gracefully)
+    console.warn('No pre-computed Orb score found, using fallback defensive posture');
+    
+    const { data: states } = await supabase
+      .from('orb_setup_states')
+      .select('setup_id, status, setup_type');
 
-    const activeSetups = setupStates
+    const activeSetups = (states || [])
       .filter(s => s.status === 'active' || s.status === 'watching')
       .map(s => ({
         setup_id: s.setup_id,
         status: s.status,
-        type: (SETUP_TYPES[s.setup_id] || 'buy') as 'buy' | 'avoid',
       }));
 
     return {
-      score,
-      zone,
+      score: -1.0,
+      zone: 'DEFENSIVE',
       activeSetups,
       timestamp: new Date(),
     };
@@ -353,20 +348,28 @@ export async function fetchDailyReport(): Promise<DailyReport | null> {
 
 function parseExtractedData(date: string, ed: any): DailyReport {
   const levels = ed.levels_map || [];
-  const mode = ed.mode?.current || ed.mode?.label || 'YELLOW';
+  let mode = ed.mode?.current || ed.mode?.label || 'YELLOW';
+  
+  // Handle YELLOW_IMPROVING mapping
+  if (mode.toLowerCase().includes('improving') || mode === 'YELLOW (Improving)') {
+    mode = 'YELLOW_IMPROVING';
+  } else {
+    mode = mode.toUpperCase();
+  }
   
   // Find tier from tiers array (first active tier)
   const tier = ed.tiers?.[0]?.tier || 2;
   
   return {
     date,
-    mode: mode.toUpperCase(),
+    mode: mode as TradeMode,
     tier,
     masterEject: ed.master_eject?.price || findLevelByType(levels, 'eject')?.price || 0,
     gammaStrike: ed.key_gamma_strike?.price || findLevelByName(levels, 'gamma')?.price || 0,
     putWall: findLevelByName(levels, 'put wall')?.price || 0,
     hedgeWall: findLevelByName(levels, 'hedge wall')?.price || 0,
     callWall: findLevelByName(levels, 'call wall')?.price || 0,
+    daily_21ema: ed.daily_21ema || ed.d21_ema || null,
     levels: levels.map((l: any) => ({
       name: l.level || l.name,
       price: l.price,

@@ -32,9 +32,11 @@ export interface HIROData {
   timestamp: Date;
 }
 
+export type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
+
 export interface DailyReport {
   date: string;
-  mode: 'GREEN' | 'YELLOW' | 'ORANGE' | 'RED';
+  mode: TradeMode;
   tier: number;
   masterEject: number;
   gammaStrike: number;
@@ -43,12 +45,13 @@ export interface DailyReport {
   callWall: number;
   levels: KeyLevel[];
   commentary?: string;
+  daily_21ema?: number; // D21 EMA for Slow Zone check
 }
 
 export interface KeyLevel {
   name: string;
   price: number;
-  type: 'support' | 'resistance' | 'neutral';
+  type: 'support' | 'resistance' | 'neutral' | 'trim' | 'target' | 'eject';
 }
 
 export interface Position {
@@ -207,4 +210,22 @@ export const TIER_MULTIPLIERS: Record<number, number> = {
   2: 0.75,
   3: 0.5,
   4: 0.5,
+};
+
+// Trim caps by mode (% of remaining per level)
+export const TRIM_CAPS: Record<string, number> = {
+  GREEN: 0.10,
+  YELLOW_IMPROVING: 0.15,
+  YELLOW: 0.20,
+  ORANGE: 0.25,
+  RED: 0.30,
+};
+
+// Max invested caps by mode (total portfolio exposure)
+export const MAX_INVESTED: Record<string, number> = {
+  GREEN: 0.85,
+  YELLOW_IMPROVING: 0.70,
+  YELLOW: 0.60,
+  ORANGE: 0.40,
+  RED: 0.20,
 };
