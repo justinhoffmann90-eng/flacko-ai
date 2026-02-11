@@ -724,7 +724,7 @@ export default function OrbClient() {
             const badge = (() => {
               if (status === "active") {
                 if (row.stance === "offensive") {
-                  return { label: "💣 ACTIVE - FIRE THE CANNONS", dot: "bg-emerald-500", text: "text-emerald-300", bg: "bg-emerald-500/15", border: "border border-emerald-500/35" };
+                  return { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-300", bg: "bg-emerald-500/15", border: "border border-emerald-500/35" };
                 }
                 return { label: "🛡️ ACTIVE - RETREAT", dot: "bg-red-500", text: "text-red-300", bg: "bg-red-500/15", border: "border border-red-500/35" };
               }
