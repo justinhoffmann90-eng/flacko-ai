@@ -302,6 +302,16 @@ async function main() {
       price_above_weekly_all: closes[i] > wEma9[wIdx] && closes[i] > wEma13[wIdx] && closes[i] > wEma21[wIdx],
       price_above_weekly_13: closes[i] > wEma13[wIdx],
       price_above_weekly_21: closes[i] > wEma21[wIdx],
+
+      daily_hh_streak: (() => {
+        let streak = 0;
+        for (let j = i; j >= 2; j--) {
+          const state = classifyBxState(bx[j], bx[j - 1]);
+          if (state === "HH") streak++;
+          else break;
+        }
+        return streak;
+      })(),
     };
 
     const before = new Map(previousStates);

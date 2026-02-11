@@ -234,5 +234,15 @@ export async function computeIndicators(ticker: string) {
       closes[i] > wEma9[lastWeekIdx] && closes[i] > wEma13[lastWeekIdx] && closes[i] > wEma21[lastWeekIdx],
     price_above_weekly_13: closes[i] > wEma13[lastWeekIdx],
     price_above_weekly_21: closes[i] > wEma21[lastWeekIdx],
+
+    daily_hh_streak: (() => {
+      let streak = 0;
+      for (let j = i; j >= 2; j--) {
+        const state = classifyBxState(bx[j], bx[j - 1]);
+        if (state === "HH") streak++;
+        else break;
+      }
+      return streak;
+    })(),
   };
 }
