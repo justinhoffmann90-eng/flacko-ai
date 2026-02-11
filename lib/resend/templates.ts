@@ -47,6 +47,7 @@ export function getAlertEmailHtml({
     putWall?: number;
     callWall?: number;
     masterEject?: number;
+    masterEjectAction?: string;
   };
   positioning?: string;
 }) {
@@ -133,7 +134,7 @@ export function getAlertEmailHtml({
             <tr>
               <td bgcolor="#450a0a" style="background-color: #450a0a !important; border: 1px solid #ef4444; border-radius: 6px; padding: 12px;">
                 <p style="color: #fca5a5 !important; margin: 0; font-size: 12px;">
-                  ⚠️ <strong>Master Eject:</strong> $${keyLevels.masterEject} — Exit all positions if breached
+                  ⚠️ <strong>Master Eject:</strong> $${keyLevels.masterEject}${keyLevels.masterEjectAction ? ` — ${keyLevels.masterEjectAction}` : ' — See daily report for action steps'}
                 </p>
               </td>
             </tr>

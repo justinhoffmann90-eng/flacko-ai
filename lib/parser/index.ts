@@ -506,10 +506,15 @@ function extractFromFrontmatter(
     range: { low: 0, high: 0 },
   };
 
-  // Master eject from frontmatter
+  // Master eject from frontmatter — NEVER hardcode action text
+  // Use rationale from report, or extract from eject-type levels
+  const ejectLevels = (fm.levels || []).filter((l: any) => l.type === 'eject');
+  const primaryEjectAction = ejectLevels.length > 0
+    ? ejectLevels.map((l: any) => `$${l.price}: ${l.action}`).join(' | ')
+    : fm.master_eject_rationale || "See daily report for action steps";
   const master_eject: ExtractedReportData["master_eject"] = {
     price: fm.master_eject || 0,
-    action: "Daily close below = exit all positions",
+    action: primaryEjectAction,
   };
 
   // Tiers from frontmatter (support v3.5, v3.1, and v3.0 field names)
@@ -574,7 +579,7 @@ function extractFromFrontmatter(
   // Alerts - extract from frontmatter levels array (v3.1) or fall back to markdown parsing
   let alerts: ReportAlert[] = [];
   if (fm.levels && fm.levels.length > 0) {
-    alerts = extractAlertsFromLevels(fm.levels, fm.price_close || 0);
+    alerts = extractAlertsFromLevels(fm.levels, fm.price_close || 0, fm.master_eject, fm.master_eject_rationale);
   }
   // If no alerts from frontmatter, try markdown parsing
   if (alerts.length === 0) {
@@ -735,7 +740,7 @@ function extractKeyLevelPrice(levelsMap: LevelMapEntry[] | undefined, patterns: 
 // Convert frontmatter levels array to ReportAlert objects (v3.1/v3.5)
 // Trim actions (above current price) = upside, Nibble actions (below current price) = downside
 // v3.5 includes explicit 'type' field for level classification
-function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35)[], currentPrice: number): ReportAlert[] {
+function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35)[], currentPrice: number, masterEjectPrice?: number, masterEjectAction?: string): ReportAlert[] {
   const alerts: ReportAlert[] = [];
 
   for (const level of levels) {
@@ -749,10 +754,12 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
     if (level.name.toLowerCase().includes('current price')) continue;
     if (levelType === 'current') continue;
     
-    // Master Eject gets included as a special 'eject' type alert
+    // Skip eject-type levels from the levels array entirely.
+    // Master Eject is added ONCE at the end using the frontmatter master_eject price.
     const isMasterEject = level.name.toLowerCase().includes('master eject') || 
                           levelType === 'eject' || 
                           action.includes('exit all');
+    if (isMasterEject) continue;
 
     // Determine type based on v3.5 type field first, then action keywords
     // Trim/Watch = upside (take profit), Nibble/Pause/Caution = downside (buy the dip)
@@ -774,17 +781,43 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type = level.price > currentPrice ? 'upside' : 'downside';
     }
 
-    // Generate contextual reason - Master Eject gets special warning message
-    const reason = isMasterEject 
-      ? "⚠️ WARNING: This is your line in the sand. If we CLOSE below this level, exit all positions. No exceptions."
-      : generateAlertReason(level.name, level.action, type);
+    const reason = generateAlertReason(level.name, level.action, type);
 
     alerts.push({
       type,
-      level_name: isMasterEject ? "Master Eject ⚠️" : level.name,
+      level_name: level.name,
       price: level.price,
-      action: isMasterEject ? "EXIT ALL if daily close below" : clarifyActionText(level.action) || level.action,
+      action: clarifyActionText(level.action) || level.action,
       reason,
+    });
+  }
+
+  // Add Master Eject alerts from levels array (preserves actual action text from report)
+  // DO NOT hardcode action text — use what the report says
+  const ejectLevels = levels.filter((l: any) => l.type === 'eject');
+  if (ejectLevels.length > 0) {
+    for (const ejectLevel of ejectLevels) {
+      // Skip if already added in the main loop above
+      const alreadyAdded = alerts.some(a => a.price === ejectLevel.price && a.level_name?.includes('Eject'));
+      if (!alreadyAdded) {
+        alerts.push({
+          type: 'downside',
+          level_name: `${ejectLevel.name} ⚠️`,
+          price: ejectLevel.price,
+          action: ejectLevel.action || "See daily report",
+          reason: `⚠️ Master Eject level: ${ejectLevel.action}`,
+        });
+      }
+    }
+  } else if (masterEjectPrice && masterEjectPrice > 0) {
+    // Fallback: only if no eject levels in array, use frontmatter price
+    // Still use frontmatter rationale if available, never hardcode "EXIT ALL"
+    alerts.push({
+      type: 'downside',
+      level_name: "Master Eject ⚠️",
+      price: masterEjectPrice,
+      action: masterEjectAction || "Defensive action required — see daily report for details",
+      reason: "⚠️ Master Eject level — refer to daily report for specific action steps.",
     });
   }
 

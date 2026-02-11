@@ -327,12 +327,14 @@ export async function GET(request: Request) {
     const alertsToSend = Array.from(uniqueAlerts.values());
 
     // Build key levels from report data (once, not per-user)
+    const masterEjectData = (report.extracted_data as any)?.master_eject;
     const keyLevels = extractedData?.key_levels ? {
       hedgeWall: extractedData.key_levels.hedge_wall,
       gammaStrike: extractedData.key_levels.gamma_strike,
       putWall: extractedData.key_levels.put_wall,
       callWall: extractedData.key_levels.call_wall,
       masterEject: extractedData.key_levels.master_eject,
+      masterEjectAction: masterEjectData?.action,
     } : undefined;
 
     let emailsSent = 0;
