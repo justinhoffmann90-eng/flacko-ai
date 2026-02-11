@@ -18,6 +18,8 @@
 
 import {
   fetchTSLAPrice,
+  fetchTSLLPrice,
+  fetchOrbScore,
   fetchHIRO,
   fetchDailyReport,
   isMarketOpen,
@@ -33,6 +35,7 @@ import {
   postHIROUpdate,
   postEntryAlert,
   postExitAlert,
+  postZoneChangeAlert,
   postMarketOpen,
   postMarketClose,
   postWeeklyReport,
@@ -43,13 +46,14 @@ import {
   updateBotState,
   getBotState,
   calculatePortfolio,
+  calculateMultiPortfolio,
   getTodayTrades,
   calculateTodayPnl,
   recordDailyPortfolio,
   getWeeklyPerformance,
   logBot,
 } from './performance';
-import type { Trade, Portfolio, TradeSignal } from './types';
+import type { Trade, Portfolio, MultiPortfolio, TradeSignal, OrbZone, Instrument } from './types';
 
 // Bot configuration
 const CONFIG = {
@@ -68,14 +72,17 @@ let marketOpenPosted = false;
 let marketClosePosted = false;
 let weeklyReportPosted = false;
 
-// Current session state
+// Current session state (multi-instrument)
 let sessionState = {
   cash: CONFIG.STARTING_CAPITAL,
-  sharesHeld: 0,
-  avgCost: 0,
+  sharesHeld: 0,  // TSLA shares
+  avgCost: 0,      // TSLA avg cost
+  tsllShares: 0,   // TSLL shares
+  tsllAvgCost: 0,  // TSLL avg cost
   realizedPnl: 0,
   todayTradesCount: 0,
   currentDate: new Date().toISOString().split('T')[0],
+  previousOrbZone: undefined as OrbZone | undefined,
 };
 
 /**
@@ -120,12 +127,16 @@ async function init(): Promise<boolean> {
     sessionState.cash = savedState.cash;
     sessionState.sharesHeld = savedState.sharesHeld;
     sessionState.avgCost = savedState.avgCost;
+    sessionState.tsllShares = savedState.tsllShares;
+    sessionState.tsllAvgCost = savedState.tsllAvgCost;
     sessionState.realizedPnl = savedState.realizedPnl;
+    sessionState.previousOrbZone = savedState.currentOrbZone as OrbZone | undefined;
   }
   
   console.log('✅ paper flacko initialized');
   console.log(`   cash: $${sessionState.cash.toFixed(2)}`);
-  console.log(`   shares: ${sessionState.sharesHeld}`);
+  console.log(`   TSLA shares: ${sessionState.sharesHeld}`);
+  console.log(`   TSLL shares: ${sessionState.tsllShares}`);
   console.log(`   realized pnl: $${sessionState.realizedPnl.toFixed(2)}`);
   
   await logBot('info', 'bot initialized', { cash: sessionState.cash });
@@ -154,34 +165,55 @@ async function tradingLoop(): Promise<void> {
     
     // Post market open
     if (marketStatus.isOpen && !marketOpenPosted) {
-      const quote = await fetchTSLAPrice();
-      const report = await fetchDailyReport();
-      await postMarketOpen(quote, report);
+      const [quote, tsllQuote, report, orb] = await Promise.all([
+        fetchTSLAPrice(),
+        fetchTSLLPrice(),
+        fetchDailyReport(),
+        fetchOrbScore(),
+      ]);
+      await postMarketOpen(quote, tsllQuote, report, orb);
       marketOpenPosted = true;
-      await logBot('info', 'market open posted');
+      sessionState.previousOrbZone = orb.zone;
+      await logBot('info', 'market open posted', { orbZone: orb.zone, orbScore: orb.score });
     }
     
     // Post market close
     if (!marketStatus.isOpen && marketOpenPosted && !marketClosePosted) {
-      const quote = await fetchTSLAPrice();
-      const portfolio = calculatePortfolio(
+      const [quote, tsllQuote, orb] = await Promise.all([
+        fetchTSLAPrice(),
+        fetchTSLLPrice(),
+        fetchOrbScore(),
+      ]);
+      
+      const multiPortfolio = calculateMultiPortfolio(
         sessionState.cash,
         sessionState.sharesHeld,
         sessionState.avgCost,
         quote.price,
+        sessionState.tsllShares,
+        sessionState.tsllAvgCost,
+        tsllQuote.price,
         sessionState.realizedPnl
       );
+      
       const todayPnl = await calculateTodayPnl();
-      await postMarketClose(portfolio, sessionState.todayTradesCount, todayPnl);
+      
+      // Calculate P&L by instrument
+      const todayTrades = await getTodayTrades();
+      const dayPnlByInstrument = {
+        tsla: todayTrades.filter(t => t.instrument === 'TSLA').reduce((sum, t) => sum + (t.realizedPnl || 0), 0),
+        tsll: todayTrades.filter(t => t.instrument === 'TSLL').reduce((sum, t) => sum + (t.realizedPnl || 0), 0),
+      };
+      
+      await postMarketClose(multiPortfolio, sessionState.todayTradesCount, todayPnl, dayPnlByInstrument);
       
       // Record daily snapshot
-      const todayTrades = await getTodayTrades();
-      const winCount = todayTrades.filter(t => (t.realized_pnl || 0) > 0).length;
-      const lossCount = todayTrades.filter(t => (t.realized_pnl || 0) < 0).length;
-      await recordDailyPortfolio(portfolio, todayTrades.length, winCount, lossCount);
+      const winCount = todayTrades.filter(t => (t.realizedPnl || 0) > 0).length;
+      const lossCount = todayTrades.filter(t => (t.realizedPnl || 0) < 0).length;
+      await recordDailyPortfolio(multiPortfolio, todayTrades.length, winCount, lossCount, orb.zone, orb.score);
       
       marketClosePosted = true;
-      await logBot('info', 'market close posted', { todayPnl });
+      await logBot('info', 'market close posted', { todayPnl, orbZone: orb.zone });
     }
     
     // Post weekly report on Sunday evening
@@ -205,14 +237,37 @@ async function tradingLoop(): Promise<void> {
       return;
     }
     
-    // Fetch all data
-    const [quote, hiro, report] = await Promise.all([
+    // Fetch all data (multi-instrument + Orb)
+    const [quote, tsllQuote, hiro, report, orb] = await Promise.all([
       fetchTSLAPrice(),
+      fetchTSLLPrice(),
       fetchHIRO(),
       fetchDailyReport(),
+      fetchOrbScore(),
     ]);
     
-    // Calculate current portfolio
+    // Check for Orb zone transition
+    if (sessionState.previousOrbZone && sessionState.previousOrbZone !== orb.zone) {
+      console.log(`🔄 Orb zone transition: ${sessionState.previousOrbZone} → ${orb.zone}`);
+      await postZoneChangeAlert(sessionState.previousOrbZone, orb.zone, orb);
+      sessionState.previousOrbZone = orb.zone;
+    } else if (!sessionState.previousOrbZone) {
+      sessionState.previousOrbZone = orb.zone;
+    }
+    
+    // Calculate current portfolio (multi-instrument)
+    const multiPortfolio = calculateMultiPortfolio(
+      sessionState.cash,
+      sessionState.sharesHeld,
+      sessionState.avgCost,
+      quote.price,
+      sessionState.tsllShares,
+      sessionState.tsllAvgCost,
+      tsllQuote.price,
+      sessionState.realizedPnl
+    );
+    
+    // Legacy single-instrument portfolio for compatibility
     const portfolio = calculatePortfolio(
       sessionState.cash,
       sessionState.sharesHeld,
@@ -222,29 +277,41 @@ async function tradingLoop(): Promise<void> {
     );
     
     // Generate Flacko's take
-    const flackoTake = generateFlackoTake(quote, report, hiro, portfolio.position);
+    const flackoTake = generateFlackoTake(quote, report, hiro, multiPortfolio.tsla ? { 
+      shares: multiPortfolio.tsla.shares,
+      avgCost: multiPortfolio.tsla.avgCost,
+      entryTime: new Date(),
+      entryPrice: multiPortfolio.tsla.avgCost,
+      unrealizedPnl: multiPortfolio.tsla.unrealizedPnl,
+      unrealizedPnlPercent: multiPortfolio.tsla.pnlPercent,
+      currentValue: multiPortfolio.tsla.value,
+    } : null);
     
     // Post status update
-    await postStatusUpdate(quote, portfolio, report, hiro, flackoTake);
+    await postStatusUpdate(quote, tsllQuote, multiPortfolio, report, hiro, orb, flackoTake);
     
-    // Make trading decision
+    // Make trading decision (multi-instrument + Orb)
     const signal = makeTradeDecision({
       quote,
+      tsllQuote,
       hiro,
       report,
+      orb,
       portfolio,
+      multiPortfolio,
       todayTradesCount: sessionState.todayTradesCount,
+      previousOrbZone: sessionState.previousOrbZone,
     });
     
     // Execute trade if signaled
-    if (signal.action === 'buy' && signal.shares) {
-      await executeBuy(signal, quote, report, hiro, portfolio);
-    } else if (signal.action === 'sell' && signal.shares) {
-      await executeSell(signal, quote, report, hiro, portfolio);
+    if (signal.action === 'buy' && signal.shares && signal.instrument) {
+      await executeBuy(signal, quote, tsllQuote, report, hiro, orb, multiPortfolio);
+    } else if (signal.action === 'sell' && signal.shares && signal.instrument) {
+      await executeSell(signal, quote, tsllQuote, report, hiro, orb, multiPortfolio);
     }
     
     // Update state in database
-    await updateBotState(portfolio, sessionState.todayTradesCount);
+    await updateBotState(multiPortfolio, sessionState.todayTradesCount, orb.zone, orb.score);
     
     console.log(`✅ cycle complete at ${new Date().toLocaleTimeString()}`);
     
@@ -286,124 +353,172 @@ async function hiroLoop(): Promise<void> {
 }
 
 /**
- * Execute a buy order
+ * Execute a buy order (multi-instrument)
  */
 async function executeBuy(
   signal: TradeSignal,
   quote: any,
+  tsllQuote: any,
   report: any,
   hiro: any,
-  portfolio: Portfolio
+  orb: any,
+  portfolio: MultiPortfolio
 ): Promise<void> {
   const shares = signal.shares!;
+  const instrument = signal.instrument!;
   const price = signal.price;
   const totalValue = shares * price;
   
-  // Update session state
-  const newShares = sessionState.sharesHeld + shares;
-  const newAvgCost = sessionState.sharesHeld > 0
-    ? ((sessionState.avgCost * sessionState.sharesHeld) + totalValue) / newShares
-    : price;
+  // Update session state based on instrument
+  if (instrument === 'TSLA') {
+    const newShares = sessionState.sharesHeld + shares;
+    const newAvgCost = sessionState.sharesHeld > 0
+      ? ((sessionState.avgCost * sessionState.sharesHeld) + totalValue) / newShares
+      : price;
+    
+    sessionState.sharesHeld = newShares;
+    sessionState.avgCost = newAvgCost;
+  } else if (instrument === 'TSLL') {
+    const newShares = sessionState.tsllShares + shares;
+    const newAvgCost = sessionState.tsllShares > 0
+      ? ((sessionState.tsllAvgCost * sessionState.tsllShares) + totalValue) / newShares
+      : price;
+    
+    sessionState.tsllShares = newShares;
+    sessionState.tsllAvgCost = newAvgCost;
+  }
   
   sessionState.cash -= totalValue;
-  sessionState.sharesHeld = newShares;
-  sessionState.avgCost = newAvgCost;
   sessionState.todayTradesCount++;
   
   // Record trade
   const trade: Trade = {
     timestamp: new Date(),
     action: 'buy',
+    instrument,
     shares,
     price,
     totalValue,
-    reasoning: signal.reasoning,
+    reasoning: signal.reasoning.join('\n'),
     mode: report?.mode || 'YELLOW',
     tier: report?.tier || 2,
     hiroReading: hiro.reading,
     portfolioValue: portfolio.totalValue,
     cashRemaining: sessionState.cash,
+    orbScore: orb.score,
+    orbZone: orb.zone,
+    orbActiveSetups: orb.activeSetups,
   };
   
   await recordTrade(trade);
   
   // Post alert
-  const updatedPortfolio = calculatePortfolio(
+  const updatedPortfolio = calculateMultiPortfolio(
     sessionState.cash,
     sessionState.sharesHeld,
     sessionState.avgCost,
     quote.price,
+    sessionState.tsllShares,
+    sessionState.tsllAvgCost,
+    tsllQuote.price,
     sessionState.realizedPnl
   );
-  await postEntryAlert(trade, report, updatedPortfolio);
+  await postEntryAlert(trade, report, updatedPortfolio, orb);
   
-  await logBot('trade', `bought ${shares} shares @ $${price}`, {
+  await logBot('trade', `bought ${shares} shares ${instrument} @ $${price}`, {
+    instrument,
     shares,
     price,
     totalValue,
+    orbZone: orb.zone,
   });
   
-  console.log(`🟢 bought ${shares} shares @ $${price.toFixed(2)}`);
+  console.log(`🟢 bought ${shares} shares ${instrument} @ $${price.toFixed(2)}`);
 }
 
 /**
- * Execute a sell order
+ * Execute a sell order (multi-instrument)
  */
 async function executeSell(
   signal: TradeSignal,
   quote: any,
+  tsllQuote: any,
   report: any,
   hiro: any,
-  portfolio: Portfolio
+  orb: any,
+  portfolio: MultiPortfolio
 ): Promise<void> {
   const shares = signal.shares!;
+  const instrument = signal.instrument!;
   const price = signal.price;
   const totalValue = shares * price;
-  const costBasis = shares * sessionState.avgCost;
+  
+  // Calculate realized P&L based on instrument
+  let costBasis: number;
+  if (instrument === 'TSLA') {
+    costBasis = shares * sessionState.avgCost;
+  } else {
+    costBasis = shares * sessionState.tsllAvgCost;
+  }
   const realizedPnl = totalValue - costBasis;
   
-  // Update session state
+  // Update session state based on instrument
   sessionState.cash += totalValue;
-  sessionState.sharesHeld = 0;
-  sessionState.avgCost = 0;
   sessionState.realizedPnl += realizedPnl;
+  
+  if (instrument === 'TSLA') {
+    sessionState.sharesHeld = 0;
+    sessionState.avgCost = 0;
+  } else if (instrument === 'TSLL') {
+    sessionState.tsllShares = 0;
+    sessionState.tsllAvgCost = 0;
+  }
   
   // Record trade
   const trade: Trade = {
     timestamp: new Date(),
     action: 'sell',
+    instrument,
     shares,
     price,
     totalValue,
-    reasoning: signal.reasoning,
+    reasoning: signal.reasoning.join('\n'),
     mode: report?.mode || 'YELLOW',
     tier: report?.tier || 2,
     hiroReading: hiro.reading,
-    realized_pnl: realizedPnl,
+    realizedPnl: realizedPnl,
     portfolioValue: sessionState.cash,
     cashRemaining: sessionState.cash,
+    orbScore: orb.score,
+    orbZone: orb.zone,
+    orbActiveSetups: orb.activeSetups,
   };
   
   await recordTrade(trade);
   
   // Post alert
-  const updatedPortfolio = calculatePortfolio(
+  const updatedPortfolio = calculateMultiPortfolio(
     sessionState.cash,
-    0,
-    0,
+    sessionState.sharesHeld,
+    sessionState.avgCost,
     quote.price,
+    sessionState.tsllShares,
+    sessionState.tsllAvgCost,
+    tsllQuote.price,
     sessionState.realizedPnl
   );
   const todayPnl = await calculateTodayPnl();
-  await postExitAlert(trade, updatedPortfolio, todayPnl);
+  await postExitAlert(trade, updatedPortfolio, todayPnl, orb);
   
-  await logBot('trade', `sold ${shares} shares @ $${price} (pnl: $${realizedPnl.toFixed(2)})`, {
+  await logBot('trade', `sold ${shares} shares ${instrument} @ $${price} (pnl: $${realizedPnl.toFixed(2)})`, {
+    instrument,
     shares,
     price,
     realizedPnl,
+    orbZone: orb.zone,
   });
   
-  console.log(`🔴 sold ${shares} shares @ $${price.toFixed(2)} (pnl: $${realizedPnl.toFixed(2)})`);
+  console.log(`🔴 sold ${shares} shares ${instrument} @ $${price.toFixed(2)} (pnl: $${realizedPnl.toFixed(2)})`);
 }
 
 /**

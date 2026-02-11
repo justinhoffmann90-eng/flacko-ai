@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Trade, DailyPerformance, PerformanceMetrics, Portfolio, Position } from './types';
+import type { Trade, DailyPerformance, PerformanceMetrics, Portfolio, Position, MultiPortfolio, Instrument } from './types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
@@ -19,17 +19,21 @@ export async function recordTrade(trade: Trade): Promise<void> {
     const { error } = await supabase.from('paper_trades').insert({
       timestamp: trade.timestamp.toISOString(),
       action: trade.action,
+      instrument: trade.instrument,
       shares: trade.shares,
       price: trade.price,
       total_value: trade.totalValue,
-      reasoning: trade.reasoning.join('\n'),
+      reasoning: trade.reasoning,
       mode: trade.mode,
       tier: trade.tier,
       hiro_reading: trade.hiroReading,
-      realized_pnl: trade.realized_pnl,
-      unrealized_pnl: trade.unrealized_pnl,
+      realized_pnl: trade.realizedPnl,
+      unrealized_pnl: trade.unrealizedPnl,
       portfolio_value: trade.portfolioValue,
       cash_remaining: trade.cashRemaining,
+      orb_score: trade.orbScore ?? null,
+      orb_zone: trade.orbZone ?? null,
+      orb_active_setups: trade.orbActiveSetups ?? null,
     });
 
     if (error) throw error;
@@ -40,23 +44,30 @@ export async function recordTrade(trade: Trade): Promise<void> {
 }
 
 /**
- * Update bot state in database
+ * Update bot state in database (multi-instrument)
  */
 export async function updateBotState(
-  portfolio: Portfolio,
-  todayTradesCount: number
+  portfolio: Portfolio | MultiPortfolio,
+  todayTradesCount: number,
+  orbZone?: string,
+  orbScore?: number
 ): Promise<void> {
   try {
+    const isMulti = 'tsla' in portfolio;
+    
     const { error } = await supabase.from('paper_bot_state').upsert({
       id: 1,
       cash: portfolio.cash,
-      shares_held: portfolio.position?.shares || 0,
-      avg_cost: portfolio.position?.avgCost || null,
+      shares_held: isMulti ? (portfolio as MultiPortfolio).tsla?.shares || 0 : (portfolio as Portfolio).position?.shares || 0,
+      avg_cost: isMulti ? (portfolio as MultiPortfolio).tsla?.avgCost || null : (portfolio as Portfolio).position?.avgCost || null,
+      tsll_shares: isMulti ? (portfolio as MultiPortfolio).tsll?.shares || 0 : 0,
+      tsll_avg_cost: isMulti ? (portfolio as MultiPortfolio).tsll?.avgCost || null : null,
       realized_pnl: portfolio.realizedPnl,
-      total_trades: portfolio.position ? 0 : 1, // Incremented on exit
       last_update_at: new Date().toISOString(),
       today_trades_count: todayTradesCount,
       current_date: new Date().toISOString().split('T')[0],
+      current_orb_zone: orbZone || null,
+      current_orb_score: orbScore || null,
     }, { onConflict: 'id' });
 
     if (error) throw error;
@@ -66,15 +77,19 @@ export async function updateBotState(
 }
 
 /**
- * Get bot state from database
+ * Get bot state from database (multi-instrument)
  */
 export async function getBotState(): Promise<{
   cash: number;
   sharesHeld: number;
   avgCost: number;
+  tsllShares: number;
+  tsllAvgCost: number;
   realizedPnl: number;
   todayTradesCount: number;
   currentDate: string;
+  currentOrbZone?: string;
+  currentOrbScore?: number;
 } | null> {
   try {
     const { data, error } = await supabase
@@ -89,9 +104,13 @@ export async function getBotState(): Promise<{
       cash: data.cash,
       sharesHeld: data.shares_held || 0,
       avgCost: data.avg_cost || 0,
+      tsllShares: data.tsll_shares || 0,
+      tsllAvgCost: data.tsll_avg_cost || 0,
       realizedPnl: data.realized_pnl || 0,
       todayTradesCount: data.today_trades_count || 0,
       currentDate: data.current_date,
+      currentOrbZone: data.current_orb_zone,
+      currentOrbScore: data.current_orb_score,
     };
   } catch (error) {
     console.error('Error fetching bot state:', error);
@@ -137,7 +156,63 @@ export function calculatePortfolio(
 }
 
 /**
- * Get today's trades
+ * Calculate multi-instrument portfolio (TSLA + TSLL)
+ */
+export function calculateMultiPortfolio(
+  cash: number,
+  tslaShares: number,
+  tslaAvgCost: number,
+  tslaPrice: number,
+  tsllShares: number,
+  tsllAvgCost: number,
+  tsllPrice: number,
+  realizedPnl: number
+): MultiPortfolio {
+  // TSLA position
+  const tslaValue = tslaShares * tslaPrice;
+  const tslaCost = tslaShares * tslaAvgCost;
+  const tslaUnrealized = tslaValue - tslaCost;
+  const tslaPosition = tslaShares > 0 ? {
+    shares: tslaShares,
+    avgCost: tslaAvgCost,
+    currentPrice: tslaPrice,
+    value: tslaValue,
+    unrealizedPnl: tslaUnrealized,
+    pnlPercent: (tslaPrice / tslaAvgCost - 1) * 100,
+  } : null;
+  
+  // TSLL position
+  const tsllValue = tsllShares * tsllPrice;
+  const tsllCost = tsllShares * tsllAvgCost;
+  const tsllUnrealized = tsllValue - tsllCost;
+  const tsllPosition = tsllShares > 0 ? {
+    shares: tsllShares,
+    avgCost: tsllAvgCost,
+    currentPrice: tsllPrice,
+    value: tsllValue,
+    unrealizedPnl: tsllUnrealized,
+    pnlPercent: (tsllPrice / tsllAvgCost - 1) * 100,
+  } : null;
+  
+  const totalPositionValue = tslaValue + tsllValue;
+  const totalUnrealized = tslaUnrealized + tsllUnrealized;
+  const totalValue = cash + totalPositionValue;
+  
+  return {
+    cash,
+    startingCapital: 100000,
+    tsla: tslaPosition,
+    tsll: tsllPosition,
+    totalValue,
+    totalReturn: totalValue - 100000,
+    totalReturnPercent: ((totalValue / 100000) - 1) * 100,
+    realizedPnl,
+    unrealizedPnl: totalUnrealized,
+  };
+}
+
+/**
+ * Get today's trades (multi-instrument)
  */
 export async function getTodayTrades(): Promise<Trade[]> {
   try {
@@ -155,6 +230,7 @@ export async function getTodayTrades(): Promise<Trade[]> {
       id: t.id,
       timestamp: new Date(t.timestamp),
       action: t.action,
+      instrument: t.instrument || 'TSLA',
       shares: t.shares,
       price: t.price,
       totalValue: t.total_value,
@@ -299,23 +375,30 @@ export async function getPerformanceMetrics(
 }
 
 /**
- * Record daily portfolio snapshot
+ * Record daily portfolio snapshot (multi-instrument)
  */
 export async function recordDailyPortfolio(
-  portfolio: Portfolio,
+  portfolio: Portfolio | MultiPortfolio,
   tradesCount: number,
   winCount: number,
-  lossCount: number
+  lossCount: number,
+  orbZone?: string,
+  orbScore?: number
 ): Promise<void> {
   try {
     const today = new Date().toISOString().split('T')[0];
+    const isMulti = 'tsla' in portfolio;
     
     const { error } = await supabase.from('paper_portfolio').upsert({
       date: today,
       starting_cash: 100000,
       ending_cash: portfolio.cash,
-      shares_held: portfolio.position?.shares || 0,
-      avg_cost: portfolio.position?.avgCost || null,
+      shares_held: isMulti ? (portfolio as MultiPortfolio).tsla?.shares || 0 : (portfolio as Portfolio).position?.shares || 0,
+      avg_cost: isMulti ? (portfolio as MultiPortfolio).tsla?.avgCost || null : (portfolio as Portfolio).position?.avgCost || null,
+      tsla_shares: isMulti ? (portfolio as MultiPortfolio).tsla?.shares || 0 : (portfolio as Portfolio).position?.shares || 0,
+      tsla_avg_cost: isMulti ? (portfolio as MultiPortfolio).tsla?.avgCost || null : (portfolio as Portfolio).position?.avgCost || null,
+      tsll_shares: isMulti ? (portfolio as MultiPortfolio).tsll?.shares || 0 : 0,
+      tsll_avg_cost: isMulti ? (portfolio as MultiPortfolio).tsll?.avgCost || null : null,
       unrealized_pnl: portfolio.unrealizedPnl,
       realized_pnl: portfolio.realizedPnl,
       total_value: portfolio.totalValue,
@@ -323,6 +406,8 @@ export async function recordDailyPortfolio(
       trades_count: tradesCount,
       win_count: winCount,
       loss_count: lossCount,
+      orb_zone: orbZone || null,
+      orb_score: orbScore || null,
     }, { onConflict: 'date' });
 
     if (error) throw error;

@@ -2,6 +2,16 @@
  * Flacko Paper Trader Bot — Type Definitions
  */
 
+export type OrbZone = "FULL_SEND" | "NEUTRAL" | "CAUTION" | "DEFENSIVE";
+export type Instrument = "TSLA" | "TSLL";
+
+export interface OrbData {
+  score: number;
+  zone: OrbZone;
+  activeSetups: { setup_id: string; status: string }[];
+  timestamp: Date;
+}
+
 export interface TSLAQuote {
   symbol: string;
   price: number;
@@ -66,6 +76,7 @@ export interface Trade {
   id?: string;
   timestamp: Date;
   action: 'buy' | 'sell';
+  instrument: Instrument;
   shares: number;
   price: number;
   totalValue: number;
@@ -77,6 +88,10 @@ export interface Trade {
   unrealizedPnl?: number;
   portfolioValue: number;
   cashRemaining: number;
+  // Orb snapshot at trade time — cross-reference setup vs trade performance
+  orbScore?: number;
+  orbZone?: string;
+  orbActiveSetups?: { setup_id: string; status: string }[];
 }
 
 export interface DailyPerformance {
@@ -109,12 +124,55 @@ export interface PerformanceMetrics {
 
 export interface TradeSignal {
   action: 'buy' | 'sell' | 'hold';
+  instrument?: Instrument;
   shares?: number;
   price: number;
   reasoning: string[];
   confidence: 'high' | 'medium' | 'low';
   targetPrice?: number;
   stopPrice?: number;
+}
+
+// Multi-instrument portfolio tracking
+export interface MultiPortfolio {
+  cash: number;
+  startingCapital: number;
+  tsla: {
+    shares: number;
+    avgCost: number;
+    currentPrice: number;
+    value: number;
+    unrealizedPnl: number;
+    pnlPercent: number;
+  } | null;
+  tsll: {
+    shares: number;
+    avgCost: number;
+    currentPrice: number;
+    value: number;
+    unrealizedPnl: number;
+    pnlPercent: number;
+  } | null;
+  totalValue: number;
+  totalReturn: number;
+  totalReturnPercent: number;
+  realizedPnl: number;
+  unrealizedPnl: number;
+}
+
+// TODO: Phase 2 — Options support
+export interface OptionPosition {
+  instrument: "TSLA";
+  type: "call" | "put";
+  direction: "long" | "short"; // long = bought, short = sold
+  strike: number;
+  expiry: string; // YYYY-MM-DD
+  contracts: number;
+  premium: number; // per share
+  delta: number;
+  theta: number;
+  gamma: number;
+  currentPremium?: number;
 }
 
 export interface BotConfig {

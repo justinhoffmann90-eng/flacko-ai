@@ -42,6 +42,25 @@ export const CONFIG = {
   
   // Symbol
   SYMBOL: 'TSLA',
+  
+  // Orb zone → instrument mapping
+  ORB_INSTRUMENT_MAP: {
+    FULL_SEND: 'TSLL',
+    NEUTRAL: 'TSLA',
+    CAUTION: 'NONE',  // No new buys
+    DEFENSIVE: 'NONE', // Exit TSLL immediately
+  },
+  
+  // TSLL position sizing (half of mode allocation since 2x leverage)
+  TSLL_SIZE_MULTIPLIER: 0.5,
+  
+  // Orb zone config
+  ORB_ZONES: {
+    FULL_SEND: { canBuy: true, instrument: 'TSLL', description: 'leveraged longs' },
+    NEUTRAL: { canBuy: true, instrument: 'TSLA', description: 'shares only' },
+    CAUTION: { canBuy: false, instrument: null, description: 'trim TSLL first' },
+    DEFENSIVE: { canBuy: false, instrument: null, description: 'exit all TSLL' },
+  },
 };
 
 // Environment validation

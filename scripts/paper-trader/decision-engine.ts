@@ -9,7 +9,11 @@ import type {
   DailyReport,
   Position,
   Portfolio,
+  MultiPortfolio,
   TradeSignal,
+  OrbData,
+  OrbZone,
+  Instrument,
 } from './types';
 import { MODE_CONFIGS, TIER_MULTIPLIERS } from './types';
 
@@ -19,26 +23,101 @@ const MAX_POSITIONS_PER_DAY = 2;
 const SUPPORT_THRESHOLD_PERCENT = 0.005; // 0.5% from support = "near"
 const TARGET_THRESHOLD_PERCENT = 0.003; // 0.3% from target = consider exit
 
+// Orb zone instrument mapping
+const ORB_ZONE_CONFIG: Record<OrbZone, { canBuy: boolean; instrument: Instrument | null; emoji: string }> = {
+  FULL_SEND: { canBuy: true, instrument: 'TSLL', emoji: '🟢' },
+  NEUTRAL: { canBuy: true, instrument: 'TSLA', emoji: '⚪' },
+  CAUTION: { canBuy: false, instrument: null, emoji: '🟡' },
+  DEFENSIVE: { canBuy: false, instrument: null, emoji: '🔴' },
+};
+
 interface DecisionContext {
   quote: TSLAQuote;
+  tsllQuote: TSLAQuote;
   hiro: HIROData;
   report: DailyReport | null;
+  orb: OrbData;
   portfolio: Portfolio;
+  multiPortfolio: MultiPortfolio;
   todayTradesCount: number;
+  previousOrbZone?: OrbZone;
+}
+
+/**
+ * Evaluate Orb zone transitions for forced exits
+ * CAUTION → sell TSLL first before TSLA
+ * DEFENSIVE → sell ALL TSLL immediately
+ */
+function evaluateOrbTransition(
+  fromZone: OrbZone,
+  toZone: OrbZone,
+  multiPortfolio: MultiPortfolio,
+  tsllQuote: TSLAQuote
+): TradeSignal | null {
+  const reasoning: string[] = [];
+  
+  // Transition to DEFENSIVE → exit ALL TSLL immediately
+  if (toZone === 'DEFENSIVE' && multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
+    reasoning.push(`⚠️ ORB ZONE CHANGE: ${fromZone} → 🔴 DEFENSIVE`);
+    reasoning.push('selling ALL TSLL immediately (forced liquidation)');
+    reasoning.push('defensive conditions — leverage must exit');
+    
+    return {
+      action: 'sell',
+      instrument: 'TSLL',
+      shares: multiPortfolio.tsll.shares,
+      price: tsllQuote.price,
+      reasoning,
+      confidence: 'high',
+    };
+  }
+  
+  // Transition to CAUTION → trim TSLL first (if holding)
+  if (toZone === 'CAUTION' && multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
+    reasoning.push(`⚠️ ORB ZONE CHANGE: ${fromZone} → 🟡 CAUTION`);
+    reasoning.push('trimming TSLL first (leveraged exit priority)');
+    reasoning.push('elevated risk — reducing leverage');
+    
+    return {
+      action: 'sell',
+      instrument: 'TSLL',
+      shares: multiPortfolio.tsll.shares,
+      price: tsllQuote.price,
+      reasoning,
+      confidence: 'high',
+    };
+  }
+  
+  // FULL_SEND → NEUTRAL: hold existing TSLL, no new TSLL
+  // (no forced exit, just note the transition)
+  if (fromZone === 'FULL_SEND' && toZone === 'NEUTRAL' && multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
+    console.log('⚪ Zone transition FULL_SEND → NEUTRAL: holding existing TSLL, no new TSLL entries');
+  }
+  
+  return null;
 }
 
 /**
  * Main decision function - evaluates whether to buy, sell, or hold
+ * Now includes Orb zone-based instrument selection
  */
 export function makeTradeDecision(context: DecisionContext): TradeSignal {
-  const { quote, hiro, report, portfolio, todayTradesCount } = context;
+  const { quote, tsllQuote, hiro, report, orb, portfolio, multiPortfolio, todayTradesCount, previousOrbZone } = context;
+  
+  // Check for Orb zone transitions that require forced exits
+  if (previousOrbZone && previousOrbZone !== orb.zone) {
+    const transitionSignal = evaluateOrbTransition(previousOrbZone, orb.zone, multiPortfolio, tsllQuote);
+    if (transitionSignal) {
+      return transitionSignal;
+    }
+  }
   
   // Check time restriction
   const hour = new Date().getHours();
   const canEnterNewPosition = hour < NO_NEW_POSITIONS_AFTER_HOUR;
   
   // If we have a position, evaluate exit first
-  if (portfolio.position) {
+  if (portfolio.position || multiPortfolio.tsla || multiPortfolio.tsll) {
     return evaluateExit(context);
   }
   
@@ -66,10 +145,30 @@ export function makeTradeDecision(context: DecisionContext): TradeSignal {
 
 /**
  * Evaluate whether to enter a long position
+ * Now considers Orb zone for instrument selection
  */
 function evaluateEntry(context: DecisionContext): TradeSignal {
-  const { quote, hiro, report, portfolio } = context;
+  const { quote, tsllQuote, hiro, report, orb, portfolio } = context;
   const reasoning: string[] = [];
+  
+  // Check Orb zone — CAUTION/DEFENSIVE = no new buys
+  const zoneConfig = ORB_ZONE_CONFIG[orb.zone];
+  if (!zoneConfig.canBuy) {
+    return {
+      action: 'hold',
+      price: quote.price,
+      reasoning: [
+        `orb zone: ${zoneConfig.emoji} ${orb.zone} — no new buys`,
+        `score: ${orb.score.toFixed(3)} — defensive posture`,
+      ],
+      confidence: 'high',
+    };
+  }
+  
+  // Determine instrument based on Orb zone
+  const instrument = zoneConfig.instrument!;
+  const instrumentQuote = instrument === 'TSLL' ? tsllQuote : quote;
+  const price = instrumentQuote.price;
   
   // Must have a daily report to trade
   if (!report) {
@@ -81,17 +180,16 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     };
   }
   
-  const price = quote.price;
   const mode = report.mode;
   const tier = report.tier;
   
-  // Check Master Eject - NEVER buy below it
-  if (report.masterEject > 0 && price < report.masterEject) {
+  // Check Master Eject - NEVER buy below it (use TSLA price, not TSLL)
+  if (report.masterEject > 0 && quote.price < report.masterEject) {
     return {
       action: 'hold',
-      price: price,
+      price: quote.price,
       reasoning: [
-        `price ($${price.toFixed(2)}) below master eject ($${report.masterEject.toFixed(2)})`,
+        `TSLA ($${quote.price.toFixed(2)}) below master eject ($${report.masterEject.toFixed(2)})`,
         'no longs below eject. capital preservation mode.',
       ],
       confidence: 'high',
@@ -116,9 +214,9 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     reasoning.push(`hiro in lower quartile (${hiro.percentile30Day.toFixed(0)}%) — heavy selling`);
   }
   
-  // Check if price is near support (good entry)
-  const nearSupport = checkNearSupport(price, report);
-  const nearResistance = checkNearResistance(price, report);
+  // Check if price is near support (good entry) - use TSLA price for levels
+  const nearSupport = checkNearSupport(quote.price, report);
+  const nearResistance = checkNearResistance(quote.price, report);
   
   if (nearSupport.isNear) {
     reasoning.push(`price near support: ${nearSupport.level} ($${nearSupport.price.toFixed(2)})`);
@@ -137,7 +235,14 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   // Calculate position size based on mode and tier
   const modeConfig = MODE_CONFIGS[mode] || MODE_CONFIGS.YELLOW;
   const tierMultiplier = TIER_MULTIPLIERS[tier] || 0.5;
-  const positionPercent = modeConfig.maxPositionPercent * tierMultiplier;
+  let positionPercent = modeConfig.maxPositionPercent * tierMultiplier;
+  
+  // TSLL position sizing: 50% of mode allocation (2x leverage = same exposure)
+  if (instrument === 'TSLL') {
+    positionPercent *= 0.5;
+    reasoning.push(`TSLL sizing: 50% of mode allocation (2x leverage)`);
+  }
+  
   const positionValue = portfolio.cash * positionPercent;
   const shares = Math.floor(positionValue / price);
   
@@ -170,13 +275,15 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   }
   
   // All systems go - generate BUY signal
+  reasoning.push(`${zoneConfig.emoji} orb ${orb.zone} (score: ${orb.score.toFixed(2)}) → ${instrument}`);
   reasoning.push(`${mode} mode, tier ${tier} — ${(positionPercent * 100).toFixed(0)}% position size`);
   reasoning.push(`hiro: ${hiro.character} (${hiro.percentile30Day.toFixed(0)}%)`);
-  reasoning.push(`target: $${targetPrice.toFixed(2)} | stop: $${stopPrice.toFixed(2)}`);
+  reasoning.push(`target: $${targetPrice.toFixed(2)} | stop: $${stopPrice.toFixed(2)} (TSLA equiv)`);
   reasoning.push(`r/r: ${riskRewardRatio.toFixed(1)}`);
   
   return {
     action: 'buy',
+    instrument,
     shares,
     price,
     reasoning,
@@ -188,21 +295,62 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
 
 /**
  * Evaluate whether to exit current position
+ * Now handles multi-instrument positions (TSLA + TSLL)
  */
 function evaluateExit(context: DecisionContext): TradeSignal {
-  const { quote, hiro, report, portfolio } = context;
-  const position = portfolio.position!;
-  const price = quote.price;
+  const { quote, tsllQuote, hiro, report, orb, portfolio, multiPortfolio } = context;
   const reasoning: string[] = [];
   
-  const unrealizedPnl = (price - position.avgCost) * position.shares;
-  const unrealizedPnlPercent = (price / position.avgCost - 1) * 100;
+  // Determine which position to evaluate
+  // Priority: TSLL in CAUTION/DEFENSIVE zones, then normal exit logic
+  let instrument: Instrument;
+  let shares: number;
+  let avgCost: number;
+  let currentPrice: number;
   
-  // Check target hit
-  const targetHit = report && price >= report.gammaStrike * (1 - TARGET_THRESHOLD_PERCENT);
+  // In CAUTION/DEFENSIVE, prioritize TSLL exits
+  if ((orb.zone === 'CAUTION' || orb.zone === 'DEFENSIVE') && multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
+    instrument = 'TSLL';
+    shares = multiPortfolio.tsll.shares;
+    avgCost = multiPortfolio.tsll.avgCost;
+    currentPrice = tsllQuote.price;
+    reasoning.push(`🟡 ${orb.zone} zone — exiting TSLL first (leveraged exit priority)`);
+  } else if (multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
+    // Have TSLL position in non-defensive zone
+    instrument = 'TSLL';
+    shares = multiPortfolio.tsll.shares;
+    avgCost = multiPortfolio.tsll.avgCost;
+    currentPrice = tsllQuote.price;
+  } else if (multiPortfolio.tsla && multiPortfolio.tsla.shares > 0) {
+    // Have TSLA position
+    instrument = 'TSLA';
+    shares = multiPortfolio.tsla.shares;
+    avgCost = multiPortfolio.tsla.avgCost;
+    currentPrice = quote.price;
+  } else if (portfolio.position) {
+    // Fallback to legacy single-instrument portfolio
+    instrument = 'TSLA';
+    shares = portfolio.position.shares;
+    avgCost = portfolio.position.avgCost;
+    currentPrice = quote.price;
+  } else {
+    // No position
+    return {
+      action: 'hold',
+      price: quote.price,
+      reasoning: ['no position to exit'],
+      confidence: 'high',
+    };
+  }
   
-  // Check stop loss (below Master Eject or support break)
-  const stopHit = report && price < report.masterEject;
+  const unrealizedPnl = (currentPrice - avgCost) * shares;
+  const unrealizedPnlPercent = (currentPrice / avgCost - 1) * 100;
+  
+  // Check target hit (use TSLA price for levels regardless of instrument)
+  const targetHit = report && quote.price >= report.gammaStrike * (1 - TARGET_THRESHOLD_PERCENT);
+  
+  // Check stop loss (below Master Eject or support break) - use TSLA price
+  const stopHit = report && quote.price < report.masterEject;
   
   // Check if mode flipped to RED (exit signal)
   const modeFlip = report && report.mode === 'RED';
@@ -215,8 +363,9 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     reasoning.push(`unrealized: +$${unrealizedPnl.toFixed(2)} (+${unrealizedPnlPercent.toFixed(1)}%)`);
     return {
       action: 'sell',
-      shares: position.shares,
-      price,
+      instrument,
+      shares,
+      price: currentPrice,
       reasoning,
       confidence: 'high',
     };
@@ -227,8 +376,9 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     reasoning.push(`loss: $${unrealizedPnl.toFixed(2)} — kept it small.`);
     return {
       action: 'sell',
-      shares: position.shares,
-      price,
+      instrument,
+      shares,
+      price: currentPrice,
       reasoning,
       confidence: 'high',
     };
@@ -239,8 +389,9 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     reasoning.push(`securing ${unrealizedPnl >= 0 ? 'gains' : 'capital'} into defensive conditions`);
     return {
       action: 'sell',
-      shares: position.shares,
-      price,
+      instrument,
+      shares,
+      price: currentPrice,
       reasoning,
       confidence: 'high',
     };
@@ -251,8 +402,9 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     reasoning.push('trimming exposure');
     return {
       action: 'sell',
-      shares: position.shares,
-      price,
+      instrument,
+      shares,
+      price: currentPrice,
       reasoning,
       confidence: 'medium',
     };
@@ -265,25 +417,26 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     reasoning.push('approaching close — taking profit into overnight risk');
     return {
       action: 'sell',
-      shares: position.shares,
-      price,
+      instrument,
+      shares,
+      price: currentPrice,
       reasoning,
       confidence: 'medium',
     };
   }
   
   // Hold position
-  reasoning.push('position looking good');
+  reasoning.push(`${instrument} position looking good`);
   reasoning.push(`unrealized: ${unrealizedPnl >= 0 ? '+' : ''}$${unrealizedPnl.toFixed(2)} (${unrealizedPnlPercent >= 0 ? '+' : ''}${unrealizedPnlPercent.toFixed(1)}%)`);
   
   if (report) {
-    const distanceToTarget = ((report.gammaStrike - price) / price * 100);
-    reasoning.push(`${distanceToTarget.toFixed(1)}% to gamma strike target`);
+    const distanceToTarget = ((report.gammaStrike - quote.price) / quote.price * 100);
+    reasoning.push(`${distanceToTarget.toFixed(1)}% to gamma strike target (TSLA)`);
   }
   
   return {
     action: 'hold',
-    price,
+    price: currentPrice,
     reasoning,
     confidence: 'high',
   };

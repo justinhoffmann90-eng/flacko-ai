@@ -9,8 +9,12 @@ import type {
   HIROData,
   Position,
   Portfolio,
+  MultiPortfolio,
   Trade,
   DailyReport,
+  OrbData,
+  OrbZone,
+  Instrument,
 } from './types';
 import { getMarketStatus } from './data-feed';
 
@@ -65,13 +69,28 @@ function modeEmoji(mode: string): string {
 }
 
 /**
- * Post regular status update (every 15 min)
+ * Get Orb zone emoji
+ */
+function orbZoneEmoji(zone: OrbZone): string {
+  const map: Record<OrbZone, string> = {
+    FULL_SEND: '🟢',
+    NEUTRAL: '⚪',
+    CAUTION: '🟡',
+    DEFENSIVE: '🔴',
+  };
+  return map[zone];
+}
+
+/**
+ * Post regular status update (every 15 min) - multi-instrument
  */
 export async function postStatusUpdate(
   quote: TSLAQuote,
-  portfolio: Portfolio,
+  tsllQuote: TSLAQuote,
+  portfolio: Portfolio | MultiPortfolio,
   report: DailyReport | null,
   hiro: HIROData,
+  orb: OrbData,
   flackoTake: string
 ): Promise<void> {
   if (!webhookClient) return;
@@ -85,18 +104,38 @@ export async function postStatusUpdate(
   }).toLowerCase();
   
   let content = `⚔️ paper flacko — ${timeStr} ct\n\n`;
-  content += `price: $${quote.price.toFixed(2)} (${withSignPercent(quote.changePercent)} today)\n`;
+  content += `tsla: $${quote.price.toFixed(2)} (${withSignPercent(quote.changePercent)} today)\n`;
+  content += `tsll: $${tsllQuote.price.toFixed(2)} (${withSignPercent(tsllQuote.changePercent)} today)\n`;
   
-  if (portfolio.position) {
-    const pos = portfolio.position;
-    content += `position: LONG ${pos.shares} shares @ $${pos.avgCost.toFixed(2)}\n`;
-    content += `unrealized: ${withSign(pos.unrealizedPnl)} (${withSignPercent(pos.unrealizedPnlPercent)})\n`;
+  const isMulti = 'tsla' in portfolio;
+  if (isMulti) {
+    const multi = portfolio as MultiPortfolio;
+    if (multi.tsla || multi.tsll) {
+      content += `\npositions:\n`;
+      if (multi.tsla) {
+        content += `• TSLA: ${multi.tsla.shares} shares @ $${multi.tsla.avgCost.toFixed(2)} — ${withSign(multi.tsla.unrealizedPnl)} (${withSignPercent(multi.tsla.pnlPercent)})\n`;
+      }
+      if (multi.tsll) {
+        content += `• TSLL: ${multi.tsll.shares} shares @ $${multi.tsll.avgCost.toFixed(2)} — ${withSign(multi.tsll.unrealizedPnl)} (${withSignPercent(multi.tsll.pnlPercent)})\n`;
+      }
+    } else {
+      content += `position: FLAT\n`;
+    }
+    content += `cash: $${multi.cash.toFixed(0)}\n`;
   } else {
-    content += `position: FLAT\n`;
-    content += `cash: $${portfolio.cash.toFixed(0)}\n`;
+    const single = portfolio as Portfolio;
+    if (single.position) {
+      const pos = single.position;
+      content += `position: LONG ${pos.shares} shares TSLA @ $${pos.avgCost.toFixed(2)}\n`;
+      content += `unrealized: ${withSign(pos.unrealizedPnl)} (${withSignPercent(pos.unrealizedPnlPercent)})\n`;
+    } else {
+      content += `position: FLAT\n`;
+    }
+    content += `cash: $${single.cash.toFixed(0)}\n`;
   }
   
-  content += `\ntake: ${flackoTake}\n`;
+  content += `\n${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})\n`;
+  content += `take: ${flackoTake}\n`;
   
   // Key levels context
   if (report) {
@@ -169,12 +208,13 @@ export async function postHIROUpdate(
 }
 
 /**
- * Post trade entry alert
+ * Post trade entry alert (multi-instrument)
  */
 export async function postEntryAlert(
   trade: Trade,
   report: DailyReport | null,
-  portfolio: Portfolio
+  portfolio: Portfolio | MultiPortfolio,
+  orb: OrbData
 ): Promise<void> {
   if (!webhookClient) return;
   
@@ -186,7 +226,7 @@ export async function postEntryAlert(
   }).toLowerCase();
   
   let content = `⚔️ paper flacko — **ENTRY ALERT** — ${timeStr} ct\n\n`;
-  content += `bought: ${trade.shares} shares TSLA @ $${trade.price.toFixed(2)}\n`;
+  content += `bought: ${trade.shares} shares ${trade.instrument} @ $${trade.price.toFixed(2)}\n`;
   content += `size: $${trade.totalValue.toFixed(0)}`;
   
   if (report) {
@@ -200,7 +240,8 @@ export async function postEntryAlert(
   }
   
   content += `\nreasoning:`;
-  const reasons = trade.reasoning.filter(r => 
+  const reasoningArray = Array.isArray(trade.reasoning) ? trade.reasoning : [trade.reasoning];
+  const reasons = reasoningArray.filter(r => 
     !r.includes('target:') && !r.includes('stop:') && !r.includes('r/r:')
   );
   reasons.forEach(r => {
@@ -208,14 +249,29 @@ export async function postEntryAlert(
   });
   
   // Extract target and stop from reasoning
-  const targetReason = trade.reasoning.find(r => r.includes('target:'));
-  const stopReason = trade.reasoning.find(r => r.includes('stop:'));
+  const targetReason = reasoningArray.find(r => r.includes('target:'));
+  const stopReason = reasoningArray.find(r => r.includes('stop:'));
   
   if (targetReason) content += `\n• ${targetReason}`;
   if (stopReason) content += `\n• ${stopReason}`;
   
-  content += `\n\nportfolio: ${portfolio.position?.shares || trade.shares} shares`;
-  content += ` | cash: $${portfolio.cash.toFixed(0)}`;
+  // Show portfolio breakdown
+  const isMulti = 'tsla' in portfolio;
+  if (isMulti) {
+    const multi = portfolio as MultiPortfolio;
+    content += `\n\nportfolio:`;
+    if (multi.tsla) content += ` TSLA ${multi.tsla.shares} shares`;
+    if (multi.tsll) content += ` | TSLL ${multi.tsll.shares} shares`;
+    content += ` | cash: $${multi.cash.toFixed(0)}`;
+  } else {
+    const single = portfolio as Portfolio;
+    content += `\n\nportfolio: ${single.position?.shares || trade.shares} shares`;
+    content += ` | cash: $${single.cash.toFixed(0)}`;
+  }
+  
+  if (trade.instrument === 'TSLL') {
+    content += `\n\n⚡ leveraged position — ${orbZoneEmoji(orb.zone)} ${orb.zone} conditions justify 2x.`;
+  }
   
   try {
     await webhookClient.send({ content });
@@ -225,12 +281,13 @@ export async function postEntryAlert(
 }
 
 /**
- * Post trade exit alert
+ * Post trade exit alert (multi-instrument)
  */
 export async function postExitAlert(
   trade: Trade,
-  portfolio: Portfolio,
-  todayPnl: number
+  portfolio: Portfolio | MultiPortfolio,
+  todayPnl: number,
+  orb?: OrbData
 ): Promise<void> {
   if (!webhookClient) return;
   
@@ -241,23 +298,40 @@ export async function postExitAlert(
     timeZone: 'America/Chicago',
   }).toLowerCase();
   
-  const isWin = (trade.realized_pnl || 0) > 0;
+  const isWin = (trade.realizedPnl || 0) > 0;
   
   let content = `⚔️ paper flacko — **EXIT ALERT** — ${timeStr} ct\n\n`;
-  content += `sold: ${trade.shares} shares TSLA @ $${trade.price.toFixed(2)}\n`;
-  content += `realized: ${withSign(trade.realized_pnl || 0)}`;
+  content += `sold: ${trade.shares} shares ${trade.instrument} @ $${trade.price.toFixed(2)}\n`;
+  content += `realized: ${withSign(trade.realizedPnl || 0)}`;
   
-  if (trade.realized_pnl) {
-    const returnPct = (trade.realized_pnl / trade.totalValue) * 100;
+  if (trade.realizedPnl) {
+    const returnPct = (trade.realizedPnl / trade.totalValue) * 100;
     content += ` (${withSignPercent(returnPct)} on trade)`;
   }
   
   content += `\nreasoning:`;
-  trade.reasoning.forEach(r => {
+  const reasoningArray2 = Array.isArray(trade.reasoning) ? trade.reasoning : [trade.reasoning];
+  reasoningArray2.forEach(r => {
     content += `\n• ${r}`;
   });
   
-  content += `\n\nportfolio: FLAT`;
+  // Show remaining positions
+  const isMulti = 'tsla' in portfolio;
+  content += `\n\nportfolio:`;
+  if (isMulti) {
+    const multi = portfolio as MultiPortfolio;
+    if (multi.tsla) {
+      content += ` TSLA ${multi.tsla.shares} shares`;
+    }
+    if (multi.tsll) {
+      content += ` | TSLL ${multi.tsll.shares} shares`;
+    }
+    if (!multi.tsla && !multi.tsll) {
+      content += ` FLAT`;
+    }
+  } else {
+    content += ` FLAT`;
+  }
   content += ` | cash: $${portfolio.cash.toFixed(0)}`;
   content += `\ntoday's p&l: ${withSign(todayPnl)} (${withSignPercent(todayPnl / 100000 * 100)})`;
   
@@ -275,21 +349,100 @@ export async function postExitAlert(
 }
 
 /**
- * Post market open message
+ * Post zone change alert
+ */
+export async function postZoneChangeAlert(
+  fromZone: OrbZone,
+  toZone: OrbZone,
+  orb: OrbData,
+  action?: { instrument: Instrument; shares: number; price: number; pnl?: number }
+): Promise<void> {
+  if (!webhookClient) return;
+  
+  const timeStr = new Date().toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Chicago',
+  }).toLowerCase();
+  
+  let content = `⚔️ paper flacko — **ORB ZONE CHANGE** — ${timeStr} ct\n\n`;
+  content += `${orbZoneEmoji(fromZone)} ${fromZone} → ${orbZoneEmoji(toZone)} ${toZone}\n`;
+  content += `score: ${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(3)}\n\n`;
+  
+  // Zone-specific commentary
+  if (toZone === 'DEFENSIVE') {
+    content += `🔴 DEFENSIVE conditions — multiple avoid signals active.\n`;
+    content += `exiting leveraged positions immediately. protecting capital.\n`;
+  } else if (toZone === 'CAUTION') {
+    content += `🟡 CAUTION — avoid signals building.\n`;
+    content += `trimming TSLL first (leveraged exits priority).\n`;
+  } else if (toZone === 'FULL_SEND') {
+    content += `🟢 FULL SEND — multiple buy signals converging.\n`;
+    content += `cleared to deploy TSLL (2x leverage).\n`;
+  } else if (toZone === 'NEUTRAL' && fromZone === 'FULL_SEND') {
+    content += `⚪ NEUTRAL — holding existing TSLL, no new TSLL entries.\n`;
+    content += `forward returns still positive. no panic selling.\n`;
+  }
+  
+  // If action was taken
+  if (action) {
+    content += `\n**action taken:**\n`;
+    content += `sold ${action.shares} shares ${action.instrument} @ $${action.price.toFixed(2)}\n`;
+    if (action.pnl !== undefined) {
+      content += `p&l: ${withSign(action.pnl)}\n`;
+    }
+  }
+  
+  content += `\nactive setups (${orb.activeSetups.length}):`;
+  const activeSetups = orb.activeSetups.filter(s => s.status === 'active');
+  const watchingSetups = orb.activeSetups.filter(s => s.status === 'watching');
+  
+  if (activeSetups.length > 0) {
+    content += `\n🟢 active: ${activeSetups.map(s => s.setup_id).join(', ')}`;
+  }
+  if (watchingSetups.length > 0) {
+    content += `\n👀 watching: ${watchingSetups.map(s => s.setup_id).join(', ')}`;
+  }
+  
+  try {
+    await webhookClient.send({ content });
+  } catch (error) {
+    console.error('Error posting zone change alert:', error);
+  }
+}
+
+/**
+ * Post market open message (multi-instrument)
  */
 export async function postMarketOpen(
   quote: TSLAQuote,
-  report: DailyReport | null
+  tsllQuote: TSLAQuote,
+  report: DailyReport | null,
+  orb: OrbData
 ): Promise<void> {
   if (!webhookClient) return;
   
   let content = `⚔️ paper flacko — **market open**\n\n`;
   content += `starting capital: $100,000\n`;
-  content += ` tsla open: $${quote.price.toFixed(2)}\n`;
+  content += `tsla open: $${quote.price.toFixed(2)}\n`;
+  content += `tsll open: $${tsllQuote.price.toFixed(2)}\n`;
   
   if (report) {
     content += `mode: ${modeEmoji(report.mode)} ${report.mode} (tier ${report.tier})\n`;
     content += `master eject: $${report.masterEject.toFixed(2)} — no longs below this.\n`;
+  }
+  
+  content += `\n${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})\n`;
+  
+  if (orb.zone === 'FULL_SEND') {
+    content += `cleared for TSLL (2x leverage).\n`;
+  } else if (orb.zone === 'NEUTRAL') {
+    content += `TSLA shares only today.\n`;
+  } else if (orb.zone === 'CAUTION') {
+    content += `no new buys — defensive posture.\n`;
+  } else if (orb.zone === 'DEFENSIVE') {
+    content += `🔴 DEFENSIVE — capital preservation mode.\n`;
   }
   
   content += `\nscanning for setups. let's get it.`;
@@ -302,23 +455,53 @@ export async function postMarketOpen(
 }
 
 /**
- * Post market close summary
+ * Post market close summary (multi-instrument)
  */
 export async function postMarketClose(
-  portfolio: Portfolio,
+  portfolio: Portfolio | MultiPortfolio,
   dayTrades: number,
-  dayPnl: number
+  dayPnl: number,
+  dayPnlByInstrument?: { tsla: number; tsll: number }
 ): Promise<void> {
   if (!webhookClient) return;
   
   let content = `⚔️ paper flacko — **market close**\n\n`;
   
-  if (portfolio.position) {
-    content += `holding ${portfolio.position.shares} shares overnight\n`;
-    content += `unrealized: ${withSign(portfolio.position.unrealizedPnl)}\n`;
+  const isMulti = 'tsla' in portfolio;
+  if (isMulti) {
+    const multi = portfolio as MultiPortfolio;
+    if (multi.tsla || multi.tsll) {
+      content += `holding overnight:\n`;
+      if (multi.tsla) {
+        content += `• TSLA: ${multi.tsla.shares} shares — ${withSign(multi.tsla.unrealizedPnl)}\n`;
+      }
+      if (multi.tsll) {
+        content += `• TSLL: ${multi.tsll.shares} shares — ${withSign(multi.tsll.unrealizedPnl)}\n`;
+      }
+    }
+  } else {
+    const single = portfolio as Portfolio;
+    if (single.position) {
+      content += `holding ${single.position.shares} shares TSLA overnight\n`;
+      content += `unrealized: ${withSign(single.position.unrealizedPnl)}\n`;
+    }
   }
   
-  content += `day's p&l: ${withSign(dayPnl)} (${withSignPercent(dayPnl / 100000 * 100)})\n`;
+  content += `\nday's p&l: ${withSign(dayPnl)} (${withSignPercent(dayPnl / 100000 * 100)})\n`;
+  
+  if (dayPnlByInstrument) {
+    if (dayPnlByInstrument.tsla !== 0 || dayPnlByInstrument.tsll !== 0) {
+      content += `breakdown:`;
+      if (dayPnlByInstrument.tsla !== 0) {
+        content += ` TSLA ${withSign(dayPnlByInstrument.tsla)}`;
+      }
+      if (dayPnlByInstrument.tsll !== 0) {
+        content += ` | TSLL ${withSign(dayPnlByInstrument.tsll)}`;
+      }
+      content += `\n`;
+    }
+  }
+  
   content += `trades: ${dayTrades}\n`;
   content += `portfolio value: $${portfolio.totalValue.toFixed(0)}\n`;
   content += `total return: ${withSignPercent(portfolio.totalReturnPercent)}\n\n`;

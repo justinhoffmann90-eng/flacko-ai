@@ -9,6 +9,8 @@ import type {
   TSLAQuote,
   HIROData,
   DailyReport,
+  OrbData,
+  OrbZone,
 } from './types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
@@ -16,6 +18,27 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 const SPOT_GAMMA_API_KEY = process.env.SPOT_GAMMA_API_KEY || '';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// Orb Score constants (copied from lib/orb/score.ts)
+const SETUP_TYPES: Record<string, "buy" | "avoid"> = {
+  "smi-oversold-gauge": "buy", "oversold-extreme": "buy", "regime-shift": "buy",
+  "deep-value": "buy", "green-shoots": "buy", "momentum-flip": "buy",
+  "trend-confirm": "buy", "trend-ride": "buy", "trend-continuation": "buy",
+  "goldilocks": "buy", "capitulation": "buy",
+  "smi-overbought": "avoid", "dual-ll": "avoid", "overextended": "avoid",
+  "momentum-crack": "avoid", "ema-shield-caution": "avoid", "ema-shield-break": "avoid",
+};
+
+const WEIGHTS: Record<string, number> = {
+  "oversold-extreme": 0.60, "capitulation": 0.51, "momentum-crack": 0.22,
+  "overextended": 0.49, "deep-value": 0.47, "goldilocks": 0.44,
+  "smi-overbought": 0.44, "trend-confirm": 0.43, "regime-shift": 0.28,
+  "ema-shield-caution": 0.39, "dual-ll": 0.39, "trend-ride": 0.35,
+  "momentum-flip": 0.33, "green-shoots": 0.32, "smi-oversold-gauge": 0.47,
+  "trend-continuation": 0.47, "ema-shield-break": 0.30,
+};
+
+const THRESHOLDS = { FULL_SEND: 0.686, NEUTRAL: -0.117, CAUTION: -0.729 };
 
 // Cache for HIRO data (fallback if API unavailable)
 let hiroCache: HIROData | null = null;
@@ -44,6 +67,80 @@ export async function fetchTSLAPrice(): Promise<TSLAQuote> {
   } catch (error) {
     console.error('Error fetching TSLA price:', error);
     throw new Error(`Failed to fetch TSLA price: ${error}`);
+  }
+}
+
+/**
+ * Fetch current TSLL price from Yahoo Finance
+ */
+export async function fetchTSLLPrice(): Promise<TSLAQuote> {
+  try {
+    const quote = await yahooFinance.quote('TSLL');
+    
+    return {
+      symbol: quote.symbol,
+      price: quote.regularMarketPrice || 0,
+      change: quote.regularMarketChange || 0,
+      changePercent: quote.regularMarketChangePercent || 0,
+      volume: quote.regularMarketVolume || 0,
+      open: quote.regularMarketOpen || 0,
+      high: quote.regularMarketDayHigh || 0,
+      low: quote.regularMarketDayLow || 0,
+      previousClose: quote.regularMarketPreviousClose || 0,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Error fetching TSLL price:', error);
+    throw new Error(`Failed to fetch TSLL price: ${error}`);
+  }
+}
+
+/**
+ * Fetch Orb Score from Supabase — reads PRE-COMPUTED values.
+ * The Orb compute route (/api/orb/compute) writes orb_score and orb_zone
+ * to orb_daily_indicators. We just read. Never recompute.
+ */
+export async function fetchOrbScore(): Promise<OrbData> {
+  try {
+    // 1. Read the latest computed score + zone from orb_daily_indicators
+    const { data: scoreRow, error: scoreError } = await supabase
+      .from('orb_daily_indicators')
+      .select('orb_score, orb_zone, date')
+      .order('date', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (scoreError) throw scoreError;
+
+    // 2. Read active setup states (for display in Discord messages only)
+    const { data: states, error: statesError } = await supabase
+      .from('orb_setup_states')
+      .select('setup_id, status');
+
+    if (statesError) throw statesError;
+
+    const activeSetups = (states || [])
+      .filter(s => s.status === 'active' || s.status === 'watching')
+      .map(s => ({
+        setup_id: s.setup_id,
+        status: s.status,
+      }));
+
+    return {
+      score: scoreRow?.orb_score ?? 0,
+      zone: (scoreRow?.orb_zone ?? 'NEUTRAL') as OrbZone,
+      activeSetups,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('Error fetching Orb score:', error);
+    // Return defensive fallback
+    return {
+      score: -1.0,
+      zone: "DEFENSIVE",
+      activeSetups: [],
+      timestamp: new Date(),
+    };
   }
 }
 
