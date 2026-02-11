@@ -347,6 +347,7 @@ async function main() {
     }
   }
 
+  // Compute fixed-horizon returns for all instances
   for (const inst of instances) {
     const i = inst.bar_index!;
     inst.ret_5d = i + 5 < closes.length ? ((closes[i + 5] - closes[i]) / closes[i]) * 100 : null;
@@ -357,6 +358,51 @@ async function main() {
     inst.is_win_10d = inst.ret_10d != null ? inst.ret_10d > 0 : null;
     inst.is_win_20d = inst.ret_20d != null ? inst.ret_20d > 0 : null;
     inst.is_win_60d = inst.ret_60d != null ? inst.ret_60d > 0 : null;
+  }
+
+  // Gauge-to-target measurement for SMI gauge setups
+  const gaugeResults: { setup_id: string; signal_date: string; gauge_days: number | null; gauge_return: number | null; gauge_completed: boolean }[] = [];
+  for (const inst of instances) {
+    if (inst.setup_id !== "smi-oversold-gauge" && inst.setup_id !== "smi-overbought") continue;
+    const i = inst.bar_index!;
+    const targetSmi = inst.setup_id === "smi-oversold-gauge" ? 30 : -30;
+    const compare = inst.setup_id === "smi-oversold-gauge"
+      ? (v: number) => v >= targetSmi
+      : (v: number) => v <= targetSmi;
+
+    let found = false;
+    for (let j = i + 1; j < Math.min(i + 61, closes.length); j++) {
+      if (compare(smiResult.smi[j])) {
+        const days = j - i;
+        const ret = ((closes[j] - closes[i]) / closes[i]) * 100;
+        gaugeResults.push({ setup_id: inst.setup_id, signal_date: inst.signal_date, gauge_days: days, gauge_return: Math.round(ret * 100) / 100, gauge_completed: true });
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      gaugeResults.push({ setup_id: inst.setup_id, signal_date: inst.signal_date, gauge_days: null, gauge_return: null, gauge_completed: false });
+    }
+  }
+
+  // Print gauge-to-target summary
+  for (const sid of ["smi-oversold-gauge", "smi-overbought"]) {
+    const g = gaugeResults.filter(r => r.setup_id === sid);
+    const completed = g.filter(r => r.gauge_completed);
+    const returns = completed.map(r => r.gauge_return!).sort((a, b) => a - b);
+    const days = completed.map(r => r.gauge_days!).sort((a, b) => a - b);
+    const winRate = completed.length ? completed.filter(r => sid === "smi-oversold-gauge" ? r.gauge_return! > 0 : r.gauge_return! < 0).length / completed.length : 0;
+    const medianRet = returns.length ? returns[Math.floor(returns.length / 2)] : null;
+    const medianDays = days.length ? days[Math.floor(days.length / 2)] : null;
+    console.log(`\nGAUGE: ${sid}`);
+    console.log(`  Total: ${g.length}, Completed: ${completed.length}/${g.length} (${g.length ? Math.round(completed.length / g.length * 100) : 0}%)`);
+    console.log(`  Win rate: ${(winRate * 100).toFixed(1)}%`);
+    console.log(`  Median return: ${medianRet?.toFixed(2) ?? "N/A"}%`);
+    console.log(`  Median days: ${medianDays ?? "N/A"}`);
+  }
+
+  // Clean up bar_index before DB insert
+  for (const inst of instances) {
     delete inst.bar_index;
   }
 
