@@ -12,13 +12,13 @@ import { WebhookClient } from 'discord.js';
 import type { TSLAQuote, HIROData, DailyReport, OrbData, MultiPortfolio, Trade } from './types';
 
 // Same webhook, different persona
-const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL 
-  || 'https://discord.com/api/webhooks/1471201795404595414/ENwqrjgFHWk387SQ7jYqv6sHCFNTAicwkztTzd367xkDNowmWOHPJXn82e4-vpaKpHph';
+// Axe has his own webhook — avatar/name controlled from Discord settings
+const AXE_WEBHOOK_URL = process.env.AXE_WEBHOOK_URL
+  || 'https://discord.com/api/webhooks/1471207800238506157/AVmjV5NUoUg9URenzZxRSawYs-xUuTh5qlx3kIWRt2jRnAgNWO2m72HdG8kJH1WIIlrw';
 
 let webhookClient: WebhookClient | null = null;
 
-const AXELROD_USERNAME = 'Axe';
-const AXELROD_AVATAR = 'https://www.flacko.ai/avatars/axe.jpg';
+// Name and avatar controlled from Discord webhook settings — no code changes needed
 
 const AXELROD_SYSTEM_PROMPT = `You are Bobby Axelrod from Billions — but you're commenting on a paper trading bot's moves in a Discord channel.
 
@@ -129,7 +129,7 @@ interface AxelrodContext {
  */
 export function initAxelrod(): boolean {
   try {
-    webhookClient = new WebhookClient({ url: DISCORD_WEBHOOK_URL });
+    webhookClient = new WebhookClient({ url: AXE_WEBHOOK_URL });
     return true;
   } catch (error) {
     console.error('Failed to initialize Axelrod webhook:', error);
@@ -301,8 +301,6 @@ export async function postAxelrodCommentary(context: AxelrodContext): Promise<vo
     // Post as Axelrod
     await webhookClient.send({
       content: commentary,
-      username: AXELROD_USERNAME,
-      avatarURL: AXELROD_AVATAR,
     });
 
     console.log('🎩 axelrod commentary posted');

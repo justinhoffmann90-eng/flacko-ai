@@ -24,17 +24,12 @@ const DISCORD_WEBHOOK_URL = process.env.PAPER_TRADER_WEBHOOK_URL
 
 let webhookClient: WebhookClient | null = null;
 
-const TAYLOR_USERNAME = 'Taylor';
-const TAYLOR_AVATAR = 'https://www.flacko.ai/avatars/taylor.jpg';
+// Name and avatar controlled from Discord webhook settings — no code changes needed
 
-/** Helper: send as Taylor with consistent identity */
+/** Helper: send via Taylor's webhook */
 async function sendAsTaylor(options: { content?: string; embeds?: any[] }): Promise<void> {
   if (!webhookClient) return;
-  await webhookClient.send({
-    ...options,
-    username: TAYLOR_USERNAME,
-    avatarURL: TAYLOR_AVATAR,
-  });
+  await webhookClient.send(options);
 }
 
 /**
