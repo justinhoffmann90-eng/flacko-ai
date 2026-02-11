@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Radar, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 
 interface OrbSignal {
   id: string;
@@ -77,10 +77,8 @@ export function OrbSignalsCard() {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Radar
-              className={`h-5 w-5 ${zone ? zone.color : "text-muted-foreground"}`}
-            />
-            <h3 className="font-semibold text-sm md:text-base">The Orb</h3>
+            <span className="text-base md:text-lg">🔮</span>
+            <h3 className="font-semibold text-sm md:text-base">Orb</h3>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
             Explore <ArrowRight className="h-3 w-3" />

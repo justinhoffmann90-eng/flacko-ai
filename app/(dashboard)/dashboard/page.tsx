@@ -15,7 +15,7 @@ import { OrbSignalsCard } from "@/components/dashboard/orb-signals-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
-import { CallOptionsWidget } from "@/components/report/call-options-widget";
+// CallOptionsWidget removed — Orb replaces it
 
 interface ExtractedData {
   mode?: { current: string; label: string };
