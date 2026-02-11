@@ -283,6 +283,7 @@ function bestTimeframe(row: OrbRow): { label: string; win: number; avg: number }
 
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
+  const [orbScore, setOrbScore] = useState<{ value: number; zone: string; prevZone: string | null; date: string } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[]; backtest: any[] }>>({});
   const [filter, setFilter] = useState<"all" | "active" | "buy" | "avoid">("all");
@@ -315,7 +316,15 @@ export default function OrbClient() {
     }
     const res = await fetch(`/api/orb/states${adminParam ? `?admin=${adminParam}` : ""}`, { cache: "no-store", credentials: "include" });
     const data = await res.json();
-    setRows(Array.isArray(data) ? data : []);
+    // Handle both old (array) and new ({ score, setups }) response shapes
+    if (Array.isArray(data)) {
+      setRows(data);
+    } else if (data?.setups) {
+      setRows(Array.isArray(data.setups) ? data.setups : []);
+      if (data.score) setOrbScore(data.score);
+    } else {
+      setRows([]);
+    }
   }, []);
 
   // Pull-to-refresh handlers
@@ -436,6 +445,45 @@ export default function OrbClient() {
           <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 6 avoid signals • TSLA</p>
         </div>
 
+        {/* Orb Score Widget */}
+        {orbScore && (() => {
+          const zoneConfig: Record<string, { emoji: string; label: string; hex: string; description: string }> = {
+            FULL_SEND:  { emoji: "🟢", label: "FULL SEND",  hex: "#22c55e", description: "Multiple strong buys, no avoids. Deploy leveraged." },
+            NEUTRAL:    { emoji: "⚪", label: "NEUTRAL",     hex: "#d4d4d8", description: "Normal conditions. Hold existing, don't add." },
+            CAUTION:    { emoji: "🟡", label: "CAUTION",     hex: "#eab308", description: "Avoid signals present. Take profits, reduce leverage." },
+            DEFENSIVE:  { emoji: "🔴", label: "DEFENSIVE",   hex: "#ef4444", description: "Multiple avoids. Cash. Wait." },
+          };
+          const zc = zoneConfig[orbScore.zone] || zoneConfig.NEUTRAL;
+          return (
+            <div className="mb-4" style={{
+              background: `linear-gradient(135deg, ${zc.hex}08, ${zc.hex}15)`,
+              border: `1px solid ${zc.hex}30`,
+              borderRadius: 14,
+              padding: isDesktop ? "20px 24px" : "16px 18px",
+              animation: "fadeIn .4s ease",
+            }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div style={{ fontSize: desktopFont(10), letterSpacing: "0.12em", color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>ORB SCORE</div>
+                  <div className="flex items-center gap-3">
+                    <span style={{ fontSize: desktopFont(32), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1 }}>
+                      {zc.emoji} {zc.label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.45)", marginTop: 6, fontFamily: "'Inter', system-ui", lineHeight: 1.4 }}>{zc.description}</p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: desktopFont(28), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1 }}>
+                    {orbScore.value >= 0 ? "+" : ""}{orbScore.value.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
+                    {orbScore.date}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="mb-4 flex flex-wrap" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 4, gap: 6 }}>
 

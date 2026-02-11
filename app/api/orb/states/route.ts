@@ -110,7 +110,23 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json(merged);
+    // Fetch latest Orb Score
+    const { data: latestIndicator } = await supabase
+      .from("orb_daily_indicators")
+      .select("date, orb_score, orb_zone, orb_zone_prev")
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return NextResponse.json({
+      score: latestIndicator ? {
+        value: latestIndicator.orb_score,
+        zone: latestIndicator.orb_zone,
+        prevZone: latestIndicator.orb_zone_prev,
+        date: latestIndicator.date,
+      } : null,
+      setups: merged,
+    });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }

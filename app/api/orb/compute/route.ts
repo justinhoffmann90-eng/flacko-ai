@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { computeIndicators } from "@/lib/orb/compute-indicators";
 import { evaluateAllSetups, PreviousState, suggestMode } from "@/lib/orb/evaluate-setups";
 import { sendAlert } from "@/lib/orb/alerts";
+import { computeOrbScore, assignZone, transitionMessage } from "@/lib/orb/score";
 
 export const maxDuration = 30;
 
@@ -292,6 +293,35 @@ async function runCompute() {
     });
     await supabase.from("orb_daily_snapshots").upsert(snapshotRows, { onConflict: "date,setup_id" });
 
+    // Compute Orb Score
+    const setupStates = snapshotRows.map(r => ({ setup_id: r.setup_id, status: r.status }));
+    const orbScore = computeOrbScore(setupStates);
+    const orbZone = assignZone(orbScore);
+
+    // Get previous zone for transition detection
+    const { data: prevIndicator } = await supabase
+      .from("orb_daily_indicators")
+      .select("orb_zone")
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const prevZone = prevIndicator?.orb_zone || null;
+
+    // Send transition alert if zone changed
+    if (prevZone && prevZone !== orbZone) {
+      const msg = transitionMessage(prevZone as any, orbZone);
+      // Log transition
+      await supabase.from("orb_signal_log").insert({
+        setup_id: "orb-score",
+        event_type: "zone_transition",
+        event_date: indicators.date,
+        event_price: indicators.close,
+        previous_status: prevZone,
+        new_status: orbZone,
+        notes: msg,
+      });
+    }
+
     const modeSuggestion = suggestMode(
       indicators,
       results.filter((r) => r.is_active)
@@ -332,6 +362,9 @@ async function runCompute() {
         suggested_mode: modeSuggestion.suggestion,
         mode_confidence: modeSuggestion.confidence,
         mode_reasoning: modeSuggestion.reasoning,
+        orb_score: orbScore,
+        orb_zone: orbZone,
+        orb_zone_prev: prevZone,
       },
       { onConflict: "date" }
     );
