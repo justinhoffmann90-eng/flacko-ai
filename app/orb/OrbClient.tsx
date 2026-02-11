@@ -302,7 +302,7 @@ function OptionsPlaybook({ pb, zone, hex, isDesktop, desktopFont }: { pb: { setu
         <span style={{ fontSize: desktopFont(11), letterSpacing: "0.08em", color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
           OPTIONS PLAYBOOK
         </span>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s ease" }}>&#x25BE;</span>
+        <span style={{ fontSize: 16, color: "rgba(255,255,255,0.45)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s ease" }}>&#x25BE;</span>
       </button>
       {open && (
         <div style={{
