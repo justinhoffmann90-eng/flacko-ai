@@ -35,11 +35,12 @@ function getColorEmoji(signal: string): string {
 }
 
 // Mode descriptions for Discord alerts
-const modeGuidance: Record<string, { cap: string; guidance: string }> = {
-  green: { cap: "up to 25%", guidance: "Favorable conditions for swing entries." },
-  yellow: { cap: "15% or less", guidance: "Proceed with caution. Tighter stops." },
-  orange: { cap: "10% or less", guidance: "Elevated caution. Respect key levels. Size positions conservatively." },
-  red: { cap: "5% or less", guidance: "Defensive stance. Protect capital. Nibbles only." },
+const modeGuidance: Record<string, { cap: string; trimCap: string; guidance: string }> = {
+  green: { cap: "up to 30%", trimCap: "10% of remaining per level", guidance: "Favorable conditions. Full deployment permitted. Trim slowly." },
+  yellow_improving: { cap: "20%", trimCap: "15% of remaining per level", guidance: "Recovery building. Meaningful accumulation. Daily leading Weekly." },
+  yellow: { cap: "17.5%", trimCap: "20% of remaining per level", guidance: "Warning signs present. Spread entries over 5-6 days." },
+  orange: { cap: "10% or less", trimCap: "25% of remaining per level", guidance: "Elevated caution. Small nibbles only. Bounces suspect." },
+  red: { cap: "5% or less", trimCap: "30% of remaining per level", guidance: "Defensive stance. Protect capital. Bounces are exits." },
 };
 
 export function getAlertDiscordMessage({
@@ -85,7 +86,7 @@ export function getAlertDiscordMessage({
   let description = `**Triggered:**\n${alertLines}\n\n`;
 
   // 2. MODE SECTION
-  description += `${modeEmoji} **${mode.toUpperCase()} MODE** — ${modeInfo.cap}\n`;
+  description += `${modeEmoji} **${mode.toUpperCase()} MODE** — Daily Cap: ${modeInfo.cap} | Trim: ${modeInfo.trimCap}\n`;
   description += `_${modeInfo.guidance}_\n\n`;
 
   // 3. POSTURE SECTION

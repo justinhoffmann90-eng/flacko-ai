@@ -195,10 +195,11 @@ export interface ModeConfig {
 }
 
 export const MODE_CONFIGS: Record<string, ModeConfig> = {
-  GREEN: { maxPositionPercent: 0.25, description: 'favorable conditions' },
-  YELLOW: { maxPositionPercent: 0.15, description: 'proceed with caution' },
-  ORANGE: { maxPositionPercent: 0.10, description: 'elevated caution' },
-  RED: { maxPositionPercent: 0.05, description: 'defensive, nibbles only' },
+  GREEN: { maxPositionPercent: 0.30, description: 'favorable conditions — full deployment permitted' },
+  YELLOW_IMPROVING: { maxPositionPercent: 0.20, description: 'recovery building — meaningful accumulation' },
+  YELLOW: { maxPositionPercent: 0.175, description: 'warning signs — spread entries over 5-6 days' },
+  ORANGE: { maxPositionPercent: 0.10, description: 'elevated caution — small nibbles only' },
+  RED: { maxPositionPercent: 0.05, description: 'defensive — nibbles at extreme support only' },
 };
 
 export const TIER_MULTIPLIERS: Record<number, number> = {
