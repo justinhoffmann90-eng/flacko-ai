@@ -41,6 +41,7 @@ import {
   postWeeklyReport,
   postError,
 } from './discord-poster';
+import { initAxelrod, postAxelrodCommentary } from './axelrod';
 import {
   recordTrade,
   updateBotState,
@@ -104,7 +105,7 @@ async function init(): Promise<boolean> {
   }
   
   // Initialize Discord
-  if (!initDiscord()) {
+  if (!initDiscord() || !initAxelrod()) {
     console.error('❌ failed to initialize discord');
     return false;
   }
@@ -170,6 +171,11 @@ async function tradingLoop(): Promise<void> {
         fetchOrbScore(),
       ]);
       await postMarketOpen(quote, tsllQuote, report, orb);
+      // Axelrod reacts to market open
+      postAxelrodCommentary({
+        taylorPost: `Market open. TSLA $${quote.price.toFixed(2)}, mode ${report?.mode || 'unknown'}, Orb ${orb.zone} (${orb.score.toFixed(3)}). Starting capital $100k.`,
+        quote, report, hiro: undefined, orb,
+      }).catch(() => {}); // non-blocking
       marketOpenPosted = true;
       sessionState.previousOrbZone = orb.zone;
       await logBot('info', 'market open posted', { orbZone: orb.zone, orbScore: orb.score });
@@ -248,6 +254,11 @@ async function tradingLoop(): Promise<void> {
     if (sessionState.previousOrbZone && sessionState.previousOrbZone !== orb.zone) {
       console.log(`🔄 Orb zone transition: ${sessionState.previousOrbZone} → ${orb.zone}`);
       await postZoneChangeAlert(sessionState.previousOrbZone, orb.zone, orb);
+      // Axelrod reacts to zone change
+      postAxelrodCommentary({
+        taylorPost: `ZONE CHANGE: ${sessionState.previousOrbZone} → ${orb.zone}. Score: ${orb.score.toFixed(3)}.`,
+        orb,
+      }).catch(() => {});
       sessionState.previousOrbZone = orb.zone;
     } else if (!sessionState.previousOrbZone) {
       sessionState.previousOrbZone = orb.zone;
@@ -287,6 +298,11 @@ async function tradingLoop(): Promise<void> {
     
     // Post status update
     await postStatusUpdate(quote, tsllQuote, multiPortfolio, report, hiro, orb, flackoTake);
+    // Axelrod reacts to 15-min update
+    postAxelrodCommentary({
+      taylorPost: `Status update: TSLA $${quote.price.toFixed(2)} (${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(1)}% today). ${flackoTake}`,
+      quote, report, hiro, orb, portfolio: multiPortfolio,
+    }).catch(() => {});
     
     // Make trading decision (multi-instrument + Orb)
     const signal = makeTradeDecision({
@@ -422,6 +438,11 @@ async function executeBuy(
     sessionState.realizedPnl
   );
   await postEntryAlert(trade, report, updatedPortfolio, orb);
+  // Axelrod reacts to the entry
+  postAxelrodCommentary({
+    taylorPost: `ENTRY: Bought ${shares} ${instrument} @ $${price.toFixed(2)}. ${signal.reasoning.join('. ')}`,
+    quote, report, hiro, orb, portfolio: updatedPortfolio, trade,
+  }).catch(() => {});
   
   await logBot('trade', `bought ${shares} shares ${instrument} @ $${price}`, {
     instrument,
@@ -507,6 +528,11 @@ async function executeSell(
   );
   const todayPnl = await calculateTodayPnl();
   await postExitAlert(trade, updatedPortfolio, todayPnl, orb);
+  // Axelrod reacts to the exit
+  postAxelrodCommentary({
+    taylorPost: `EXIT: Sold ${shares} ${instrument} @ $${price.toFixed(2)}. P&L: $${realizedPnl.toFixed(2)}. ${signal.reasoning.join('. ')}`,
+    quote, report, hiro, orb, portfolio: updatedPortfolio, trade,
+  }).catch(() => {});
   
   await logBot('trade', `sold ${shares} shares ${instrument} @ $${price} (pnl: $${realizedPnl.toFixed(2)})`, {
     instrument,
