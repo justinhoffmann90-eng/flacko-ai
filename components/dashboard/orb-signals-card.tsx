@@ -17,6 +17,7 @@ interface OrbSignal {
     status: string;
     entry_price?: number;
     entry_date?: string;
+    active_since?: string;
   } | null;
 }
 
@@ -28,7 +29,8 @@ export function OrbSignalsCard() {
     fetch("/api/orb/states", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        const active = (Array.isArray(data) ? data : []).filter(
+        const setups = Array.isArray(data) ? data : (data?.setups || []);
+        const active = setups.filter(
           (s: OrbSignal) => s.state?.status === "active"
         );
         setSignals(active);
@@ -91,9 +93,9 @@ export function OrbSignalsCard() {
                       {signal.type === "buy" ? "FIRE THE CANNONS" : "RETREAT"}
                     </span>
                   </div>
-                  {signal.state?.entry_price && signal.state?.entry_date && (
+                  {signal.state?.entry_price && (signal.state?.active_since || signal.state?.entry_date) && (
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      Triggered {signal.state.entry_date} @ ${signal.state.entry_price.toFixed(2)}
+                      Triggered {signal.state.active_since || signal.state.entry_date} @ ${signal.state.entry_price.toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -103,7 +105,7 @@ export function OrbSignalsCard() {
         ) : (
           <div className="text-sm text-muted-foreground">
             <p>No active signals right now.</p>
-            <p className="text-xs mt-1">11 buy setups + 4 avoid signals being tracked</p>
+            <p className="text-xs mt-1">11 buy setups + 6 avoid signals being tracked</p>
           </div>
         )}
       </Card>
