@@ -235,6 +235,23 @@ export async function computeIndicators(ticker: string) {
     price_above_weekly_13: closes[i] > wEma13[lastWeekIdx],
     price_above_weekly_21: closes[i] > wEma21[lastWeekIdx],
 
+    // EMA Shield indicators
+    ema9_slope_5d: i >= 5 ? ((ema9[i] / ema9[i - 5]) - 1) * 100 : 0,
+    days_below_ema9: (() => {
+      let days = 0;
+      for (let j = i; j >= 0; j--) {
+        if (closes[j] < ema9[j]) days++;
+        else break;
+      }
+      return days;
+    })(),
+    was_full_bull_5d: (() => {
+      for (let j = Math.max(1, i - 4); j <= i; j++) {
+        if (closes[j] > ema9[j] && ema9[j] > ema21[j]) return true;
+      }
+      return false;
+    })(),
+
     daily_hh_streak: (() => {
       let streak = 0;
       for (let j = i; j >= 2; j--) {

@@ -37,6 +37,9 @@ export interface Indicators {
   bx_weekly: number;
   bx_weekly_prev: number;
   daily_hh_streak: number; // consecutive days with BX state HH
+  ema9_slope_5d: number; // 5-day rate of change of Daily 9 EMA (%)
+  days_below_ema9: number; // consecutive days close < ema9
+  was_full_bull_5d: boolean; // was close > ema9 AND ema9 > ema21 on any of last 5 days
 }
 
 export interface SetupResult {
@@ -168,6 +171,8 @@ export function evaluateAllSetups(indicators: Indicators, previousStates: Map<st
     evaluateDualLL(indicators),
     evaluateOverextended(indicators),
     evaluateMomentumCrack(indicators),
+    evaluateEmaShieldCaution(indicators, previousStates.get("ema-shield-caution")),
+    evaluateEmaShieldBreak(indicators, previousStates.get("ema-shield-break"), previousStates.get("ema-shield-caution")),
   ];
 }
 
@@ -500,5 +505,63 @@ function evaluateMomentumCrack(ind: Indicators): SetupResult {
       : isWatching
       ? `SMI at ${ind.smi.toFixed(1)}, falling (${ind.smi_change_3d.toFixed(1)} in 3d)`
       : `SMI: ${ind.smi.toFixed(1)}, 3d change: ${ind.smi_change_3d.toFixed(1)}`,
+  };
+}
+
+function evaluateEmaShieldCaution(ind: Indicators, prev?: PreviousState): SetupResult {
+  const wasActive = prev?.status === "active";
+  const wasBull = ind.was_full_bull_5d;
+  const belowEma3 = ind.days_below_ema9 >= 3;
+  const slopeDecline = ind.ema9_slope_5d < -2.0;
+  const isActive = wasBull && belowEma3 && slopeDecline;
+  // Stay active if was active and hasn't reclaimed EMA9 (cooldown: close > ema9 deactivates)
+  const stayActive = wasActive && ind.close < ind.ema9;
+  const active = isActive || stayActive;
+
+  const isWatching = !active && (
+    (ind.days_below_ema9 >= 2 && ind.ema9_slope_5d < -1.0 && wasBull) ||
+    (belowEma3 && ind.ema9_slope_5d < -1.0 && ind.ema9_slope_5d >= -2.0)
+  );
+
+  return {
+    setup_id: "ema-shield-caution",
+    is_active: active,
+    is_watching: isWatching,
+    conditions_met: { was_full_bull_5d: wasBull, days_below_ema9_3: belowEma3, ema9_slope_below_neg2: slopeDecline },
+    reason: active
+      ? `CAUTION - ${ind.days_below_ema9}d below D9 EMA, slope ${ind.ema9_slope_5d.toFixed(1)}%`
+      : isWatching
+      ? `${ind.days_below_ema9}d below D9 EMA, slope ${ind.ema9_slope_5d.toFixed(1)}% - approaching`
+      : `Days below D9: ${ind.days_below_ema9}, slope: ${ind.ema9_slope_5d.toFixed(1)}%`,
+  };
+}
+
+function evaluateEmaShieldBreak(ind: Indicators, prev?: PreviousState, cautionState?: PreviousState): SetupResult {
+  const wasActive = prev?.status === "active";
+  const wasBull = ind.was_full_bull_5d;
+  const belowEma5 = ind.days_below_ema9 >= 5;
+  const slopeDecline = ind.ema9_slope_5d < -2.0;
+  const isActive = wasBull && belowEma5 && slopeDecline;
+  const stayActive = wasActive && ind.close < ind.ema9;
+  const active = isActive || stayActive;
+
+  const cautionActive = cautionState?.status === "active";
+  const isWatching = !active && (
+    cautionActive ||
+    (ind.days_below_ema9 >= 4 && slopeDecline && wasBull)
+  );
+
+  return {
+    setup_id: "ema-shield-break",
+    is_active: active,
+    is_watching: isWatching,
+    conditions_met: { was_full_bull_5d: wasBull, days_below_ema9_5: belowEma5, ema9_slope_below_neg2: slopeDecline },
+    reason: active
+      ? `AVOID - ${ind.days_below_ema9}d below D9 EMA, slope ${ind.ema9_slope_5d.toFixed(1)}% - SHIELD BREAK`
+      : isWatching
+      ? cautionActive
+        ? `Shield Caution active (${ind.days_below_ema9}d) - watching for escalation to Break`
+        : `${ind.days_below_ema9}d below D9 EMA - one day from Shield Break`
+      : `Days below D9: ${ind.days_below_ema9}, slope: ${ind.ema9_slope_5d.toFixed(1)}%`,
   };
 }
