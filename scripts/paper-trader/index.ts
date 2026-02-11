@@ -296,13 +296,8 @@ async function tradingLoop(): Promise<void> {
       currentValue: multiPortfolio.tsla.value,
     } : null);
     
-    // Post status update
-    await postStatusUpdate(quote, tsllQuote, multiPortfolio, report, hiro, orb, flackoTake);
-    // Axelrod reacts to 15-min update
-    postAxelrodCommentary({
-      taylorPost: `Status update: TSLA $${quote.price.toFixed(2)} (${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(1)}% today). ${flackoTake}`,
-      quote, report, hiro, orb, portfolio: multiPortfolio,
-    }).catch(() => {});
+    // Key moments only — no routine 15-min status posts.
+    // Taylor speaks when there's something to say: trades, zone changes, market open/close.
     
     // Make trading decision (multi-instrument + Orb)
     const signal = makeTradeDecision({
@@ -358,8 +353,9 @@ async function hiroLoop(): Promise<void> {
       sessionState.realizedPnl
     );
     
-    await postHIROUpdate(hiro, portfolio.position);
-    console.log('📊 hiro update posted');
+    // HIRO data fetched for trade decisions — no standalone HIRO posts.
+    // Key moments only: Taylor posts on trades, zone changes, market open/close.
+    console.log(`📊 hiro cached: ${(hiro.reading / 1000000).toFixed(0)}M (${hiro.percentile30Day.toFixed(0)}%)`);
     
   } catch (error) {
     console.error('❌ error in hiro loop:', error);
