@@ -202,62 +202,49 @@ async function generateCommentary(context: AxelrodContext): Promise<string> {
     contextMsg += `\n`;
   }
 
-  // Try Anthropic API key, then OAuth token, then OpenAI
-  if (process.env.ANTHROPIC_API_KEY) {
+  // Try XAI (Grok) first — always available in env
+  if (process.env.XAI_API_KEY) {
+    return await generateViaXAI(contextMsg);
+  } else if (process.env.ANTHROPIC_API_KEY) {
     return await generateViaAnthropic(contextMsg);
-  } else if (process.env.ANTHROPIC_OAUTH_TOKEN) {
-    return await generateViaAnthropicOAuth(contextMsg);
-  } else {
-    // Try to get OAuth token from macOS keychain (Claude Code credentials)
-    try {
-      const { execSync } = require('child_process');
-      const raw = execSync('security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null', { encoding: 'utf-8' }).trim();
-      const creds = JSON.parse(raw);
-      if (creds?.claudeAiOauth?.accessToken) {
-        process.env.ANTHROPIC_OAUTH_TOKEN = creds.claudeAiOauth.accessToken;
-        return await generateViaAnthropicOAuth(contextMsg);
-      }
-    } catch {}
-  }
-  
-  if (process.env.OPENAI_API_KEY) {
+  } else if (process.env.OPENAI_API_KEY) {
     return await generateViaOpenAI(contextMsg);
   }
   
-  // Fallback — no API key available
   console.warn('No LLM API key for Axelrod commentary');
   return '';
 }
 
 /**
- * Generate via Anthropic Claude (OAuth token — from Claude Code keychain)
+ * Generate via XAI Grok
  */
-async function generateViaAnthropicOAuth(contextMsg: string): Promise<string> {
+async function generateViaXAI(contextMsg: string): Promise<string> {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ANTHROPIC_OAUTH_TOKEN}`,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${process.env.XAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'grok-3-mini-fast',
         max_tokens: 800,
-        system: AXELROD_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: contextMsg }],
+        messages: [
+          { role: 'system', content: AXELROD_SYSTEM_PROMPT },
+          { role: 'user', content: contextMsg },
+        ],
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Anthropic OAuth API error: ${response.status} — ${errText}`);
+      throw new Error(`XAI API error: ${response.status} — ${errText}`);
     }
 
     const data = await response.json() as any;
-    return data.content?.[0]?.text || '';
+    return data.choices?.[0]?.message?.content || '';
   } catch (error) {
-    console.error('Anthropic OAuth Axelrod generation failed:', error);
+    console.error('XAI Axelrod generation failed:', error);
     return '';
   }
 }
