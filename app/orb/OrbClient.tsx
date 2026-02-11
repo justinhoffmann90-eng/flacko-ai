@@ -476,7 +476,7 @@ export default function OrbClient() {
             const history = historyBySetup[row.id];
             const openTrade = history?.trades.find((t) => t.status === "open") || null;
             const collapsedEntryPrice = row.state?.entry_price;
-            const collapsedEntryDate = row.state?.entry_date;
+            const collapsedEntryDate = row.state?.active_since || row.state?.entry_date;
             const collapsedActivationLine =
               isActive && collapsedEntryDate
                 ? formatActivationLine({
