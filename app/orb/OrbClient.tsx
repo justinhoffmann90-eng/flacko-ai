@@ -281,6 +281,60 @@ function bestTimeframe(row: OrbRow): { label: string; win: number; avg: number }
   return { label: best.label, win: best.win ?? 0, avg: best.avg ?? 0 };
 }
 
+function OptionsPlaybook({ pb, zone, hex, isDesktop, desktopFont }: { pb: { setup: string; calls: string; leveraged: string; bottom: string; bottomLabel: string }; zone: string; hex: string; isDesktop: boolean; desktopFont: (n: number) => number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-3" style={{ animation: "fadeIn .4s ease" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left"
+        style={{
+          background: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 10,
+          padding: isDesktop ? "12px 16px" : "10px 14px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span style={{ fontSize: desktopFont(11), letterSpacing: "0.08em", color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+          OPTIONS PLAYBOOK
+        </span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s ease" }}>&#x25BE;</span>
+      </button>
+      {open && (
+        <div style={{
+          background: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "none",
+          borderRadius: "0 0 10px 10px",
+          padding: isDesktop ? "16px 18px" : "14px 14px",
+          animation: "slideDown .25s ease",
+        }}>
+          <div style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.5)", lineHeight: 1.6, marginBottom: 14, fontStyle: "italic" }}>{pb.setup}</div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: desktopFont(10), letterSpacing: "0.08em", color: hex, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, marginBottom: 4 }}>CALLS</div>
+            <div style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{pb.calls}</div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: desktopFont(10), letterSpacing: "0.08em", color: hex, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, marginBottom: 4 }}>TSLL / LEVERAGED ETF</div>
+            <div style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{pb.leveraged}</div>
+          </div>
+
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+            <div style={{ fontSize: desktopFont(10), letterSpacing: "0.08em", color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 4 }}>{pb.bottomLabel}</div>
+            <div style={{ fontSize: desktopFont(12), color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>{pb.bottom}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [orbScore, setOrbScore] = useState<{ value: number; zone: string; prevZone: string | null; date: string } | null>(null);
@@ -562,6 +616,45 @@ export default function OrbClient() {
                 </a>
               </div>
             )}
+
+            {/* Options Playbook — current zone only */}
+            {(() => {
+              const playbooks: Record<string, { setup: string; calls: string; leveraged: string; bottom: string; bottomLabel: string }> = {
+                FULL_SEND: {
+                  setup: "Multiple bullish signals are aligned. This is the 15% of trading days that historically produce +6.22% avg returns. Conditions like this are where leveraged positions earn their keep.",
+                  calls: "Open new positions. Target 0.40-0.50 delta with 3-6 month expiry -- enough time to ride the move without overpaying for premium. These conditions support sizing with conviction.",
+                  leveraged: "Full allocation. This is what you've been waiting for.",
+                  bottom: "Set a mental stop at the level where the Orb would flip to NEUTRAL. You'll get an alert if it happens. Until then, let it run.",
+                  bottomLabel: "RISK",
+                },
+                NEUTRAL: {
+                  setup: "Nothing exceptional in either direction. TSLA's natural drift is working for you (+4.22% avg at 20d) but conditions don't justify adding risk.",
+                  calls: "Hold what you have. Theta is eating premium daily, so make sure your expiry gives you runway. No new positions unless the score moves to FULL SEND.",
+                  leveraged: "Maintain current position. Not the time to add, not the time to cut.",
+                  bottom: "Score ticking toward FULL SEND = prepare to deploy. Score ticking toward CAUTION = prepare to trim.",
+                  bottomLabel: "WATCH FOR",
+                },
+                CAUTION: {
+                  setup: "Warning signals are active. The trend is under stress and historically, these periods average -1.24% at 20 days. Leverage works against you in negative expected value environments.",
+                  calls: "Take profits on anything short-dated (under 60 DTE). If you're holding 6-9 month calls and the thesis hasn't changed, you can hold through -- but know that drawdowns from here tend to get worse before they get better. No new entries.",
+                  leveraged: "Reduce or exit. A -1.24% move on stock is roughly -2.5% on 2x. And that's the average -- the tails are worse.",
+                  bottom: "Building the cash position you'll deploy when the Orb turns green again. Patience is the trade.",
+                  bottomLabel: "WHAT YOU'RE DOING HERE",
+                },
+                DEFENSIVE: {
+                  setup: "This is the 10% of trading days that contain the corrections TSLA is famous for. Multiple warning signals, structural deterioration, negative expected value at every horizon out to 60 days.",
+                  calls: "Close short-dated positions. LEAPS (9+ months) are a judgment call -- if your strike is deep ITM and expiry is distant, the theta bleed may be worth riding through. Everything else, take the loss now before it gets bigger.",
+                  leveraged: "Out. Fully. A -1.84% average at 20d on stock can mean -10% to -20% on leveraged positions in the bad cases. Capital preservation is the only objective.",
+                  bottom: "Not when it ticks up to CAUTION -- that's a trap. The data shows DEFENSIVE \u2192 CAUTION still averages -4.75% at 20 days. Wait for NEUTRAL. You'll get an alert. The buy signal will come, and you'll have the capital to act on it because you stepped aside here.",
+                  bottomLabel: "WHEN TO COME BACK",
+                },
+              };
+              const pb = playbooks[orbScore.zone];
+              if (!pb) return null;
+              return (
+                <OptionsPlaybook pb={pb} zone={orbScore.zone} hex={zc.hex} isDesktop={isDesktop} desktopFont={desktopFont} />
+              );
+            })()}
 
             {/* Zone Summary Table — always visible */}
             <div className="mb-4" style={{
