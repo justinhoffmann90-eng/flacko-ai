@@ -532,22 +532,63 @@ export async function postMarketOpen(
     content += `\nactive: ${activeSetups.map(s => s.setup_id.replace(/-/g, ' ')).join(', ')}`;
   }
   
-  // Today's plan based on conditions
-  content += `\n\n`;
-  if (orb.zone === 'FULL_SEND') {
-    content += `TSLL cleared. Multiple signals converging — looking for entries with conviction.`;
-  } else if (orb.zone === 'NEUTRAL') {
-    content += `Shares only today. Conditions are fine, not exceptional. Selective entries.`;
-  } else if (orb.zone === 'CAUTION') {
-    content += `Elevated risk. Staying defensive — no new longs unless price hits a key level.`;
-  } else if (orb.zone === 'DEFENSIVE') {
-    content += `Capital preservation mode. No new positions. Protecting what we have.`;
-  }
-  
+  // HIRO flow
   if (hiro) {
     const readingM = hiro.reading / 1000000;
     const readingStr = readingM >= 0 ? `+$${readingM.toFixed(0)}M` : `-$${Math.abs(readingM).toFixed(0)}M`;
     content += `\nflow: HIRO ${readingStr} (${hiro.percentile30Day.toFixed(0)}th pctl) — ${describeHiro(hiro)}`;
+  }
+  
+  // Today's gameplan — specific, data-driven
+  content += `\n\n**today's plan:**\n`;
+  
+  if (report) {
+    const ejectDist = ((quote.price - report.masterEject) / quote.price) * 100;
+    
+    // Instrument context
+    const OVERRIDE_SETUPS = ['oversold-extreme', 'deep-value', 'capitulation'];
+    const activeOverrides = activeSetups.filter(s => OVERRIDE_SETUPS.includes(s.setup_id));
+    
+    if (orb.zone === 'FULL_SEND') {
+      content += `TSLL cleared. Looking to deploy at support levels with conviction.\n`;
+    } else if (activeOverrides.length > 0) {
+      const names = activeOverrides.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
+      content += `⚡ Override active (${names}) — TSLL deployed despite NEUTRAL zone.\n`;
+    } else if (orb.zone === 'NEUTRAL') {
+      content += `Shares only. No leverage until Orb shifts or override fires.\n`;
+    } else if (orb.zone === 'CAUTION') {
+      content += `No new buys. Taking profits on leverage if we have any.\n`;
+    } else {
+      content += `Defensive. Cash is the position. Waiting for the turn.\n`;
+    }
+    
+    // Key levels to watch
+    const supports = (report.levels || []).filter(l => l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
+    const resistances = (report.levels || []).filter(l => l.price > quote.price).sort((a, b) => a.price - b.price);
+    
+    if (supports.length > 0) {
+      content += `watching below: ${supports.slice(0, 2).map(l => `${l.name} $${l.price.toFixed(0)}`).join(', ')}\n`;
+    }
+    if (resistances.length > 0) {
+      content += `watching above: ${resistances.slice(0, 2).map(l => `${l.name} $${l.price.toFixed(0)}`).join(', ')}\n`;
+    }
+    
+    // Eject proximity warning
+    if (ejectDist < 1) {
+      content += `⚠️ eject at $${report.masterEject.toFixed(2)} is ${ejectDist.toFixed(1)}% away. tight leash today.\n`;
+    }
+    
+    // HIRO context for plan
+    if (hiro) {
+      const readingM = hiro.reading / 1000000;
+      if (readingM < -200) {
+        content += `flow is negative — need to see HIRO improve before adding aggressively.\n`;
+      } else if (readingM > 200) {
+        content += `flow is supportive — institutional buying backs any entries at levels.\n`;
+      }
+    }
+  } else {
+    content += `No report uploaded yet. Sitting on hands until guidance arrives.`;
   }
   
   try {
