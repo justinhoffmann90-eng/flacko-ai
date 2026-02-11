@@ -7,10 +7,6 @@
     {
       "path": "/api/orb/compute",
       "schedule": "30 21 * * 1-5"
-    },
-    {
-      "path": "/api/price-cache",
-      "schedule": "*/5 14-21 * * 1-5"
     }
   ]
 }
