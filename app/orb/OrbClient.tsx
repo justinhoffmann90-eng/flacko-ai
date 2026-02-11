@@ -570,6 +570,78 @@ export default function OrbClient() {
               </div>
             </button>
 
+            {/* Zone Proximity Bar */}
+            {orbScore && (() => {
+              const THRESHOLDS = { FULL_SEND: 0.686, NEUTRAL: -0.117, CAUTION: -0.729 };
+              const score = orbScore.value;
+              const zone = orbScore.zone;
+              
+              // Determine nearest thresholds
+              let upLabel = "", upDist = 0, downLabel = "", downDist = 0;
+              let barMin = 0, barMax = 0;
+              
+              if (zone === "FULL_SEND") {
+                upLabel = ""; upDist = 0;
+                downLabel = "NEUTRAL"; downDist = score - THRESHOLDS.FULL_SEND;
+                barMin = THRESHOLDS.NEUTRAL; barMax = Math.max(score + 0.3, 1.2);
+              } else if (zone === "NEUTRAL") {
+                upLabel = "FULL SEND"; upDist = THRESHOLDS.FULL_SEND - score;
+                downLabel = "CAUTION"; downDist = score - THRESHOLDS.NEUTRAL;
+                barMin = THRESHOLDS.NEUTRAL; barMax = THRESHOLDS.FULL_SEND;
+              } else if (zone === "CAUTION") {
+                upLabel = "NEUTRAL"; upDist = THRESHOLDS.NEUTRAL - score;
+                downLabel = "DEFENSIVE"; downDist = score - THRESHOLDS.CAUTION;
+                barMin = THRESHOLDS.CAUTION; barMax = THRESHOLDS.NEUTRAL;
+              } else {
+                upLabel = "CAUTION"; upDist = THRESHOLDS.CAUTION - score;
+                downLabel = ""; downDist = 0;
+                barMin = Math.min(score - 0.3, -1.5); barMax = THRESHOLDS.CAUTION;
+              }
+              
+              const range = barMax - barMin;
+              const pct = range > 0 ? Math.max(0, Math.min(100, ((score - barMin) / range) * 100)) : 50;
+              
+              // Zone colors for the bar segments
+              const zoneColors: Record<string, string> = { FULL_SEND: "#22c55e", NEUTRAL: "#d4d4d8", CAUTION: "#eab308", DEFENSIVE: "#ef4444" };
+              const currentColor = zoneColors[zone] || "#d4d4d8";
+              
+              return (
+                <div style={{ margin: "12px 0 8px", padding: "0 2px" }}>
+                  {/* Bar */}
+                  <div style={{ position: "relative", height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "visible" }}>
+                    {/* Fill */}
+                    <div style={{
+                      position: "absolute", left: 0, top: 0, height: "100%", borderRadius: 3,
+                      width: `${pct}%`,
+                      background: `linear-gradient(90deg, rgba(255,255,255,0.05), ${currentColor}40)`,
+                      transition: "width 0.5s ease",
+                    }} />
+                    {/* Marker */}
+                    <div style={{
+                      position: "absolute", top: -3, left: `${pct}%`, transform: "translateX(-50%)",
+                      width: 12, height: 12, borderRadius: "50%",
+                      background: currentColor, border: "2px solid #0a0a0c",
+                      boxShadow: `0 0 8px ${currentColor}60`,
+                      transition: "left 0.5s ease",
+                    }} />
+                  </div>
+                  {/* Labels */}
+                  <div className="flex justify-between" style={{ marginTop: 8 }}>
+                    {downLabel ? (
+                      <span style={{ fontSize: desktopFont(9), fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.25)" }}>
+                        ↓ {downLabel} ({downDist.toFixed(2)})
+                      </span>
+                    ) : <span />}
+                    {upLabel ? (
+                      <span style={{ fontSize: desktopFont(9), fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.25)" }}>
+                        ↑ {upLabel} ({upDist.toFixed(2)})
+                      </span>
+                    ) : <span />}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Zone Detail Drawer */}
             {scoreExpanded && (
               <div style={{
