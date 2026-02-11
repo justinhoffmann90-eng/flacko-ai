@@ -195,15 +195,12 @@ export async function postEntryAlert(
   const reasoningArray = Array.isArray(trade.reasoning) ? trade.reasoning : [trade.reasoning];
   
   // Extract structured data from reasoning
-  const targetLine = reasoningArray.find(r => r.includes('target:'));
-  const stopLine = reasoningArray.find(r => r.includes('stop:'));
-  const rrLine = reasoningArray.find(r => r.includes('r/r:'));
-  const hiroLine = reasoningArray.find(r => r.includes('hiro:'));
+  const fullReasoning = reasoningArray.join('\n');
   
-  // Parse target/stop values
-  const targetMatch = targetLine?.match(/\$([\d.]+)/);
-  const stopMatch = stopLine?.match(/\$([\d.]+)/);
-  const rrMatch = rrLine?.match(/([\d.]+)/);
+  // Parse target/stop/rr — handle both separate lines and combined "target: $X | stop: $Y"
+  const targetMatch = fullReasoning.match(/target:\s*\$([\d.]+)/);
+  const stopMatch = fullReasoning.match(/stop:\s*\$([\d.]+)/);
+  const rrMatch = fullReasoning.match(/r\/r:\s*([\d.]+)/);
   
   // Generate Taylor's commentary
   const commentary = generateEntryCommentary(trade, report, orb, reasoningArray);
@@ -269,11 +266,21 @@ export async function postEntryAlert(
  * Describe HIRO reading in plain English
  */
 function describeHiro(hiro: HIROData): string {
-  if (hiro.percentile30Day >= 80) return 'strong institutional buying. flow supports longs.';
-  if (hiro.percentile30Day >= 60) return 'moderate buying pressure. flow is constructive.';
-  if (hiro.percentile30Day >= 40) return 'flow is neutral. no strong directional signal.';
-  if (hiro.percentile30Day >= 20) return 'mild selling pressure. watching for acceleration.';
-  return 'heavy selling. institutional flow is negative.';
+  const readingM = hiro.reading / 1000000;
+  const isPositive = readingM >= 0;
+  const pctl = hiro.percentile30Day;
+  
+  // Description must match the SIGN of the reading, not just percentile
+  if (isPositive && pctl >= 70) return 'strong institutional buying. flow supports longs.';
+  if (isPositive && pctl >= 40) return 'moderate buying. flow is constructive.';
+  if (isPositive) return 'mild buying. not enough to lean on.';
+  
+  // Negative reading
+  if (pctl <= 20) return 'heavy selling. institutional flow is aggressively negative.';
+  if (pctl <= 40) return 'selling pressure. dealers hedging.';
+  if (pctl <= 60) return 'mild selling, but within normal range. not alarming yet.';
+  // Negative but high percentile = less negative than usual
+  return 'negative but improving. selling pressure is fading.';
 }
 
 /**
