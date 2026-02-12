@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
 
       return {
         ...def,
+        conditions: def.conditions ?? null,
         state: state
           ? {
               status: state.status,
@@ -79,6 +80,13 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    // Fetch open tracking-horizon trades (signals that fired recently but conditions no longer met)
+    const { data: trackingTrades } = await supabase
+      .from("orb_tracker")
+      .select("*")
+      .eq("status", "open")
+      .eq("exit_reason", "tracking_horizon");
+
     // Fetch last zone transition timestamp
     const { data: lastTransition } = await supabase
       .from("orb_signal_log")
@@ -98,6 +106,7 @@ export async function GET(request: NextRequest) {
         zoneChangedAt: lastTransition?.event_date || null,
       } : null,
       setups: merged,
+      trackingTrades: trackingTrades || [],
     });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
