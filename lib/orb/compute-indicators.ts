@@ -120,6 +120,8 @@ export async function computeIndicators(ticker: string) {
   const closes = quotes.map((q: any) => q.close as number);
   const highs = quotes.map((q: any) => q.high as number);
   const lows = quotes.map((q: any) => q.low as number);
+  const opens = quotes.map((q: any) => q.open as number);
+  const volumes = quotes.map((q: any) => Number(q.volume ?? 0));
 
   const bx = bxTrender(closes, 5, 20, 5);
   const rsiValues = rsi(closes, 14);
@@ -182,7 +184,10 @@ export async function computeIndicators(ticker: string) {
 
   return {
     date: new Date(quotes[i].date as Date).toISOString().split("T")[0],
+    open: opens[i],
     close: closes[i],
+    volume: volumes[i],
+    volumes,
 
     bx_daily: bx[i],
     bx_daily_prev: bx[prev],

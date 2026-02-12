@@ -11,6 +11,55 @@ export const maxDuration = 30;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+interface VolumeMetrics {
+  volume: number;
+  volume_20d_avg: number;
+  relative_volume_pct: number;
+  volume_price_alignment: "confirmed" | "divergent" | "neutral";
+  volume_signal: "climactic" | "above_avg" | "normal" | "below_avg" | "dry";
+}
+
+function computeVolumeMetrics(
+  todayVolume: number,
+  volumes: number[],
+  todayClose: number,
+  todayOpen: number,
+  prevDayVolume: number
+): VolumeMetrics {
+  const prior20 = volumes.slice(-21, -1).filter((v) => Number.isFinite(v) && v > 0);
+  const avgVolume = prior20.length > 0 ? prior20.reduce((sum, v) => sum + v, 0) / prior20.length : 0;
+  const relativeVolumePct = avgVolume > 0 ? (todayVolume / avgVolume) * 100 : 0;
+
+  const priceChange = todayClose - todayOpen;
+  const volumeChange = todayVolume - prevDayVolume;
+
+  let alignment: "confirmed" | "divergent" | "neutral";
+  if (!todayOpen || Math.abs(priceChange / todayOpen) < 0.002) {
+    alignment = "neutral";
+  } else if ((priceChange > 0 && volumeChange > 0) || (priceChange < 0 && volumeChange > 0)) {
+    alignment = "confirmed";
+  } else if ((priceChange > 0 && volumeChange < 0) || (priceChange < 0 && volumeChange < 0)) {
+    alignment = "divergent";
+  } else {
+    alignment = "neutral";
+  }
+
+  let signal: "climactic" | "above_avg" | "normal" | "below_avg" | "dry";
+  if (relativeVolumePct >= 200) signal = "climactic";
+  else if (relativeVolumePct >= 130) signal = "above_avg";
+  else if (relativeVolumePct >= 70) signal = "normal";
+  else if (relativeVolumePct >= 40) signal = "below_avg";
+  else signal = "dry";
+
+  return {
+    volume: todayVolume,
+    volume_20d_avg: Math.round(avgVolume),
+    relative_volume_pct: Math.round(relativeVolumePct * 10) / 10,
+    volume_price_alignment: alignment,
+    volume_signal: signal,
+  };
+}
+
 async function sendOrbComputeFailureAlert(message: string) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
@@ -60,6 +109,14 @@ async function runCompute() {
         return NextResponse.json({ error: errMsg }, { status: 500 });
       }
     }
+
+    const volumeMetrics = computeVolumeMetrics(
+      indicators.volume,
+      indicators.volumes,
+      indicators.close,
+      indicators.open,
+      indicators.volumes[Math.max(0, indicators.volumes.length - 2)] ?? indicators.volume
+    );
 
     const supabase = await createServiceClient();
 
@@ -446,6 +503,11 @@ async function runCompute() {
         orb_score: orbScore,
         orb_zone: orbZone,
         orb_zone_prev: prevZone,
+        volume: volumeMetrics.volume,
+        volume_20d_avg: volumeMetrics.volume_20d_avg,
+        relative_volume_pct: volumeMetrics.relative_volume_pct,
+        volume_price_alignment: volumeMetrics.volume_price_alignment,
+        volume_signal: volumeMetrics.volume_signal,
       },
       { onConflict: "date" }
     );
@@ -487,6 +549,9 @@ async function runCompute() {
             active_buy_setups: activeBuySetups,
             active_avoid_signals: activeAvoidSignals,
             close_price: indicators.close,
+            volume: volumeMetrics.volume,
+            relative_volume_pct: volumeMetrics.relative_volume_pct,
+            volume_price_alignment: volumeMetrics.volume_price_alignment,
           },
           { onConflict: "date" }
         );
