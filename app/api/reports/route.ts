@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const validationErrors = validateReport(extracted_data);
     if (validationErrors.length > 0) {
       await logReportGeneration({
-        reportDate: new Date().toISOString().split("T")[0],
+        reportDate: new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }),
         status: 'failed',
         source: 'api',
         errorMessage: validationErrors.join(', '),
@@ -128,8 +128,8 @@ export async function POST(request: Request) {
       console.log(`Alert summary: ${alertSummary}`);
     }
 
-    // Get report date (today's date)
-    const today = new Date().toISOString().split("T")[0];
+    // Get report date (today's date in Central Time, not UTC)
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 
     // Insert report
     const { data: report, error: insertError } = await serviceSupabase
