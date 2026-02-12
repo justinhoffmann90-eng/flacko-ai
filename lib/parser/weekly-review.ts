@@ -304,7 +304,7 @@ function extractWeeklyData(
     result.trim_levels_effective = json.trim_levels_effective;
     result.slow_zone_triggered = json.slow_zone_triggered;
 
-    // Master Eject
+    // Kill Leverage / Master Eject
     result.master_eject = json.master_eject;
     result.master_eject_step = json.master_eject_step;
     result.master_eject_distance_pct = json.master_eject_distance_pct;

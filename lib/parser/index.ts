@@ -662,7 +662,7 @@ function extractFromFrontmatter(
     warnings.push("Could not extract close price from frontmatter");
   }
   if (master_eject.price <= 0) {
-    warnings.push("Could not extract Master Eject from frontmatter");
+    warnings.push("Could not extract Kill Leverage (Master Eject) from frontmatter");
   }
 
   // Build consolidated key_levels object for email templates
@@ -756,7 +756,7 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
     
     // Skip eject-type levels from the levels array entirely.
     // Master Eject is added ONCE at the end using the frontmatter master_eject price.
-    const isMasterEject = level.name.toLowerCase().includes('master eject') || 
+    const isMasterEject = level.name.toLowerCase().includes('kill leverage') || level.name.toLowerCase().includes('master eject') || 
                           levelType === 'eject' || 
                           action.includes('exit all');
     if (isMasterEject) continue;
@@ -805,7 +805,7 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
           level_name: `${ejectLevel.name} ⚠️`,
           price: ejectLevel.price,
           action: ejectLevel.action || "See daily report",
-          reason: `⚠️ Master Eject level: ${ejectLevel.action}`,
+          reason: `⚠️ Kill Leverage level: ${ejectLevel.action}`,
         });
       }
     }
@@ -814,10 +814,10 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
     // Still use frontmatter rationale if available, never hardcode "EXIT ALL"
     alerts.push({
       type: 'downside',
-      level_name: "Master Eject ⚠️",
+      level_name: "Kill Leverage ⚠️",
       price: masterEjectPrice,
       action: masterEjectAction || "Defensive action required — see daily report for details",
-      reason: "⚠️ Master Eject level — refer to daily report for specific action steps.",
+      reason: "⚠️ Kill Leverage level — refer to daily report for specific action steps.",
     });
   }
 
@@ -985,29 +985,45 @@ function extractMasterEject(
   markdown: string,
   warnings: string[]
 ): ExtractedReportData["master_eject"] {
-  // v3.0 Pattern: Master Eject in Levels Map table
-  // | **Master Eject** | **$XXX** | Structure | — | **Daily close below = exit all** |
-  const levelsTablePattern = /\|\s*\*?\*?Master\s*Eject\*?\*?\s*\|\s*\*?\*?\$?([\d.]+)\*?\*?\s*\|/i;
-  const levelsMatch = markdown.match(levelsTablePattern);
-  if (levelsMatch) {
-    return {
-      price: parseFloat(levelsMatch[1]),
-      action: "Daily close below = exit all positions",
-    };
+  // v3.0 Pattern: Kill Leverage / Master Eject in Levels Map table
+  // | **Kill Leverage** | **$XXX** | Structure | — | **Daily close below = exit all** |
+  const levelsTablePatterns = [
+    /\|\s*\*?\*?Kill\s*Leverage\*?\*?\s*\|\s*\*?\*?\$?([\d.]+)\*?\*?\s*\|/i,
+    /\|\s*\*?\*?Master\s*Eject\*?\*?\s*\|\s*\*?\*?\$?([\d.]+)\*?\*?\s*\|/i,
+  ];
+
+  for (const pattern of levelsTablePatterns) {
+    const levelsMatch = markdown.match(pattern);
+    if (levelsMatch) {
+      return {
+        price: parseFloat(levelsMatch[1]),
+        action: "Daily close below = exit all positions",
+      };
+    }
   }
 
-  // v3.0 Pattern at end of Page 2: **Master Eject:** $XXX
-  const page2Pattern = /\*\*Master\s*Eject:\*\*\s*\$?([\d.]+)/i;
-  const page2Match = markdown.match(page2Pattern);
-  if (page2Match) {
-    return {
-      price: parseFloat(page2Match[1]),
-      action: "Daily close below = exit all positions",
-    };
+  // v3.0 Pattern at end of Page 2: **Kill Leverage:** $XXX (fallback: **Master Eject:** $XXX)
+  const page2Patterns = [
+    /\*\*Kill\s*Leverage:\*\*\s*\$?([\d.]+)/i,
+    /\*\*Master\s*Eject:\*\*\s*\$?([\d.]+)/i,
+  ];
+
+  for (const pattern of page2Patterns) {
+    const page2Match = markdown.match(pattern);
+    if (page2Match) {
+      return {
+        price: parseFloat(page2Match[1]),
+        action: "Daily close below = exit all positions",
+      };
+    }
   }
 
-  // Look for "Master Eject Level:" or "Master Eject:" patterns (legacy)
+  // Look for Kill Leverage patterns first (new standard), then Master Eject (legacy)
   const patterns = [
+    /Kill\s*Leverage\s*Level[:\s]*\$?([\d.]+)/i,
+    /Kill\s*Leverage[:\s]*\$?([\d.]+)/i,
+    /\*\*Kill\s*Leverage\*\*[:\s]*\$?([\d.]+)/i,
+    /NEW\s*Kill\s*Leverage[:\s]*\$?([\d.]+)/i,
     /Master\s*Eject\s*Level[:\s]*\$?([\d.]+)/i,
     /Master\s*Eject[:\s]*\$?([\d.]+)/i,
     /\*\*Master\s*Eject\*\*[:\s]*\$?([\d.]+)/i,
@@ -1025,7 +1041,7 @@ function extractMasterEject(
     }
   }
 
-  warnings.push("Could not extract Master Eject price");
+  warnings.push("Could not extract Kill Leverage (Master Eject) price");
   return { price: 0, action: "Exit all positions" };
 }
 
@@ -1280,7 +1296,7 @@ export function validateReport(extracted: ExtractedReportData): string[] {
   }
 
   if (extracted.master_eject.price <= 0) {
-    errors.push("Master Eject price is required");
+    errors.push("Kill Leverage price is required");
   }
 
   // Relaxed: only require at least 2 alerts
@@ -1532,7 +1548,7 @@ function extractAlertsV3(markdown: string, warnings: string[]): ReportAlert[] | 
     if (isNaN(price) || price <= 0) continue;
 
     // Skip Master Eject row (it's extracted separately)
-    if (levelName.toLowerCase().includes('master eject')) continue;
+    if (levelName.toLowerCase().includes('kill leverage') || levelName.toLowerCase().includes('master eject')) continue;
 
     // Determine type: 🟢 = upside (take profit), 🔴 = downside (buy dip), 🟡 = neutral/caution
     const isDownside = emoji === '🔴';
@@ -1596,7 +1612,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
     if (levelName.toLowerCase().includes('current price')) continue;
 
     // Check if this is Master Eject
-    const isMasterEject = levelName.toLowerCase().includes('master eject') || 
+    const isMasterEject = levelName.toLowerCase().includes('kill leverage') || levelName.toLowerCase().includes('master eject') || 
                           whatToDo.toLowerCase().includes('exit all');
 
     // Split action and reason on em-dash or double-hyphen
@@ -1638,7 +1654,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
     alerts.push({
       type,
-      level_name: isMasterEject ? "Master Eject ⚠️" : levelName,
+      level_name: isMasterEject ? "Kill Leverage ⚠️" : levelName,
       price,
       action: isMasterEject ? "EXIT ALL if daily close below" : action,
       reason,
