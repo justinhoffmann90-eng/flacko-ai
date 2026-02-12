@@ -97,53 +97,20 @@ export function getAlertEmailHtml({
     )
     .join("");
 
-  // Build key levels section if provided
-  const keyLevelsHtml = keyLevels ? `
+  // Build key levels section if provided (only Master Eject / Kill Leverage)
+  const keyLevelsHtml = keyLevels?.masterEject ? `
     <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#18181b" style="background-color: #18181b !important; border-radius: 8px; margin-bottom: 20px;">
       <tr>
         <td bgcolor="#18181b" style="padding: 24px; background-color: #18181b !important;">
-          <h2 style="color: #f9fafb !important; margin: 0 0 16px 0; font-size: 16px;">📍 Key Levels to Watch</h2>
-          <table width="100%" cellpadding="0" cellspacing="8" border="0">
-            <tr>
-              ${keyLevels.callWall ? `
-              <td bgcolor="#27272a" style="background-color: #27272a !important; border-radius: 6px; padding: 12px; width: 50%;">
-                <p style="color: #9ca3af !important; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase;">Call Wall</p>
-                <p style="color: #22c55e !important; margin: 0; font-size: 16px; font-weight: bold;">$${keyLevels.callWall}</p>
-              </td>
-              ` : ""}
-              ${keyLevels.gammaStrike ? `
-              <td bgcolor="#27272a" style="background-color: #27272a !important; border-radius: 6px; padding: 12px; width: 50%;">
-                <p style="color: #9ca3af !important; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase;">Gamma Strike</p>
-                <p style="color: #eab308 !important; margin: 0; font-size: 16px; font-weight: bold;">$${keyLevels.gammaStrike}</p>
-              </td>
-              ` : ""}
-            </tr>
-            <tr>
-              ${keyLevels.hedgeWall ? `
-              <td bgcolor="#27272a" style="background-color: #27272a !important; border-radius: 6px; padding: 12px; width: 50%;">
-                <p style="color: #9ca3af !important; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase;">Hedge Wall</p>
-                <p style="color: #3b82f6 !important; margin: 0; font-size: 16px; font-weight: bold;">$${keyLevels.hedgeWall}</p>
-              </td>
-              ` : ""}
-              ${keyLevels.putWall ? `
-              <td bgcolor="#27272a" style="background-color: #27272a !important; border-radius: 6px; padding: 12px; width: 50%;">
-                <p style="color: #9ca3af !important; margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase;">Put Wall</p>
-                <p style="color: #ef4444 !important; margin: 0; font-size: 16px; font-weight: bold;">$${keyLevels.putWall}</p>
-              </td>
-              ` : ""}
-            </tr>
-          </table>
-          ${keyLevels.masterEject ? `
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 12px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td bgcolor="#450a0a" style="background-color: #450a0a !important; border: 1px solid #ef4444; border-radius: 6px; padding: 12px;">
                 <p style="color: #fca5a5 !important; margin: 0; font-size: 12px;">
-                  ⚠️ <strong>Master Eject:</strong> $${keyLevels.masterEject}${keyLevels.masterEjectAction ? ` — ${keyLevels.masterEjectAction}` : ' — See daily report for action steps'}
+                  ⚠️ <strong>Kill Leverage:</strong> $${keyLevels.masterEject}${keyLevels.masterEjectAction ? ` — ${keyLevels.masterEjectAction}` : ' — See daily report for action steps'}
                 </p>
               </td>
             </tr>
           </table>
-          ` : ""}
         </td>
       </tr>
     </table>
