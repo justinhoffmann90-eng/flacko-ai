@@ -935,13 +935,7 @@ export default function OrbClient() {
                         </div>
                       )}
 
-                      {!!row.conditions?.length && Array.isArray(row.conditions) && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {row.conditions.map((c: string, i: number) => (
-                            <span key={i} style={{ fontSize: desktopFont(10), borderRadius: 999, padding: isDesktop ? "4px 10px" : "2px 8px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)", fontFamily: "'JetBrains Mono', monospace" }}>{c}</span>
-                          ))}
-                        </div>
-                      )}
+                      {/* Conditions shown only in WHY IT MATTERS section */}
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
