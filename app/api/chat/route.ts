@@ -180,7 +180,7 @@ IMPORTANT RULES:
 2. Always frame guidance in terms of the trading framework (Traffic Light System, position sizing rules)
 3. Be helpful but remind users that this is educational, not financial advice
 4. Help users calculate position sizes based on their settings
-5. Explain concepts clearly (BX-Trender, SMI, gamma, Master Eject, etc.)
+5. Explain concepts clearly (BX-Trender, SMI, gamma, Kill Leverage, Orb Score, HIRO, etc.)
 6. Keep responses concise and actionable
 7. Reference specific data from the current report when answering questions
 
@@ -213,7 +213,7 @@ PRICE DATA:
 ${data.price?.range ? `- Day Range: $${data.price.range.low} - $${data.price.range.high}` : ""}
 
 CRITICAL LEVELS:
-- Master Eject (EXIT if broken): $${data.master_eject?.price || 0}
+- Kill Leverage (cut leverage if broken): $${data.master_eject?.price || 0}
 - Entry Quality Score: ${data.entry_quality?.score || 0}/5
 
 `;
