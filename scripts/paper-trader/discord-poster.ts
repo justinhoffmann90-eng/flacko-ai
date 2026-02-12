@@ -515,6 +515,19 @@ export async function postZoneChangeAlert(
 /**
  * Post market open message (multi-instrument)
  */
+/**
+ * Get Discord embed color hex for mode
+ */
+function modeColor(mode: string): number {
+  const map: Record<string, number> = {
+    GREEN: 0x00c853,   // bright green
+    YELLOW: 0xffd600,  // bright yellow
+    ORANGE: 0xff9100,  // bright orange
+    RED: 0xff1744,     // bright red
+  };
+  return map[mode.toUpperCase()] || 0x9e9e9e; // grey fallback
+}
+
 export async function postMarketOpen(
   quote: TSLAQuote,
   tsllQuote: TSLAQuote,
@@ -524,34 +537,35 @@ export async function postMarketOpen(
 ): Promise<void> {
   if (!webhookClient) return;
   
-  let content = `**⚔️ TAYLOR — MARKET OPEN**\n\n`;
-  content += `TSLA $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)})\n`;
+  const mode = report?.mode || 'YELLOW';
+  
+  // Build description
+  let desc = `TSLA **$${fmtDollar(quote.price, 2)}** (${withSignPercent(quote.changePercent)})\n`;
   
   if (report) {
-    content += `${modeEmoji(report.mode)} ${report.mode} mode (tier ${report.tier}) | kill leverage: $${report.masterEject.toFixed(2)}\n`;
+    desc += `${modeEmoji(mode)} **${mode}** mode (tier ${report.tier}) | kill leverage: $${report.masterEject.toFixed(2)}\n`;
   }
   
-  content += `${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})`;
+  desc += `${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})`;
   
   // Active setups
   const activeSetups = orb.activeSetups.filter(s => s.status === 'active');
   if (activeSetups.length > 0) {
-    content += `\nactive: ${activeSetups.map(s => s.setup_id.replace(/-/g, ' ')).join(', ')}`;
+    desc += `\nactive: ${activeSetups.map(s => s.setup_id.replace(/-/g, ' ')).join(', ')}`;
   }
   
   // HIRO flow
   if (hiro) {
     const readingM = hiro.reading / 1000000;
     const readingStr = readingM >= 0 ? `+$${readingM.toFixed(0)}M` : `-$${Math.abs(readingM).toFixed(0)}M`;
-    content += `\nflow: HIRO ${readingStr} (${hiro.percentile30Day.toFixed(0)}th pctl) — ${describeHiro(hiro)}`;
+    desc += `\nflow: HIRO ${readingStr} (${hiro.percentile30Day.toFixed(0)}th pctl) — ${describeHiro(hiro)}`;
   }
   
-  // Today's gameplan — specific buy/sell actions with prices and sizing
-  content += `\n\n**today's plan:**\n`;
+  // Today's gameplan
+  let plan = '';
   
   if (report) {
     const ejectDist = ((quote.price - report.masterEject) / quote.price) * 100;
-    const mode = report.mode;
     const modeCaps: Record<string, number> = { GREEN: 25, YELLOW: 15, ORANGE: 10, RED: 5 };
     const maxCap = modeCaps[mode] || 15;
     
@@ -564,25 +578,25 @@ export async function postMarketOpen(
     
     // BUY plan
     if (orb.zone === 'CAUTION' || orb.zone === 'DEFENSIVE') {
-      content += `**buys:** none. ${orb.zone} zone — sitting in cash.\n`;
+      plan += `**buys:** none. ${orb.zone} zone — sitting in cash.\n`;
     } else {
       const supports = (report.levels || []).filter(l => l.type === 'nibble' && l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
       
       if (supports.length > 0) {
         const buyLevel = supports[0];
         const distPct = ((quote.price - buyLevel.price) / quote.price * 100).toFixed(1);
-        content += `**buys:** ${instrument} at ${buyLevel.name} ($${buyLevel.price.toFixed(0)}, ${distPct}% below) — ${maxCap}% of cash per ${mode} mode cap\n`;
+        plan += `**buys:** ${instrument} at ${buyLevel.name} ($${buyLevel.price.toFixed(0)}, ${distPct}% below) — ${maxCap}% of cash per ${mode} mode cap\n`;
         if (supports.length > 1) {
           const buyLevel2 = supports[1];
-          content += `next buy: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — ${buyLevel2.action || 'add to position'}\n`;
+          plan += `next buy: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — ${buyLevel2.action || 'add to position'}\n`;
         }
       } else {
-        content += `**buys:** no support levels between here and kill leverage. need a pullback to get involved.\n`;
+        plan += `**buys:** no support levels between here and kill leverage. need a pullback to get involved.\n`;
       }
       
       if (activeOverrides.length > 0) {
         const names = activeOverrides.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
-        content += `⚡ override active (${names}) — using TSLL instead of shares\n`;
+        plan += `⚡ override active (${names}) — using TSLL instead of shares\n`;
       }
     }
     
@@ -591,35 +605,42 @@ export async function postMarketOpen(
     if (trims.length > 0) {
       const trimLevel = trims[0];
       const distPct = ((trimLevel.price - quote.price) / quote.price * 100).toFixed(1);
-      content += `**sells:** trim 25% at ${trimLevel.name} ($${trimLevel.price.toFixed(0)}, ${distPct}% above)\n`;
+      plan += `**sells:** trim 25% at ${trimLevel.name} ($${trimLevel.price.toFixed(0)}, ${distPct}% above)\n`;
     } else {
-      content += `**sells:** no trim targets above. holding for now.\n`;
+      plan += `**sells:** no trim targets above. holding for now.\n`;
     }
     
     // EJECT plan
-    content += `**kill leverage:** $${report.masterEject.toFixed(2)}`;
+    plan += `**kill leverage:** $${report.masterEject.toFixed(2)}`;
     if (ejectDist < 1) {
-      content += ` ⚠️ ${ejectDist.toFixed(1)}% away — sell all leverage, trim to 50%`;
+      plan += ` ⚠️ ${ejectDist.toFixed(1)}% away — sell all leverage, trim to 50%`;
     } else {
-      content += ` (${ejectDist.toFixed(1)}% away) — sell all leverage, trim to 50%`;
+      plan += ` (${ejectDist.toFixed(1)}% away) — sell all leverage, trim to 50%`;
     }
-    content += `\n`;
+    plan += `\n`;
     
     // HIRO context
     if (hiro) {
       const readingM = hiro.reading / 1000000;
       if (readingM < -200) {
-        content += `flow is negative — sizing conservatively until HIRO improves.\n`;
+        plan += `flow is negative — sizing conservatively until HIRO improves.\n`;
       } else if (readingM > 200) {
-        content += `flow confirms — institutional buying supports entries at levels.\n`;
+        plan += `flow confirms — institutional buying supports entries at levels.\n`;
       }
     }
   } else {
-    content += `No report uploaded yet. Sitting on hands until guidance arrives.`;
+    plan += `No report uploaded yet. Sitting on hands until guidance arrives.`;
   }
   
+  const embed = new EmbedBuilder()
+    .setTitle(`⚔️ TAYLOR — MARKET OPEN`)
+    .setColor(modeColor(mode))
+    .setDescription(desc)
+    .addFields({ name: "today's plan", value: plan, inline: false })
+    .setTimestamp();
+  
   try {
-    await sendAsTaylor({ content });
+    await sendAsTaylor({ embeds: [embed] });
   } catch (error) {
     console.error('Error posting market open:', error);
   }
