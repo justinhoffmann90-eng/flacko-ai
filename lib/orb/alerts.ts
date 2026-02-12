@@ -47,6 +47,12 @@ export async function sendAlert(setupId: string, newStatus: string, reason: stri
   const isBuy = setupDef?.type === "buy";
   const isActivation = newStatus === "active";
 
+  // Skip deactivation emails — only send activation alerts
+  if (!isActivation) {
+    console.log(`[Orb Alerts] Skipping deactivation email for ${displayName} (${setupId})`);
+    return;
+  }
+
   // Fetch active trade info if activation
   let tradeInfo = null;
   if (isActivation) {
