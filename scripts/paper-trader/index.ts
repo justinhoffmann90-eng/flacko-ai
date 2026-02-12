@@ -40,6 +40,7 @@ import {
   postMarketClose,
   postWeeklyReport,
   postError,
+  postLevelReaction,
 } from './discord-poster';
 import { initAxelrod, postAxelrodCommentary } from './axelrod';
 import {
@@ -85,6 +86,8 @@ let sessionState = {
   todayTradesCount: 0,
   currentDate: new Date().toISOString().split('T')[0],
   previousOrbZone: undefined as OrbZone | undefined,
+  consecutiveClosesBelowKL: 0,  // Track consecutive daily closes below Kill Leverage
+  levelsHitToday: new Set<string>(),  // Track which key levels have been hit today (avoid duplicate posts)
 };
 
 /**
@@ -155,6 +158,7 @@ async function tradingLoop(): Promise<void> {
     if (sessionState.currentDate !== today) {
       sessionState.currentDate = today;
       sessionState.todayTradesCount = 0;
+      sessionState.levelsHitToday = new Set<string>();
       marketOpenPosted = false;
       marketClosePosted = false;
       weeklyReportPosted = false;
@@ -163,19 +167,26 @@ async function tradingLoop(): Promise<void> {
     // Check market hours
     const marketStatus = getMarketStatus();
     
-    // Post market open
+    // Post market open (only once per day — survives restarts via bot_date check)
     if (marketStatus.isOpen && !marketOpenPosted) {
-      const [quote, tsllQuote, report, orb] = await Promise.all([
-        fetchTSLAPrice(),
-        fetchTSLLPrice(),
-        fetchDailyReport(),
-        fetchOrbScore(),
-      ]);
-      await postMarketOpen(quote, tsllQuote, report, orb, undefined);
-      // Axe only reacts to trades, not market open
+      // Check if bot already ran today (bot_date matches) — skip market open on restart
+      const savedState = await getBotState();
+      const alreadyRanToday = savedState?.currentDate === today;
+      
+      if (!alreadyRanToday) {
+        const [quote, tsllQuote, report, orb] = await Promise.all([
+          fetchTSLAPrice(),
+          fetchTSLLPrice(),
+          fetchDailyReport(),
+          fetchOrbScore(),
+        ]);
+        await postMarketOpen(quote, tsllQuote, report, orb, undefined);
+        sessionState.previousOrbZone = orb.zone;
+        await logBot('info', 'market open posted', { orbZone: orb.zone, orbScore: orb.score });
+      } else {
+        console.log('⏭️ market open already posted today — skipping on restart');
+      }
       marketOpenPosted = true;
-      sessionState.previousOrbZone = orb.zone;
-      await logBot('info', 'market open posted', { orbZone: orb.zone, orbScore: orb.score });
     }
     
     // Post market close
@@ -207,6 +218,37 @@ async function tradingLoop(): Promise<void> {
       };
       
       await postMarketClose(multiPortfolio, sessionState.todayTradesCount, todayPnl, dayPnlByInstrument);
+      
+      // Kill Leverage close check: 2 consecutive daily closes below KL = sell TSLL + options
+      const report = await fetchDailyReport();
+      if (report && report.masterEject > 0 && quote.price < report.masterEject) {
+        sessionState.consecutiveClosesBelowKL++;
+        console.log(`⚠️ Close below Kill Leverage ($${report.masterEject}): day ${sessionState.consecutiveClosesBelowKL} of 2`);
+        
+        if (sessionState.consecutiveClosesBelowKL >= 2) {
+          // 2 consecutive closes below KL — sell all TSLL and leveraged positions
+          if (sessionState.tsllShares > 0) {
+            const tsllSellSignal = {
+              action: 'sell' as const,
+              instrument: 'TSLL' as const,
+              shares: sessionState.tsllShares,
+              price: tsllQuote.price,
+              reasoning: [`Kill Leverage triggered: ${sessionState.consecutiveClosesBelowKL} consecutive closes below $${report.masterEject.toFixed(2)}`, 'Selling all TSLL per Kill Leverage rules.'],
+              confidence: 'high' as const,
+            };
+            await executeSell(tsllSellSignal, quote, tsllQuote, report, { reading: 0, percentile30Day: 50, character: 'n/a', timestamp: new Date() }, orb, multiPortfolio);
+            console.log(`🔴 Kill Leverage: sold all TSLL`);
+          }
+          // Note: shares are HELD per the rule — only leverage/options get cut
+          await logBot('trade', `Kill Leverage triggered: ${sessionState.consecutiveClosesBelowKL} consecutive closes below $${report.masterEject}`, {});
+        }
+      } else {
+        // Reset counter if close is above KL
+        if (sessionState.consecutiveClosesBelowKL > 0) {
+          console.log(`✅ Close above Kill Leverage — resetting counter`);
+        }
+        sessionState.consecutiveClosesBelowKL = 0;
+      }
       
       // Record daily snapshot
       const winCount = todayTrades.filter(t => (t.realizedPnl || 0) > 0).length;
@@ -255,6 +297,35 @@ async function tradingLoop(): Promise<void> {
       sessionState.previousOrbZone = orb.zone;
     } else if (!sessionState.previousOrbZone) {
       sessionState.previousOrbZone = orb.zone;
+    }
+    
+    // Check for key level hits — Taylor reacts when price crosses a level
+    if (report) {
+      const allLevels = [
+        ...report.levels.map(l => ({ name: l.name, price: l.price, type: l.type })),
+        { name: 'Kill Leverage', price: report.masterEject, type: 'eject' },
+      ].filter(l => l.price > 0);
+      
+      for (const level of allLevels) {
+        const levelKey = `${level.name}-${level.price}`;
+        if (sessionState.levelsHitToday.has(levelKey)) continue;
+        
+        // Check if price crossed this level (within 0.3% threshold)
+        const threshold = level.price * 0.003;
+        const isHit = Math.abs(quote.price - level.price) <= threshold;
+        
+        if (isHit) {
+          sessionState.levelsHitToday.add(levelKey);
+          const direction = quote.price >= level.price ? 'above' : 'below';
+          await postLevelReaction(quote, level, direction, report, orb, hiro, {
+            cash: sessionState.cash,
+            sharesHeld: sessionState.sharesHeld,
+            avgCost: sessionState.avgCost,
+            tsllShares: sessionState.tsllShares,
+          });
+          console.log(`📍 Level hit: ${level.name} ($${level.price}) — posted reaction`);
+        }
+      }
     }
     
     // Calculate current portfolio (multi-instrument)
