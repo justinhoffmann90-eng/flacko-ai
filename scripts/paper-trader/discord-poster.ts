@@ -115,9 +115,8 @@ export async function postStatusUpdate(
     timeZone: 'America/Chicago',
   }).toLowerCase();
   
-  let content = `⚔️ taylor — ${timeStr} ct\n\n`;
-  content += `tsla: $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)} today)\n`;
-  content += `tsll: $${fmtDollar(tsllQuote.price, 2)} (${withSignPercent(tsllQuote.changePercent)} today)\n`;
+  let content = `**⚔️ TAYLOR — STATUS UPDATE — ${timeStr} CT**\n\n`;
+  content += `TSLA $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)})\n`;
   
   const isMulti = 'tsla' in portfolio;
   if (isMulti) {
@@ -156,7 +155,7 @@ export async function postStatusUpdate(
     content += ` | pw:${report.putWall.toFixed(0)}`;
     content += ` | hw:${report.hedgeWall.toFixed(0)}`;
     content += ` | cw:${report.callWall.toFixed(0)}`;
-    content += ` | eject:${report.masterEject.toFixed(0)}`;
+    content += ` | kl:${report.masterEject.toFixed(0)}`;
   }
   
   content += `\n\n${modeEmoji(report?.mode || 'YELLOW')} ${marketStatus.message}`;
@@ -214,10 +213,10 @@ export async function postEntryAlert(
   const commentary = generateEntryCommentary(trade, report, orb, reasoningArray);
   
   const overrideTag = trade.isOverride ? ` ⚡ OVERRIDE` : '';
-  let content = `⚔️ taylor — **ENTRY${overrideTag}** — ${timeStr} ct\n\n`;
+  let content = `**⚔️ TAYLOR — 🟢 BUY${overrideTag} — ${timeStr} CT**\n\n`;
   
   // Trade details — clean, no duplication
-  content += `**${trade.instrument}** — bought ${trade.shares.toLocaleString()} shares @ $${fmtDollar(trade.price, 2)}\n`;
+  content += `🟢 BOUGHT ${trade.shares.toLocaleString()} shares ${trade.instrument} @ $${fmtDollar(trade.price, 2)}\n`;
   
   // Override explanation
   if (trade.isOverride && trade.overrideSetups?.length) {
@@ -356,9 +355,9 @@ function generateEntryCommentary(
     lines.push(`Active Orb setups: ${names}. These have historically led to positive forward returns.`);
   }
   
-  // Master eject context
+  // Kill Leverage context
   if (report && Math.abs(trade.price - report.masterEject) < 5) {
-    lines.push(`Close to master eject ($${report.masterEject.toFixed(2)}) — tight leash. If this breaks, I'm out immediately.`);
+    lines.push(`Close to kill leverage ($${report.masterEject.toFixed(2)}) — tight leash. If this breaks, I'm cutting leverage immediately.`);
   }
   
   return lines.join(' ');
@@ -385,8 +384,8 @@ export async function postExitAlert(
   const isWin = (trade.realizedPnl || 0) > 0;
   const returnPct = trade.realizedPnl && trade.totalValue ? (trade.realizedPnl / trade.totalValue) * 100 : 0;
   
-  let content = `⚔️ taylor — **EXIT** — ${timeStr} ct\n\n`;
-  content += `**${trade.instrument}** — sold ${trade.shares.toLocaleString()} shares @ $${fmtDollar(trade.price, 2)}\n`;
+  let content = `**⚔️ TAYLOR — 🔴 SELL — ${timeStr} CT**\n\n`;
+  content += `🔴 SOLD ${trade.shares.toLocaleString()} shares ${trade.instrument} @ $${fmtDollar(trade.price, 2)}\n`;
   content += `result: ${withSign(trade.realizedPnl || 0)} (${withSignPercent(returnPct)})\n`;
   
   // Taylor's exit commentary
@@ -431,7 +430,7 @@ function generateExitCommentary(trade: Trade, reasoning: string[], orb?: OrbData
     return `Hit the target. The system said take profit here, so I took it. No ego, no "maybe it goes higher." Discipline is the edge.`;
   }
   if (hasStop) {
-    return `Stop triggered. Price broke below the line in the sand. Small loss, capital preserved. That's the system working — you don't fight the eject level.`;
+    return `Stop triggered. Price broke below kill leverage. Small loss, capital preserved. That's the system working — you don't fight the kill leverage level.`;
   }
   if (hasModeFlip) {
     return `Mode flipped to RED. When the system says get defensive, you get defensive. Doesn't matter what I think the stock "should" do.`;
@@ -467,7 +466,7 @@ export async function postZoneChangeAlert(
     timeZone: 'America/Chicago',
   }).toLowerCase();
   
-  let content = `⚔️ taylor — **ORB ZONE CHANGE** — ${timeStr} ct\n\n`;
+  let content = `**⚔️ TAYLOR — ORB ZONE CHANGE — ${timeStr} CT**\n\n`;
   content += `${orbZoneEmoji(fromZone)} ${fromZone} → ${orbZoneEmoji(toZone)} ${toZone}\n`;
   content += `score: ${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(3)}\n\n`;
   
@@ -525,11 +524,11 @@ export async function postMarketOpen(
 ): Promise<void> {
   if (!webhookClient) return;
   
-  let content = `⚔️ taylor — **market open**\n\n`;
-  content += `TSLA $${fmtDollar(quote.price, 2)} | TSLL $${fmtDollar(tsllQuote.price, 2)}\n`;
+  let content = `**⚔️ TAYLOR — MARKET OPEN**\n\n`;
+  content += `TSLA $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)})\n`;
   
   if (report) {
-    content += `${modeEmoji(report.mode)} ${report.mode} mode (tier ${report.tier}) | eject: $${report.masterEject.toFixed(2)}\n`;
+    content += `${modeEmoji(report.mode)} ${report.mode} mode (tier ${report.tier}) | kill leverage: $${report.masterEject.toFixed(2)}\n`;
   }
   
   content += `${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})`;
@@ -578,7 +577,7 @@ export async function postMarketOpen(
           content += `next buy: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — ${buyLevel2.action || 'add to position'}\n`;
         }
       } else {
-        content += `**buys:** no support levels between here and eject. need a pullback to get involved.\n`;
+        content += `**buys:** no support levels between here and kill leverage. need a pullback to get involved.\n`;
       }
       
       if (activeOverrides.length > 0) {
@@ -598,7 +597,7 @@ export async function postMarketOpen(
     }
     
     // EJECT plan
-    content += `**eject:** $${report.masterEject.toFixed(2)}`;
+    content += `**kill leverage:** $${report.masterEject.toFixed(2)}`;
     if (ejectDist < 1) {
       content += ` ⚠️ ${ejectDist.toFixed(1)}% away — sell all leverage, trim to 50%`;
     } else {
@@ -637,7 +636,7 @@ export async function postMarketClose(
 ): Promise<void> {
   if (!webhookClient) return;
   
-  let content = `⚔️ taylor — **market close**\n\n`;
+  let content = `**⚔️ TAYLOR — MARKET CLOSE**\n\n`;
   
   const isMulti = 'tsla' in portfolio;
   if (isMulti) {
@@ -707,7 +706,7 @@ export async function postWeeklyReport(
   if (!webhookClient) return;
   
   const embed = new EmbedBuilder()
-    .setTitle(`⚔️ taylor — weekly performance`)
+    .setTitle(`⚔️ TAYLOR — WEEKLY PERFORMANCE`)
     .setDescription(`(${weekRange})`)
     .setColor(metrics.totalReturn >= 0 ? 0x00ff00 : 0xff0000)
     .addFields(
@@ -734,6 +733,98 @@ export async function postWeeklyReport(
 }
 
 /**
+ * Post level reaction — Taylor's thoughts when price hits a key level
+ */
+export async function postLevelReaction(
+  quote: TSLAQuote,
+  level: { name: string; price: number; type: string },
+  direction: 'above' | 'below',
+  report: DailyReport | null,
+  orb: OrbData,
+  hiro: HIROData,
+  position: { cash: number; sharesHeld: number; avgCost: number; tsllShares: number }
+): Promise<void> {
+  if (!webhookClient) return;
+  
+  const timeStr = new Date().toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Chicago',
+  }).toLowerCase();
+  
+  const priceDiff = quote.price - level.price;
+  const pctFromLevel = ((priceDiff / level.price) * 100).toFixed(2);
+  
+  let content = `**⚔️ TAYLOR — LEVEL HIT — ${timeStr} CT**\n\n`;
+  content += `📍 **${level.name}** ($${level.price.toFixed(2)}) — price ${direction} at $${quote.price.toFixed(2)}\n\n`;
+  
+  // Generate Taylor's reaction based on level type and context
+  content += `**my read:**\n`;
+  
+  if (level.type === 'trim') {
+    if (direction === 'above') {
+      content += `trim level reached. `;
+      if (position.sharesHeld > 0) {
+        const trimShares = Math.floor(position.sharesHeld * 0.25);
+        content += `trimming ${trimShares} shares (25%) here per the rules. `;
+        content += `locking in gains — don't let winners turn into losers.\n`;
+      } else {
+        content += `no position to trim. watching for continuation.\n`;
+      }
+    } else {
+      content += `lost the trim level. resistance held. watching to see if we get another push.\n`;
+    }
+  } else if (level.type === 'nibble') {
+    if (direction === 'below') {
+      content += `support level in play. `;
+      if (report) {
+        const mode = report.mode;
+        const caps: Record<string, number> = { GREEN: 25, YELLOW: 15, ORANGE: 10, RED: 5 };
+        content += `${mode} mode — can deploy up to ${caps[mode] || 10}% here. `;
+      }
+      content += `watching for a bounce and confirmation before adding.\n`;
+    } else {
+      content += `reclaimed the nibble level. buyers stepping in. constructive.\n`;
+    }
+  } else if (level.type === 'eject') {
+    if (direction === 'below') {
+      content += `⚠️ below kill leverage. this is NOT an intraday sell trigger — need 2 consecutive daily closes below $${level.price.toFixed(2)} to activate. `;
+      content += `but I'm not adding here. watching the close carefully.\n`;
+    } else {
+      content += `reclaimed kill leverage. breathing room. still cautious until we get some distance from this level.\n`;
+    }
+  } else if (level.type === 'slow_zone') {
+    if (direction === 'below') {
+      content += `entered the Slow Zone. daily cap reduces — smaller bites only. `;
+      content += `this is where discipline matters most.\n`;
+    } else {
+      content += `back above the Slow Zone threshold. normal sizing rules apply.\n`;
+    }
+  } else {
+    // Generic level reaction
+    content += `key level ${direction === 'above' ? 'reclaimed' : 'lost'}. `;
+    content += `watching how price reacts here — acceptance ${direction} or rejection back.\n`;
+  }
+  
+  // Add flow context
+  if (hiro && hiro.character !== 'unavailable') {
+    const readingM = hiro.reading / 1000000;
+    const readingStr = readingM >= 0 ? `+${readingM.toFixed(0)}M` : `${readingM.toFixed(0)}M`;
+    content += `\nflow: HIRO ${readingStr} — ${hiro.reading > 0 ? 'dealers buying, supports the move' : 'dealers selling, stay cautious'}`;
+  }
+  
+  // Orb context
+  content += `\n${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})`;
+  
+  try {
+    await sendAsTaylor({ content });
+  } catch (error) {
+    console.error('Error posting level reaction:', error);
+  }
+}
+
+/**
  * Post error alert
  */
 export async function postError(error: string): Promise<void> {
@@ -741,7 +832,7 @@ export async function postError(error: string): Promise<void> {
   
   try {
     await sendAsTaylor({
-      content: `⚔️ taylor — **system alert**\n\nerror: ${error}\n\ninvestigating...`,
+      content: `**⚔️ TAYLOR — SYSTEM ALERT**\n\nerror: ${error}\n\ninvestigating...`,
     });
   } catch (e) {
     console.error('Error posting error alert:', e);
