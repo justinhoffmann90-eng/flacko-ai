@@ -14,37 +14,37 @@ export const CONTENT_TYPES: ContentType[] = [
   {
     key: "pre_market_tweet",
     label: "Pre-Market Tweet",
-    defaultPrompt: 'Generate a pre-market tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- Master Eject: ${{masterEject}}\n- HIRO: {{hiro}}\n- Positioning: {{positioning}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Include $TSLA cashtag\n- Key level to watch + what happens if we break/hold it\n- No hashtags, no fluff\n\nEXAMPLE VIBE:\n"$tsla watching 405 hedge wall. above it dealers stay long delta. below and we revisit 400 gamma strike. hiro flipped positive yesterday — first time in weeks. cautiously adding above 405."',
+    defaultPrompt: 'Generate a pre-market tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- Kill Leverage: ${{killLeverage}}\n- HIRO: {{hiro}}\n- Positioning: {{positioning}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Include $TSLA cashtag\n- Key level to watch + what happens if we break/hold it\n- No hashtags, no fluff\n\nEXAMPLE VIBE:\n"$tsla watching 405 hedge wall. above it dealers stay long delta. below and we revisit 400 gamma strike. hiro flipped positive yesterday — first time in weeks. cautiously adding above 405."',
   },
   {
     key: "market_open_tweet",
     label: "Market Open Tweet",
-    defaultPrompt: 'Generate a market open tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- HIRO: {{hiro}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- React to opening action vs. pre-market levels\n- Note if we gapped up/down and where we are vs. key levels\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla opened above hedge wall, testing 410 now. watching for acceptance above gamma strike 400 — that\'s the bull/bear line today. volume light so far."',
+    defaultPrompt: 'Generate a market open tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- HIRO: {{hiro}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- React to opening action vs. pre-market levels\n- Note if we gapped up/down and where we are vs. key levels\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla opened above hedge wall, testing 410 now. watching for acceptance above gamma strike 400 — that\'s the bull/bear line today. volume light so far."',
   },
   {
     key: "midday_tweet",
     label: "Midday Tweet",
-    defaultPrompt: 'Generate a midday update tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- HIRO: {{hiro}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Summarize morning action — what levels held/broke\n- Where we are now vs. key levels\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla midday — holding above 405 hedge wall after morning dip to 403. gamma strike 400 defended twice. staying orange mode, nibbles only until we reclaim daily 9ema at 417."',
+    defaultPrompt: 'Generate a midday update tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- HIRO: {{hiro}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Summarize morning action — what levels held/broke\n- Where we are now vs. key levels\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla midday — holding above 405 hedge wall after morning dip to 403. gamma strike 400 defended twice. staying orange mode, nibbles only until we reclaim daily 9ema at 417."',
   },
   {
     key: "power_hour_tweet",
     label: "Power Hour Tweet",
-    defaultPrompt: 'Generate a power hour tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- Master Eject: ${{masterEject}}\n- HIRO: {{hiro}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Focus on closing level implications\n- What a close above/below key level means\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla power hour — need a close above 405 hedge wall to confirm today\'s bounce. below 400 gamma strike and we\'re back in negative gamma. watching dealer positioning into close."',
+    defaultPrompt: 'Generate a power hour tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Current Price: ${{currentPrice}}\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- Kill Leverage: ${{killLeverage}}\n- HIRO: {{hiro}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Focus on closing level implications\n- What a close above/below key level means\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla power hour — need a close above 405 hedge wall to confirm today\'s bounce. below 400 gamma strike and we\'re back in negative gamma. watching dealer positioning into close."',
   },
   {
     key: "eod_tweet",
     label: "EOD Tweet",
-    defaultPrompt: 'Generate an end-of-day tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Close: ${{currentPrice}} ({{priceChangePct}}%)\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- HIRO: {{hiro}}\n- Tomorrow\'s key level: {{tomorrowKey}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Include close price and % change\n- Note what level we closed relative to\n- Forward-looking setup for tomorrow\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla closed 411.11 (+2.55%) above hedge wall 405. hiro flipped to +480m — strongest single day swing in weeks. watching 417 daily 9ema tomorrow for mode upgrade to yellow."',
+    defaultPrompt: 'Generate an end-of-day tweet for $TSLA.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Close: ${{currentPrice}} ({{priceChangePct}}%)\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- HIRO: {{hiro}}\n- Tomorrow\'s key level: {{tomorrowKey}}\n\nSTYLE:\n- Max 280 characters\n- Battlefield briefing tone, all lowercase\n- Include close price and % change\n- Note what level we closed relative to\n- Forward-looking setup for tomorrow\n- Include $TSLA cashtag\n\nEXAMPLE VIBE:\n"$tsla closed 411.11 (+2.55%) above hedge wall 405. hiro flipped to +480m — strongest single day swing in weeks. watching 417 daily 9ema tomorrow for mode upgrade to yellow."',
   },
   {
     key: "eod_wrap",
     label: "EOD Wrap (Discord)",
-    defaultPrompt: 'Generate an end-of-day market wrap for Discord #fs-insight channel.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Close: ${{currentPrice}} ({{priceChangePct}}%)\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- Master Eject: ${{masterEject}}\n- HIRO: {{hiro}} (30-day range: {{hiroLow}} to {{hiroHigh}})\n- Positioning: {{positioning}}\n\nFORMAT:\n**EOD Wrap - {{date}}**\n\n📊 **The Day**\n(2-3 sentences on price action, what levels were tested)\n\n🎯 **Key Levels Performance**\n• Call Wall ${{callWall}}: (held/broke/not tested)\n• Hedge Wall ${{hedgeWall}}: (held/broke/not tested)\n• Gamma Strike ${{gammaStrike}}: (held/broke/not tested)\n• Put Wall ${{putWall}}: (held/broke/not tested)\n\n📈 **HIRO Read**\n(What dealer positioning tells us)\n\n🔮 **Tomorrow**\n(Key level to watch and what triggers mode change)\n\nSTYLE:\n- Factual, analytical tone\n- Use Discord formatting (bold, bullet points)\n- No fluff, just signal',
+    defaultPrompt: 'Generate an end-of-day market wrap for Discord #fs-insight channel.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Close: ${{currentPrice}} ({{priceChangePct}}%)\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- Kill Leverage: ${{killLeverage}}\n- HIRO: {{hiro}} (30-day range: {{hiroLow}} to {{hiroHigh}})\n- Positioning: {{positioning}}\n\nFORMAT:\n**EOD Wrap - {{date}}**\n\n📊 **The Day**\n(2-3 sentences on price action, what levels were tested)\n\n🎯 **Key Levels Performance**\n• Call Wall ${{callWall}}: (held/broke/not tested)\n• Hedge Wall ${{hedgeWall}}: (held/broke/not tested)\n• Gamma Strike ${{gammaStrike}}: (held/broke/not tested)\n• Put Wall ${{putWall}}: (held/broke/not tested)\n\n📈 **HIRO Read**\n(What dealer positioning tells us)\n\n🔮 **Tomorrow**\n(Key level to watch and what triggers mode change)\n\nSTYLE:\n- Factual, analytical tone\n- Use Discord formatting (bold, bullet points)\n- No fluff, just signal',
   },
   {
     key: "morning_brief",
     label: "Morning Brief (Discord)",
-    defaultPrompt: 'Generate a morning brief for Discord.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Previous Close: ${{currentPrice}}\n- Call Wall: ${{callWall}}\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}\n- Master Eject: ${{masterEject}}\n- HIRO: {{hiro}}\n- Weekly 9 EMA: ${{weekly9ema}}\n- Weekly 21 EMA: ${{weekly21ema}}\n- Daily 9 EMA: ${{daily9ema}}\n- Daily 21 EMA: ${{daily21ema}}\n\nFORMAT:\n**Morning Brief - {{date}}**\n\n🚦 **Mode: {{mode}}** | Daily Cap: {{dailyCap}}%\n\n📊 **Key Levels**\n🔼 Upside: ${{callWall}} (Call Wall) → ${{weekly9ema}} (Weekly 9)\n📍 Current: ${{currentPrice}}\n🔽 Support: ${{hedgeWall}} (Hedge) → ${{gammaStrike}} (Gamma) → ${{putWall}} (Put Wall)\n🚨 Eject: ${{masterEject}}\n\n📈 **HIRO**: {{hiro}}\n(Brief interpretation)\n\n🎯 **Today\'s Focus**\n• Bull trigger: (specific price + condition)\n• Bear trigger: (specific price + condition)\n\nSTYLE:\n- Actionable and clear\n- Use Discord formatting\n- Front-load the important info',
+    defaultPrompt: 'Generate a morning brief for Discord.\n\nTODAY\'S DATA:\n- Mode: {{mode}} (Daily Cap: {{dailyCap}}%)\n- Previous Close: ${{currentPrice}}\n- Call Wall: ${{callWall}}  (SPX-only level — not TSLA-specific)\n- Gamma Strike: ${{gammaStrike}}\n- Hedge Wall: ${{hedgeWall}}\n- Put Wall: ${{putWall}}  (SPX-only level — not TSLA-specific)\n- Kill Leverage: ${{killLeverage}}\n- HIRO: {{hiro}}\n- Weekly 9 EMA: ${{weekly9ema}}\n- Weekly 21 EMA: ${{weekly21ema}}\n- Daily 9 EMA: ${{daily9ema}}\n- Daily 21 EMA: ${{daily21ema}}\n\nFORMAT:\n**Morning Brief - {{date}}**\n\n🚦 **Mode: {{mode}}** | Daily Cap: {{dailyCap}}%\n\n📊 **Key Levels**\n🔼 Upside: ${{weekly9ema}} (Weekly 9)\n📍 Current: ${{currentPrice}}\n🔽 Support: ${{hedgeWall}} (Hedge) → ${{gammaStrike}} (Gamma)\n🚨 Kill Leverage: ${{killLeverage}}\n\n📈 **HIRO**: {{hiro}}\n(Brief interpretation)\n\n🎯 **Today\'s Focus**\n• Bull trigger: (specific price + condition)\n• Bear trigger: (specific price + condition)\n\nSTYLE:\n- Actionable and clear\n- Use Discord formatting\n- Front-load the important info',
   },
   {
     key: "hiro_alert",
@@ -68,7 +68,7 @@ PRICE LADDER (Left Side):
 - Gamma Strike (yellow/white)
 - Hedge Wall (orange)
 - Put Wall (red)
-- Master Eject (dark red)
+- Kill Leverage (dark red)
 - Current price indicator showing position
 - % distance from each level
 
@@ -93,7 +93,7 @@ VISUAL STYLE:
 export const LEVELS_CARD_PROMPT = `Design a Levels Card showing a vertical price ladder:
 
 LAYOUT:
-- Vertical price ladder from Call Wall (top) to Master Eject (bottom)
+- Vertical price ladder from Call Wall (top) to Kill Leverage (bottom)
 - Current price marker showing position in the ladder
 - Color coding: green for upside, red for downside, yellow for neutral
 - Price labels with % distance from current
@@ -166,7 +166,8 @@ export function injectReportData(prompt: string, data: {
   gammaStrike?: number;
   hedgeWall?: number;
   putWall?: number;
-  masterEject?: number;
+  masterEject?: number; // backward compatibility
+  killLeverage?: number;
   hiro?: string;
   hiroLow?: string;
   hiroHigh?: string;
@@ -187,7 +188,7 @@ export function injectReportData(prompt: string, data: {
     .replace(/\{\{gammaStrike\}\}/g, String(data.gammaStrike || 'N/A'))
     .replace(/\{\{hedgeWall\}\}/g, String(data.hedgeWall || 'N/A'))
     .replace(/\{\{putWall\}\}/g, String(data.putWall || 'N/A'))
-    .replace(/\{\{masterEject\}\}/g, String(data.masterEject || 'N/A'))
+    .replace(/\{\{killLeverage\}\}/g, String(data.killLeverage || data.masterEject || 'N/A'))
     .replace(/\{\{hiro\}\}/g, data.hiro || 'N/A')
     .replace(/\{\{hiroLow\}\}/g, data.hiroLow || 'N/A')
     .replace(/\{\{hiroHigh\}\}/g, data.hiroHigh || 'N/A')
