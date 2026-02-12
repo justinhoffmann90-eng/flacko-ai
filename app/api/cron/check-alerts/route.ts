@@ -350,7 +350,7 @@ export async function GET(request: Request) {
           user_id,
           users!inner(id, email)
         `)
-        .in("status", ["active", "comped"]);
+        .in("status", ["active", "comped", "trial"]);
 
       // Get all user_settings to check email_alerts preference
       const userIds = (subscribersWithDetails || []).map((s: any) => s.user_id);
