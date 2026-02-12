@@ -68,6 +68,46 @@ function withSignPercent(num: number): string {
 }
 
 /**
+ * Build consistent portfolio footer for all trading posts
+ */
+function portfolioFooter(portfolio: Portfolio | MultiPortfolio): string {
+  const isMulti = 'tsla' in portfolio;
+  const totalVal = portfolio.totalValue;
+  let lines: string[] = [''];
+  
+  if (isMulti) {
+    const multi = portfolio as MultiPortfolio;
+    if (multi.tsla && multi.tsla.shares > 0) {
+      const pct = ((multi.tsla.shares * multi.tsla.currentPrice) / totalVal * 100).toFixed(0);
+      lines.push(`TSLA: ${multi.tsla.shares.toLocaleString()} shares (${pct}% of port)`);
+    } else {
+      lines.push(`TSLA: 0 shares`);
+    }
+    if (multi.tsll && multi.tsll.shares > 0) {
+      const pct = ((multi.tsll.shares * multi.tsll.currentPrice) / totalVal * 100).toFixed(0);
+      lines.push(`TSLL: ${multi.tsll.shares.toLocaleString()} shares (${pct}% of port)`);
+    }
+    const cashPct = ((multi.cash / totalVal) * 100).toFixed(0);
+    lines.push(`cash: $${fmtDollar(multi.cash)} (${cashPct}%)`);
+  } else {
+    const single = portfolio as Portfolio;
+    if (single.position && single.position.shares > 0) {
+      const posVal = single.position.currentValue;
+      const pct = ((posVal / totalVal) * 100).toFixed(0);
+      lines.push(`TSLA: ${single.position.shares.toLocaleString()} shares (${pct}% of port)`);
+    } else {
+      lines.push(`TSLA: 0 shares`);
+    }
+    const cashPct = ((single.cash / totalVal) * 100).toFixed(0);
+    lines.push(`cash: $${fmtDollar(single.cash)} (${cashPct}%)`);
+  }
+  
+  lines.push(`portfolio: $${fmtDollar(totalVal)} (${withSignPercent(portfolio.totalReturnPercent)})`);
+  
+  return lines.join('\n');
+}
+
+/**
  * Get mode emoji
  */
 function modeEmoji(mode: string): string {
@@ -118,33 +158,6 @@ export async function postStatusUpdate(
   let content = `**⚔️ TAYLOR — STATUS UPDATE — ${timeStr} CT**\n\n`;
   content += `TSLA $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)})\n`;
   
-  const isMulti = 'tsla' in portfolio;
-  if (isMulti) {
-    const multi = portfolio as MultiPortfolio;
-    if (multi.tsla || multi.tsll) {
-      content += `\npositions:\n`;
-      if (multi.tsla) {
-        content += `• TSLA: ${multi.tsla.shares.toLocaleString()} shares @ $${fmtDollar(multi.tsla.avgCost, 2)} — ${withSign(multi.tsla.unrealizedPnl)} (${withSignPercent(multi.tsla.pnlPercent)})\n`;
-      }
-      if (multi.tsll) {
-        content += `• TSLL: ${multi.tsll.shares.toLocaleString()} shares @ $${fmtDollar(multi.tsll.avgCost, 2)} — ${withSign(multi.tsll.unrealizedPnl)} (${withSignPercent(multi.tsll.pnlPercent)})\n`;
-      }
-    } else {
-      content += `position: FLAT\n`;
-    }
-    content += `cash: $${fmtDollar(multi.cash)}\n`;
-  } else {
-    const single = portfolio as Portfolio;
-    if (single.position) {
-      const pos = single.position;
-      content += `position: LONG ${pos.shares.toLocaleString()} shares TSLA @ $${fmtDollar(pos.avgCost, 2)}\n`;
-      content += `unrealized: ${withSign(pos.unrealizedPnl)} (${withSignPercent(pos.unrealizedPnlPercent)})\n`;
-    } else {
-      content += `position: FLAT\n`;
-    }
-    content += `cash: $${fmtDollar(single.cash)}\n`;
-  }
-  
   content += `\n${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})\n`;
   content += `take: ${flackoTake}\n`;
   
@@ -152,13 +165,11 @@ export async function postStatusUpdate(
   if (report) {
     content += `\nlevels:`;
     content += ` γ:${report.gammaStrike.toFixed(0)}`;
-    content += ` | pw:${report.putWall.toFixed(0)}`;
-    content += ` | hw:${report.hedgeWall.toFixed(0)}`;
-    content += ` | cw:${report.callWall.toFixed(0)}`;
     content += ` | kl:${report.masterEject.toFixed(0)}`;
   }
   
   content += `\n\n${modeEmoji(report?.mode || 'YELLOW')} ${marketStatus.message}`;
+  content += portfolioFooter(portfolio);
   
   try {
     await sendAsTaylor({ content });
@@ -261,21 +272,7 @@ export async function postEntryAlert(
   
   // Taylor's commentary — the WHY
   content += `\n**why this trade:**\n${commentary}\n`;
-  
-  // Portfolio summary with cash %
-  if ('tsla' in portfolio) {
-    const multi = portfolio as MultiPortfolio;
-    const cashPct = ((multi.cash / multi.totalValue) * 100).toFixed(0);
-    content += `\nportfolio:`;
-    if (multi.tsla) content += ` TSLA ${multi.tsla.shares}`;
-    if (multi.tsll) content += ` | TSLL ${multi.tsll.shares}`;
-    content += ` | cash: $${fmtDollar(multi.cash)} (${cashPct}%)`;
-  } else {
-    const single = portfolio as Portfolio;
-    const cashPct = ((single.cash / single.totalValue) * 100).toFixed(0);
-    content += `\nportfolio: ${single.position?.shares || trade.shares} ${trade.instrument}`;
-    content += ` | cash: $${fmtDollar(single.cash)} (${cashPct}%)`;
-  }
+  content += portfolioFooter(portfolio);
   
   try {
     await sendAsTaylor({ content });
@@ -392,20 +389,7 @@ export async function postExitAlert(
   const reasoningArray = Array.isArray(trade.reasoning) ? trade.reasoning : [trade.reasoning];
   content += `\n**why I exited:**\n`;
   content += generateExitCommentary(trade, reasoningArray, orb);
-  
-  // Portfolio after
-  const isMulti = 'tsla' in portfolio;
-  content += `\n\nportfolio:`;
-  if (isMulti) {
-    const multi = portfolio as MultiPortfolio;
-    if (multi.tsla) content += ` TSLA ${multi.tsla.shares}`;
-    if (multi.tsll) content += ` | TSLL ${multi.tsll.shares}`;
-    if (!multi.tsla && !multi.tsll) content += ` FLAT`;
-  } else {
-    content += ` FLAT`;
-  }
-  content += ` | cash: $${fmtDollar(portfolio.cash)}`;
-  content += `\nday p&l: ${withSign(todayPnl)} (${withSignPercent(todayPnl / 100000 * 100)})`;
+  content += portfolioFooter(portfolio);
   
   try {
     await sendAsTaylor({ content });
@@ -695,9 +679,8 @@ export async function postMarketClose(
   }
   
   content += `trades: ${dayTrades}\n`;
-  content += `portfolio value: $${portfolio.totalValue.toFixed(0)}\n`;
-  content += `total return: ${withSignPercent(portfolio.totalReturnPercent)}\n\n`;
-  content += `back at it tomorrow. 🤙`;
+  content += portfolioFooter(portfolio);
+  content += `\n\nback at it tomorrow. 🤙`;
   
   try {
     await sendAsTaylor({ content });
