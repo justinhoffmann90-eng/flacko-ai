@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getZoneDisplay } from "@/lib/orb/score";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -97,10 +98,13 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    const zoneDisplay = latestIndicator ? getZoneDisplay(Number(latestIndicator.orb_score ?? 0)) : null;
+
     return NextResponse.json({
       score: latestIndicator ? {
         value: latestIndicator.orb_score,
         zone: latestIndicator.orb_zone,
+        zone_display: zoneDisplay,
         prevZone: latestIndicator.orb_zone_prev,
         date: latestIndicator.date,
         zoneChangedAt: lastTransition?.event_date || null,

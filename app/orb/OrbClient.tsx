@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getZoneDisplay, type ZoneDisplay } from "@/lib/orb/score";
 
 type OrbRow = {
   id: string;
@@ -343,7 +344,13 @@ function OptionsPlaybook({ pb, zone, hex, isDesktop, desktopFont }: { pb: { setu
 
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
-  const [orbScore, setOrbScore] = useState<{ value: number; zone: string; prevZone: string | null; date: string } | null>(null);
+  const [orbScore, setOrbScore] = useState<{
+    value: number;
+    zone: string;
+    zone_display?: ZoneDisplay;
+    prevZone: string | null;
+    date: string;
+  } | null>(null);
   const [scoreExpanded, setScoreExpanded] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, { trades: Trade[]; signals: any[]; backtest: any[] }>>({});
@@ -560,6 +567,7 @@ export default function OrbClient() {
             },
           };
           const zc = zoneConfig[orbScore.zone] || zoneConfig.NEUTRAL;
+          const zoneDisplay = orbScore.zone_display || getZoneDisplay(orbScore.value);
           const activeSetups = rows.filter(r => r.state?.status === "active");
           const watchingSetups = rows.filter(r => r.state?.status === "watching");
           return (<>
@@ -579,8 +587,15 @@ export default function OrbClient() {
               <div style={{ fontSize: desktopFont(10), letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>ORB SCORE</div>
               <div className="flex items-center justify-between gap-4">
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: desktopFont(26), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1, marginBottom: 6 }}>
-                    {zc.emoji} {zc.label}
+                  <div style={{ marginBottom: 6 }}>
+                    <div style={{ fontSize: desktopFont(26), fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: zc.hex, lineHeight: 1 }}>
+                      {zc.emoji} {zoneDisplay.label}
+                    </div>
+                    {zoneDisplay.qualifier && (
+                      <div style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.45)", fontFamily: "'JetBrains Mono', monospace", marginTop: 3 }}>
+                        transition: {zoneDisplay.qualifier}
+                      </div>
+                    )}
                   </div>
                   <div style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.6)", fontFamily: "'Inter', system-ui", lineHeight: 1.4 }}>{zc.action}</div>
                   <div style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginTop: 6 }}>{zc.statsLine}</div>

@@ -34,7 +34,7 @@ export const WEIGHTS: Record<string, number> = {
 };
 
 // Zone thresholds from v3 backtest (percentile-calibrated)
-const THRESHOLDS = {
+export const THRESHOLDS = {
   FULL_SEND: 0.686,
   NEUTRAL: -0.117,
   CAUTION: -0.729,
@@ -58,6 +58,40 @@ export function assignZone(score: number): OrbZone {
   if (score >= THRESHOLDS.NEUTRAL) return "NEUTRAL";
   if (score >= THRESHOLDS.CAUTION) return "CAUTION";
   return "DEFENSIVE";
+}
+
+export type ZoneDisplay = {
+  zone: OrbZone;
+  label: string;
+  qualifier: "Emerging" | "Fading" | "Deteriorating" | null;
+};
+
+const ZONE_BUFFER = 0.04;
+
+export function getZoneDisplay(score: number): ZoneDisplay {
+  const zone = assignZone(score);
+
+  if (zone === "FULL_SEND" && score < THRESHOLDS.FULL_SEND + ZONE_BUFFER) {
+    return { zone, label: "FULL SEND (Emerging)", qualifier: "Emerging" };
+  }
+
+  if (zone === "NEUTRAL" && score < THRESHOLDS.NEUTRAL + ZONE_BUFFER) {
+    return { zone, label: "NEUTRAL (Fading)", qualifier: "Fading" };
+  }
+
+  if (zone === "CAUTION" && score >= THRESHOLDS.NEUTRAL - ZONE_BUFFER) {
+    return { zone, label: "CAUTION (Emerging)", qualifier: "Emerging" };
+  }
+
+  if (zone === "CAUTION" && score < THRESHOLDS.CAUTION + ZONE_BUFFER) {
+    return { zone, label: "CAUTION (Deteriorating)", qualifier: "Deteriorating" };
+  }
+
+  return {
+    zone,
+    label: ZONE_CONFIG[zone].label,
+    qualifier: null,
+  };
 }
 
 /** Generate transition message for subscribers */
