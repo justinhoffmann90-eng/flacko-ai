@@ -94,20 +94,10 @@ export function getAlertDiscordMessage({
     description += `**📊 Posture:** ${positioning}\n\n`;
   }
 
-  // 4. KEY LEVELS SECTION
-  if (keyLevels && (keyLevels.callWall || keyLevels.gammaStrike || keyLevels.hedgeWall || keyLevels.putWall)) {
-    description += `**📍 Key Levels**\n\`\`\`\n`;
-    if (keyLevels.callWall) description += `Call Wall     $${keyLevels.callWall}  ▲ Resistance\n`;
-    if (keyLevels.gammaStrike) description += `Gamma Strike  $${keyLevels.gammaStrike}  ◆ Pivot\n`;
-    if (keyLevels.hedgeWall) description += `Hedge Wall    $${keyLevels.hedgeWall}  ◆ Pivot\n`;
-    if (keyLevels.putWall) description += `Put Wall      $${keyLevels.putWall}  ▼ Support\n`;
-    description += `\`\`\`\n`;
-  }
-
-  // 5. MASTER EJECT
+  // 4. KILL LEVERAGE
   if (masterEject && masterEject > 0) {
-    description += `**⚠️ Master Eject: ${formatPrice(masterEject)}**\n`;
-    description += `_Daily close below = exit all positions_`;
+    description += `**⚠️ Kill Leverage: ${formatPrice(masterEject)}**\n`;
+    description += `_2 consecutive daily closes below = cut TSLL + options. Hold shares._`;
   }
 
   const embed: DiscordEmbed = {
@@ -186,7 +176,7 @@ export function getNewReportDiscordMessage({
     description += `⏸️ Slow Zone: ${formatPrice(slowZone.price)} -- ${slowZone.action}\n`;
   }
   if (masterEject && masterEject > 0) {
-    description += `❌ Eject: ${formatPrice(masterEject)}\n`;
+    description += `❌ Kill Leverage: ${formatPrice(masterEject)}\n`;
   }
   description += "\n";
 
