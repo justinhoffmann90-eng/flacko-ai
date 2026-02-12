@@ -50,7 +50,8 @@ export async function updateBotState(
   portfolio: Portfolio | MultiPortfolio,
   todayTradesCount: number,
   orbZone?: string,
-  orbScore?: number
+  orbScore?: number,
+  levelsHitToday?: string[]
 ): Promise<void> {
   try {
     const isMulti = 'tsla' in portfolio;
@@ -68,6 +69,7 @@ export async function updateBotState(
       bot_date: new Date().toISOString().split('T')[0],
       current_orb_zone: orbZone || null,
       current_orb_score: orbScore || null,
+      levels_hit_today: levelsHitToday || [],
     }, { onConflict: 'id' });
 
     if (error) throw error;
@@ -90,6 +92,7 @@ export async function getBotState(): Promise<{
   currentDate: string;
   currentOrbZone?: string;
   currentOrbScore?: number;
+  levelsHitToday?: string[];
 } | null> {
   try {
     const { data, error } = await supabase
@@ -111,10 +114,22 @@ export async function getBotState(): Promise<{
       currentDate: data.bot_date,
       currentOrbZone: data.current_orb_zone,
       currentOrbScore: data.current_orb_score,
+      levelsHitToday: data.levels_hit_today || [],
     };
   } catch (error) {
     console.error('Error fetching bot state:', error);
     return null;
+  }
+}
+
+/**
+ * Persist levels hit today to DB (survives restarts)
+ */
+export async function saveLevelsHitToday(levels: string[]): Promise<void> {
+  try {
+    await supabase.from('paper_bot_state').update({ levels_hit_today: levels }).eq('id', 1);
+  } catch (error) {
+    console.error('Error saving levels hit today:', error);
   }
 }
 

@@ -54,6 +54,7 @@ import {
   recordDailyPortfolio,
   getWeeklyPerformance,
   logBot,
+  saveLevelsHitToday,
 } from './performance';
 import type { Trade, Portfolio, MultiPortfolio, TradeSignal, OrbZone, Instrument } from './types';
 
@@ -134,6 +135,10 @@ async function init(): Promise<boolean> {
     sessionState.tsllAvgCost = savedState.tsllAvgCost;
     sessionState.realizedPnl = savedState.realizedPnl;
     sessionState.previousOrbZone = savedState.currentOrbZone as OrbZone | undefined;
+    if (savedState.levelsHitToday?.length) {
+      sessionState.levelsHitToday = new Set(savedState.levelsHitToday);
+      console.log(`📍 restored ${sessionState.levelsHitToday.size} levels hit today: ${[...sessionState.levelsHitToday].join(', ')}`);
+    }
   }
   
   console.log('✅ paper flacko initialized');
@@ -159,6 +164,7 @@ async function tradingLoop(): Promise<void> {
       sessionState.currentDate = today;
       sessionState.todayTradesCount = 0;
       sessionState.levelsHitToday = new Set<string>();
+      await saveLevelsHitToday([]); // Reset in DB too
       marketOpenPosted = false;
       marketClosePosted = false;
       weeklyReportPosted = false;
@@ -324,6 +330,8 @@ async function tradingLoop(): Promise<void> {
             tsllShares: sessionState.tsllShares,
           });
           console.log(`📍 Level hit: ${level.name} ($${level.price}) — posted reaction`);
+          // Persist levels hit to DB so they survive restarts
+          await saveLevelsHitToday([...sessionState.levelsHitToday]);
         }
       }
     }
