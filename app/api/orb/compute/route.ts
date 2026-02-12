@@ -64,6 +64,9 @@ async function runCompute() {
     const supabase = await createServiceClient();
 
     const { data: prevStates } = await supabase.from("orb_setup_states").select("*");
+    const { data: definitions } = await supabase
+      .from("orb_setup_definitions")
+      .select("id, public_name, stance, grade, framework");
 
     const prevMap = new Map<string, PreviousState>(
       (prevStates || []).map((s: any) => [
@@ -199,20 +202,43 @@ async function runCompute() {
             .maybeSingle();
 
           if (openTrade) {
-            const finalReturn = ((indicators.close / openTrade.entry_price) - 1) * 100;
-            await supabase
-              .from("orb_tracker")
-              .update({
-                exit_date: indicators.date,
-                exit_price: indicators.close,
-                exit_reason: result.reason.toLowerCase().includes("target") ? "target_reached" : "conditions_lost",
-                exit_indicators: indicators,
-                final_return_pct: finalReturn,
-                is_win: finalReturn > 0,
-                status: "closed",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", openTrade.id);
+            // Fixed-horizon setups: keep trade open for minimum 20 days
+            // even after conditions are no longer met. This lets us track
+            // actual performance over the backtest horizons (5/10/20/60d).
+            const setupDef = definitions?.find((d: any) => d.id === result.setup_id);
+            const isFixedHorizon = setupDef?.framework === "fixed-horizon";
+            const MIN_TRACKING_DAYS = 20;
+
+            if (isFixedHorizon && openTrade.days_active < MIN_TRACKING_DAYS) {
+              // Don't close -- just update current return and mark conditions lost
+              const currentReturn = ((indicators.close / openTrade.entry_price) - 1) * 100;
+              await supabase
+                .from("orb_tracker")
+                .update({
+                  current_return_pct: currentReturn,
+                  max_return_pct: Math.max(openTrade.max_return_pct || 0, currentReturn),
+                  max_drawdown_pct: Math.min(openTrade.max_drawdown_pct || 0, currentReturn),
+                  days_active: openTrade.days_active + 1,
+                  exit_reason: "tracking_horizon",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", openTrade.id);
+            } else {
+              const finalReturn = ((indicators.close / openTrade.entry_price) - 1) * 100;
+              await supabase
+                .from("orb_tracker")
+                .update({
+                  exit_date: indicators.date,
+                  exit_price: indicators.close,
+                  exit_reason: result.reason.toLowerCase().includes("target") ? "target_reached" : "conditions_lost",
+                  exit_indicators: indicators,
+                  final_return_pct: finalReturn,
+                  is_win: finalReturn > 0,
+                  status: "closed",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", openTrade.id);
+            }
           }
         }
 
@@ -267,6 +293,54 @@ async function runCompute() {
               .eq("id", openTrade.id);
           }
         }
+      }
+    }
+
+    // Update tracking-horizon trades that are still open but setup is no longer active
+    // These trades need daily return updates until they hit MIN_TRACKING_DAYS
+    const { data: trackingTrades } = await supabase
+      .from("orb_tracker")
+      .select("*")
+      .eq("status", "open")
+      .eq("exit_reason", "tracking_horizon");
+
+    for (const trade of trackingTrades || []) {
+      const setupDef = definitions?.find((d: any) => d.id === trade.setup_id);
+      const MIN_TRACKING_DAYS = 20;
+      const newDaysActive = (trade.days_active || 0) + 1;
+      const currentReturn = ((indicators.close / trade.entry_price) - 1) * 100;
+
+      if (newDaysActive >= MIN_TRACKING_DAYS) {
+        // Horizon reached — close the trade with final stats
+        await supabase
+          .from("orb_tracker")
+          .update({
+            exit_date: indicators.date,
+            exit_price: indicators.close,
+            exit_reason: "horizon_reached",
+            exit_indicators: indicators,
+            final_return_pct: currentReturn,
+            is_win: currentReturn > 0,
+            status: "closed",
+            days_active: newDaysActive,
+            current_return_pct: currentReturn,
+            max_return_pct: Math.max(trade.max_return_pct || 0, currentReturn),
+            max_drawdown_pct: Math.min(trade.max_drawdown_pct || 0, currentReturn),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", trade.id);
+      } else {
+        // Still tracking — update daily returns
+        await supabase
+          .from("orb_tracker")
+          .update({
+            current_return_pct: currentReturn,
+            max_return_pct: Math.max(trade.max_return_pct || 0, currentReturn),
+            max_drawdown_pct: Math.min(trade.max_drawdown_pct || 0, currentReturn),
+            days_active: newDaysActive,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", trade.id);
       }
     }
 
@@ -375,6 +449,53 @@ async function runCompute() {
       },
       { onConflict: "date" }
     );
+
+    const writeScorecard = async () => {
+      try {
+        const normalizeZone = (zone: string) => {
+          const normalized = zone.toUpperCase().replace(/\s+/g, "_");
+          const allowed = ["FULL_SEND", "NEUTRAL", "CAUTION", "DEFENSIVE"];
+          return allowed.includes(normalized) ? normalized : "NEUTRAL";
+        };
+
+        const activeBuySetups = results
+          .filter((r) => r.is_active && definitions?.find((d: any) => d.id === r.setup_id)?.stance === "buy")
+          .map((r) => ({
+            setup_id: r.setup_id,
+            public_name: definitions?.find((d: any) => d.id === r.setup_id)?.public_name || r.setup_id,
+            grade: definitions?.find((d: any) => d.id === r.setup_id)?.grade || "B",
+            day_active: snapshotRows.find((s) => s.setup_id === r.setup_id)?.active_day || 1,
+          }));
+
+        const activeAvoidSignals = results
+          .filter((r) => r.is_active && definitions?.find((d: any) => d.id === r.setup_id)?.stance === "avoid")
+          .map((r) => ({
+            setup_id: r.setup_id,
+            public_name: definitions?.find((d: any) => d.id === r.setup_id)?.public_name || r.setup_id,
+            grade: definitions?.find((d: any) => d.id === r.setup_id)?.grade || "B",
+            day_active: snapshotRows.find((s) => s.setup_id === r.setup_id)?.active_day || 1,
+          }));
+
+        await supabase.from("orb_daily_scorecard").upsert(
+          {
+            date: indicators.date,
+            recorded_at: new Date().toISOString(),
+            orb_score: orbScore,
+            orb_zone: normalizeZone(orbZone),
+            mode: (modeSuggestion.suggestion || "").toUpperCase(),
+            mode_confidence: modeSuggestion.confidence,
+            active_buy_setups: activeBuySetups,
+            active_avoid_signals: activeAvoidSignals,
+            close_price: indicators.close,
+          },
+          { onConflict: "date" }
+        );
+      } catch (scorecardError) {
+        console.error("[ORB][SCORECARD_WRITE_FAILED]", scorecardError);
+      }
+    };
+
+    await writeScorecard();
 
     return NextResponse.json({
       success: true,
