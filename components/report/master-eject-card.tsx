@@ -40,7 +40,7 @@ export function MasterEjectCard({
           />
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-red-500">Master Eject Level</p>
+              <p className="text-sm font-medium text-red-500">Kill Leverage Level</p>
               {isBreached && (
                 <span className="text-xs font-bold text-red-500 uppercase">BREACHED</span>
               )}

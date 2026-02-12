@@ -29,7 +29,7 @@ const questionPool = {
     { icon: TrendingUp, text: "What are the key levels to watch today?", category: "Levels" },
     { icon: Target, text: "Where should I set my buy alerts?", category: "Levels" },
     { icon: TrendingUp, text: "What price would trigger a trim?", category: "Levels" },
-    { icon: Shield, text: "Where is the Master Eject level and why?", category: "Levels" },
+    { icon: Shield, text: "Where is the Kill Leverage level and why?", category: "Levels" },
     { icon: Target, text: "What's the Slow Zone and am I in it?", category: "Levels" },
   ],
   risk: [

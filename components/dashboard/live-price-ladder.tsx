@@ -264,7 +264,7 @@ export function LivePriceLadder({
       </div>
       <div className="flex-1 bg-red-500/10 rounded-lg px-3 py-2 md:px-4 md:py-3 border border-red-500/30">
         <div className="flex items-center justify-between">
-          <span className="text-xs md:text-sm font-semibold text-red-500">MASTER EJECT</span>
+          <span className="text-xs md:text-sm font-semibold text-red-500">KILL LEVERAGE</span>
           <div className="flex items-center gap-2 md:gap-3">
             <span className="text-xs md:text-sm text-red-500 font-medium">
               {formatPctAway(masterEject, currentPrice)}
@@ -273,7 +273,7 @@ export function LivePriceLadder({
           </div>
         </div>
         <div className="text-[10px] md:text-xs mt-1 text-red-400">
-          ❌ Exit all — daily close below = out
+          ⚠️ 2 consecutive daily closes below = cut TSLL + options. Hold shares.
         </div>
       </div>
     </div>
@@ -331,7 +331,7 @@ export function LivePriceLadder({
         </div>
 
         {/* Master Eject (always at bottom) */}
-        {masterEject > 0 && renderMasterEject()}
+        {/* Kill Leverage is now shown as a regular alert level — no separate section needed */}
       </div>
     </Card>
   );
