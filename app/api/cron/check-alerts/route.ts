@@ -306,21 +306,23 @@ export async function GET(request: Request) {
       putWall: extractedData.key_levels.put_wall,
     } : undefined;
 
-    // Create in-app notifications for all affected users
+    // Create in-app notifications for all affected users (batched)
     const userIds = new Set(triggeredAlerts.map((a) => a.user_id));
-    for (const userId of userIds) {
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "alert_triggered",
-        title: `Alert Triggered`,
-        body: `TSLA hit $${currentPrice.toFixed(2)}`,
-        metadata: {
-          price: currentPrice,
-          alerts: triggeredAlerts
-            .filter((a) => a.user_id === userId)
-            .map((a) => a.level_name),
-        },
-      });
+    const notificationsToInsert = Array.from(userIds).map((userId) => ({
+      user_id: userId,
+      type: "alert_triggered",
+      title: `Alert Triggered`,
+      body: `TSLA hit $${currentPrice.toFixed(2)}`,
+      metadata: {
+        price: currentPrice,
+        alerts: triggeredAlerts
+          .filter((a) => a.user_id === userId)
+          .map((a) => a.level_name),
+      },
+    }));
+    
+    if (notificationsToInsert.length > 0) {
+      await supabase.from("notifications").insert(notificationsToInsert);
     }
 
     // Build the alerts array once (same for all users)
@@ -372,50 +374,57 @@ export async function GET(request: Request) {
 
       console.log(`Checking email alerts for ${eligibleSubscribers.length} eligible subscribers`);
 
-      for (const sub of eligibleSubscribers) {
+      // Build batch email array (max 100 per batch for Resend)
+      const emailBatch = eligibleSubscribers.map((sub) => {
         const userEmail = (sub as any).users?.email as string;
-        const userId = (sub as any).user_id as string;
+        const html = getAlertEmailHtml({
+          userName: userEmail.split("@")[0],
+          alerts: alertsToSend,
+          currentPrice,
+          mode: extractedData?.mode?.current || "yellow",
+          reportDate: report.report_date,
+          keyLevels,
+          positioning: extractedData?.positioning?.posture,
+        });
 
+        return {
+          from: EMAIL_FROM,
+          to: userEmail,
+          subject: `TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
+          html,
+        };
+      });
+
+      // Send all emails in a single batch request
+      if (emailBatch.length > 0) {
         try {
-          const html = getAlertEmailHtml({
-            userName: userEmail.split("@")[0],
-            alerts: alertsToSend,
-            currentPrice,
-            mode: extractedData?.mode?.current || "yellow",
-            reportDate: report.report_date,
-            keyLevels,
-            positioning: extractedData?.positioning?.posture,
-          });
-
-          await resend.emails.send({
-            from: EMAIL_FROM,
-            to: userEmail,
-            subject: `TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
-            html,
-          });
-
-          emailsSent++;
-          console.log(`Email alert sent to ${userEmail}`);
-
-          const triggeredAlertIdsForUser = triggeredAlerts
-            .filter((a) => a.user_id === userId)
-            .map((a) => a.id);
-
-          if (triggeredAlertIdsForUser.length > 0) {
-            await supabase
-              .from("report_alerts")
-              .update({
-                email_sent_at: new Date().toISOString(),
-              })
-              .in("id", triggeredAlertIdsForUser);
+          const batchResult = await resend.batch.send(emailBatch);
+          
+          if (batchResult.data) {
+            emailsSent = batchResult.data.length;
+            console.log(`📧 Batch sent ${emailsSent} email alerts`);
+            
+            // Bulk update email_sent_at for all triggered alerts
+            const allTriggeredAlertIds = triggeredAlerts.map((a) => a.id);
+            if (allTriggeredAlertIds.length > 0) {
+              await supabase
+                .from("report_alerts")
+                .update({
+                  email_sent_at: new Date().toISOString(),
+                })
+                .in("id", allTriggeredAlertIds);
+            }
+          } else {
+            emailsFailed = emailBatch.length;
+            console.error("Batch email send returned no data");
           }
-        } catch (emailError) {
-          emailsFailed++;
-          console.error(`Failed to send email to ${userEmail}:`, emailError);
+        } catch (batchError) {
+          emailsFailed = emailBatch.length;
+          console.error("Batch email send failed:", batchError);
         }
       }
 
-      console.log(`📧 Sent email alerts to ${emailsSent} subscribers`);
+      console.log(`📧 Email delivery: ${emailsSent} sent, ${emailsFailed} failed`);
 
       // ALERT if email delivery had failures
       if (emailsFailed > 0) {
