@@ -114,6 +114,31 @@ export function isMarketHours(): boolean {
   return timeInMinutes >= marketOpen && timeInMinutes <= marketClose;
 }
 
+export function isExtendedHours(): boolean {
+  const now = new Date();
+  const day = now.getDay();
+
+  // Weekend check (0 = Sunday, 6 = Saturday)
+  if (day === 0 || day === 6) return false;
+
+  // Convert to ET
+  const etTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const hours = etTime.getHours();
+  const minutes = etTime.getMinutes();
+  const timeInMinutes = hours * 60 + minutes;
+
+  // Pre-market: 4:00 AM - 9:30 AM ET
+  const preMarketOpen = 4 * 60; // 4:00 AM
+  const marketOpen = 9 * 60 + 30; // 9:30 AM
+  
+  // After-hours: 4:00 PM - 8:00 PM ET
+  const marketClose = 16 * 60; // 4:00 PM
+  const afterHoursClose = 20 * 60; // 8:00 PM
+
+  return (timeInMinutes >= preMarketOpen && timeInMinutes < marketOpen) ||
+         (timeInMinutes > marketClose && timeInMinutes <= afterHoursClose);
+}
+
 export function getInitials(name: string): string {
   return name
     .split(" ")

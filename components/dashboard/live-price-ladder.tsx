@@ -22,6 +22,7 @@ interface PriceData {
   changePercent?: number;
   timestamp: string;
   isMarketOpen: boolean;
+  isExtendedHours?: boolean;
   cached?: boolean;
 }
 
@@ -106,6 +107,8 @@ export function LivePriceLadder({
 
   const currentPrice = priceData?.price || fallbackPrice;
   const isMarketOpen = priceData?.isMarketOpen || false;
+  const isExtendedHours = priceData?.isExtendedHours || false;
+  const isFullyClosed = !isMarketOpen && !isExtendedHours;
 
   useEffect(() => {
     const fetchPrice = async () => {
@@ -123,14 +126,26 @@ export function LivePriceLadder({
         setInitialLoad(false);
       }
     };
+    
     fetchPrice();
-    const interval = setInterval(fetchPrice, 30000);
+    
+    // Smart polling: 30s during market/extended hours, 5 minutes when fully closed
+    const pollInterval = isFullyClosed ? 300000 : 30000;
+    const interval = setInterval(fetchPrice, pollInterval);
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [isFullyClosed]);
 
   useEffect(() => {
     const updateTimer = () => {
-      if (!lastUpdate) { setUpdateText("30s"); return; }
+      if (isFullyClosed) {
+        setUpdateText("Market Closed");
+        return;
+      }
+      if (!lastUpdate) { 
+        setUpdateText("30s"); 
+        return; 
+      }
       const elapsed = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
       const remaining = Math.max(0, 30 - elapsed);
       setUpdateText(`${remaining}s`);
@@ -138,7 +153,7 @@ export function LivePriceLadder({
     updateTimer();
     const timerInterval = setInterval(updateTimer, 1000);
     return () => clearInterval(timerInterval);
-  }, [lastUpdate]);
+  }, [lastUpdate, isFullyClosed]);
 
   // Combine all levels and sort by price descending (highest first)
   const allLevels = [...upsideLevels, ...downsideLevels].sort((a, b) => b.price - a.price);
@@ -197,38 +212,50 @@ export function LivePriceLadder({
     );
   };
 
-  const renderCurrentPrice = () => (
-    <div className="flex items-center gap-3 md:gap-4 pl-1 my-2 md:my-3">
-      <div className="relative z-10 w-5 h-5 md:w-6 md:h-6 rounded-full bg-foreground flex items-center justify-center">
-        {isMarketOpen ? (
-          <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-white" />
-          </span>
-        ) : (
-          <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-background" />
-        )}
-      </div>
-      <div className="flex-1 flex items-center justify-between bg-foreground/10 rounded-lg px-3 py-2 md:px-4 md:py-3 border border-foreground/20">
-        <div className="flex items-center gap-2 md:gap-3">
-          <span className="text-xs md:text-sm font-medium">
-            {isMarketOpen ? "Live Price" : "Last Close"}
-          </span>
-          {priceData?.changePercent != null && (
-            <span className={`text-[10px] md:text-xs font-medium ${priceData.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {priceData.changePercent >= 0 ? '+' : ''}{priceData.changePercent.toFixed(2)}%
+  const renderCurrentPrice = () => {
+    let statusLabel = "Last Close";
+    if (isMarketOpen) {
+      statusLabel = "Live Price";
+    } else if (isExtendedHours) {
+      statusLabel = "Extended Hours";
+    }
+    
+    return (
+      <div className="flex items-center gap-3 md:gap-4 pl-1 my-2 md:my-3">
+        <div className="relative z-10 w-5 h-5 md:w-6 md:h-6 rounded-full bg-foreground flex items-center justify-center">
+          {(isMarketOpen || isExtendedHours) ? (
+            <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-white" />
             </span>
+          ) : (
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-background" />
           )}
         </div>
-        <div className="flex items-center gap-2 md:gap-3">
-          {isMarketOpen && updateText && (
-            <span className="text-[10px] md:text-xs text-muted-foreground">↻ {updateText}</span>
-          )}
-          <AnimatedPrice value={currentPrice} className="font-bold md:text-lg" />
+        <div className="flex-1 flex items-center justify-between bg-foreground/10 rounded-lg px-3 py-2 md:px-4 md:py-3 border border-foreground/20">
+          <div className="flex items-center gap-2 md:gap-3">
+            <span className="text-xs md:text-sm font-medium">
+              {statusLabel}
+            </span>
+            {priceData?.changePercent != null && (
+              <span className={`text-[10px] md:text-xs font-medium ${priceData.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {priceData.changePercent >= 0 ? '+' : ''}{priceData.changePercent.toFixed(2)}%
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 md:gap-3">
+            {(isMarketOpen || isExtendedHours) && updateText && !isFullyClosed && (
+              <span className="text-[10px] md:text-xs text-muted-foreground">↻ {updateText}</span>
+            )}
+            {isFullyClosed && updateText && (
+              <span className="text-[10px] md:text-xs text-muted-foreground/60">{updateText}</span>
+            )}
+            <AnimatedPrice value={currentPrice} className="font-bold md:text-lg" />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderMasterEject = () => (
     <div className="flex items-center gap-3 md:gap-4 pl-1 mt-2 md:mt-3">

@@ -1,113 +1,120 @@
 ---
 title: "HIRO"
-description: "Real-time hedging pressure from SpotGamma — what it signals and how to use it."
-readingTime: "8 min"
+description: "Real-time hedging pressure from SpotGamma -- what it signals, how to read it, and how Flacko AI uses it."
+readingTime: "10 min"
 ---
 
 ## What is HIRO?
 
-**HIRO** (Hedging Impact Real-time Oscillator) shows **real-time dealer hedging pressure**. It tells you whether options flow is pushing price up or down.
+**HIRO** (Hedging Impact Real-time Overlay) tracks estimated hedging flows from dealers based on options transactions during the trading day. It measures the dollar amount of stock that dealers need to buy or sell to hedge their options book as new trades come in.
+
+- **Positive HIRO** = dealers are net buying the underlying to hedge (bullish pressure)
+- **Negative HIRO** = dealers are net selling the underlying to hedge (bearish pressure)
+- **Resets to zero at market open** -- each day's reading is cumulative intraday flow, not a running total across days
 
 ---
 
-## Reading HIRO
+## SpotGamma's 5-Step HIRO Checklist
 
-| HIRO Reading | Meaning | Typical Action |
-|--------------|---------|----------------|
-| **Strong positive** (+50% or more) | Heavy call buying → dealers buying shares | Bullish pressure, support likely |
-| **Moderate positive** (+10% to +50%) | Slight bullish bias | Lean bullish, watch for confirmation |
-| **Neutral** (-10% to +10%) | Balanced flow | No directional signal |
-| **Moderate negative** (-10% to -50%) | Slight bearish bias | Lean bearish, watch for confirmation |
-| **Strong negative** (-50% or more) | Heavy put buying → dealers selling shares | Bearish pressure, resistance likely |
+### Step 1: Select Your Ticker
+Type the ticker (TSLA) in the search field. For new ideas, check the trending list or Scanners page.
+
+### Step 2: Watch HIRO Near Call Wall or Put Wall
+- **Call Wall** = resistance line. If HIRO flattens near Call Wall, it marks a potential top.
+- **Put Wall** = support line. If HIRO flattens near Put Wall, it marks a potential bottom.
+
+### Step 3: Check If Flows Are Short-Term or Longer-Dated
+- Toggle the **Next Expiry** flow to assess short-term options buying.
+- **Primarily next expiry flows** = price movement is less stable, prone to reversal.
+- **Primarily longer-dated flows** = higher likelihood of stable price action.
+
+### Step 4: Check for HIRO Flow Alerts
+- Flow alerts indicate outsized options activity (a net change in delta -- hedging pressure switching from positive to negative or vice versa).
+- **When a flow alert fires, wait for flows to "shut off" and look for reversals.**
+
+### Step 5: Check the HIRO Signal Gauge (Stock Screener)
+- The gray background = entire 30-day range.
+- Coloration shows where buying/selling pressure has been for the last 5 days.
+- **Bolded circle toward either end** = heightened buying or selling pressure vs. the last 30 days.
 
 ---
 
-## HIRO vs Price Action
+## HIRO Trading Strategies (SpotGamma)
+
+### Basic: Reversion from HIRO Flows
+After a HIRO flow alert fires, watch if HIRO's momentum continues or flatlines/reverses.
+- **Flow correlated with price increase, then HIRO flatlines:** Consider bearish positions
+- **Flow correlated with price decrease, then HIRO flatlines:** Consider bullish positions
+
+**Key stat:** After flow alerts shut off, the stock reverts back in the previous direction **70% of the time**.
+
+**Pro tip:** Check the difference between short-dated and longer-dated flows using the Next Expiry toggle. Major long-term flows are more impactful in the future, while 0DTE/next expiry flows generate larger current dealer hedging impact.
+
+### Intermediate: Selling Premium at Wall Reversions
+HIRO flatlines at a SpotGamma resistance or support level:
+- **Flow with price increase near Call Wall:** Sell call spreads above Call Wall
+- **Flow with price decrease near Put Wall:** Sell put spreads below Put Wall
+
+### Advanced: Buy ITM Spreads After Sharp HIRO Moves
+HIRO alert fires on a stock strongly under influence of options. Reversal expected once flow shuts off:
+- **Price risen sharply:** Buy in-the-money put spread
+- **Price dropped sharply:** Buy in-the-money call spread
+
+---
+
+## How Flacko AI Uses HIRO
+
+We use HIRO as a **conviction modifier** and **intraday timing tool**, not for 0DTE spread trading. Two reads:
+
+### Level-Based Read (Conviction Adjustment)
+Where today's closing HIRO value sits in the 30-day range:
+- **Upper quartile** (e.g., +800M in a -1.1B to +1.4B range) = bullish conviction boost
+- **Lower quartile** (e.g., -700M) = bearish conviction, reduce sizing
+- **Middle** = neutral, no adjustment
+
+### Direction-Based Read (Intraday Timing)
+How HIRO is trending during the session:
+- **HIRO trending up** = dealers buying into strength, trim later in day
+- **HIRO trending down** = dealers selling into weakness, nibble later in day
+- **HIRO flat** = no directional bias
+
+### The 70% Reversion + BX-Trender Connection
+The 70% reversion after flow alerts aligns with our framework: when HIRO reaches extremes and reverses, it often coincides with BX-Trender inflection points.
+- **Extreme negative HIRO + BX-Trender HL transition** = high-conviction buy setup
+- **Extreme positive HIRO + BX-Trender LH transition** = trim signal
+
+---
+
+## HIRO + Price Divergences
 
 | HIRO | Price | Signal |
 |------|-------|--------|
-| ↑ Rising | ↑ Rising | **Confirmation** — trend supported |
-| ↑ Rising | ↓ Falling | **Divergence** — potential reversal up |
-| ↓ Falling | ↓ Falling | **Confirmation** — downtrend supported |
-| ↓ Falling | ↑ Rising | **Divergence** — potential reversal down |
+| Rising | Rising | **Confirmation** -- trend supported |
+| Rising | Falling | **Divergence** -- potential reversal up |
+| Falling | Falling | **Confirmation** -- downtrend supported |
+| Falling | Rising | **Divergence** -- potential reversal down |
 
-**Divergences are powerful signals.** If HIRO is positive but price is falling, dealers are buying — a bounce may be coming.
-
----
-
-## When to Check HIRO
-
-| Situation | Why Check |
-|-----------|-----------|
-| **Price at key level** | Confirm whether hedging supports a bounce/rejection |
-| **Breakout attempt** | Is flow supporting the move? |
-| **Divergence spotted** | HIRO opposite price direction = reversal setup |
-| **Before entering** | Confirm your bias with hedging flow |
+**Divergences are powerful signals.** If HIRO is positive but price is falling, dealers are buying -- a bounce may be coming.
 
 ---
 
-## HIRO Zones
+## Staleness Rule
 
-```
-+100% ─────── Extreme bullish (rare, strong support)
-  │
-+50% ─────── Strong bullish
-  │
-+10% ─────── Mild bullish
-  │
-  0  ─────── Neutral
-  │
--10% ─────── Mild bearish
-  │
--50% ─────── Strong bearish
-  │
--100% ─────── Extreme bearish (rare, strong resistance)
-```
-
----
-
-## HIRO + Gamma Regime
-
-| Gamma Regime | HIRO Positive | HIRO Negative |
-|--------------|---------------|---------------|
-| **Positive gamma** | Supports range high | Supports range low |
-| **Negative gamma** | Can fuel rallies | Can fuel selloffs |
-
-In negative gamma, HIRO readings are **amplified** — a strong negative HIRO can accelerate a selloff.
-
----
-
-## Example
-
-> **Situation:** TSLA at Put Wall ($400), HIRO at +45%
-> 
-> **Read:** Strong bullish hedging at key support
-> 
-> **Signal:** High probability bounce
-> 
-> **Action:** Consider adding per your mode cap
-
----
-
-## Common Mistakes
-
-| Mistake | Better Approach |
-|---------|-----------------|
-| Trading HIRO alone | Combine with levels and mode |
-| Ignoring divergences | Divergences are high-quality signals |
-| Chasing extreme readings | Extremes often mean-revert |
+HIRO resets daily and accumulates during the session. A reading captured more than 2 hours before close is stale and should not be used for conviction reads. State the capture time and value, then say "no conviction read" -- do not speculate about what HIRO "likely" did after capture.
 
 ---
 
 ## Key Takeaways
 
-| Point | Remember |
-|-------|----------|
-| **HIRO shows hedging flow** | Real-time, not lagging |
-| **Positive = bullish pressure** | Dealers buying |
-| **Negative = bearish pressure** | Dealers selling |
-| **Divergences matter most** | HIRO vs price = reversal signal |
+- **HIRO shows real-time dealer hedging flow** -- not lagging
+- **Positive = bullish pressure** (dealers buying)
+- **Negative = bearish pressure** (dealers selling)
+- **Resets to zero daily** -- each day is independent
+- **70% reversion after flow alerts** -- the key stat to remember
+- **Short-dated vs longer-dated flows matter** -- next expiry flows are less stable
+- **Divergences between HIRO and price** are high-quality signals
+- **Staleness matters** -- only use close-to-close readings for conviction
 
 ---
 
-*HIRO is the market's heartbeat. Learn to read it.*
+*Source: SpotGamma official documentation. Updated February 11, 2026.*
