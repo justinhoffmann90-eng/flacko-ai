@@ -351,6 +351,7 @@ export default function OrbClient() {
   const [isDesktop, setIsDesktop] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [trackingTrades, setTrackingTrades] = useState<any[]>([]);
   const pullStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -397,6 +398,7 @@ export default function OrbClient() {
     } else if (data?.setups) {
       setRows(Array.isArray(data.setups) ? data.setups : []);
       if (data.score) setOrbScore(data.score);
+      if (data.trackingTrades) setTrackingTrades(data.trackingTrades);
     } else {
       setRows([]);
     }
@@ -451,9 +453,14 @@ export default function OrbClient() {
     if (filter === "buy") out = out.filter((r) => r.type === "buy");
     if (filter === "avoid") out = out.filter((r) => r.type === "avoid");
 
-    const rank = (status: string) => (status === "active" ? 0 : status === "watching" ? 1 : 2);
-    return out.sort((a, b) => rank(a.state?.status || "inactive") - rank(b.state?.status || "inactive"));
-  }, [rows, filter]);
+    const rank = (status: string, id: string) => {
+      if (status === "active") return 0;
+      if (trackingTrades.some(t => t.setup_id === id)) return 1; // Recently triggered sorts after active
+      if (status === "watching") return 2;
+      return 3;
+    };
+    return out.sort((a, b) => rank(a.state?.status || "inactive", a.id) - rank(b.state?.status || "inactive", b.id));
+  }, [rows, filter, trackingTrades]);
 
 
   const openSetup = async (setupId: string) => {
@@ -690,6 +697,22 @@ export default function OrbClient() {
                     </div>
                   </div>
                 )}
+                {trackingTrades.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(168,85,247,0.6)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>RECENTLY TRIGGERED ({trackingTrades.length})</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {trackingTrades.map(t => {
+                        const setupDef = rows.find(r => r.id === t.setup_id);
+                        const returnPct = t.current_return_pct || 0;
+                        return (
+                          <span key={t.id} style={{ fontSize: desktopFont(10), padding: "3px 8px", borderRadius: 6, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", color: "#a855f7", fontFamily: "'JetBrains Mono', monospace" }}>
+                            {setupDef?.public_name || setupDef?.name || t.setup_id} · Day {t.days_active} · {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {watchingSetups.length > 0 && (
                   <div>
                     <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>WATCHING ({watchingSetups.length})</p>
@@ -803,25 +826,30 @@ export default function OrbClient() {
             const sc = statusConfig[status];
             const expanded = expandedId === row.id;
             const isActive = status === "active";
+            const trackingTrade = trackingTrades.find(t => t.setup_id === row.id);
+            const isTracking = !!trackingTrade;
             const history = historyBySetup[row.id];
             const openTrade = history?.trades.find((t) => t.status === "open") || null;
-            const collapsedEntryPrice = row.state?.entry_price;
-            const collapsedEntryDate = row.state?.active_since || row.state?.entry_date;
+            const collapsedEntryPrice = isTracking ? trackingTrade.entry_price : row.state?.entry_price;
+            const collapsedEntryDate = isTracking ? trackingTrade.entry_date : (row.state?.active_since || row.state?.entry_date);
             const collapsedActivationLine =
-              isActive && collapsedEntryDate
+              (isActive || isTracking) && collapsedEntryDate
                 ? formatActivationLine({
                     date: collapsedEntryDate,
                     price: collapsedEntryPrice,
-                    prefix: "Triggered",
+                    prefix: isTracking ? "Triggered" : "Triggered",
                   })
                 : null;
             const collapsedEntry = Number(collapsedEntryPrice);
             const collapsedLiveReturn =
               livePrice != null && Number.isFinite(collapsedEntry) && collapsedEntry > 0
                 ? ((livePrice - collapsedEntry) / collapsedEntry) * 100
-                : null;
+                : isTracking ? trackingTrade.current_return_pct : null;
 
             const badge = (() => {
+              if (isTracking) {
+                return { label: `TRACKING · Day ${trackingTrade.days_active}`, dot: "bg-purple-500", text: "text-purple-300", bg: "bg-purple-500/15", border: "border border-purple-500/35" };
+              }
               if (status === "active") {
                 if (row.stance === "offensive") {
                   return { label: "ACTIVE", dot: "bg-emerald-500", text: "text-emerald-300", bg: "bg-emerald-500/15", border: "border border-emerald-500/35" };
@@ -839,11 +867,11 @@ export default function OrbClient() {
             return (
               <div
                 key={row.id}
-                className={`rounded-xl border overflow-hidden transition-all duration-300 ${expanded ? sc.glow : isActive ? "ring-1 ring-opacity-40" : ""}`}
+                className={`rounded-xl border overflow-hidden transition-all duration-300 ${expanded ? sc.glow : (isActive || isTracking) ? "ring-1 ring-opacity-40" : ""}`}
                 style={{
-                  borderColor: isActive ? (row.stance === "offensive" ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)") : expanded ? sc.color : "rgba(255,255,255,0.06)",
-                  background: isActive ? (row.stance === "offensive" ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)") : expanded ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
-                  boxShadow: isActive ? (row.stance === "offensive" ? "0 0 20px rgba(16,185,129,0.15), 0 0 40px rgba(16,185,129,0.05)" : "0 0 20px rgba(239,68,68,0.15), 0 0 40px rgba(239,68,68,0.05)") : "none",
+                  borderColor: isTracking ? "rgba(168,85,247,0.4)" : isActive ? (row.stance === "offensive" ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)") : expanded ? sc.color : "rgba(255,255,255,0.06)",
+                  background: isTracking ? "rgba(168,85,247,0.06)" : isActive ? (row.stance === "offensive" ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)") : expanded ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+                  boxShadow: isTracking ? "0 0 20px rgba(168,85,247,0.15), 0 0 40px rgba(168,85,247,0.05)" : isActive ? (row.stance === "offensive" ? "0 0 20px rgba(16,185,129,0.15), 0 0 40px rgba(16,185,129,0.05)" : "0 0 20px rgba(239,68,68,0.15), 0 0 40px rgba(239,68,68,0.05)") : "none",
                   animation: `fadeIn .4s ease ${index * 0.08}s both`,
                 }}
               >
@@ -852,7 +880,7 @@ export default function OrbClient() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} ${badge.border}`} style={{ fontSize: desktopFont(10), fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", fontWeight: 700 }}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${isActive ? "animate-pulse" : ""}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot} ${(isActive || isTracking) ? "animate-pulse" : ""}`} />
                           {badge.label}
                         </span>
                         <span style={{ fontSize: desktopFont(9), letterSpacing: "0.08em", color: row.type === "buy" ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{row.type.toUpperCase()} #{row.number}</span>
@@ -907,10 +935,10 @@ export default function OrbClient() {
                         </div>
                       )}
 
-                      {!!row.category_tags?.length && (
+                      {!!row.conditions?.length && Array.isArray(row.conditions) && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
-                          {row.category_tags.map((tag) => (
-                            <span key={tag} style={{ fontSize: desktopFont(10), borderRadius: 999, padding: isDesktop ? "4px 10px" : "2px 8px", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)", fontFamily: "'JetBrains Mono', monospace" }}>{tag}</span>
+                          {row.conditions.map((c: string, i: number) => (
+                            <span key={i} style={{ fontSize: desktopFont(10), borderRadius: 999, padding: isDesktop ? "4px 10px" : "2px 8px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)", fontFamily: "'JetBrains Mono', monospace" }}>{c}</span>
                           ))}
                         </div>
                       )}
@@ -955,13 +983,21 @@ export default function OrbClient() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isDesktop ? 10 : 6 }}>
                       <p style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>WHY IT MATTERS</p>
                     </div>
+                    {row.conditions && Array.isArray(row.conditions) && row.conditions.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: isDesktop ? 12 : 8 }}>
+                        <span style={{ fontSize: desktopFont(10), letterSpacing: "0.1em", color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginRight: 4, alignSelf: "center" }}>INDICATORS:</span>
+                        {row.conditions.map((c: string, i: number) => (
+                          <span key={i} style={{ fontSize: desktopFont(11), color: "rgba(255,255,255,0.65)", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "2px 8px", fontFamily: "'JetBrains Mono', monospace" }}>{c}</span>
+                        ))}
+                      </div>
+                    )}
                     {(row.description || row.public_description) && (
                       <p className="orb-body-copy" style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.52)", lineHeight: 1.6, marginBottom: isDesktop ? 16 : 12 }}>
                         {row.description || row.public_description}
                       </p>
                     )}
 
-                    {isActive && <ActiveTradeCard row={row} trade={openTrade} livePrice={livePrice} />}
+                    {(isActive || isTracking) && <ActiveTradeCard row={row} trade={isTracking ? trackingTrade : openTrade} livePrice={livePrice} />}
 
                     {row.backtest_n && row.framework !== "gauge-to-target" && (
                       <div className={isDesktop ? "mt-4" : "mt-3"}>
