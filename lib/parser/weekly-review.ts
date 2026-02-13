@@ -17,7 +17,7 @@ import {
 } from "@/types/weekly-review";
 import matter from "gray-matter";
 
-export const WEEKLY_PARSER_VERSION = "3.0.0";
+export const WEEKLY_PARSER_VERSION = "3.4.0";
 
 // v2.0 JSON block interface
 interface WeeklyReviewJSON {
@@ -64,6 +64,19 @@ interface WeeklyReviewJSON {
   qqq_verdict?: string;
   hiro_eow?: number;
   catalysts?: CatalystV2[];
+  orb_avg_score?: number;
+  orb_zone_distribution?: {
+    full_send: number;
+    neutral: number;
+    caution: number;
+    defensive: number;
+  };
+  orb_setups_activated?: Array<{name: string; grade: string; outcome: string}>;
+  orb_setups_profitable?: number;
+  orb_mode_agreement_rate?: number;
+  next_week_orb_score?: number;
+  next_week_orb_zone?: string;
+  data_source?: string;
 }
 
 interface WeeklyFrontmatter {
@@ -328,6 +341,16 @@ function extractWeeklyData(
 
     // Catalysts v2
     result.catalysts_v2 = json.catalysts;
+
+    // v3.4 Orb fields
+    result.orb_avg_score = json.orb_avg_score;
+    result.orb_zone_distribution = json.orb_zone_distribution;
+    result.orb_setups_activated = json.orb_setups_activated;
+    result.orb_setups_profitable = json.orb_setups_profitable;
+    result.orb_mode_agreement_rate = json.orb_mode_agreement_rate;
+    result.next_week_orb_score = json.next_week_orb_score;
+    result.next_week_orb_zone = json.next_week_orb_zone;
+    result.data_source = json.data_source;
   }
 
   return result;

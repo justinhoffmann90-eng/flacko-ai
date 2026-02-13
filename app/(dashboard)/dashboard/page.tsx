@@ -137,7 +137,9 @@ export default async function DashboardPage() {
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
-      redirect("/signup");
+      // Check if user might have a Stripe subscription that's out of sync
+      // Pass user context so signup page can show appropriate message
+      redirect("/subscribe?reason=no_access&email=" + encodeURIComponent(user.email || ""));
     }
 
     // Track dashboard visit

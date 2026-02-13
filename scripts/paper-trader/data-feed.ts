@@ -165,8 +165,8 @@ export async function fetchOrbScore(): Promise<OrbData> {
     // Try to get pre-computed score and zone from orb_daily_indicators
     const { data: indicator, error: indicatorError } = await supabase
       .from('orb_daily_indicators')
-      .select('orb_score, orb_zone, generated_at')
-      .order('generated_at', { ascending: false })
+      .select('orb_score, orb_zone, created_at')
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
@@ -190,7 +190,7 @@ export async function fetchOrbScore(): Promise<OrbData> {
         score: indicator.orb_score,
         zone,
         activeSetups,
-        timestamp: new Date(indicator.generated_at),
+        timestamp: new Date(indicator.created_at),
       };
     }
 

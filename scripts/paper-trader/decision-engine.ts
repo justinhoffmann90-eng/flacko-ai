@@ -209,14 +209,14 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   const mode = report.mode;
   const tier = report.tier;
   
-  // Check Master Eject - NEVER buy below it (use TSLA price, not TSLL)
+  // Check Kill Leverage - NEVER buy below it (use TSLA price, not TSLL)
   if (report.masterEject > 0 && quote.price < report.masterEject) {
     return {
       action: 'hold',
       price: quote.price,
       reasoning: [
-        `TSLA ($${quote.price.toFixed(2)}) below master eject ($${report.masterEject.toFixed(2)})`,
-        'no longs below eject. capital preservation mode.',
+        `TSLA ($${quote.price.toFixed(2)}) below kill leverage ($${report.masterEject.toFixed(2)})`,
+        'no longs below kill leverage. capital preservation mode.',
       ],
       confidence: 'high',
     };
@@ -431,11 +431,15 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     }
   }
   
-  // Check target hit (use TSLA price for levels regardless of instrument)
-  const targetHit = report && quote.price >= report.gammaStrike * (1 - TARGET_THRESHOLD_PERCENT);
+  // Check target hit — only at TRIM levels from the report, not gamma strike
+  // Gamma strike is a structural level, not necessarily a sell target
+  const trimLevels = report ? report.levels.filter(l => l.type === 'trim' && l.price > 0) : [];
+  const targetHit = false; // Trim logic handled separately above in the trim section
   
-  // Check stop loss (below Master Eject or support break) - use TSLA price
-  const stopHit = report && quote.price < report.masterEject;
+  // Kill Leverage check: requires 2 CONSECUTIVE DAILY CLOSES below the level
+  // During intraday, we do NOT sell just because price dipped below KL
+  // The actual KL trigger is handled at market close (see tradingLoop close logic)
+  const stopHit = false; // Disabled intraday — KL is a close-based trigger only
   
   // Check if mode flipped to RED (exit signal)
   const modeFlip = report && report.mode === 'RED';
@@ -599,7 +603,7 @@ function determineTarget(currentPrice: number, report: DailyReport): number {
  * Determine stop loss price
  */
 function determineStop(currentPrice: number, report: DailyReport): number {
-  // Primary stop is master eject
+  // Primary stop is kill leverage
   if (report.masterEject > 0 && report.masterEject < currentPrice) {
     return report.masterEject;
   }

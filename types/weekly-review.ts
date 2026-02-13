@@ -203,6 +203,21 @@ export interface WeeklyReviewData {
 
   // Catalysts v2
   catalysts_v2?: CatalystV2[];
+
+  // ===== v3.4 ORB FIELDS =====
+  orb_avg_score?: number;  // Weekly average Orb score
+  orb_zone_distribution?: {
+    full_send: number;   // Days in FULL SEND zone
+    neutral: number;     // Days in NEUTRAL zone
+    caution: number;     // Days in CAUTION zone
+    defensive: number;   // Days in DEFENSIVE zone
+  };
+  orb_setups_activated?: Array<{name: string; grade: string; outcome: string}>;
+  orb_setups_profitable?: number;
+  orb_mode_agreement_rate?: number;  // X out of 5 days analyst followed Orb
+  next_week_orb_score?: number;
+  next_week_orb_zone?: string;  // "FULL SEND" | "NEUTRAL" | "CAUTION" | "DEFENSIVE"
+  data_source?: string;  // e.g., "orb_v1 + bx_trender_engine_v1"
 }
 
 // Parsed from markdown
