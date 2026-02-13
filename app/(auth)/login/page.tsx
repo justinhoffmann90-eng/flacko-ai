@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Mail, CheckCircle } from "lucide-react";
+import { AlertCircle, Loader2, Mail, CheckCircle, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [isExistingUser, setIsExistingUser] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -198,25 +199,34 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                {isExistingUser && (
-                  <Link
-                    href="/forgot-password"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    Forgot password?
-                  </Link>
-                )}
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Forgot password?
+                </Link>
               </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
@@ -240,7 +250,7 @@ export default function LoginPage() {
               variant="outline"
               className="w-full"
               onClick={handleMagicLink}
-              disabled={magicLinkLoading}
+              disabled={magicLinkLoading || !email}
             >
               {magicLinkLoading ? (
                 <>
@@ -250,7 +260,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />
-                  Send me a magic link
+                  {email ? "Send me a magic link" : "Enter email above for magic link"}
                 </>
               )}
             </Button>

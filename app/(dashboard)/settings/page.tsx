@@ -26,7 +26,7 @@ interface DiscordInfo {
 }
 
 const DISCORD_INVITE_URL = "https://discord.gg/WuDSbQFbfW";
-const DISCORD_CLIENT_ID = "1465761828461216028";
+const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || "1465761828461216028";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);

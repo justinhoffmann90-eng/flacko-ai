@@ -7,7 +7,7 @@ import { Loader2, Check, ChevronDown } from "lucide-react";
 
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
 
   const handleJoin = async () => {
     setLoading(true);
