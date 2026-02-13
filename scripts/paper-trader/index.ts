@@ -308,7 +308,9 @@ async function tradingLoop(): Promise<void> {
     // Check for key level hits — Taylor reacts when price crosses a level
     if (report) {
       const allLevels = [
-        ...report.levels.map(l => ({ name: l.name, price: l.price, type: l.type })),
+        ...report.levels
+          .filter(l => l.type !== 'current' && !l.name.toLowerCase().includes('current price'))
+          .map(l => ({ name: l.name, price: l.price, type: l.type })),
         { name: 'Kill Leverage', price: report.masterEject, type: 'eject' },
       ].filter(l => l.price > 0);
       
