@@ -222,17 +222,25 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     };
   }
   
-  // Check mode - RED mode = no new positions
+  // RED mode = defensive, but NOT zero buying.
+  // System allows nibbles at support levels with 5% cap (1.25% w/ Slow Zone).
+  // Only shares (no TSLL) in RED. Skip entry if not near a support level.
   if (mode === 'RED') {
-    return {
-      action: 'hold',
-      price: price,
-      reasoning: [
-        'mode is RED. defensive posture.',
-        'no new longs in red conditions.',
-      ],
-      confidence: 'high',
-    };
+    instrument = 'TSLA'; // No leverage in RED, shares only
+    const nearSupport = checkNearSupport(quote.price, report);
+    if (!nearSupport.isNear) {
+      return {
+        action: 'hold',
+        price: price,
+        reasoning: [
+          'mode is RED. defensive posture — nibbles at support only.',
+          'not near a support level. sitting tight.',
+        ],
+        confidence: 'high',
+      };
+    }
+    reasoning.push(`🔴 RED mode — nibble only at support: ${nearSupport.level} ($${nearSupport.price.toFixed(2)})`);
+    reasoning.push('shares only, no leverage. 5% cap (1.25% if Slow Zone active).');
   }
   
   // Check HIRO - avoid entry if heavy selling (lower quartile)

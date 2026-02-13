@@ -746,7 +746,8 @@ export async function postLevelReaction(
   report: DailyReport | null,
   orb: OrbData,
   hiro: HIROData,
-  position: { cash: number; sharesHeld: number; avgCost: number; tsllShares: number }
+  position: { cash: number; sharesHeld: number; avgCost: number; tsllShares: number },
+  approach?: 'falling_to' | 'rising_through' | 'above' | 'below'
 ): Promise<void> {
   if (!webhookClient) return;
   
@@ -760,15 +761,22 @@ export async function postLevelReaction(
   const priceDiff = quote.price - level.price;
   const pctFromLevel = ((priceDiff / level.price) * 100).toFixed(2);
   
-  let content = `**⚔️ TAYLOR — LEVEL HIT — ${timeStr} CT**\n\n`;
-  content += `📍 **${level.name}** ($${level.price.toFixed(2)}) — price ${direction} at $${quote.price.toFixed(2)}\n\n`;
+  // Describe approach direction clearly
+  const approachDesc = approach === 'falling_to' 
+    ? `price falling to level from above, now at $${quote.price.toFixed(2)}`
+    : approach === 'rising_through'
+    ? `price rising through level from below, now at $${quote.price.toFixed(2)}`
+    : `price ${direction} at $${quote.price.toFixed(2)}`;
   
-  // Generate Taylor's reaction based on level type and context
+  let content = `**⚔️ TAYLOR — LEVEL HIT — ${timeStr} CT**\n\n`;
+  content += `📍 **${level.name}** ($${level.price.toFixed(2)}) — ${approachDesc}\n\n`;
+  
+  // Generate Taylor's reaction based on level type, direction, AND approach
   content += `**my read:**\n`;
   
   if (level.type === 'trim') {
-    if (direction === 'above') {
-      content += `trim level reached. `;
+    if (approach === 'rising_through' || direction === 'above') {
+      content += `rising into trim level. `;
       if (position.sharesHeld > 0) {
         const trimShares = Math.floor(position.sharesHeld * 0.25);
         content += `trimming ${trimShares} shares (25%) here per the rules. `;
@@ -776,12 +784,24 @@ export async function postLevelReaction(
       } else {
         content += `no position to trim. watching for continuation.\n`;
       }
+    } else if (approach === 'falling_to') {
+      content += `falling back to this level from above. previous resistance becoming support? watching for a hold here.\n`;
     } else {
       content += `lost the trim level. resistance held. watching to see if we get another push.\n`;
     }
   } else if (level.type === 'nibble') {
-    if (direction === 'below') {
-      content += `support level in play. `;
+    if (approach === 'falling_to') {
+      content += `price dropping into support zone. `;
+      if (report) {
+        const mode = report.mode;
+        const caps: Record<string, number> = { GREEN: 25, YELLOW: 15, ORANGE: 10, RED: 5 };
+        content += `${mode} mode — can deploy up to ${caps[mode] || 10}% here. `;
+      }
+      content += `watching for a bounce and confirmation before adding.\n`;
+    } else if (approach === 'rising_through') {
+      content += `reclaiming support from below. buyers stepping back in — constructive. watching for follow-through.\n`;
+    } else if (direction === 'below') {
+      content += `at support level. `;
       if (report) {
         const mode = report.mode;
         const caps: Record<string, number> = { GREEN: 25, YELLOW: 15, ORANGE: 10, RED: 5 };
@@ -792,9 +812,11 @@ export async function postLevelReaction(
       content += `reclaimed the nibble level. buyers stepping in. constructive.\n`;
     }
   } else if (level.type === 'eject') {
-    if (direction === 'below') {
-      content += `⚠️ below kill leverage. this is NOT an intraday sell trigger — need 2 consecutive daily closes below $${level.price.toFixed(2)} to activate. `;
+    if (approach === 'falling_to' || direction === 'below') {
+      content += `⚠️ ${approach === 'falling_to' ? 'falling into' : 'below'} kill leverage. this is NOT an intraday sell trigger — need 2 consecutive daily closes below $${level.price.toFixed(2)} to activate. `;
       content += `but I'm not adding here. watching the close carefully.\n`;
+    } else if (approach === 'rising_through') {
+      content += `reclaiming kill leverage from below. good sign but need a daily close above $${level.price.toFixed(2)} to reset the count. not out of the woods yet.\n`;
     } else {
       content += `reclaimed kill leverage. breathing room. still cautious until we get some distance from this level.\n`;
     }

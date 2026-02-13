@@ -89,6 +89,7 @@ let sessionState = {
   previousOrbZone: undefined as OrbZone | undefined,
   consecutiveClosesBelowKL: 0,  // Track consecutive daily closes below Kill Leverage
   levelsHitToday: new Set<string>(),  // Track which key levels have been hit today (avoid duplicate posts)
+  previousPrice: 0,  // Track previous cycle price for directional context on level hits
 };
 
 /**
@@ -324,14 +325,20 @@ async function tradingLoop(): Promise<void> {
         
         if (isHit) {
           sessionState.levelsHitToday.add(levelKey);
+          // Determine direction: is price coming DOWN to this level, or rising UP through it?
+          // Use previous price to determine approach direction
+          const prevPrice = sessionState.previousPrice || quote.price;
+          const approachingFromAbove = prevPrice > level.price && quote.price <= level.price + threshold;
+          const approachingFromBelow = prevPrice < level.price && quote.price >= level.price - threshold;
           const direction = quote.price >= level.price ? 'above' : 'below';
+          const approach = approachingFromAbove ? 'falling_to' : approachingFromBelow ? 'rising_through' : direction;
           await postLevelReaction(quote, level, direction, report, orb, hiro, {
             cash: sessionState.cash,
             sharesHeld: sessionState.sharesHeld,
             avgCost: sessionState.avgCost,
             tsllShares: sessionState.tsllShares,
-          });
-          console.log(`📍 Level hit: ${level.name} ($${level.price}) — posted reaction`);
+          }, approach);
+          console.log(`📍 Level hit: ${level.name} ($${level.price}) — ${approach} — posted reaction`);
           // Persist levels hit to DB so they survive restarts
           await saveLevelsHitToday([...sessionState.levelsHitToday]);
         }
@@ -392,6 +399,9 @@ async function tradingLoop(): Promise<void> {
     } else if (signal.action === 'sell' && signal.shares && signal.instrument) {
       await executeSell(signal, quote, tsllQuote, report, hiro, orb, multiPortfolio);
     }
+    
+    // Track price for directional context on next cycle
+    sessionState.previousPrice = quote.price;
     
     // Update state in database
     await updateBotState(multiPortfolio, sessionState.todayTradesCount, orb.zone, orb.score);
