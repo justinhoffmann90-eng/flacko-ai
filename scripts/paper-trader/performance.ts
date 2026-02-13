@@ -160,11 +160,11 @@ export function calculatePortfolio(
 
   return {
     cash,
-    startingCapital: 100000,
+    startingCapital: 1000000,
     position,
     totalValue,
-    totalReturn: totalValue - 100000,
-    totalReturnPercent: ((totalValue / 100000) - 1) * 100,
+    totalReturn: totalValue - 1000000,
+    totalReturnPercent: ((totalValue / 1000000) - 1) * 100,
     realizedPnl,
     unrealizedPnl,
   };
@@ -215,12 +215,12 @@ export function calculateMultiPortfolio(
   
   return {
     cash,
-    startingCapital: 100000,
+    startingCapital: 1000000,
     tsla: tslaPosition,
     tsll: tsllPosition,
     totalValue,
-    totalReturn: totalValue - 100000,
-    totalReturnPercent: ((totalValue / 100000) - 1) * 100,
+    totalReturn: totalValue - 1000000,
+    totalReturnPercent: ((totalValue / 1000000) - 1) * 100,
     realizedPnl,
     unrealizedPnl: totalUnrealized,
   };
@@ -328,7 +328,7 @@ export async function getPerformanceMetrics(
       .order('date', { ascending: true });
 
     const portfolioData = portfolios || [];
-    const startValue = portfolioData[0]?.total_value || 100000;
+    const startValue = portfolioData[0]?.total_value || 1000000;
     const endValue = portfolioData[portfolioData.length - 1]?.total_value || startValue;
     
     // Calculate metrics
@@ -376,7 +376,7 @@ export async function getPerformanceMetrics(
   } catch (error) {
     console.error(`Error calculating ${period} metrics:`, error);
     return {
-      capital: 100000,
+      capital: 1000000,
       totalReturn: 0,
       totalReturnPercent: 0,
       tradesCount: 0,
@@ -406,7 +406,7 @@ export async function recordDailyPortfolio(
     
     const { error } = await supabase.from('paper_portfolio').upsert({
       date: today,
-      starting_cash: 100000,
+      starting_cash: 1000000,
       ending_cash: portfolio.cash,
       shares_held: isMulti ? (portfolio as MultiPortfolio).tsla?.shares || 0 : (portfolio as Portfolio).position?.shares || 0,
       avg_cost: isMulti ? (portfolio as MultiPortfolio).tsla?.avgCost || null : (portfolio as Portfolio).position?.avgCost || null,
@@ -464,7 +464,7 @@ export async function getWeeklyPerformance(): Promise<{
     const pnls = (trades || []).map(t => t.realized_pnl || 0);
     
     return {
-      startValue: 100000,
+      startValue: 1000000,
       endValue: metrics.capital,
       totalReturn: metrics.totalReturnPercent,
       tradesCount: metrics.tradesCount,
@@ -507,7 +507,7 @@ export async function getAllTimeStats(): Promise<{
       totalTrades: closedTrades.length,
       winRate: closedTrades.length > 0 ? winningTrades.length / closedTrades.length : 0,
       totalReturn: totalPnl,
-      totalReturnPercent: (totalPnl / 100000) * 100,
+      totalReturnPercent: (totalPnl / 1000000) * 100,
     };
   } catch (error) {
     console.error('Error getting all-time stats:', error);
