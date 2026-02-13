@@ -474,12 +474,26 @@ function evaluateExit(context: DecisionContext): TradeSignal {
   }
   
   if (modeFlip) {
-    reasoning.push('mode flipped to RED — exiting all positions');
-    reasoning.push(`securing ${unrealizedPnl >= 0 ? 'gains' : 'capital'} into defensive conditions`);
+    // RED mode = defensive, NOT liquidate. Cut leverage (TSLL), HOLD shares (TSLA).
+    // Shares are only trimmed at overhead resistance levels per the trim schedule.
+    if (instrument === 'TSLL') {
+      reasoning.push('mode flipped to RED — cutting ALL leverage (TSLL)');
+      reasoning.push('defensive mode: leverage exits, shares hold');
+      return {
+        action: 'sell',
+        instrument: 'TSLL',
+        shares,
+        price: currentPrice,
+        reasoning,
+        confidence: 'high',
+      };
+    }
+    // For TSLA shares: do NOT sell. Hold and trim at resistance levels only.
+    reasoning.push('mode flipped to RED — defensive posture');
+    reasoning.push('holding shares. will trim at overhead EMAs per trim schedule (30% per level).');
+    reasoning.push('RED mode = reduced cap (5%), not liquidation.');
     return {
-      action: 'sell',
-      instrument,
-      shares,
+      action: 'hold',
       price: currentPrice,
       reasoning,
       confidence: 'high',
@@ -487,16 +501,23 @@ function evaluateExit(context: DecisionContext): TradeSignal {
   }
   
   if (hiroNegative) {
-    reasoning.push(`hiro extreme negative (${hiro.percentile30Day.toFixed(0)}%) — momentum shift`);
-    reasoning.push('trimming exposure');
-    return {
-      action: 'sell',
-      instrument,
-      shares,
-      price: currentPrice,
-      reasoning,
-      confidence: 'medium',
-    };
+    // Extreme negative HIRO = trim exposure, don't liquidate
+    // Trim 30% of position (same as RED mode trim cap)
+    const trimPercent = TRIM_CAPS[report?.mode || 'RED'] || 0.30;
+    const trimShares = Math.floor(shares * trimPercent);
+    if (trimShares > 0) {
+      reasoning.push(`hiro extreme negative (${hiro.percentile30Day.toFixed(0)}%) — momentum shift`);
+      reasoning.push(`trimming ${trimShares} shares (${(trimPercent * 100).toFixed(0)}% of position), not liquidating`);
+      return {
+        action: 'sell',
+        instrument,
+        shares: trimShares,
+        price: currentPrice,
+        reasoning,
+        confidence: 'medium',
+      };
+    }
+    reasoning.push(`hiro extreme negative (${hiro.percentile30Day.toFixed(0)}%) — watching closely`);
   }
   
   // Time-based exit (near close with small profit)
