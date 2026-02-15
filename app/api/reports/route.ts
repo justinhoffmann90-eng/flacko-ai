@@ -62,28 +62,39 @@ export async function POST(request: Request) {
       }
     }
 
-    const { markdown } = await request.json();
+    const { markdown, report_type, report_date: requestedDate } = await request.json();
 
     if (!markdown) {
       return NextResponse.json({ error: "Markdown content required" }, { status: 400 });
     }
 
+    const isWeekly = report_type === "weekly" || markdown.includes("# TSLA Weekly Review");
+
     // Parse the report
     const { parsed_data, extracted_data, warnings } = parseReport(markdown);
 
-    // Validate
-    const validationErrors = validateReport(extracted_data);
-    if (validationErrors.length > 0) {
-      await logReportGeneration({
-        reportDate: new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }),
-        status: 'failed',
-        source: 'api',
-        errorMessage: validationErrors.join(', '),
-      });
-      return NextResponse.json({
-        error: "Validation failed",
-        errors: validationErrors,
-      }, { status: 400 });
+    // Tag report type in parsed_data
+    if (isWeekly) {
+      parsed_data.report_type = "weekly";
+    }
+
+    // Validate — skip strict validation for weekly reports (different format)
+    if (!isWeekly) {
+      const validationErrors = validateReport(extracted_data);
+      if (validationErrors.length > 0) {
+        await logReportGeneration({
+          reportDate: new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }),
+          status: 'failed',
+          source: 'api',
+          errorMessage: validationErrors.join(', '),
+        });
+        return NextResponse.json({
+          error: "Validation failed",
+          errors: validationErrors,
+        }, { status: 400 });
+      }
+    } else {
+      warnings.push("Weekly report — daily validation skipped");
     }
 
     // CRITICAL: Validate alerts were extracted
@@ -128,8 +139,8 @@ export async function POST(request: Request) {
       console.log(`Alert summary: ${alertSummary}`);
     }
 
-    // Get report date (today's date in Central Time, not UTC)
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
+    // Get report date — use requested date if provided (for weekly/backdated reports), otherwise today
+    const today = requestedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 
     // Insert report
     const { data: report, error: insertError } = await serviceSupabase
@@ -177,8 +188,8 @@ export async function POST(request: Request) {
         fs.mkdirSync(dailyReportsDir, { recursive: true });
       }
       
-      // Save file with standard naming: TSLA_Daily_Report_YYYY-MM-DD.md
-      const filename = `TSLA_Daily_Report_${today}.md`;
+      // Save file with standard naming
+      const filename = isWeekly ? `TSLA_Weekly_Review_${today}.md` : `TSLA_Daily_Report_${today}.md`;
       const filepath = path.join(dailyReportsDir, filename);
       fs.writeFileSync(filepath, markdown, 'utf-8');
       
@@ -188,11 +199,13 @@ export async function POST(request: Request) {
       // Don't fail the whole request if local save fails
     }
 
-    // Create alerts for all active subscribers
-    const { data: subscribers, error: subsError } = await serviceSupabase
-      .from("subscriptions")
-      .select("user_id")
-      .in("status", ["active", "comped"]);
+    // Create alerts for all active subscribers (daily reports only — weekly reports don't have actionable alerts)
+    const { data: subscribers, error: subsError } = !isWeekly
+      ? await serviceSupabase
+          .from("subscriptions")
+          .select("user_id")
+          .in("status", ["active", "comped"])
+      : { data: null, error: null };
 
     if (subsError) {
       console.error("❌ Failed to fetch subscribers:", subsError);
