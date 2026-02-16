@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if within market hours (9:30 AM - 4:00 PM ET, Mon-Fri)
+  // Check if within market hours (9:30 AM - 4:00 PM ET, Mon-Fri, excluding holidays)
   // Convert to ET for market hours check
   const now = new Date();
   const etTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -77,19 +77,74 @@ export async function GET(request: Request) {
   const minute = etTime.getMinutes();
   const day = etTime.getDay(); // 0=Sun, 6=Sat
   
+  // US stock market holidays (NYSE/NASDAQ) — MM-DD format for fixed dates
+  // Floating holidays use helper function below
+  const year = etTime.getFullYear();
+  const month = etTime.getMonth(); // 0-indexed
+  const date = etTime.getDate();
+  const dayOfWeek = etTime.getDay();
+  
+  function isMarketHoliday(): boolean {
+    // New Year's Day — Jan 1 (or observed on nearest weekday)
+    if (month === 0 && date === 1) return true;
+    if (month === 0 && date === 2 && dayOfWeek === 1) return true; // observed Monday
+    if (month === 11 && date === 31 && dayOfWeek === 5) return true; // observed Friday
+    
+    // MLK Day — 3rd Monday of January
+    if (month === 0 && dayOfWeek === 1 && date >= 15 && date <= 21) return true;
+    
+    // Presidents' Day — 3rd Monday of February
+    if (month === 1 && dayOfWeek === 1 && date >= 15 && date <= 21) return true;
+    
+    // Good Friday — varies (approximate: skip for now, add specific dates per year)
+    // 2025: Apr 18, 2026: Apr 3, 2027: Mar 26
+    const goodFridays: Record<number, string> = {
+      2025: "4-18", 2026: "4-3", 2027: "3-26", 2028: "4-14", 2029: "3-30",
+    };
+    if (goodFridays[year] === `${month + 1}-${date}`) return true;
+    
+    // Memorial Day — last Monday of May
+    if (month === 4 && dayOfWeek === 1 && date >= 25) return true;
+    
+    // Juneteenth — June 19 (or observed)
+    if (month === 5 && date === 19) return true;
+    if (month === 5 && date === 20 && dayOfWeek === 1) return true;
+    if (month === 5 && date === 18 && dayOfWeek === 5) return true;
+    
+    // Independence Day — July 4 (or observed)
+    if (month === 6 && date === 4) return true;
+    if (month === 6 && date === 5 && dayOfWeek === 1) return true;
+    if (month === 6 && date === 3 && dayOfWeek === 5) return true;
+    
+    // Labor Day — 1st Monday of September
+    if (month === 8 && dayOfWeek === 1 && date <= 7) return true;
+    
+    // Thanksgiving — 4th Thursday of November
+    if (month === 10 && dayOfWeek === 4 && date >= 22 && date <= 28) return true;
+    
+    // Christmas — Dec 25 (or observed)
+    if (month === 11 && date === 25) return true;
+    if (month === 11 && date === 26 && dayOfWeek === 1) return true;
+    if (month === 11 && date === 24 && dayOfWeek === 5) return true;
+    
+    return false;
+  }
+  
   const isWeekday = day >= 1 && day <= 5;
+  const isHoliday = isMarketHoliday();
   const timeInMinutes = hour * 60 + minute;
   const marketOpen = 9 * 60 + 30;  // 9:30 AM ET
   const marketClose = 16 * 60;      // 4:00 PM ET
   const isMarketHours = timeInMinutes >= marketOpen && timeInMinutes <= marketClose;
   
-  if (!isWeekday || !isMarketHours) {
+  if (!isWeekday || !isMarketHours || isHoliday) {
     return NextResponse.json({ 
       status: "skipped", 
-      reason: "outside market hours",
+      reason: isHoliday ? "market holiday" : "outside market hours",
       time: etTime.toISOString(),
       isWeekday,
-      isMarketHours
+      isMarketHours,
+      isHoliday,
     });
   }
 
