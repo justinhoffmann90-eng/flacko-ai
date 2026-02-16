@@ -50,7 +50,7 @@ export async function POST() {
     }
 
     // Build return URL - prefer env var, fall back to request host
-    let returnUrl = process.env.NEXT_PUBLIC_APP_URL;
+    let returnUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\\n/g, "");
     if (!returnUrl) {
       const headersList = await headers();
       const host = headersList.get("host") || "www.flacko.ai";
