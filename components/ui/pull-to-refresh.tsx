@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
-import PullToRefreshLib from "react-simple-pull-to-refresh";
+import { useEffect, useState, useRef, useCallback, ReactNode } from "react";
 
 interface PullToRefreshProps {
   children: ReactNode;
@@ -10,90 +9,76 @@ interface PullToRefreshProps {
 }
 
 export function PullToRefresh({ children, onRefresh, disabled = false }: PullToRefreshProps) {
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const pullStartY = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Detect standalone mode on mount
-  useEffect(() => {
-    setMounted(true);
-    const standalone = 
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    setIsStandalone(standalone);
-  }, []);
-
-  // Default refresh handler
-  const handleRefresh = async () => {
-    if (onRefresh) {
-      await onRefresh();
-    } else {
-      window.location.reload();
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (disabled || refreshing) return;
+    // Only start pull if we're at the top of the page
+    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
     }
-  };
+  }, [disabled, refreshing]);
 
-  // SSR safety + browser mode = just render children
-  if (!mounted || !isStandalone) {
-    return <>{children}</>;
-  }
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (pullStartY.current === null || disabled || refreshing) return;
+    const dy = e.touches[0].clientY - pullStartY.current;
+    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    if (dy > 0 && scrollTop <= 0) {
+      setPullDistance(Math.min(dy * 0.5, 80));
+    }
+  }, [disabled, refreshing]);
 
-  // PWA mode - use the library
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance > 50 && !refreshing && !disabled) {
+      setRefreshing(true);
+      setPullDistance(50);
+      if (onRefresh) {
+        await onRefresh();
+      } else {
+        window.location.reload();
+      }
+      setRefreshing(false);
+    }
+    setPullDistance(0);
+    pullStartY.current = null;
+  }, [pullDistance, refreshing, disabled, onRefresh]);
+
   return (
-    <PullToRefreshLib
-      onRefresh={handleRefresh}
-      isPullable={!disabled}
-      pullDownThreshold={70}
-      maxPullDownDistance={120}
-      resistance={2}
-      pullingContent={<IOSSpinner spinning={false} />}
-      refreshingContent={<IOSSpinner spinning={true} />}
-      className="min-h-screen"
+    <div
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="flex items-center justify-center transition-all"
+          style={{
+            height: refreshing ? 50 : pullDistance,
+            overflow: "hidden",
+            marginBottom: 8,
+          }}
+        >
+          <div
+            className={refreshing ? "animate-spin" : ""}
+            style={{
+              width: 24,
+              height: 24,
+              border: "2px solid rgba(255,255,255,0.15)",
+              borderTopColor: pullDistance > 50 || refreshing ? "#22c55e" : "rgba(255,255,255,0.4)",
+              borderRadius: "50%",
+              opacity: Math.min(pullDistance / 50, 1),
+              animationDuration: "0.7s",
+            }}
+          />
+        </div>
+      )}
       {children}
-    </PullToRefreshLib>
-  );
-}
-
-// iOS-style activity indicator
-function IOSSpinner({ spinning }: { spinning: boolean }) {
-  const lines = 12;
-  const size = 28;
-  
-  return (
-    <div className="flex justify-center py-3">
-      <div 
-        className={spinning ? "animate-spin" : ""}
-        style={{ 
-          width: size, 
-          height: size,
-          animationDuration: '0.8s',
-          animationTimingFunction: 'steps(12)',
-        }}
-      >
-        {Array.from({ length: lines }).map((_, i) => {
-          const rotation = (i * 360) / lines;
-          const opacity = 0.15 + (0.85 * (1 - i / lines));
-          
-          return (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                width: 2.5,
-                height: size * 0.28,
-                left: '50%',
-                top: '50%',
-                marginLeft: -1.25,
-                marginTop: -size / 2 + size * 0.18,
-                borderRadius: 2,
-                backgroundColor: '#8E8E93',
-                opacity,
-                transform: `rotate(${rotation}deg)`,
-                transformOrigin: `center ${size / 2 - size * 0.18}px`,
-              }}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 }

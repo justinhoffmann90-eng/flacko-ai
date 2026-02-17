@@ -428,7 +428,7 @@ html, body {
 }
 
 #nprogress .bar {
-  background: linear-gradient(90deg, #f97316, #fb923c);
+  background: linear-gradient(90deg, #22c55e, #4ade80);
   position: fixed;
   z-index: 9999;
   top: env(safe-area-inset-top, 0);
@@ -443,7 +443,7 @@ html, body {
   right: 0px;
   width: 100px;
   height: 100%;
-  box-shadow: 0 0 10px #f97316, 0 0 5px #f97316;
+  box-shadow: 0 0 10px #22c55e, 0 0 5px #22c55e;
   opacity: 1;
   transform: rotate(3deg) translate(0px, -4px);
 }
