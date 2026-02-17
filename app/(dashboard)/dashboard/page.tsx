@@ -152,6 +152,7 @@ export default async function DashboardPage() {
   const { data: reportData } = await supabase
     .from("reports")
     .select("*")
+    .or("report_type.is.null,report_type.eq.daily")
     .order("report_date", { ascending: false })
     .limit(1)
     .single();

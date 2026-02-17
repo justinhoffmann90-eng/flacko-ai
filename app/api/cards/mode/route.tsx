@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const { data: latestReport } = await supabase
       .from("reports")
       .select("report_date, extracted_data")
+      .or("report_type.is.null,report_type.eq.daily")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();

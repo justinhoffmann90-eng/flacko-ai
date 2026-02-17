@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const { data: latestReport } = await serviceSupabaseForDate
       .from("reports")
       .select("report_date")
+      .or("report_type.is.null,report_type.eq.daily")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();

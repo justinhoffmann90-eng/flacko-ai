@@ -90,6 +90,7 @@ export async function POST(request: Request) {
     const { data: report } = await supabase
       .from("reports")
       .select("extracted_data, report_date")
+      .or("report_type.is.null,report_type.eq.daily")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();

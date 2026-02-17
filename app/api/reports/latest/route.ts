@@ -24,10 +24,10 @@ export async function GET(request: Request) {
 
     // Filter by report type if requested
     if (type === "weekly") {
-      query = query.eq("parsed_data->>report_type", "weekly");
+      query = query.eq("report_type", "weekly");
     } else if (type === "daily" || !type) {
       // Default: return latest daily report (exclude weekly)
-      query = query.or("parsed_data->>report_type.is.null,parsed_data->>report_type.neq.weekly");
+      query = query.or("report_type.is.null,report_type.eq.daily");
     }
 
     const { data, error } = await query.single();
