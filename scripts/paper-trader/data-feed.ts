@@ -97,15 +97,59 @@ async function fetchPriceViaChart(symbol: string): Promise<TSLAQuote> {
 }
 
 /**
+ * Fetch price from TradingView scanner API (reliable, no auth needed)
+ */
+async function fetchPriceFromTradingView(symbol: string): Promise<TSLAQuote | null> {
+  try {
+    const ticker = symbol === 'TSLA' ? 'NASDAQ:TSLA' : symbol === 'TSLL' ? 'NASDAQ:TSLL' : `NASDAQ:${symbol}`;
+    const response = await fetch('https://scanner.tradingview.com/america/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+      body: JSON.stringify({
+        symbols: { tickers: [ticker], query: { types: [] } },
+        columns: ['close', 'change', 'change_abs', 'volume', 'open', 'high', 'low', 'prev_close_price'],
+      }),
+    });
+
+    if (!response.ok) return null;
+    const json = await response.json() as any;
+    const row = json.data?.[0]?.d;
+    if (!row) return null;
+
+    const [price, changePct, changeAbs, volume, open, high, low, prevClose] = row;
+    console.log(`Using TradingView for ${symbol}: $${price}`);
+    return {
+      symbol,
+      price: price || 0,
+      change: changeAbs || 0,
+      changePercent: changePct || 0,
+      volume: volume || 0,
+      open: open || 0,
+      high: high || 0,
+      low: low || 0,
+      previousClose: prevClose || 0,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.warn(`Failed to fetch ${symbol} from TradingView:`, error);
+    return null;
+  }
+}
+
+/**
  * Fetch current TSLA price (cache-first, with Yahoo API fallback)
  */
 export async function fetchTSLAPrice(): Promise<TSLAQuote> {
-  // Try cache first
+  // Try HTTP cache first
   const cached = await fetchPriceFromCache('TSLA');
   if (cached) {
     console.log('Using cached TSLA price');
     return cached;
   }
+
+  // Try TradingView (most reliable, no rate limits)
+  const tvCached = await fetchPriceFromTradingView('TSLA');
+  if (tvCached) return tvCached;
 
   // Fallback to direct Yahoo chart API
   try {
@@ -130,12 +174,16 @@ export async function fetchTSLAPrice(): Promise<TSLAQuote> {
  * Fetch current TSLL price (cache-first, with Yahoo API fallback)
  */
 export async function fetchTSLLPrice(): Promise<TSLAQuote> {
-  // Try cache first
+  // Try HTTP cache first
   const cached = await fetchPriceFromCache('TSLL');
   if (cached) {
     console.log('Using cached TSLL price');
     return cached;
   }
+
+  // Try TradingView (most reliable, no rate limits)
+  const tvCached = await fetchPriceFromTradingView('TSLL');
+  if (tvCached) return tvCached;
 
   // Fallback to direct Yahoo chart API
   try {
@@ -257,15 +305,15 @@ export async function fetchHIRO(): Promise<HIROData> {
     
     const content = messages[0].content;
     
-    // Parse HIRO reading from message: "HIRO: -479M" or "HIRO: +123M"
-    const hiroMatch = content.match(/HIRO:\s*([+-]?\d+)M/i);
+    // Parse HIRO reading from message: "HIRO: -479M" or "Current HIRO: **-89M**" etc.
+    const hiroMatch = content.match(/HIRO:?\s*\*{0,2}\s*([+-]?\d+)M/i);
     if (!hiroMatch) throw new Error('Could not parse HIRO from message');
     
     const readingM = parseInt(hiroMatch[1]);
     const reading = readingM * 1000000;
     
     // Parse 30-day range if available: "-1.1B to +1.4B"
-    const rangeMatch = content.match(/30-Day Range:\s*([+-]?[\d.]+)([BM])\s*to\s*([+-]?[\d.]+)([BM])/i);
+    const rangeMatch = content.match(/30[- ]Day\s*(?:HIRO\s*)?Range:?\s*\*{0,2}\s*([+-]?[\d.]+)([BM])\s*\*{0,2}\s*(?:to|[-–])\s*\*{0,2}\s*([+-]?[\d.]+)([BM])/i);
     let percentile30Day = 50;
     if (rangeMatch) {
       const low = parseFloat(rangeMatch[1]) * (rangeMatch[2] === 'B' ? 1000 : 1);
