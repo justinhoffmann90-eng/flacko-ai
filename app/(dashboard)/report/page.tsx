@@ -29,9 +29,11 @@ export default async function ReportPage() {
     }
   }
 
+  // Fetch latest daily report (exclude weekly reports stored in this table)
   const { data: reportData } = await supabase
     .from("reports")
     .select("*")
+    .not("parsed_data->report_type", "eq", "weekly")
     .order("report_date", { ascending: false })
     .limit(1)
     .single();
