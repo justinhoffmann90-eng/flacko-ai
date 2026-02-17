@@ -122,6 +122,25 @@ interface WeeklyFrontmatter {
   }>;
 }
 
+// Helper interface for Weekly Snapshot data
+interface WeeklySnapshotData {
+  buy_levels_tested?: number;
+  buy_levels_held?: number;
+  trim_levels_tested?: number;
+  trim_levels_effective?: number;
+  master_eject?: number;
+}
+
+// Helper interface for Tier Verdicts data
+interface TierVerdictsData {
+  monthly_pattern?: string;
+  weekly_pattern?: string;
+  daily_pattern?: string;
+  monthly_structure?: string;
+  weekly_structure?: string;
+  daily_structure?: string;
+}
+
 export function parseWeeklyReview(markdown: string): ParsedWeeklyReview {
   const warnings: string[] = [];
 
@@ -158,6 +177,74 @@ export function parseWeeklyReview(markdown: string): ParsedWeeklyReview {
     extracted_data,
     parser_warnings: warnings,
   };
+}
+
+/**
+ * Extract data from Weekly Snapshot table
+ * Example: | **Buy Levels** | 3 tested, 2 held (67% accuracy) |
+ */
+function extractWeeklySnapshot(markdown: string): WeeklySnapshotData {
+  const snapshot: WeeklySnapshotData = {};
+  
+  // Extract Buy Levels: "3 tested, 2 held"
+  const buyLevelsMatch = markdown.match(/Buy Levels[^|]*\|\s*(\d+)\s+tested,\s*(\d+)\s+held/i);
+  if (buyLevelsMatch) {
+    snapshot.buy_levels_tested = parseInt(buyLevelsMatch[1]);
+    snapshot.buy_levels_held = parseInt(buyLevelsMatch[2]);
+  }
+  
+  // Extract Trim Levels: "5 tested, 4 hit"
+  const trimLevelsMatch = markdown.match(/Trim Levels[^|]*\|\s*(\d+)\s+tested,\s*(\d+)\s+(?:hit|effective)/i);
+  if (trimLevelsMatch) {
+    snapshot.trim_levels_tested = parseInt(trimLevelsMatch[1]);
+    snapshot.trim_levels_effective = parseInt(trimLevelsMatch[2]);
+  }
+  
+  // Extract Master Eject / Kill Leverage: "$418.80"
+  const masterEjectMatch = markdown.match(/(?:Kill Leverage|Master Eject)[^$]*\$\s*([\d.]+)/i);
+  if (masterEjectMatch) {
+    snapshot.master_eject = parseFloat(masterEjectMatch[1]);
+  }
+  
+  return snapshot;
+}
+
+/**
+ * Extract BX trender patterns and structure from Tier Verdicts Summary table
+ * Example: | Tier 1 (Monthly BX) | 🔴 LL | 🔴 LL | ➡️ | Deep LL sustained... |
+ */
+function extractTierVerdicts(markdown: string): TierVerdictsData {
+  const verdicts: TierVerdictsData = {};
+  
+  // Find the Tier Verdicts table section
+  const tierSection = markdown.match(/Tier Verdicts Summary[\s\S]*?(?=\n\n##|\n\n---|\n\n\*\*|$)/i);
+  if (!tierSection) return verdicts;
+  
+  const section = tierSection[0];
+  
+  // Extract Monthly BX pattern and structure
+  // Pattern: | Tier 1 (Monthly BX) | 🔴 LL | 🔴 LL | ➡️ | Deep LL sustained... |
+  const monthlyMatch = section.match(/Tier 1[^|]*Monthly BX[^|]*\|[^|]*([A-Z]{2})[^|]*\|[^|]*\|[^|]*\|([^|]+)/i);
+  if (monthlyMatch) {
+    verdicts.monthly_pattern = monthlyMatch[1];
+    verdicts.monthly_structure = monthlyMatch[2].trim().replace(/[🔴🟡🟢➡️⬆️⬇️]/g, '').trim();
+  }
+  
+  // Extract Weekly BX pattern and structure
+  const weeklyMatch = section.match(/Tier 2[^|]*Weekly BX[^|]*\|[^|]*([A-Z]{2})[^|]*\|[^|]*\|[^|]*\|([^|]+)/i);
+  if (weeklyMatch) {
+    verdicts.weekly_pattern = weeklyMatch[1];
+    verdicts.weekly_structure = weeklyMatch[2].trim().replace(/[🔴🟡🟢➡️⬆️⬇️]/g, '').trim();
+  }
+  
+  // Extract Daily BX pattern and structure
+  const dailyMatch = section.match(/Tier 3[^|]*Daily BX[^|]*\|[^|]*([A-Z]{2})[^|]*\|[^|]*\|[^|]*\|([^|]+)/i);
+  if (dailyMatch) {
+    verdicts.daily_pattern = dailyMatch[1];
+    verdicts.daily_structure = dailyMatch[2].trim().replace(/[🔴🟡🟢➡️⬆️⬇️]/g, '').trim();
+  }
+  
+  return verdicts;
 }
 
 function parseMode(modeStr: string | undefined): TrafficLightMode {
@@ -219,10 +306,14 @@ function extractWeeklyData(
       }
     : extractCandle(markdown, fm, warnings);
 
-  // Timeframes
-  const monthly = extractTimeframe(markdown, "monthly", fm);
-  const weekly = extractTimeframe(markdown, "weekly", fm);
-  const daily = extractTimeframe(markdown, "daily", fm);
+  // Extract from Weekly Snapshot table (if not in JSON)
+  const weeklySnapshot = extractWeeklySnapshot(markdown);
+  
+  // Timeframes - now also extracting from Tier Verdicts table
+  const tierVerdicts = extractTierVerdicts(markdown);
+  const monthly = extractTimeframe(markdown, "monthly", fm, tierVerdicts);
+  const weekly = extractTimeframe(markdown, "weekly", fm, tierVerdicts);
+  const daily = extractTimeframe(markdown, "daily", fm, tierVerdicts);
 
   // Confluence
   const confluence = extractConfluence(markdown, monthly, weekly, daily);
@@ -271,7 +362,7 @@ function extractWeeklyData(
     gamma_shifts,
   };
 
-  // Add v2.0 fields from JSON if present
+  // Add v2.0 fields from JSON if present, otherwise use Weekly Snapshot extraction
   if (json) {
     // OHLC
     result.open = json.open;
@@ -310,15 +401,15 @@ function extractWeeklyData(
     result.weekly_avg_score = json.weekly_avg_score;
     result.weekly_grade = json.weekly_grade;
 
-    // Level testing
-    result.buy_levels_tested = json.buy_levels_tested;
-    result.buy_levels_held = json.buy_levels_held;
-    result.trim_levels_tested = json.trim_levels_tested;
-    result.trim_levels_effective = json.trim_levels_effective;
+    // Level testing - prefer JSON, fallback to Weekly Snapshot
+    result.buy_levels_tested = json.buy_levels_tested ?? weeklySnapshot.buy_levels_tested;
+    result.buy_levels_held = json.buy_levels_held ?? weeklySnapshot.buy_levels_held;
+    result.trim_levels_tested = json.trim_levels_tested ?? weeklySnapshot.trim_levels_tested;
+    result.trim_levels_effective = json.trim_levels_effective ?? weeklySnapshot.trim_levels_effective;
     result.slow_zone_triggered = json.slow_zone_triggered;
 
-    // Kill Leverage / Master Eject
-    result.master_eject = json.master_eject;
+    // Kill Leverage / Master Eject - prefer JSON, fallback to Weekly Snapshot
+    result.master_eject = json.master_eject ?? weeklySnapshot.master_eject;
     result.master_eject_step = json.master_eject_step;
     result.master_eject_distance_pct = json.master_eject_distance_pct;
 
@@ -351,6 +442,23 @@ function extractWeeklyData(
     result.next_week_orb_score = json.next_week_orb_score;
     result.next_week_orb_zone = json.next_week_orb_zone;
     result.data_source = json.data_source;
+  } else {
+    // No JSON block - use Weekly Snapshot extraction for missing fields
+    if (weeklySnapshot.buy_levels_tested !== undefined) {
+      result.buy_levels_tested = weeklySnapshot.buy_levels_tested;
+    }
+    if (weeklySnapshot.buy_levels_held !== undefined) {
+      result.buy_levels_held = weeklySnapshot.buy_levels_held;
+    }
+    if (weeklySnapshot.trim_levels_tested !== undefined) {
+      result.trim_levels_tested = weeklySnapshot.trim_levels_tested;
+    }
+    if (weeklySnapshot.trim_levels_effective !== undefined) {
+      result.trim_levels_effective = weeklySnapshot.trim_levels_effective;
+    }
+    if (weeklySnapshot.master_eject !== undefined) {
+      result.master_eject = weeklySnapshot.master_eject;
+    }
   }
 
   return result;
@@ -485,7 +593,8 @@ function extractCandle(
 function extractTimeframe(
   markdown: string,
   timeframe: "monthly" | "weekly" | "daily",
-  fm: WeeklyFrontmatter | null
+  fm: WeeklyFrontmatter | null,
+  tierVerdicts?: TierVerdictsData
 ): TimeframeData {
   // Get signal from frontmatter or markdown
   const signalKey = `${timeframe}_signal` as keyof WeeklyFrontmatter;
@@ -500,7 +609,7 @@ function extractTimeframe(
   );
   const cardMatch = markdown.match(cardPattern);
 
-  // Parse BX-Trender
+  // Parse BX-Trender - prefer Tier Verdicts, fallback to inline parsing
   const bxPattern = new RegExp(
     `${timeframe}[\\s\\S]*?BX-Trender[^|]*\\|[^|]*([^|]+)`,
     "i"
@@ -508,16 +617,32 @@ function extractTimeframe(
   const bxMatch = markdown.match(bxPattern);
   const bxText = bxMatch?.[1]?.trim() || "";
   const bxColor = bxText.toLowerCase().includes("green") ? "green" : "red";
-  const bxPattern2 = bxText.match(/(HH|HL|LL|LH)/i);
-  const bxTrenderPattern = bxPattern2?.[1]?.toUpperCase() || "—";
+  
+  // Get pattern from Tier Verdicts or inline parsing
+  let bxTrenderPattern = "—";
+  if (tierVerdicts) {
+    const verdictKey = `${timeframe}_pattern` as keyof TierVerdictsData;
+    bxTrenderPattern = (tierVerdicts[verdictKey] as string) || "—";
+  }
+  if (bxTrenderPattern === "—") {
+    const bxPattern2 = bxText.match(/(HH|HL|LL|LH)/i);
+    bxTrenderPattern = bxPattern2?.[1]?.toUpperCase() || "—";
+  }
 
-  // Parse structure
-  const structurePattern = new RegExp(
-    `${timeframe}[\\s\\S]*?Structure[^|]*\\|[^|]*([^|]+)`,
-    "i"
-  );
-  const structureMatch = markdown.match(structurePattern);
-  const structure = structureMatch?.[1]?.trim() || "—";
+  // Parse structure - prefer Tier Verdicts, fallback to inline parsing
+  let structure = "—";
+  if (tierVerdicts) {
+    const structureKey = `${timeframe}_structure` as keyof TierVerdictsData;
+    structure = (tierVerdicts[structureKey] as string) || "—";
+  }
+  if (structure === "—") {
+    const structurePattern = new RegExp(
+      `${timeframe}[\\s\\S]*?Structure[^|]*\\|[^|]*([^|]+)`,
+      "i"
+    );
+    const structureMatch = markdown.match(structurePattern);
+    structure = structureMatch?.[1]?.trim() || "—";
+  }
 
   // Parse EMA statuses
   const ema9Status = extractEmaStatus(markdown, timeframe, "9");

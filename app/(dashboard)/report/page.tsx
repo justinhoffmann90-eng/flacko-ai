@@ -29,13 +29,13 @@ export default async function ReportPage() {
     }
   }
 
-  // Fetch latest daily report (exclude weekly reports stored in this table)
-  // Weekly reports have parsed_data.report_type = "weekly"
-  // Daily reports have no report_type field, so we use .or() to include nulls
+  // Fetch latest daily report (exclude weekly reports)
+  // Weekly reports have report_type = 'weekly'
+  // Daily reports have report_type = 'daily' or null (for old rows)
   const { data: reportData } = await supabase
     .from("reports")
     .select("*")
-    .or("parsed_data->>report_type.is.null,parsed_data->>report_type.neq.weekly")
+    .or("report_type.is.null,report_type.eq.daily")
     .order("report_date", { ascending: false })
     .limit(1)
     .single();
