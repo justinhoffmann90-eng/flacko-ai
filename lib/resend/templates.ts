@@ -205,7 +205,7 @@ export function getAlertEmailHtml({
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td align="center" bgcolor="#0a0a0a" style="padding: 20px; background-color: #0a0a0a !important;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/report" style="display: inline-block; background-color: #ffffff !important; color: #0a0a0a !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold; font-size: 16px;">
+              <a href="https://www.flacko.ai/report" style="display: inline-block; background-color: #ffffff !important; color: #0a0a0a !important; text-decoration: none; padding: 14px 28px; border-radius: 6px; font-weight: bold; font-size: 16px;">
                 View Full Report
               </a>
             </td>
@@ -220,7 +220,7 @@ export function getAlertEmailHtml({
                 Automated alert from Flacko AI
               </p>
               <p style="margin: 0;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #9ca3af !important;">Manage alert settings</a>
+                <a href="https://www.flacko.ai/settings" style="color: #9ca3af !important;">Manage alert settings</a>
               </p>
             </td>
           </tr>
@@ -458,11 +458,11 @@ export function getNewReportEmailHtml({
 
     <!-- CTA -->
     <div style="text-align: center; padding: 16px;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/report" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Full Report</a>
+      <a href="https://www.flacko.ai/report" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Full Report</a>
     </div>
 
     <div style="text-align: center; padding: 14px; color: #6b7280; font-size: 12px;">
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #9ca3af;">Manage email preferences</a>
+      <a href="https://www.flacko.ai/settings" style="color: #9ca3af;">Manage email preferences</a>
     </div>
   </div>
 </body>
