@@ -271,6 +271,7 @@ export function getNewReportEmailHtml({
   entryQualityScore,
   alerts,
   levelsMap,
+  positionGuidance,
 }: {
   userName: string;
   mode: TrafficLightMode;
@@ -297,6 +298,7 @@ export function getNewReportEmailHtml({
   entryQualityScore?: number;
   alerts?: EmailAlert[];
   levelsMap?: EmailLevelMap[];
+  positionGuidance?: string;
 }) {
   const modeColors: Record<string, string> = {
     green: "#22c55e",
@@ -363,6 +365,70 @@ export function getNewReportEmailHtml({
       <p style="margin: 0; color: #fca5a5; font-size: 14px;">
         ⚠️ <strong>Kill Leverage: ${formatPrice(masterEject.price)}</strong> — ${masterEject.action}
       </p>
+    </div>` : "";
+
+  // --- Extract commentary from position_guidance ---
+  // Pull out scenario table rows, catalyst watch, and context/rationale
+  // Skip raw markdown tables — extract the narrative parts
+  const extractCommentary = (text?: string) => {
+    if (!text?.trim()) return { scenarios: [] as string[], catalystWatch: "", context: "" };
+
+    const scenarios: string[] = [];
+    const lines = text.split("\n");
+
+    // Extract scenario rows from table (lines starting with | 🐂 or | ⚖️ or | 🐻)
+    for (const line of lines) {
+      const scenarioMatch = line.match(/\|\s*(🐂\s*BULL|⚖️\s*BASE|🐻\s*BEAR)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|/);
+      if (scenarioMatch) {
+        const [, label, trigger, target, response] = scenarioMatch;
+        scenarios.push(`<strong>${label}</strong>: ${trigger.trim()} → ${target.trim()} — ${response.trim()}`);
+      }
+    }
+
+    // Extract catalyst watch paragraph
+    let catalystWatch = "";
+    const catalystMatch = text.match(/\*\*Catalyst watch:\*\*\s*(.*?)(?:\n\n|---)/s);
+    if (catalystMatch) {
+      catalystWatch = catalystMatch[1].trim().replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    }
+
+    // Extract "Why these levels" + Context sections
+    let context = "";
+    const contextMatch = text.match(/\*\*Context:\*\*\s*([\s\S]*?)(?:\n---|\n\n##|$)/);
+    if (contextMatch) {
+      context = contextMatch[1].trim()
+        .split("\n")
+        .filter(l => l.startsWith("- "))
+        .map(l => l.replace(/^-\s+/, "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"))
+        .map(l => `<li style="margin-bottom: 6px;">${l}</li>`)
+        .join("");
+    }
+
+    return { scenarios, catalystWatch, context };
+  };
+
+  const commentary = extractCommentary(positionGuidance);
+
+  const scenariosSection = commentary.scenarios.length > 0 ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">🎯 Scenarios</h2>
+      <ul style="margin: 0; padding-left: 0; list-style: none; color: #d1d5db; font-size: 13px; line-height: 1.7;">
+        ${commentary.scenarios.map(s => `<li style="margin-bottom: 12px; padding-left: 0;">${s}</li>`).join("")}
+      </ul>
+    </div>` : "";
+
+  const catalystSection = commentary.catalystWatch ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb;">📅 Catalyst Watch</h2>
+      <p style="margin: 0; color: #d1d5db; font-size: 13px; line-height: 1.6;">${commentary.catalystWatch}</p>
+    </div>` : "";
+
+  const contextSection = commentary.context ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb;">📋 Context</h2>
+      <ul style="margin: 0; padding-left: 18px; color: #9ca3af; font-size: 13px; line-height: 1.6;">
+        ${commentary.context}
+      </ul>
     </div>` : "";
 
   // --- Slow zone warning ---
@@ -454,7 +520,10 @@ export function getNewReportEmailHtml({
       </table>
     </div>` : ""}
 
+    ${scenariosSection}
+    ${catalystSection}
     ${spotgammaSection}
+    ${contextSection}
 
     <!-- CTA -->
     <div style="text-align: center; padding: 16px;">

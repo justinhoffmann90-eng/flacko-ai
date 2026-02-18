@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getNewReportEmailHtml } from "@/lib/resend/templates";
-import { TrafficLightMode } from "@/types";
+import { TrafficLightMode, ParsedReportData } from "@/types";
 
 // This endpoint is called after a new report is published to notify subscribers
 export async function POST(request: Request) {
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       alerts?: { type: "upside" | "downside"; level_name: string; price: number; action: string; reason?: string }[];
       levels_map?: { type?: string; level: string; price: number; action: string }[];
     };
+    const parsedData = (report.parsed_data || {}) as Partial<ParsedReportData>;
 
     // Get all subscribers who want new report emails
     // Include active, comped, and valid trial subscriptions
@@ -115,6 +116,7 @@ export async function POST(request: Request) {
         entryQualityScore: extractedData?.entry_quality?.score,
         alerts: extractedData?.alerts,
         levelsMap: extractedData?.levels_map,
+        positionGuidance: parsedData.position_guidance,
       });
 
       try {
