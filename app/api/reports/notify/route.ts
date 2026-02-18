@@ -16,7 +16,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reportId } = await request.json();
+    const { reportId, commentary } = await request.json() as {
+      reportId?: string;
+      commentary?: string; // Morning brief narrative — "What Happened", "Bottom Line", etc.
+    };
 
     if (!reportId) {
       return NextResponse.json({ error: "Report ID required" }, { status: 400 });
@@ -117,6 +120,7 @@ export async function POST(request: Request) {
         alerts: extractedData?.alerts,
         levelsMap: extractedData?.levels_map,
         positionGuidance: parsedData.position_guidance,
+        commentary: commentary || undefined,
       });
 
       try {

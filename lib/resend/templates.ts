@@ -272,6 +272,7 @@ export function getNewReportEmailHtml({
   alerts,
   levelsMap,
   positionGuidance,
+  commentary,
 }: {
   userName: string;
   mode: TrafficLightMode;
@@ -299,6 +300,7 @@ export function getNewReportEmailHtml({
   alerts?: EmailAlert[];
   levelsMap?: EmailLevelMap[];
   positionGuidance?: string;
+  commentary?: string; // Morning brief narrative passed from workflow
 }) {
   const modeColors: Record<string, string> = {
     green: "#22c55e",
@@ -367,6 +369,43 @@ export function getNewReportEmailHtml({
       </p>
     </div>` : "";
 
+  // --- Render morning brief commentary ---
+  // Convert Discord-style formatting to email HTML
+  const renderCommentary = (text?: string) => {
+    if (!text?.trim()) return "";
+    // Split into sections by lines starting with ** or ━
+    const blocks: string[] = [];
+    let current = "";
+    for (const line of text.split("\n")) {
+      if (line.startsWith("━") || line.trim() === "") {
+        if (current.trim()) blocks.push(current.trim());
+        current = "";
+      } else {
+        current += line + "\n";
+      }
+    }
+    if (current.trim()) blocks.push(current.trim());
+
+    return blocks.map(block => {
+      const html = block
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/^[•]\s+(.*)$/gm, '<li style="margin-bottom: 4px;">$1</li>')
+        .replace(/\n/g, "<br />");
+      // Wrap any <li> sequences in <ul>
+      const withLists = html.replace(
+        /(<li[^>]*>.*?<\/li>(?:<br \/>)?)+/gs,
+        (match) => `<ul style="margin: 6px 0; padding-left: 18px;">${match.replace(/<br \/>/g, "")}</ul>`
+      );
+      return `<div style="margin-bottom: 16px;">${withLists}</div>`;
+    }).join("");
+  };
+
+  const commentaryHtml = renderCommentary(commentary);
+  const commentarySection = commentaryHtml ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #d1d5db; font-size: 14px; line-height: 1.6;">
+      ${commentaryHtml}
+    </div>` : "";
+
   // --- Extract commentary from position_guidance ---
   // Pull out scenario table rows, catalyst watch, and context/rationale
   // Skip raw markdown tables — extract the narrative parts
@@ -407,27 +446,27 @@ export function getNewReportEmailHtml({
     return { scenarios, catalystWatch, context };
   };
 
-  const commentary = extractCommentary(positionGuidance);
+  const reportCommentary = extractCommentary(positionGuidance);
 
-  const scenariosSection = commentary.scenarios.length > 0 ? `
+  const scenariosSection = reportCommentary.scenarios.length > 0 ? `
     <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
       <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">🎯 Scenarios</h2>
       <ul style="margin: 0; padding-left: 0; list-style: none; color: #d1d5db; font-size: 13px; line-height: 1.7;">
-        ${commentary.scenarios.map(s => `<li style="margin-bottom: 12px; padding-left: 0;">${s}</li>`).join("")}
+        ${reportCommentary.scenarios.map(s => `<li style="margin-bottom: 12px; padding-left: 0;">${s}</li>`).join("")}
       </ul>
     </div>` : "";
 
-  const catalystSection = commentary.catalystWatch ? `
+  const catalystSection = reportCommentary.catalystWatch ? `
     <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
       <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb;">📅 Catalyst Watch</h2>
-      <p style="margin: 0; color: #d1d5db; font-size: 13px; line-height: 1.6;">${commentary.catalystWatch}</p>
+      <p style="margin: 0; color: #d1d5db; font-size: 13px; line-height: 1.6;">${reportCommentary.catalystWatch}</p>
     </div>` : "";
 
-  const contextSection = commentary.context ? `
+  const contextSection = reportCommentary.context ? `
     <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
       <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb;">📋 Context</h2>
       <ul style="margin: 0; padding-left: 18px; color: #9ca3af; font-size: 13px; line-height: 1.6;">
-        ${commentary.context}
+        ${reportCommentary.context}
       </ul>
     </div>` : "";
 
@@ -498,6 +537,8 @@ export function getNewReportEmailHtml({
         ${tiersRow}
       </table>
     </div>
+
+    ${commentarySection}
 
     ${ejectSection}
     ${slowZoneSection}
