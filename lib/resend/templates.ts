@@ -10,7 +10,7 @@ const modeDescriptions: Record<TrafficLightMode, { emoji: string; cap: string; t
     guidance: "Favorable conditions for swing entries. Full deployment permitted. Trim slowly -- let winners run.",
   },
   yellow: {
-    emoji: "🟡", 
+    emoji: "🟡",
     cap: "17.5%",
     trimCap: "20% of remaining per level",
     guidance: "Warning signs present. Spread entries over 5-6 days minimum. Tighter stops.",
@@ -106,7 +106,7 @@ export function getAlertEmailHtml({
             <tr>
               <td bgcolor="#450a0a" style="background-color: #450a0a !important; border: 1px solid #ef4444; border-radius: 6px; padding: 12px;">
                 <p style="color: #fca5a5 !important; margin: 0; font-size: 12px;">
-                  ⚠️ <strong>Kill Leverage:</strong> $${keyLevels.masterEject}${keyLevels.masterEjectAction ? ` — ${keyLevels.masterEjectAction}` : ' — See daily report for action steps'}
+                  ⚠️ <strong>Kill Leverage:</strong> $${keyLevels.masterEject}${keyLevels.masterEjectAction ? ` - ${keyLevels.masterEjectAction}` : ' - See daily report for action steps'}
                 </p>
               </td>
             </tr>
@@ -143,7 +143,7 @@ export function getAlertEmailHtml({
         <tr>
           <td align="center" bgcolor="#0a0a0a" style="padding: 20px; background-color: #0a0a0a !important;">
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #0a0a0a !important;">
-        
+
         <!-- Header -->
         <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#18181b" style="background-color: #18181b !important; border-radius: 8px; margin-bottom: 20px;">
           <tr>
@@ -168,7 +168,7 @@ export function getAlertEmailHtml({
               <span style="color: ${modeColor} !important; font-weight: bold; text-transform: uppercase; font-size: 16px;">
                 ${modeInfo.emoji} ${displayMode.toUpperCase()} MODE
               </span>
-              <span style="color: #9ca3af !important; font-size: 12px;"> — ${modeInfo.cap}</span>
+              <span style="color: #9ca3af !important; font-size: 12px;"> - ${modeInfo.cap}</span>
             </p>
             <p style="color: #d1d5db !important; margin: 0; font-size: 13px;">${modeInfo.guidance}</p>
           </div>
@@ -235,6 +235,22 @@ export function getAlertEmailHtml({
   `;
 }
 
+// Types for structured alert/level data in email
+interface EmailAlert {
+  type: "upside" | "downside";
+  level_name: string;
+  price: number;
+  action: string;
+  reason?: string;
+}
+
+interface EmailLevelMap {
+  type?: string;
+  level: string;
+  price: number;
+  action: string;
+}
+
 export function getNewReportEmailHtml({
   userName,
   mode,
@@ -250,9 +266,11 @@ export function getNewReportEmailHtml({
   hiroReading,
   slowZoneActive,
   slowZone,
-  gamePlan,
-  spotgammaAnalysis,
-  riskAlerts,
+  masterEject,
+  gammaRegime,
+  entryQualityScore,
+  alerts,
+  levelsMap,
 }: {
   userName: string;
   mode: TrafficLightMode;
@@ -268,114 +286,185 @@ export function getNewReportEmailHtml({
     gamma_strike?: number;
     put_wall?: number;
     call_wall?: number;
+    hedge_wall?: number;
     master_eject?: number;
   };
   hiroReading?: number;
   slowZoneActive?: boolean;
   slowZone?: number;
-  gamePlan?: string;
-  spotgammaAnalysis?: string;
-  riskAlerts?: string;
+  masterEject?: { price: number; action: string };
+  gammaRegime?: string;
+  entryQualityScore?: number;
+  alerts?: EmailAlert[];
+  levelsMap?: EmailLevelMap[];
 }) {
-  const modeColors: Record<TrafficLightMode, string> = {
+  const modeColors: Record<string, string> = {
     green: "#22c55e",
     yellow: "#eab308",
     orange: "#f97316",
     red: "#ef4444",
   };
 
-  const sectionToHtml = (text?: string) => {
-    if (!text?.trim()) return "";
-    return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/^###\s+(.*)$/gm, '<p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #f9fafb;">$1</p>')
-      .replace(/^##\s+(.*)$/gm, '<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #f9fafb;">$1</p>')
-      .replace(/^-\s+(.*)$/gm, '<li style="margin-bottom: 6px;">$1</li>')
-      .replace(/\n\n+/g, "</p><p style=\"margin: 0 0 10px 0;\">")
-      .replace(/\n/g, "<br />");
+  const modeColor = modeColors[mode] || modeColors.yellow;
+  const modeEmoji: Record<string, string> = { green: "🟢", yellow: "🟡", orange: "🟠", red: "🔴" };
+
+  const modeGuidance: Record<string, string> = {
+    green: "Full deployment. Trim slowly — let winners run.",
+    yellow: "Spread entries over 5-6 days minimum. Tighter stops.",
+    orange: "Small nibbles only at key support. Bounces are suspect.",
+    red: "Defensive. Protect capital. Nibbles only at extreme support.",
   };
 
-  const modeColor = modeColors[mode];
-  const tiersHtml = tiers
-    ? `<p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 13px;">
-        <strong>Tier Stack:</strong> L ${tiers.long?.toUpperCase() || "—"} • M ${tiers.medium?.toUpperCase() || "—"} • S ${tiers.short?.toUpperCase() || "—"} • H ${tiers.hourly?.toUpperCase() || "—"}
-      </p>`
-    : "";
+  // --- Build tier row ---
+  const tierColors: Record<string, string> = { green: "#22c55e", yellow: "#eab308", orange: "#f97316", red: "#ef4444" };
+  const tierDot = (t?: string) => t ? `<span style="color: ${tierColors[t] || "#9ca3af"};">●</span> ${t.toUpperCase()}` : "—";
+  const tiersRow = tiers ? `
+    <tr>
+      <td style="padding: 6px 0; color: #9ca3af; font-size: 13px;">Tiers</td>
+      <td style="padding: 6px 0; color: #d1d5db; font-size: 13px;">L ${tierDot(tiers.long)} · M ${tierDot(tiers.medium)} · S ${tierDot(tiers.short)} · H ${tierDot(tiers.hourly)}</td>
+    </tr>` : "";
 
-  const keyLevelsList = [
-    keyLevels?.gamma_strike ? `<li style="margin-bottom: 6px;">Gamma Strike: <strong>${formatPrice(keyLevels.gamma_strike)}</strong></li>` : "",
-    keyLevels?.put_wall ? `<li style="margin-bottom: 6px;">Put Wall: <strong>${formatPrice(keyLevels.put_wall)}</strong></li>` : "",
-    keyLevels?.call_wall ? `<li style="margin-bottom: 6px;">Call Wall: <strong>${formatPrice(keyLevels.call_wall)}</strong></li>` : "",
-    keyLevels?.master_eject ? `<li style="margin-bottom: 6px; color: #fca5a5;">Kill Leverage: <strong>${formatPrice(keyLevels.master_eject)}</strong></li>` : "",
-    slowZone ? `<li style="margin-bottom: 6px; color: ${slowZoneActive ? "#fbbf24" : "#d1d5db"};">Slow Zone: <strong>${formatPrice(slowZone)}</strong>${slowZoneActive ? " (ACTIVE)" : ""}</li>` : "",
-  ]
-    .filter(Boolean)
-    .join("");
+  // --- Build upside alerts ---
+  const upsideAlerts = (alerts || []).filter(a => a.type === "upside").sort((a, b) => a.price - b.price);
+  const downsideAlerts = (alerts || []).filter(a => a.type === "downside").sort((a, b) => b.price - a.price);
 
-  const gamePlanHtml = sectionToHtml(gamePlan);
-  const spotgammaHtml = sectionToHtml(spotgammaAnalysis);
-  const riskAlertsHtml = sectionToHtml(riskAlerts);
+  const alertRow = (a: EmailAlert, color: string) => `
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #374151;">
+        <span style="color: ${color}; font-weight: 600;">${formatPrice(a.price)}</span>
+        <span style="color: #9ca3af; font-size: 12px; margin-left: 6px;">${a.level_name}</span>
+      </td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #374151; color: #d1d5db; font-size: 13px;">${a.action}</td>
+    </tr>`;
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin: 0; padding: 0; background-color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb;">
-      <div style="max-width: 680px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #1f2937; border-radius: 8px; padding: 24px; margin-bottom: 16px;">
-          <h1 style="color: #f9fafb; margin: 0 0 8px 0; font-size: 24px;">TSLA Morning Gameplan</h1>
-          <p style="color: #9ca3af; margin: 0; font-size: 14px;">${reportDate}</p>
-          <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 13px;">Morning ${userName}, here’s today’s setup.</p>
-        </div>
+  const upsideRows = upsideAlerts.map(a => alertRow(a, "#22c55e")).join("");
+  const downsideRows = downsideAlerts.map(a => alertRow(a, "#ef4444")).join("");
 
-        <div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-          <div style="display: inline-block; background-color: ${modeColor}20; border: 2px solid ${modeColor}; border-radius: 8px; padding: 12px 18px; margin-bottom: 12px;">
-            <span style="color: ${modeColor}; font-weight: bold; font-size: 20px; text-transform: uppercase;">${mode} MODE</span>
-          </div>
-          <p style="color: #f9fafb; margin: 0; font-size: 30px; font-weight: 700;">
-            ${formatPrice(closePrice)}
-            <span style="color: ${changePct >= 0 ? "#22c55e" : "#ef4444"}; font-size: 17px; margin-left: 8px;">${formatPercent(changePct)}</span>
-          </p>
-          ${dailyCapPct !== undefined ? `<p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 14px;"><strong>Daily Cap:</strong> ${dailyCapPct}%</p>` : ""}
-          ${currentStance ? `<p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 14px;"><strong>Lean:</strong> ${currentStance}</p>` : ""}
-          ${modeSummary ? `<p style="color: #9ca3af; margin: 8px 0 0 0; font-size: 13px;">${modeSummary}</p>` : ""}
-          ${correctionRisk ? `<p style="color: #fca5a5; margin: 8px 0 0 0; font-size: 13px;"><strong>Correction Risk:</strong> ${correctionRisk}</p>` : ""}
-          ${hiroReading !== undefined ? `<p style="color: #9ca3af; margin: 8px 0 0 0; font-size: 13px;"><strong>HIRO:</strong> ${hiroReading.toFixed(2)}</p>` : ""}
-          ${tiersHtml}
-        </div>
+  // --- Build SpotGamma row ---
+  const spotgammaItems = [
+    keyLevels?.gamma_strike ? `Gamma Strike: ${formatPrice(keyLevels.gamma_strike)}` : "",
+    keyLevels?.hedge_wall ? `Hedge Wall: ${formatPrice(keyLevels.hedge_wall)}` : "",
+    keyLevels?.put_wall ? `Put Wall: ${formatPrice(keyLevels.put_wall)}` : "",
+    keyLevels?.call_wall ? `Call Wall: ${formatPrice(keyLevels.call_wall)}` : "",
+    gammaRegime ? `Regime: ${gammaRegime}` : "",
+  ].filter(Boolean);
 
-        ${keyLevelsList ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: #f9fafb;">Key Levels</h2>
-          <ul style="margin: 0; padding-left: 18px; color: #d1d5db; font-size: 14px;">${keyLevelsList}</ul>
-        </div>` : ""}
+  const spotgammaSection = spotgammaItems.length > 0 ? `
+    <div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">SpotGamma Levels</h2>
+      <ul style="margin: 0; padding-left: 18px; color: #d1d5db; font-size: 14px; line-height: 1.8;">
+        ${spotgammaItems.map(i => `<li>${i}</li>`).join("")}
+      </ul>
+    </div>` : "";
 
-        ${gamePlanHtml ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #d1d5db; font-size: 14px; line-height: 1.5;">
-          <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f9fafb;">Today's Gameplan</h2>
-          <p style="margin: 0;">${gamePlanHtml}</p>
-        </div>` : ""}
+  // --- Master eject warning ---
+  const ejectSection = masterEject ? `
+    <div style="background-color: #1f2937; border: 1px solid #991b1b; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <p style="margin: 0; color: #fca5a5; font-size: 14px;">
+        ⚠️ <strong>Kill Leverage: ${formatPrice(masterEject.price)}</strong> — ${masterEject.action}
+      </p>
+    </div>` : "";
 
-        ${spotgammaHtml ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #d1d5db; font-size: 14px; line-height: 1.5;">
-          <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f9fafb;">Flow / SpotGamma Context</h2>
-          <p style="margin: 0;">${spotgammaHtml}</p>
-        </div>` : ""}
+  // --- Slow zone warning ---
+  const slowZoneSection = slowZone && slowZoneActive ? `
+    <div style="background-color: #1f2937; border: 1px solid #92400e; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <p style="margin: 0; color: #fbbf24; font-size: 14px;">
+        ⚠️ <strong>Slow Zone ACTIVE</strong> at ${formatPrice(slowZone)} — daily cap reduced
+      </p>
+    </div>` : "";
 
-        ${riskAlertsHtml ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #fca5a5; font-size: 14px; line-height: 1.5; border: 1px solid #7f1d1d;">
-          <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #fca5a5;">Risk Alerts</h2>
-          <p style="margin: 0;">${riskAlertsHtml}</p>
-        </div>` : ""}
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark only">
+  <meta name="supported-color-schemes" content="dark only">
+</head>
+<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
 
-        <div style="text-align: center; padding: 16px;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/report" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Full Report</a>
-        </div>
+    <!-- Header -->
+    <div style="background-color: #18181b; border-radius: 8px; padding: 24px; margin-bottom: 16px;">
+      <h1 style="color: #f9fafb; margin: 0 0 4px 0; font-size: 22px;">TSLA Morning Gameplan</h1>
+      <p style="color: #9ca3af; margin: 0; font-size: 13px;">${reportDate}</p>
+    </div>
 
-        <div style="text-align: center; padding: 14px; color: #6b7280; font-size: 12px;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #9ca3af;">Manage email preferences</a>
-        </div>
+    <!-- Mode + Price Card -->
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <div style="margin-bottom: 16px;">
+        <span style="display: inline-block; background-color: ${modeColor}20; border: 2px solid ${modeColor}; border-radius: 6px; padding: 8px 14px;">
+          <span style="color: ${modeColor}; font-weight: bold; font-size: 18px;">${modeEmoji[mode] || ""} ${mode.toUpperCase()} MODE</span>
+        </span>
       </div>
-    </body>
-    </html>
-  `;
+      <p style="color: #f9fafb; margin: 0 0 4px 0; font-size: 28px; font-weight: 700;">
+        ${formatPrice(closePrice)}
+        <span style="color: ${changePct >= 0 ? "#22c55e" : "#ef4444"}; font-size: 16px; margin-left: 6px;">${formatPercent(changePct)}</span>
+      </p>
+      <p style="color: #9ca3af; margin: 8px 0 0 0; font-size: 13px;">${modeGuidance[mode] || ""}</p>
+
+      <!-- Quick Stats Table -->
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 16px; border-top: 1px solid #374151; padding-top: 12px;">
+        ${currentStance ? `<tr>
+          <td style="padding: 6px 0; color: #9ca3af; font-size: 13px; width: 120px;">Lean</td>
+          <td style="padding: 6px 0; color: #f9fafb; font-size: 13px; font-weight: 600;">${currentStance}</td>
+        </tr>` : ""}
+        ${dailyCapPct !== undefined ? `<tr>
+          <td style="padding: 6px 0; color: #9ca3af; font-size: 13px;">Daily Cap</td>
+          <td style="padding: 6px 0; color: #d1d5db; font-size: 13px;">${dailyCapPct}%</td>
+        </tr>` : ""}
+        ${correctionRisk ? `<tr>
+          <td style="padding: 6px 0; color: #9ca3af; font-size: 13px;">Correction Risk</td>
+          <td style="padding: 6px 0; color: #fca5a5; font-size: 13px; font-weight: 600;">${correctionRisk}</td>
+        </tr>` : ""}
+        ${hiroReading !== undefined ? `<tr>
+          <td style="padding: 6px 0; color: #9ca3af; font-size: 13px;">HIRO</td>
+          <td style="padding: 6px 0; color: #d1d5db; font-size: 13px;">${hiroReading}</td>
+        </tr>` : ""}
+        ${entryQualityScore !== undefined ? `<tr>
+          <td style="padding: 6px 0; color: #9ca3af; font-size: 13px;">Entry Quality</td>
+          <td style="padding: 6px 0; color: #d1d5db; font-size: 13px;">${entryQualityScore}/10</td>
+        </tr>` : ""}
+        ${gammaRegime ? `<tr>
+          <td style="padding: 6px 0; color: #9ca3af; font-size: 13px;">Gamma</td>
+          <td style="padding: 6px 0; color: #d1d5db; font-size: 13px;">${gammaRegime}</td>
+        </tr>` : ""}
+        ${tiersRow}
+      </table>
+    </div>
+
+    ${ejectSection}
+    ${slowZoneSection}
+
+    <!-- Upside Levels -->
+    ${upsideRows ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">▲ Upside Targets</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">
+        ${upsideRows}
+      </table>
+    </div>` : ""}
+
+    <!-- Downside Levels -->
+    ${downsideRows ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">▼ Downside Levels</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">
+        ${downsideRows}
+      </table>
+    </div>` : ""}
+
+    ${spotgammaSection}
+
+    <!-- CTA -->
+    <div style="text-align: center; padding: 16px;">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/report" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Full Report</a>
+    </div>
+
+    <div style="text-align: center; padding: 14px; color: #6b7280; font-size: 12px;">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #9ca3af;">Manage email preferences</a>
+    </div>
+  </div>
+</body>
+</html>`;
 }

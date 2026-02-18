@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getNewReportEmailHtml } from "@/lib/resend/templates";
-import { ParsedReportData, TrafficLightMode } from "@/types";
+import { TrafficLightMode } from "@/types";
 
 // This endpoint is called after a new report is published to notify subscribers
 export async function POST(request: Request) {
@@ -44,6 +44,7 @@ export async function POST(request: Request) {
         gamma_strike?: number;
         put_wall?: number;
         call_wall?: number;
+        hedge_wall?: number;
         master_eject?: number;
       };
       hiro?: { reading?: number };
@@ -51,8 +52,12 @@ export async function POST(request: Request) {
       correction_risk?: string;
       slow_zone_active?: boolean;
       slow_zone?: number;
+      master_eject?: { price: number; action: string };
+      gamma_regime?: string;
+      entry_quality?: { score: number };
+      alerts?: { type: "upside" | "downside"; level_name: string; price: number; action: string; reason?: string }[];
+      levels_map?: { type?: string; level: string; price: number; action: string }[];
     };
-    const parsedData = (report.parsed_data || {}) as Partial<ParsedReportData>;
 
     // Get all subscribers who want new report emails
     // Include active, comped, and valid trial subscriptions
@@ -105,9 +110,11 @@ export async function POST(request: Request) {
         hiroReading: extractedData?.hiro?.reading,
         slowZoneActive: extractedData?.slow_zone_active,
         slowZone: extractedData?.slow_zone,
-        gamePlan: parsedData.game_plan,
-        spotgammaAnalysis: parsedData.spotgamma_analysis,
-        riskAlerts: parsedData.risk_alerts,
+        masterEject: extractedData?.master_eject,
+        gammaRegime: extractedData?.gamma_regime,
+        entryQualityScore: extractedData?.entry_quality?.score,
+        alerts: extractedData?.alerts,
+        levelsMap: extractedData?.levels_map,
       });
 
       try {
