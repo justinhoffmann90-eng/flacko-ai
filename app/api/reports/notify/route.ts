@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       const html = getNewReportEmailHtml({
         userName: user.email.split("@")[0],
         mode: extractedData?.mode?.current || "yellow",
-        reportDate: report.report_date,
+        reportDate: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "America/Chicago" }),
         closePrice: extractedData?.price?.close || 0,
         changePct: extractedData?.price?.change_pct || 0,
         modeSummary: extractedData?.mode?.summary,
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
         await resend.emails.send({
           from: EMAIL_FROM,
           to: user.email,
-          subject: `TSLA Daily Report - ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE`,
+          subject: `TSLA Morning Gameplan — ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Chicago" })}`,
           html,
         });
         sentCount++;
