@@ -272,7 +272,8 @@ export function getNewReportEmailHtml({
   alerts,
   levelsMap,
   positionGuidance,
-  commentary,
+  todayGameplan,
+  yesterdayRecap,
 }: {
   userName: string;
   mode: TrafficLightMode;
@@ -300,7 +301,8 @@ export function getNewReportEmailHtml({
   alerts?: EmailAlert[];
   levelsMap?: EmailLevelMap[];
   positionGuidance?: string;
-  commentary?: string; // Morning brief narrative passed from workflow
+  todayGameplan?: string;   // Forward-looking: bottom line, what to watch, action items
+  yesterdayRecap?: string;  // Backward-looking: what happened yesterday
 }) {
   const modeColors: Record<string, string> = {
     green: "#22c55e",
@@ -369,41 +371,31 @@ export function getNewReportEmailHtml({
       </p>
     </div>` : "";
 
-  // --- Render morning brief commentary ---
-  // Convert Discord-style formatting to email HTML
-  const renderCommentary = (text?: string) => {
+  // --- Render Discord-style text to email HTML ---
+  const renderNarrative = (text?: string) => {
     if (!text?.trim()) return "";
-    // Split into sections by lines starting with ** or ━
-    const blocks: string[] = [];
-    let current = "";
-    for (const line of text.split("\n")) {
-      if (line.startsWith("━") || line.trim() === "") {
-        if (current.trim()) blocks.push(current.trim());
-        current = "";
-      } else {
-        current += line + "\n";
-      }
-    }
-    if (current.trim()) blocks.push(current.trim());
-
-    return blocks.map(block => {
-      const html = block
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-        .replace(/^[•]\s+(.*)$/gm, '<li style="margin-bottom: 4px;">$1</li>')
-        .replace(/\n/g, "<br />");
-      // Wrap any <li> sequences in <ul>
-      const withLists = html.replace(
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/^[•]\s+(.*)$/gm, '<li style="margin-bottom: 4px;">$1</li>')
+      .replace(/\n\n+/g, "</p><p style=\"margin: 0 0 10px 0;\">")
+      .replace(/\n/g, "<br />")
+      // Wrap <li> runs in <ul>
+      .replace(
         /(<li[^>]*>.*?<\/li>(?:<br \/>)?)+/gs,
         (match) => `<ul style="margin: 6px 0; padding-left: 18px;">${match.replace(/<br \/>/g, "")}</ul>`
       );
-      return `<div style="margin-bottom: 16px;">${withLists}</div>`;
-    }).join("");
   };
 
-  const commentaryHtml = renderCommentary(commentary);
-  const commentarySection = commentaryHtml ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #d1d5db; font-size: 14px; line-height: 1.6;">
-      ${commentaryHtml}
+  const gameplanSection = todayGameplan ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">🎯 Today's Plan</h2>
+      <div style="color: #d1d5db; font-size: 14px; line-height: 1.6;"><p style="margin: 0 0 10px 0;">${renderNarrative(todayGameplan)}</p></div>
+    </div>` : "";
+
+  const recapSection = yesterdayRecap ? `
+    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #9ca3af;">Yesterday's Recap</h2>
+      <div style="color: #9ca3af; font-size: 13px; line-height: 1.6;"><p style="margin: 0 0 10px 0;">${renderNarrative(yesterdayRecap)}</p></div>
     </div>` : "";
 
   // --- Extract commentary from position_guidance ---
@@ -538,7 +530,7 @@ export function getNewReportEmailHtml({
       </table>
     </div>
 
-    ${commentarySection}
+    ${gameplanSection}
 
     ${ejectSection}
     ${slowZoneSection}
@@ -565,6 +557,7 @@ export function getNewReportEmailHtml({
     ${catalystSection}
     ${spotgammaSection}
     ${contextSection}
+    ${recapSection}
 
     <!-- CTA -->
     <div style="text-align: center; padding: 16px;">
