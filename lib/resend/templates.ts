@@ -241,18 +241,80 @@ export function getNewReportEmailHtml({
   reportDate,
   closePrice,
   changePct,
+  modeSummary,
+  currentStance,
+  dailyCapPct,
+  correctionRisk,
+  tiers,
+  keyLevels,
+  hiroReading,
+  slowZoneActive,
+  slowZone,
+  gamePlan,
+  spotgammaAnalysis,
+  riskAlerts,
 }: {
   userName: string;
   mode: TrafficLightMode;
   reportDate: string;
   closePrice: number;
   changePct: number;
+  modeSummary?: string;
+  currentStance?: string;
+  dailyCapPct?: number;
+  correctionRisk?: string;
+  tiers?: { long?: string; medium?: string; short?: string; hourly?: string };
+  keyLevels?: {
+    gamma_strike?: number;
+    put_wall?: number;
+    call_wall?: number;
+    master_eject?: number;
+  };
+  hiroReading?: number;
+  slowZoneActive?: boolean;
+  slowZone?: number;
+  gamePlan?: string;
+  spotgammaAnalysis?: string;
+  riskAlerts?: string;
 }) {
-  const modeColors = {
+  const modeColors: Record<TrafficLightMode, string> = {
     green: "#22c55e",
     yellow: "#eab308",
+    orange: "#f97316",
     red: "#ef4444",
   };
+
+  const sectionToHtml = (text?: string) => {
+    if (!text?.trim()) return "";
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/^###\s+(.*)$/gm, '<p style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #f9fafb;">$1</p>')
+      .replace(/^##\s+(.*)$/gm, '<p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #f9fafb;">$1</p>')
+      .replace(/^-\s+(.*)$/gm, '<li style="margin-bottom: 6px;">$1</li>')
+      .replace(/\n\n+/g, "</p><p style=\"margin: 0 0 10px 0;\">")
+      .replace(/\n/g, "<br />");
+  };
+
+  const modeColor = modeColors[mode];
+  const tiersHtml = tiers
+    ? `<p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 13px;">
+        <strong>Tier Stack:</strong> L ${tiers.long?.toUpperCase() || "—"} • M ${tiers.medium?.toUpperCase() || "—"} • S ${tiers.short?.toUpperCase() || "—"} • H ${tiers.hourly?.toUpperCase() || "—"}
+      </p>`
+    : "";
+
+  const keyLevelsList = [
+    keyLevels?.gamma_strike ? `<li style="margin-bottom: 6px;">Gamma Strike: <strong>${formatPrice(keyLevels.gamma_strike)}</strong></li>` : "",
+    keyLevels?.put_wall ? `<li style="margin-bottom: 6px;">Put Wall: <strong>${formatPrice(keyLevels.put_wall)}</strong></li>` : "",
+    keyLevels?.call_wall ? `<li style="margin-bottom: 6px;">Call Wall: <strong>${formatPrice(keyLevels.call_wall)}</strong></li>` : "",
+    keyLevels?.master_eject ? `<li style="margin-bottom: 6px; color: #fca5a5;">Kill Leverage: <strong>${formatPrice(keyLevels.master_eject)}</strong></li>` : "",
+    slowZone ? `<li style="margin-bottom: 6px; color: ${slowZoneActive ? "#fbbf24" : "#d1d5db"};">Slow Zone: <strong>${formatPrice(slowZone)}</strong>${slowZoneActive ? " (ACTIVE)" : ""}</li>` : "",
+  ]
+    .filter(Boolean)
+    .join("");
+
+  const gamePlanHtml = sectionToHtml(gamePlan);
+  const spotgammaHtml = sectionToHtml(spotgammaAnalysis);
+  const riskAlertsHtml = sectionToHtml(riskAlerts);
 
   return `
     <!DOCTYPE html>
@@ -261,45 +323,56 @@ export function getNewReportEmailHtml({
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="margin: 0; padding: 0; background-color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #1f2937; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
-          <h1 style="color: #f9fafb; margin: 0 0 8px 0; font-size: 24px;">
-            New TSLA Report Available
-          </h1>
-          <p style="color: #9ca3af; margin: 0; font-size: 14px;">
-            ${reportDate}
-          </p>
+    <body style="margin: 0; padding: 0; background-color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb;">
+      <div style="max-width: 680px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #1f2937; border-radius: 8px; padding: 24px; margin-bottom: 16px;">
+          <h1 style="color: #f9fafb; margin: 0 0 8px 0; font-size: 24px;">TSLA Morning Gameplan</h1>
+          <p style="color: #9ca3af; margin: 0; font-size: 14px;">${reportDate}</p>
+          <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 13px;">Morning ${userName}, here’s today’s setup.</p>
         </div>
 
-        <div style="background-color: #1f2937; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <div style="display: inline-block; background-color: ${modeColors[mode]}20; border: 2px solid ${modeColors[mode]}; border-radius: 8px; padding: 16px 32px;">
-              <span style="color: ${modeColors[mode]}; font-weight: bold; font-size: 24px; text-transform: uppercase;">${mode} MODE</span>
-            </div>
+        <div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+          <div style="display: inline-block; background-color: ${modeColor}20; border: 2px solid ${modeColor}; border-radius: 8px; padding: 12px 18px; margin-bottom: 12px;">
+            <span style="color: ${modeColor}; font-weight: bold; font-size: 20px; text-transform: uppercase;">${mode} MODE</span>
           </div>
-
-          <div style="text-align: center;">
-            <p style="color: #9ca3af; margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase;">TSLA Close</p>
-            <p style="color: #f9fafb; margin: 0; font-size: 32px; font-weight: bold;">
-              ${formatPrice(closePrice)}
-              <span style="color: ${changePct >= 0 ? "#22c55e" : "#ef4444"}; font-size: 18px; margin-left: 8px;">
-                ${formatPercent(changePct)}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div style="text-align: center; padding: 20px;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL}/report" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">
-            Read Today's Report
-          </a>
-        </div>
-
-        <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
-          <p style="margin: 0;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #9ca3af;">Unsubscribe from report emails</a>
+          <p style="color: #f9fafb; margin: 0; font-size: 30px; font-weight: 700;">
+            ${formatPrice(closePrice)}
+            <span style="color: ${changePct >= 0 ? "#22c55e" : "#ef4444"}; font-size: 17px; margin-left: 8px;">${formatPercent(changePct)}</span>
           </p>
+          ${dailyCapPct !== undefined ? `<p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 14px;"><strong>Daily Cap:</strong> ${dailyCapPct}%</p>` : ""}
+          ${currentStance ? `<p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 14px;"><strong>Lean:</strong> ${currentStance}</p>` : ""}
+          ${modeSummary ? `<p style="color: #9ca3af; margin: 8px 0 0 0; font-size: 13px;">${modeSummary}</p>` : ""}
+          ${correctionRisk ? `<p style="color: #fca5a5; margin: 8px 0 0 0; font-size: 13px;"><strong>Correction Risk:</strong> ${correctionRisk}</p>` : ""}
+          ${hiroReading !== undefined ? `<p style="color: #9ca3af; margin: 8px 0 0 0; font-size: 13px;"><strong>HIRO:</strong> ${hiroReading.toFixed(2)}</p>` : ""}
+          ${tiersHtml}
+        </div>
+
+        ${keyLevelsList ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+          <h2 style="margin: 0 0 10px 0; font-size: 18px; color: #f9fafb;">Key Levels</h2>
+          <ul style="margin: 0; padding-left: 18px; color: #d1d5db; font-size: 14px;">${keyLevelsList}</ul>
+        </div>` : ""}
+
+        ${gamePlanHtml ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #d1d5db; font-size: 14px; line-height: 1.5;">
+          <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f9fafb;">Today's Gameplan</h2>
+          <p style="margin: 0;">${gamePlanHtml}</p>
+        </div>` : ""}
+
+        ${spotgammaHtml ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #d1d5db; font-size: 14px; line-height: 1.5;">
+          <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f9fafb;">Flow / SpotGamma Context</h2>
+          <p style="margin: 0;">${spotgammaHtml}</p>
+        </div>` : ""}
+
+        ${riskAlertsHtml ? `<div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px; color: #fca5a5; font-size: 14px; line-height: 1.5; border: 1px solid #7f1d1d;">
+          <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #fca5a5;">Risk Alerts</h2>
+          <p style="margin: 0;">${riskAlertsHtml}</p>
+        </div>` : ""}
+
+        <div style="text-align: center; padding: 16px;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/report" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px;">Open Full Report</a>
+        </div>
+
+        <div style="text-align: center; padding: 14px; color: #6b7280; font-size: 12px;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #9ca3af;">Manage email preferences</a>
         </div>
       </div>
     </body>

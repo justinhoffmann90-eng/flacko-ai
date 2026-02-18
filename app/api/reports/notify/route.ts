@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getNewReportEmailHtml } from "@/lib/resend/templates";
-import { TrafficLightMode } from "@/types";
+import { ParsedReportData, TrafficLightMode } from "@/types";
 
 // This endpoint is called after a new report is published to notify subscribers
 export async function POST(request: Request) {
@@ -36,9 +36,23 @@ export async function POST(request: Request) {
     }
 
     const extractedData = report.extracted_data as {
-      mode?: { current: TrafficLightMode };
+      mode?: { current: TrafficLightMode; summary?: string };
       price?: { close: number; change_pct: number };
+      position?: { current_stance?: string; daily_cap_pct?: number };
+      tiers?: { long?: string; medium?: string; short?: string; hourly?: string };
+      key_levels?: {
+        gamma_strike?: number;
+        put_wall?: number;
+        call_wall?: number;
+        master_eject?: number;
+      };
+      hiro?: { reading?: number };
+      max_invested_pct?: number;
+      correction_risk?: string;
+      slow_zone_active?: boolean;
+      slow_zone?: number;
     };
+    const parsedData = (report.parsed_data || {}) as Partial<ParsedReportData>;
 
     // Get all subscribers who want new report emails
     // Include active, comped, and valid trial subscriptions
@@ -82,6 +96,18 @@ export async function POST(request: Request) {
         reportDate: report.report_date,
         closePrice: extractedData?.price?.close || 0,
         changePct: extractedData?.price?.change_pct || 0,
+        modeSummary: extractedData?.mode?.summary,
+        currentStance: extractedData?.position?.current_stance,
+        dailyCapPct: extractedData?.position?.daily_cap_pct ?? extractedData?.max_invested_pct,
+        correctionRisk: extractedData?.correction_risk,
+        tiers: extractedData?.tiers,
+        keyLevels: extractedData?.key_levels,
+        hiroReading: extractedData?.hiro?.reading,
+        slowZoneActive: extractedData?.slow_zone_active,
+        slowZone: extractedData?.slow_zone,
+        gamePlan: parsedData.game_plan,
+        spotgammaAnalysis: parsedData.spotgamma_analysis,
+        riskAlerts: parsedData.risk_alerts,
       });
 
       try {
