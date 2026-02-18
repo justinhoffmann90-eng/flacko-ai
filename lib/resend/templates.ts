@@ -304,6 +304,12 @@ export function getNewReportEmailHtml({
   todayGameplan?: string;   // Forward-looking: bottom line, what to watch, action items
   yesterdayRecap?: string;  // Backward-looking: what happened yesterday
 }) {
+  // Gmail strips background-color from divs. Use table+bgcolor for reliable dark mode.
+  const card = (content: string, opts?: { border?: string; bg?: string }) => {
+    const bg = opts?.bg || "#18181b";
+    return `<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${bg}" style="background-color: ${bg} !important; border-radius: 8px; margin-bottom: 16px;${opts?.border ? ` border: ${opts.border};` : ""}"><tr><td bgcolor="${bg}" style="padding: 20px; background-color: ${bg} !important;">${content}</td></tr></table>`;
+  };
+
   const modeColors: Record<string, string> = {
     green: "#22c55e",
     yellow: "#eab308",
@@ -355,21 +361,19 @@ export function getNewReportEmailHtml({
     gammaRegime ? `Regime: ${gammaRegime}` : "",
   ].filter(Boolean);
 
-  const spotgammaSection = spotgammaItems.length > 0 ? `
-    <div style="background-color: #1f2937; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">SpotGamma Levels</h2>
-      <ul style="margin: 0; padding-left: 18px; color: #d1d5db; font-size: 14px; line-height: 1.8;">
+  const spotgammaSection = spotgammaItems.length > 0 ? card(`
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb !important;">SpotGamma Levels</h2>
+      <ul style="margin: 0; padding-left: 18px; color: #d1d5db !important; font-size: 14px; line-height: 1.8;">
         ${spotgammaItems.map(i => `<li>${i}</li>`).join("")}
       </ul>
-    </div>` : "";
+  `) : "";
 
   // --- Master eject warning ---
-  const ejectSection = masterEject ? `
-    <div style="background-color: #1f2937; border: 1px solid #991b1b; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-      <p style="margin: 0; color: #fca5a5; font-size: 14px;">
+  const ejectSection = masterEject ? card(`
+      <p style="margin: 0; color: #fca5a5 !important; font-size: 14px;">
         ⚠️ <strong>Kill Leverage: ${formatPrice(masterEject.price)}</strong> — ${masterEject.action}
       </p>
-    </div>` : "";
+  `, { border: "1px solid #991b1b" }) : "";
 
   // --- Render Discord-style text to email HTML ---
   const renderNarrative = (text?: string) => {
@@ -386,17 +390,15 @@ export function getNewReportEmailHtml({
       );
   };
 
-  const gameplanSection = todayGameplan ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">🎯 Today's Plan</h2>
-      <div style="color: #d1d5db; font-size: 14px; line-height: 1.6;"><p style="margin: 0 0 10px 0;">${renderNarrative(todayGameplan)}</p></div>
-    </div>` : "";
+  const gameplanSection = todayGameplan ? card(`
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb !important;">🎯 Today's Plan</h2>
+      <div style="color: #d1d5db !important; font-size: 14px; line-height: 1.6;"><p style="margin: 0 0 10px 0;">${renderNarrative(todayGameplan)}</p></div>
+  `) : "";
 
-  const recapSection = yesterdayRecap ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #9ca3af;">Yesterday's Recap</h2>
-      <div style="color: #9ca3af; font-size: 13px; line-height: 1.6;"><p style="margin: 0 0 10px 0;">${renderNarrative(yesterdayRecap)}</p></div>
-    </div>` : "";
+  const recapSection = yesterdayRecap ? card(`
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #9ca3af !important;">Yesterday's Recap</h2>
+      <div style="color: #9ca3af !important; font-size: 13px; line-height: 1.6;"><p style="margin: 0 0 10px 0;">${renderNarrative(yesterdayRecap)}</p></div>
+  `) : "";
 
   // --- Extract commentary from position_guidance ---
   // Pull out scenario table rows, catalyst watch, and context/rationale
@@ -440,35 +442,31 @@ export function getNewReportEmailHtml({
 
   const reportCommentary = extractCommentary(positionGuidance);
 
-  const scenariosSection = reportCommentary.scenarios.length > 0 ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">🎯 Scenarios</h2>
-      <ul style="margin: 0; padding-left: 0; list-style: none; color: #d1d5db; font-size: 13px; line-height: 1.7;">
+  const scenariosSection = reportCommentary.scenarios.length > 0 ? card(`
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb !important;">🎯 Scenarios</h2>
+      <ul style="margin: 0; padding-left: 0; list-style: none; color: #d1d5db !important; font-size: 13px; line-height: 1.7;">
         ${reportCommentary.scenarios.map(s => `<li style="margin-bottom: 12px; padding-left: 0;">${s}</li>`).join("")}
       </ul>
-    </div>` : "";
+  `) : "";
 
-  const catalystSection = reportCommentary.catalystWatch ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb;">📅 Catalyst Watch</h2>
-      <p style="margin: 0; color: #d1d5db; font-size: 13px; line-height: 1.6;">${reportCommentary.catalystWatch}</p>
-    </div>` : "";
+  const catalystSection = reportCommentary.catalystWatch ? card(`
+      <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb !important;">📅 Catalyst Watch</h2>
+      <p style="margin: 0; color: #d1d5db !important; font-size: 13px; line-height: 1.6;">${reportCommentary.catalystWatch}</p>
+  `) : "";
 
-  const contextSection = reportCommentary.context ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb;">📋 Context</h2>
-      <ul style="margin: 0; padding-left: 18px; color: #9ca3af; font-size: 13px; line-height: 1.6;">
+  const contextSection = reportCommentary.context ? card(`
+      <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #f9fafb !important;">📋 Context</h2>
+      <ul style="margin: 0; padding-left: 18px; color: #9ca3af !important; font-size: 13px; line-height: 1.6;">
         ${reportCommentary.context}
       </ul>
-    </div>` : "";
+  `) : "";
 
   // --- Slow zone warning ---
-  const slowZoneSection = slowZone && slowZoneActive ? `
-    <div style="background-color: #1f2937; border: 1px solid #92400e; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-      <p style="margin: 0; color: #fbbf24; font-size: 14px;">
+  const slowZoneSection = slowZone && slowZoneActive ? card(`
+      <p style="margin: 0; color: #fbbf24 !important; font-size: 14px;">
         ⚠️ <strong>Slow Zone ACTIVE</strong> at ${formatPrice(slowZone)} — daily cap reduced
       </p>
-    </div>` : "";
+  `, { border: "1px solid #92400e" }) : "";
 
   return `<!DOCTYPE html>
 <html>
@@ -477,18 +475,34 @@ export function getNewReportEmailHtml({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark only">
   <meta name="supported-color-schemes" content="dark only">
+  <style>
+    :root { color-scheme: dark only; }
+    * { color-scheme: dark only; }
+    body, .body, .wrapper, table, td, div { background-color: #0a0a0a !important; }
+    .card { background-color: #18181b !important; }
+    u + .body .gmail-blend-screen { background:#000 !important; }
+    u + .body .gmail-blend-difference { background:#000 !important; }
+    @media (prefers-color-scheme: light) {
+      body, .body, .wrapper, table, td, div { background-color: #0a0a0a !important; }
+      .card { background-color: #18181b !important; }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb;">
+<body class="body" bgcolor="#0a0a0a" style="margin: 0; padding: 0; background-color: #0a0a0a !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb;">
+  <div class="wrapper" style="background-color: #0a0a0a !important; width: 100%; table-layout: fixed;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0a0a" style="background-color: #0a0a0a !important;">
+    <tr>
+      <td align="center" bgcolor="#0a0a0a" style="padding: 0; background-color: #0a0a0a !important;">
   <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
 
     <!-- Header -->
-    <div style="background-color: #18181b; border-radius: 8px; padding: 24px; margin-bottom: 16px;">
-      <h1 style="color: #f9fafb; margin: 0 0 4px 0; font-size: 22px;">TSLA Morning Gameplan</h1>
-      <p style="color: #9ca3af; margin: 0; font-size: 13px;">${reportDate}</p>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#18181b" style="background-color: #18181b !important; border-radius: 8px; margin-bottom: 16px;"><tr><td bgcolor="#18181b" style="padding: 24px; background-color: #18181b !important;">
+      <h1 style="color: #f9fafb !important; margin: 0 0 4px 0; font-size: 22px;">TSLA Morning Gameplan</h1>
+      <p style="color: #9ca3af !important; margin: 0; font-size: 13px;">${reportDate}</p>
+    </td></tr></table>
 
     <!-- Mode + Price Card -->
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#18181b" style="background-color: #18181b !important; border-radius: 8px; margin-bottom: 16px;"><tr><td bgcolor="#18181b" style="padding: 20px; background-color: #18181b !important;">
       <div style="margin-bottom: 16px;">
         <span style="display: inline-block; background-color: ${modeColor}20; border: 2px solid ${modeColor}; border-radius: 6px; padding: 8px 14px;">
           <span style="color: ${modeColor}; font-weight: bold; font-size: 18px;">${modeEmoji[mode] || ""} ${mode.toUpperCase()} MODE</span>
@@ -528,7 +542,7 @@ export function getNewReportEmailHtml({
         </tr>` : ""}
         ${tiersRow}
       </table>
-    </div>
+    </td></tr></table>
 
     ${gameplanSection}
 
@@ -537,21 +551,13 @@ export function getNewReportEmailHtml({
 
     <!-- Upside Levels -->
     ${upsideRows ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">▲ Upside Targets</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">
-        ${upsideRows}
-      </table>
-    </div>` : ""}
+${card(`<h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb !important;">▲ Upside Targets</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">${upsideRows}</table>`)}` : ""}
 
     <!-- Downside Levels -->
     ${downsideRows ? `
-    <div style="background-color: #18181b; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
-      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb;">▼ Downside Levels</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">
-        ${downsideRows}
-      </table>
-    </div>` : ""}
+${card(`<h2 style="margin: 0 0 12px 0; font-size: 16px; color: #f9fafb !important;">▼ Downside Levels</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">${downsideRows}</table>`)}` : ""}
 
     ${scenariosSection}
     ${catalystSection}
@@ -567,6 +573,10 @@ export function getNewReportEmailHtml({
     <div style="text-align: center; padding: 14px; color: #6b7280; font-size: 12px;">
       <a href="https://www.flacko.ai/settings" style="color: #9ca3af;">Manage email preferences</a>
     </div>
+  </div>
+      </td>
+    </tr>
+  </table>
   </div>
 </body>
 </html>`;
