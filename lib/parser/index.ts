@@ -837,8 +837,8 @@ function extractMode(
   parsed: ParsedReportData,
   warnings: string[]
 ): ExtractedReportData["mode"] {
-  // v3.0 Pattern: ## 🚦 Mode: 🟢 GREEN or ## 🚦 Mode: [🟢/🟡/🟠/🔴] [GREEN/YELLOW/ORANGE/RED]
-  const v3Pattern = /##\s*🚦?\s*Mode:\s*([🔴🟠🟡🟢])\s*(GREEN|YELLOW|ORANGE|RED)(?:\s*\(([^)]+)\))?/i;
+  // v3.0 Pattern: ## 🚦 Mode: 🟢 GREEN or ## ⚡ Mode: [🟢/🟡/🟠/🔴] [GREEN/YELLOW/ORANGE/RED]
+  const v3Pattern = /##\s*(?:🚦|⚡|🔴|🟠|🟡|🟢)?\s*Mode:\s*([🔴🟠🟡🟢])\s*(GREEN|YELLOW|ORANGE|RED)(?:\s*\(([^)]+)\))?/i;
   const v3Match = markdown.match(v3Pattern);
 
   if (v3Match) {
