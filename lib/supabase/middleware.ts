@@ -110,6 +110,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Reports notify endpoint (authenticated via bearer token, not user session)
+  if (request.nextUrl.pathname === "/api/reports/notify") {
+    return supabaseResponse;
+  }
+
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
