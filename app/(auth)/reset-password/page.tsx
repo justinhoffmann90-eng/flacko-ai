@@ -39,8 +39,13 @@ export default function ResetPasswordPage() {
 
       // Check for error in query params
       if (queryParams.get("error")) {
-        const errorDesc = queryParams.get("error_description") || "Link is invalid or expired";
-        setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+        const errorCode = queryParams.get("error");
+        if (errorCode === "link_expired") {
+          setError("This link has expired or already been used. Please request a new one.");
+        } else {
+          const errorDesc = queryParams.get("error_description") || "Link is invalid or expired";
+          setError(decodeURIComponent(errorDesc.replace(/\+/g, " ")));
+        }
         setDebugInfo("Error in URL query params");
         setPageState("error");
         return;
@@ -234,7 +239,13 @@ export default function ResetPasswordPage() {
             <p className="text-xs text-muted-foreground">Debug: {debugInfo}</p>
           )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-2">
+          <Button 
+            className="w-full"
+            onClick={() => router.push("/forgot-password")}
+          >
+            Request New Link
+          </Button>
           <Button 
             variant="outline" 
             className="w-full"

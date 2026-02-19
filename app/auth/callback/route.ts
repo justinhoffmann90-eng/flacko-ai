@@ -33,6 +33,10 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}${next}`);
     }
     console.error("Token verification error:", error);
+    // Link expired or already used — send to reset-password with error context
+    if (type === "recovery") {
+      return NextResponse.redirect(`${origin}/reset-password?error=link_expired`);
+    }
   }
 
   // Return the user to login with error
