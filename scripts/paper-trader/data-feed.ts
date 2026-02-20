@@ -482,11 +482,19 @@ function parseExtractedData(date: string, ed: any): DailyReport {
     hedgeWall: findLevelByName(levels, 'hedge wall')?.price || 0,
     callWall: findLevelByName(levels, 'call wall')?.price || 0,
     daily_21ema: ed.daily_21ema || ed.d21_ema || null,
-    levels: levels.map((l: any) => ({
-      name: l.level || l.name,
-      price: l.price,
-      type: l.type || 'neutral',
-    })),
+    levels: levels.map((l: any) => {
+      // Normalize type — parser uses 'downside'/'upside', engine uses 'support'/'resistance'
+      const rawType = l.type || 'neutral';
+      let normalizedType: 'support' | 'resistance' | 'neutral' | 'trim' | 'target' | 'eject' = 'neutral';
+      if (rawType === 'downside' || rawType === 'support') normalizedType = 'support';
+      else if (rawType === 'upside' || rawType === 'resistance' || rawType === 'trim' || rawType === 'target') normalizedType = rawType as 'resistance' | 'trim' | 'target';
+      else if (rawType === 'eject') normalizedType = 'eject';
+      return {
+        name: l.level || l.name,
+        price: l.price,
+        type: normalizedType,
+      };
+    }),
     commentary: ed.game_plan || '',
   };
 }

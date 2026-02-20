@@ -567,13 +567,21 @@ function checkNearSupport(
   price: number,
   report: DailyReport
 ): { isNear: boolean; level: string; price: number } {
-  const supports = [
+  // SpotGamma walls
+  const supports: { name: string; price: number }[] = [
     { name: 'put wall', price: report.putWall },
     { name: 'hedge wall', price: report.hedgeWall },
     { name: 'gamma strike', price: report.gammaStrike },
   ].filter(s => s.price > 0);
+
+  // Report levels (S1, S2, D9 EMA, D13 EMA, D21 EMA, etc.)
+  const reportSupports = (report.levels || [])
+    .filter(l => l.type === 'support' && l.price > 0 && l.price <= price * 1.01)
+    .map(l => ({ name: l.name, price: l.price }));
+
+  const allSupports = [...supports, ...reportSupports];
   
-  for (const support of supports) {
+  for (const support of allSupports) {
     const threshold = support.price * SUPPORT_THRESHOLD_PERCENT;
     if (Math.abs(price - support.price) <= threshold || 
         (price >= support.price && price <= support.price + threshold)) {
