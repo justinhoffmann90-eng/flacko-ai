@@ -140,21 +140,19 @@ export async function sendDownsideZoneAlert(
     return { sent: false, reason: "no_emails" };
   }
 
-  // Send emails (batch)
+  // Send emails individually to protect subscriber privacy
   const html = buildEmailHtml(msg, newZone as OrbZone);
   let sentCount = 0;
 
-  // Send in batches of 50
-  for (let i = 0; i < emails.length; i += 50) {
-    const batch = emails.slice(i, i + 50);
+  for (const email of emails) {
     try {
       await resend.emails.send({
         from: EMAIL_FROM,
-        to: batch,
+        to: email,
         subject: msg.subject,
         html,
       });
-      sentCount += batch.length;
+      sentCount++;
     } catch (err) {
       console.error("[ORB_ZONE_ALERT] Email send failed:", err);
     }
