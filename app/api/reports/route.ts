@@ -230,6 +230,12 @@ export async function POST(request: Request) {
     if (subscribers && subscribers.length > 0 && extracted_data.alerts) {
       const alertInserts = [];
       let skippedCount = 0;
+
+      // CRITICAL: Normalize alert direction using report close price to prevent parser/type drift.
+      // If a level is above close => upside trigger (price >= level)
+      // If a level is at/below close => downside trigger (price <= level)
+      const reportClose = extracted_data?.price?.close;
+      const canNormalizeType = typeof reportClose === "number" && Number.isFinite(reportClose) && reportClose > 0;
       
       for (const sub of subscribers) {
         // Check if user has alerts enabled - use maybeSingle to handle missing rows gracefully
@@ -250,11 +256,15 @@ export async function POST(request: Request) {
         
         if (alertsEnabled) {
           for (const alert of extracted_data.alerts) {
+            const normalizedType = canNormalizeType
+              ? (alert.price > reportClose ? "upside" : "downside")
+              : alert.type;
+
             alertInserts.push({
               report_id: report.id,
               user_id: sub.user_id,
               price: alert.price,
-              type: alert.type,
+              type: normalizedType,
               level_name: alert.level_name,
               action: alert.action,
               reason: alert.reason,
