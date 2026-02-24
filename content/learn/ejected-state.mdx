@@ -1,0 +1,161 @@
+---
+title: "The EJECTED State"
+description: "What happens after Master Eject triggers — and how to recover."
+readingTime: "4 min"
+---
+
+## What Is the EJECTED State?
+
+EJECTED is the most defensive state in the system. It activates when price closes below the Weekly 21 EMA for **two consecutive days**, confirming structural breakdown.
+
+| Metric | EJECTED State |
+|--------|---------------|
+| Daily Cap | 0% (normal rules suspended) |
+| Max Position | 50% core TSLA only |
+| Leverage | None — all TSLL/options sold |
+| Deployment | Only via 200 SMA Override |
+
+---
+
+## How You Get Here
+
+**Day 1:** Price closes below W21 EMA
+- Action: Sell ALL leverage (TSLL, options) immediately
+- Status: Still in normal mode, watching for confirmation
+
+**Day 2:** Price closes below W21 EMA again
+- Action: Trim TSLA to 50% of portfolio
+- Status: Enter EJECTED state
+
+**Why two closes?** Single-day wicks below W21 are common and often reverse. Two consecutive closes confirm the break is real.
+
+---
+
+## What You Hold in EJECTED
+
+| Position | Status | Reason |
+|----------|--------|--------|
+| TSLA shares | 50% of portfolio | Core exposure for recovery |
+| TSLL | 0% | Too risky — can go to zero |
+| Options | 0% | Time decay + volatility crush |
+| Cash | 50% of portfolio | Dry powder for Override deployment |
+
+**Why 50% shares, not 0%?** The bull thesis may still be intact even though structure is damaged. You want exposure for the recovery, but you've cut risk by eliminating leverage.
+
+---
+
+## What You CAN'T Do
+
+In EJECTED state, normal mode rules are suspended:
+
+- ❌ No buying via daily cap (cap = 0%)
+- ❌ No leverage positions
+- ❌ No "nibbling at support" via normal rules
+
+**What EJECTED prevents:** The temptation to catch the falling knife. When structure breaks, you need to let it stabilize — not keep averaging down.
+
+---
+
+## What You CAN Do
+
+The **200 SMA Oversold Override** is the only deployment mechanism:
+
+| Trigger | Max Allocation | Instruments |
+|---------|----------------|-------------|
+| 20%+ below 200 SMA | 10% | TSLA shares only |
+| 30%+ below 200 SMA | 25% | 60% TSLA / 40% TSLL |
+| 40%+ below 200 SMA | 40% | 40% TSLA / 60% TSLL |
+
+**Why Override works in EJECTED:** At these extreme levels, the risk/reward is asymmetric. Even if structure is broken, a 30% discount to the 200 SMA represents generational value.
+
+---
+
+## Getting Out of EJECTED
+
+To exit EJECTED state and return to normal modes, you need:
+
+1. **Reclaim W21 EMA** — Price closes ABOVE W21
+2. **HIRO confirmation** — Dealer flow positive
+3. **Hold for 2+ days** — Confirm the reclaim is real
+
+**First step out:** EJECTED → RED (5% cap)
+
+You don't jump back to GREEN. You ratchet up slowly, rebuilding trust in the trend.
+
+---
+
+## The Recovery Ladder
+
+| Current State | Trigger | Next State |
+|---------------|---------|------------|
+| EJECTED | Reclaim W21 + HIRO positive | RED |
+| RED | Hold above W21, Daily BX improving | ORANGE |
+| ORANGE | Reclaim D13, structure rebuilding | YELLOW |
+| YELLOW | All timeframes aligned bullish | GREEN |
+
+**Why so slow?** Broken structure doesn't heal in a day. Dead cat bounces happen. The slow rebuild protects you from false recoveries.
+
+---
+
+## EJECTED State Psychology
+
+Being EJECTED feels terrible. You've cut leverage, trimmed shares, and you're watching TSLA move without you.
+
+**The temptation:** "Maybe I should buy back — it's bouncing!"
+
+**The reality:** 
+- The first bounce after a breakdown often fails
+- You already have 50% exposure for the recovery
+- If it's a real recovery, you'll have time to rebuild
+- If it fails, you protected capital
+
+**What to focus on:**
+- Let the Override deploy for you at extreme levels
+- Wait for confirmed W21 reclaim
+- Follow the ratchet ladder back up
+
+---
+
+## Example Scenario
+
+**Week 1:**
+- Monday: TSLA closes at $412, below W21 ($420)
+- Action: Sell all TSLL and options
+- Tuesday: TSLA closes at $405 (second close below W21)
+- Action: Trim TSLA to 50% of portfolio, enter EJECTED
+
+**Week 2:**
+- TSLA bounces to $415, then falls to $390
+- Temptation: "Should I buy the bounce?"
+- Right action: You're EJECTED, cap = 0%. Let it play out.
+
+**Week 3:**
+- TSLA falls to $330 (25% below 200 SMA at $440)
+- Override Tier 1 activates: Deploy up to 10% in TSLA shares
+- Action: Buy $5,000/day in TSLA shares
+
+**Week 4:**
+- TSLA bottoms at $310, stabilizes
+- Rallies back to $380, HIRO turns positive
+- TSLA closes above W21 ($415) on Friday
+- Action: Exit EJECTED, enter RED mode (5% cap)
+
+---
+
+## Common Mistakes
+
+| Mistake | Reality |
+|---------|---------|
+| Buying the first bounce | Dead cat bounces fail — wait for confirmation |
+| Holding leverage through EJECTED | Leverage in crashes = zero risk |
+| Trimming to 0% instead of 50% | You need exposure for the recovery |
+| Trying to time the exact bottom | Override tiers do this for you systematically |
+| Jumping straight to GREEN after reclaim | Use the ladder — one step at a time |
+
+---
+
+## Key Takeaway
+
+EJECTED is uncomfortable but necessary. It forces you to **stop digging** when you're in a hole. Cut leverage, hold 50% core, let the Override deploy at extreme levels, and wait for confirmed recovery before rebuilding.
+
+*EJECTED isn't failure — it's capital preservation. The best traders know when to step back.*

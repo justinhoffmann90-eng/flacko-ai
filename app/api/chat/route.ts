@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       }
 
       // Check daily usage
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
       const { data: usageData } = await supabase
         .from("chat_usage")
         .select("message_count")
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       const usage = usageData as ChatUsage | null;
       if (usage && usage.message_count >= DAILY_MESSAGE_LIMIT) {
         return NextResponse.json({
-          error: "Daily message limit reached. Resets at midnight ET.",
+          error: "Daily message limit reached. Resets at midnight CT.",
         }, { status: 429 });
       }
     }
@@ -90,6 +90,7 @@ export async function POST(request: Request) {
     const { data: report } = await supabase
       .from("reports")
       .select("extracted_data, report_date")
+      .or("report_type.is.null,report_type.eq.daily")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
 
     // Update usage atomically via RPC to prevent race conditions
     if (userId && !devBypass) {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
       await supabase.rpc("increment_chat_usage", {
         p_user_id: userId,
         p_usage_date: today,
@@ -180,7 +181,7 @@ IMPORTANT RULES:
 2. Always frame guidance in terms of the trading framework (Traffic Light System, position sizing rules)
 3. Be helpful but remind users that this is educational, not financial advice
 4. Help users calculate position sizes based on their settings
-5. Explain concepts clearly (BX-Trender, SMI, gamma, Master Eject, etc.)
+5. Explain concepts clearly (BX-Trender, SMI, gamma, Kill Leverage, Orb Score, HIRO, etc.)
 6. Keep responses concise and actionable
 7. Reference specific data from the current report when answering questions
 
@@ -213,7 +214,7 @@ PRICE DATA:
 ${data.price?.range ? `- Day Range: $${data.price.range.low} - $${data.price.range.high}` : ""}
 
 CRITICAL LEVELS:
-- Master Eject (EXIT if broken): $${data.master_eject?.price || 0}
+- Kill Leverage (cut leverage if broken): $${data.master_eject?.price || 0}
 - Entry Quality Score: ${data.entry_quality?.score || 0}/5
 
 `;

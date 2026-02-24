@@ -89,7 +89,7 @@ Unacceptable toxicity includes:
 - **Hedge Wall**: largest dealer hedging concentration
 - **HIRO**: Hedge Impact Real-time Oracle — real-time institutional flow indicator
 - **Mode System**: GREEN (25% cap, lean in) / YELLOW (15%, selective) / ORANGE (10%, cautious) / RED (5%, defend)
-- **Master Eject**: the price level where all positions should be closed
+- **Kill Leverage**: the price level where all positions should be closed
 
 ## Vocabulary Doctrine
 
@@ -350,6 +350,7 @@ export async function POST(request: Request) {
     const { data: report } = await serviceSupabase
       .from("reports")
       .select("extracted_data, report_date")
+      .or("report_type.is.null,report_type.eq.daily")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();
@@ -372,7 +373,7 @@ Key Levels:
 - Gamma Strike: $${(e.key_levels as Record<string, unknown>)?.gamma_strike || "N/A"}
 - Put Wall: $${(e.key_levels as Record<string, unknown>)?.put_wall || "N/A"}
 - Hedge Wall: $${(e.key_levels as Record<string, unknown>)?.hedge_wall || "N/A"}
-- Master Eject: $${(e.master_eject as Record<string, unknown>)?.price || (e.key_levels as Record<string, unknown>)?.master_eject || "N/A"}
+- Kill Leverage: $${(e.master_eject as Record<string, unknown>)?.price || (e.key_levels as Record<string, unknown>)?.master_eject || "N/A"}
 
 ${e.scenarios ? `Scenarios:
 - Bull: ${((e.scenarios as Record<string, unknown>).bull as Record<string, unknown>)?.trigger || "N/A"} → ${((e.scenarios as Record<string, unknown>).bull as Record<string, unknown>)?.target || "N/A"}

@@ -326,9 +326,24 @@ export default function AdminBacklogPage() {
         <div className="bg-gray-700/20 border border-gray-600/40 rounded-xl p-6">
           <h2 className="text-2xl font-bold text-gray-300 mb-4">🗄️ BACKLOG (Future Consideration)</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {backlogStorage.map((item) => (
-              <div key={item.id} className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-1">
-                <div className="font-semibold text-white">{item.title}</div>
+            {[...backlogStorage].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)).map((item) => (
+              <div key={item.id} className={`rounded-lg p-3 space-y-1 ${item.isPinned ? "bg-yellow-500/10 border-2 border-yellow-500/40" : "bg-white/5 border border-white/10"}`}>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-white">{item.title}</span>
+                  {item.isPinned && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-yellow-500 text-black font-bold">📌 PINNED</span>
+                  )}
+                  {item.tags?.map((tag) => (
+                    <span key={tag} className={`text-xs px-2 py-0.5 rounded font-medium ${tag === "Growth" ? "bg-green-500/30 text-green-300 border border-green-500/40" : "bg-blue-500/30 text-blue-300 border border-blue-500/40"}`}>
+                      #{tag}
+                    </span>
+                  ))}
+                  {item.category && (
+                    <span className={`text-xs px-2 py-0.5 rounded font-medium ${item.category === "growth" ? "bg-green-500/20 text-green-400" : item.category === "workflow" ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400"}`}>
+                      {item.category}
+                    </span>
+                  )}
+                </div>
                 <div className="text-sm text-gray-300">{item.description}</div>
                 <div className="text-sm text-gray-400">Why backlogged: {item.reason}</div>
               </div>

@@ -5,6 +5,7 @@ import { generateEODAccuracyCard } from "@/lib/content/eod-accuracy-card";
 import puppeteer from "puppeteer";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const VIEWPORT = {
   width: 1200,

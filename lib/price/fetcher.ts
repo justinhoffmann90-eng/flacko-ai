@@ -9,9 +9,18 @@ export interface PriceData {
   timestamp: number;
 }
 
+// Rate limit tracking for Yahoo Finance
+let yahooBackoffUntil = 0;
+
 export async function fetchTSLAPrice(): Promise<PriceData> {
   // Try Yahoo Finance first (free, no API key needed)
   try {
+    // Check if we're in backoff period
+    if (Date.now() < yahooBackoffUntil) {
+      console.warn("Yahoo Finance in backoff period, skipping to fallback");
+      throw new Error("Yahoo Finance rate limited");
+    }
+    
     const data = await fetchFromYahoo();
     return data;
   } catch (error) {
@@ -31,7 +40,15 @@ export async function fetchTSLAPrice(): Promise<PriceData> {
     const data = await fetchFromPolygon();
     return data;
   } catch (error) {
-    console.error("Polygon also failed:", error);
+    console.error("Polygon also failed, trying Alpha Vantage:", error);
+  }
+
+  // Final fallback to Alpha Vantage (free tier available)
+  try {
+    const data = await fetchFromAlphaVantage();
+    return data;
+  } catch (error) {
+    console.error("All providers failed:", error);
     throw new Error("Failed to fetch TSLA price from all providers");
   }
 }
@@ -46,6 +63,12 @@ async function fetchFromYahoo(): Promise<PriceData> {
       next: { revalidate: 60 }, // Cache for 1 minute
     }
   );
+
+  // Handle rate limiting with backoff
+  if (response.status === 403 || response.status === 429) {
+    yahooBackoffUntil = Date.now() + 60000; // 60-second backoff
+    throw new Error(`Yahoo Finance rate limited (${response.status}), backing off for 60s`);
+  }
 
   if (!response.ok) {
     throw new Error(`Yahoo Finance API error: ${response.status}`);
@@ -141,9 +164,58 @@ export async function fetchRealtimePrice(): Promise<number> {
   return data.price;
 }
 
+async function fetchFromAlphaVantage(): Promise<PriceData> {
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY || "demo";
+  
+  const response = await fetch(
+    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=TSLA&apikey=${apiKey}`,
+    {
+      next: { revalidate: 60 },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Alpha Vantage API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const quote = data["Global Quote"];
+
+  if (!quote || !quote["05. price"]) {
+    throw new Error("No price data from Alpha Vantage");
+  }
+
+  const price = parseFloat(quote["05. price"]);
+  const prevClose = parseFloat(quote["08. previous close"]);
+
+  return {
+    symbol: "TSLA",
+    price: price,
+    change: price - prevClose,
+    changePercent: ((price - prevClose) / prevClose) * 100,
+    high: parseFloat(quote["03. high"]),
+    low: parseFloat(quote["04. low"]),
+    volume: parseInt(quote["06. volume"]),
+    timestamp: Date.now(),
+  };
+}
+
 // Fetch last close price (for after-hours display)
 // This returns today's close price after market hours
 export async function fetchLastClose(): Promise<number> {
+  // Check if we're in backoff period
+  if (Date.now() < yahooBackoffUntil) {
+    console.warn("Yahoo Finance in backoff period for close price");
+    // Try Alpha Vantage as fallback
+    try {
+      const data = await fetchFromAlphaVantage();
+      return data.price;
+    } catch (error) {
+      console.error("Alpha Vantage fallback failed:", error);
+      throw error;
+    }
+  }
+
   const response = await fetch(
     `https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1d`,
     {
@@ -153,6 +225,21 @@ export async function fetchLastClose(): Promise<number> {
       next: { revalidate: 300 }, // Cache for 5 minutes
     }
   );
+
+  // Handle rate limiting with backoff
+  if (response.status === 403 || response.status === 429) {
+    yahooBackoffUntil = Date.now() + 60000; // 60-second backoff
+    console.warn(`Yahoo Finance rate limited (${response.status}), backing off for 60s`);
+    
+    // Try Alpha Vantage as fallback
+    try {
+      const data = await fetchFromAlphaVantage();
+      return data.price;
+    } catch (error) {
+      console.error("Alpha Vantage fallback failed:", error);
+      throw new Error(`Yahoo Finance rate limited and fallback failed`);
+    }
+  }
 
   if (!response.ok) {
     throw new Error(`Yahoo Finance API error: ${response.status}`);

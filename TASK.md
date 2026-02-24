@@ -1,51 +1,68 @@
-# AI Template Editor Feature
+# TASK: AI Template Editor
 
 ## Overview
-Implement an AI Template Editor in the Content Hub (admin page) that allows editing of message templates used throughout the application.
+Add an AI Template Editor to the Content Hub that lets users describe image cards in natural language and generates HTML/React components.
 
-## Scope
-- **Location**: Content Hub (/admin page)
-- **Purpose**: Edit Discord and Email templates dynamically
-- **Templates Managed**:
-  1. Discord Alert Messages (`lib/discord/templates.ts`)
-  2. Discord New Report Messages (`lib/discord/templates.ts`)
-  3. Email Templates (`lib/resend/templates.ts`)
+## Location
+`app/admin/content/page.tsx` - Add new section called "AI Template Editor"
 
-## Implementation Plan
+## Requirements
 
-### Step 1: Create API Endpoint
-Create `/app/api/templates/route.ts` with:
-- `GET /api/templates` - List all available templates with metadata
-- `POST /api/templates` - Update a specific template
+### UI Component
+1. Add a new section below WeeklyScorecardSection
+2. Include:
+   - Text input for natural language description (e.g., "Create a quote card with dark background, centered white text, and a red accent border")
+   - "Generate Template" button
+   - Preview area showing rendered HTML
+   - Code view toggle to see generated HTML/React
+   - "Save as Component" button (future - just show code for now)
 
-### Step 2: Create React Component
-Create `TemplateEditor` component with:
-- Template selector dropdown
-- Monaco-like editor or textarea for template content
-- Variable injection hints (e.g., {{mode}}, {{price}}, {{level_name}})
-- Preview functionality
-- Save/Cancel buttons
+### API Endpoint
+Create `app/api/content/generate-template/route.ts`:
+- POST endpoint
+- Takes: `{ description: string, type: "quote" | "levels" | "scorecard" | "custom" }`
+- Uses Gemini 2.0 Flash to generate HTML
+- Returns: `{ html: string, css?: string }`
 
-### Step 3: Integrate into Admin Page
-Add to `/app/admin/page.tsx`:
-- Import TemplateEditor component
-- Add new card section for Template Editor in Quick Actions area
-- Mount the component
+### System Prompt for Template Generation
+```
+You are an expert UI designer. Generate clean, modern HTML for trading content cards.
 
-### Step 4: Verify and Deploy
-- Run build verification
-- Commit with message: "feat: Add AI Template Editor to Content Hub"
-- Push to deploy
+Rules:
+- Use inline styles (no external CSS)
+- Dark theme: bg-black or bg-zinc-900, white/zinc text
+- Brand colors: emerald for success, red for danger, purple for primary
+- Clean typography: font-sans, appropriate sizing
+- Mobile-friendly: reasonable widths, padding
+- Return ONLY the HTML, no explanation
+```
 
-## Template Structure
-Templates use variables like:
-- `{{mode}}` - Traffic light mode (green/yellow/orange/red)
-- `{{price}}` - Price value
-- `{{level_name}}` - Level name (e.g., "Call Wall")
-- `{{action}}` - Action text (e.g., "Trim 25%")
-- `{{reason}}` - Contextual reason
-- `{{reportDate}}` - Report date string
-- `{{positioning}}` - Positioning text
+### Component Structure
+```tsx
+function AITemplateEditor() {
+  const [description, setDescription] = useState("");
+  const [templateType, setTemplateType] = useState<"quote" | "levels" | "scorecard" | "custom">("custom");
+  const [generating, setGenerating] = useState(false);
+  const [result, setResult] = useState<{ html: string } | null>(null);
+  const [showCode, setShowCode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-## Security Note
-This is an admin-only feature. The API route should verify admin authentication.
+  // ... implementation
+}
+```
+
+## Files to Create/Modify
+1. `app/api/content/generate-template/route.ts` - New API endpoint
+2. `app/admin/content/page.tsx` - Add AITemplateEditor component and render it
+
+## Style
+Match existing Content Hub card styling:
+- Gradient border glow effect
+- `bg-zinc-950/80` background
+- `border-zinc-800` borders
+- Purple accent for this section (like AI Content Studio)
+
+## DO NOT
+- Modify any other files
+- Change existing components
+- Add new dependencies

@@ -6,6 +6,8 @@ import {
   WeeklyLessons,
   Scenario,
   WeeklyKeyLevel,
+  WeeklyKeyLevelV2,
+  CatalystV2,
   TrafficLightMode,
   TierSignal,
   ThesisStatus,
@@ -15,7 +17,67 @@ import {
 } from "@/types/weekly-review";
 import matter from "gray-matter";
 
-export const WEEKLY_PARSER_VERSION = "1.0.0";
+export const WEEKLY_PARSER_VERSION = "3.4.0";
+
+// v2.0 JSON block interface
+interface WeeklyReviewJSON {
+  week_start: string;
+  week_end: string;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  change_pct?: number;
+  weekly_candle?: string;
+  mode_start?: string;
+  mode_end?: string;
+  mode_trajectory?: string;
+  weekly_9ema?: number;
+  weekly_13ema?: number;
+  weekly_21ema?: number;
+  ema_extension_pct?: number;
+  weekly_bx_color?: string;
+  weekly_bx_pattern?: string;
+  weekly_bx_state?: string;
+  weekly_bx_histogram?: number;
+  correction_stage?: string;
+  master_eject_step?: number;
+  call_alert_score?: number;
+  call_alert_setups?: Array<{name: string; status: string; result: string; pnl_pct: number}>;
+  call_alert_running_win_rate?: number | null;
+  daily_scores?: number[];
+  daily_system_values?: string[];
+  system_value_days?: number;
+  weekly_avg_score?: number;
+  weekly_grade?: string;
+  buy_levels_tested?: number;
+  buy_levels_held?: number;
+  trim_levels_tested?: number;
+  trim_levels_effective?: number;
+  slow_zone_triggered?: boolean;
+  master_eject?: number;
+  master_eject_distance_pct?: number;
+  thesis_status?: string;
+  next_week_mode?: string;
+  next_week_bias?: string;
+  key_levels_next_week?: WeeklyKeyLevelV2[];
+  qqq_verdict?: string;
+  hiro_eow?: number;
+  catalysts?: CatalystV2[];
+  orb_avg_score?: number;
+  orb_zone_distribution?: {
+    full_send: number;
+    neutral: number;
+    caution: number;
+    defensive: number;
+  };
+  orb_setups_activated?: Array<{name: string; grade: string; outcome: string}>;
+  orb_setups_profitable?: number;
+  orb_mode_agreement_rate?: number;
+  next_week_orb_score?: number;
+  next_week_orb_zone?: string;
+  data_source?: string;
+}
 
 interface WeeklyFrontmatter {
   week_start?: string;
@@ -60,8 +122,38 @@ interface WeeklyFrontmatter {
   }>;
 }
 
+// Helper interface for Weekly Snapshot data
+interface WeeklySnapshotData {
+  buy_levels_tested?: number;
+  buy_levels_held?: number;
+  trim_levels_tested?: number;
+  trim_levels_effective?: number;
+  master_eject?: number;
+}
+
+// Helper interface for Tier Verdicts data
+interface TierVerdictsData {
+  monthly_pattern?: string;
+  weekly_pattern?: string;
+  daily_pattern?: string;
+  monthly_structure?: string;
+  weekly_structure?: string;
+  daily_structure?: string;
+}
+
 export function parseWeeklyReview(markdown: string): ParsedWeeklyReview {
   const warnings: string[] = [];
+
+  // Try to parse v2.0 JSON block first: <!-- WEEKLY_REVIEW_DATA ... -->
+  let jsonData: WeeklyReviewJSON | null = null;
+  const jsonMatch = markdown.match(/<!--\s*WEEKLY_REVIEW_DATA\s*\n([\s\S]*?)\n-->/);
+  if (jsonMatch) {
+    try {
+      jsonData = JSON.parse(jsonMatch[1]);
+    } catch (e) {
+      warnings.push("Failed to parse WEEKLY_REVIEW_DATA JSON block");
+    }
+  }
 
   // Try to parse YAML frontmatter
   let frontmatter: WeeklyFrontmatter | null = null;
@@ -77,14 +169,82 @@ export function parseWeeklyReview(markdown: string): ParsedWeeklyReview {
     warnings.push("Failed to parse YAML frontmatter");
   }
 
-  // Extract data combining frontmatter and markdown parsing
-  const extracted_data = extractWeeklyData(content, frontmatter, warnings);
+  // Extract data combining JSON, frontmatter and markdown parsing
+  const extracted_data = extractWeeklyData(content, frontmatter, jsonData, warnings);
 
   return {
     raw_markdown: markdown,
     extracted_data,
     parser_warnings: warnings,
   };
+}
+
+/**
+ * Extract data from Weekly Snapshot table
+ * Example: | **Buy Levels** | 3 tested, 2 held (67% accuracy) |
+ */
+function extractWeeklySnapshot(markdown: string): WeeklySnapshotData {
+  const snapshot: WeeklySnapshotData = {};
+  
+  // Extract Buy Levels: "3 tested, 2 held"
+  const buyLevelsMatch = markdown.match(/Buy Levels[^|]*\|\s*(\d+)\s+tested,\s*(\d+)\s+held/i);
+  if (buyLevelsMatch) {
+    snapshot.buy_levels_tested = parseInt(buyLevelsMatch[1]);
+    snapshot.buy_levels_held = parseInt(buyLevelsMatch[2]);
+  }
+  
+  // Extract Trim Levels: "5 tested, 4 hit"
+  const trimLevelsMatch = markdown.match(/Trim Levels[^|]*\|\s*(\d+)\s+tested,\s*(\d+)\s+(?:hit|effective)/i);
+  if (trimLevelsMatch) {
+    snapshot.trim_levels_tested = parseInt(trimLevelsMatch[1]);
+    snapshot.trim_levels_effective = parseInt(trimLevelsMatch[2]);
+  }
+  
+  // Extract Master Eject / Kill Leverage: "$418.80"
+  const masterEjectMatch = markdown.match(/(?:Kill Leverage|Master Eject)[^$]*\$\s*([\d.]+)/i);
+  if (masterEjectMatch) {
+    snapshot.master_eject = parseFloat(masterEjectMatch[1]);
+  }
+  
+  return snapshot;
+}
+
+/**
+ * Extract BX trender patterns and structure from Tier Verdicts Summary table
+ * Example: | Tier 1 (Monthly BX) | 🔴 LL | 🔴 LL | ➡️ | Deep LL sustained... |
+ */
+function extractTierVerdicts(markdown: string): TierVerdictsData {
+  const verdicts: TierVerdictsData = {};
+  
+  // Find the Tier Verdicts table section
+  const tierSection = markdown.match(/Tier Verdicts Summary[\s\S]*?(?=\n\n##|\n\n---|\n\n\*\*|$)/i);
+  if (!tierSection) return verdicts;
+  
+  const section = tierSection[0];
+  
+  // Extract Monthly BX pattern and structure
+  // Pattern: | Tier 1 (Monthly BX) | 🔴 LL | 🔴 LL | ➡️ | Deep LL sustained... |
+  const monthlyMatch = section.match(/Tier 1[^|]*Monthly BX[^|]*\|[^|]*([A-Z]{2})[^|]*\|[^|]*\|[^|]*\|([^|]+)/i);
+  if (monthlyMatch) {
+    verdicts.monthly_pattern = monthlyMatch[1];
+    verdicts.monthly_structure = monthlyMatch[2].trim().replace(/[🔴🟡🟢➡️⬆️⬇️]/g, '').trim();
+  }
+  
+  // Extract Weekly BX pattern and structure
+  const weeklyMatch = section.match(/Tier 2[^|]*Weekly BX[^|]*\|[^|]*([A-Z]{2})[^|]*\|[^|]*\|[^|]*\|([^|]+)/i);
+  if (weeklyMatch) {
+    verdicts.weekly_pattern = weeklyMatch[1];
+    verdicts.weekly_structure = weeklyMatch[2].trim().replace(/[🔴🟡🟢➡️⬆️⬇️]/g, '').trim();
+  }
+  
+  // Extract Daily BX pattern and structure
+  const dailyMatch = section.match(/Tier 3[^|]*Daily BX[^|]*\|[^|]*([A-Z]{2})[^|]*\|[^|]*\|[^|]*\|([^|]+)/i);
+  if (dailyMatch) {
+    verdicts.daily_pattern = dailyMatch[1];
+    verdicts.daily_structure = dailyMatch[2].trim().replace(/[🔴🟡🟢➡️⬆️⬇️]/g, '').trim();
+  }
+  
+  return verdicts;
 }
 
 function parseMode(modeStr: string | undefined): TrafficLightMode {
@@ -117,25 +277,43 @@ function parseThesisStatus(statusStr: string | undefined): ThesisStatus {
 function extractWeeklyData(
   markdown: string,
   fm: WeeklyFrontmatter | null,
+  json: WeeklyReviewJSON | null,
   warnings: string[]
 ): WeeklyReviewData {
-  // Week dates
-  const weekDates = extractWeekDates(markdown, fm);
+  // Week dates - prefer JSON, then frontmatter, then markdown
+  const weekDates = json?.week_start && json?.week_end
+    ? { start: json.week_start, end: json.week_end }
+    : extractWeekDates(markdown, fm);
 
-  // Mode
-  const mode = fm?.mode ? parseMode(fm.mode) : extractModeFromMarkdown(markdown);
-  const modeTrend = fm?.mode_trend || extractModeTrend(markdown);
+  // Mode - prefer JSON
+  const mode = json?.mode_end
+    ? parseMode(json.mode_end)
+    : (fm?.mode ? parseMode(fm.mode) : extractModeFromMarkdown(markdown));
+  const modeTrend = json?.mode_trajectory || fm?.mode_trend || extractModeTrend(markdown);
   const modeGuidance = fm?.mode_guidance || extractModeGuidance(markdown, mode);
   const dailyCapPct = fm?.daily_cap_pct || getModeDefaultCap(mode);
-  const currentPrice = fm?.current_price || extractCurrentPrice(markdown);
+  const currentPrice = json?.close || fm?.current_price || extractCurrentPrice(markdown);
 
-  // Candle data
-  const candle = extractCandle(markdown, fm, warnings);
+  // Candle data - prefer JSON
+  const candle = json?.open && json?.close
+    ? {
+        open: json.open,
+        high: json.high || json.open,
+        low: json.low || json.close,
+        close: json.close,
+        change_dollars: json.close - json.open,
+        change_pct: json.change_pct || ((json.close - json.open) / json.open) * 100,
+      }
+    : extractCandle(markdown, fm, warnings);
 
-  // Timeframes
-  const monthly = extractTimeframe(markdown, "monthly", fm);
-  const weekly = extractTimeframe(markdown, "weekly", fm);
-  const daily = extractTimeframe(markdown, "daily", fm);
+  // Extract from Weekly Snapshot table (if not in JSON)
+  const weeklySnapshot = extractWeeklySnapshot(markdown);
+  
+  // Timeframes - now also extracting from Tier Verdicts table
+  const tierVerdicts = extractTierVerdicts(markdown);
+  const monthly = extractTimeframe(markdown, "monthly", fm, tierVerdicts);
+  const weekly = extractTimeframe(markdown, "weekly", fm, tierVerdicts);
+  const daily = extractTimeframe(markdown, "daily", fm, tierVerdicts);
 
   // Confluence
   const confluence = extractConfluence(markdown, monthly, weekly, daily);
@@ -159,7 +337,8 @@ function extractWeeklyData(
   // Optional gamma
   const gamma_shifts = extractGammaShifts(markdown);
 
-  return {
+  // Build result with v1.0 fields
+  const result: WeeklyReviewData = {
     week_start: weekDates.start,
     week_end: weekDates.end,
     mode,
@@ -182,6 +361,107 @@ function extractWeeklyData(
     flacko_take,
     gamma_shifts,
   };
+
+  // Add v2.0 fields from JSON if present, otherwise use Weekly Snapshot extraction
+  if (json) {
+    // OHLC
+    result.open = json.open;
+    result.high = json.high;
+    result.low = json.low;
+    result.close = json.close;
+    result.change_pct = json.change_pct;
+    result.weekly_candle = json.weekly_candle;
+
+    // Mode tracking
+    result.mode_start = json.mode_start ? parseMode(json.mode_start) : undefined;
+    result.mode_end = json.mode_end ? parseMode(json.mode_end) : undefined;
+    result.mode_trajectory = json.mode_trajectory;
+
+    // EMA levels
+    result.weekly_9ema = json.weekly_9ema;
+    result.weekly_13ema = json.weekly_13ema;
+    result.weekly_21ema = json.weekly_21ema;
+    result.ema_extension_pct = json.ema_extension_pct;
+
+    // BX-Trender
+    result.weekly_bx_color = json.weekly_bx_color;
+    result.weekly_bx_pattern = json.weekly_bx_pattern;
+
+    // v3.0+ BX-Trender state
+    result.weekly_bx_state = json.weekly_bx_state;
+    result.weekly_bx_histogram = json.weekly_bx_histogram;
+
+    // Correction tracking
+    result.correction_stage = json.correction_stage;
+
+    // Daily assessment scores
+    result.daily_scores = json.daily_scores;
+    result.daily_system_values = json.daily_system_values;
+    result.system_value_days = json.system_value_days;
+    result.weekly_avg_score = json.weekly_avg_score;
+    result.weekly_grade = json.weekly_grade;
+
+    // Level testing - prefer JSON, fallback to Weekly Snapshot
+    result.buy_levels_tested = json.buy_levels_tested ?? weeklySnapshot.buy_levels_tested;
+    result.buy_levels_held = json.buy_levels_held ?? weeklySnapshot.buy_levels_held;
+    result.trim_levels_tested = json.trim_levels_tested ?? weeklySnapshot.trim_levels_tested;
+    result.trim_levels_effective = json.trim_levels_effective ?? weeklySnapshot.trim_levels_effective;
+    result.slow_zone_triggered = json.slow_zone_triggered;
+
+    // Kill Leverage / Master Eject - prefer JSON, fallback to Weekly Snapshot
+    result.master_eject = json.master_eject ?? weeklySnapshot.master_eject;
+    result.master_eject_step = json.master_eject_step;
+    result.master_eject_distance_pct = json.master_eject_distance_pct;
+
+    // Call Options grading
+    result.call_alert_score = json.call_alert_score;
+    result.call_alert_setups = json.call_alert_setups;
+    result.call_alert_running_win_rate = json.call_alert_running_win_rate;
+
+    // Thesis
+    result.thesis_status = json.thesis_status;
+
+    // Week ahead
+    result.next_week_mode = json.next_week_mode ? parseMode(json.next_week_mode) : undefined;
+    result.next_week_bias = json.next_week_bias;
+    result.key_levels_next_week = json.key_levels_next_week;
+
+    // QQQ and HIRO
+    result.qqq_verdict = json.qqq_verdict;
+    result.hiro_eow = json.hiro_eow;
+
+    // Catalysts v2
+    result.catalysts_v2 = json.catalysts;
+
+    // v3.4 Orb fields
+    result.orb_avg_score = json.orb_avg_score;
+    result.orb_zone_distribution = json.orb_zone_distribution;
+    result.orb_setups_activated = json.orb_setups_activated;
+    result.orb_setups_profitable = json.orb_setups_profitable;
+    result.orb_mode_agreement_rate = json.orb_mode_agreement_rate;
+    result.next_week_orb_score = json.next_week_orb_score;
+    result.next_week_orb_zone = json.next_week_orb_zone;
+    result.data_source = json.data_source;
+  } else {
+    // No JSON block - use Weekly Snapshot extraction for missing fields
+    if (weeklySnapshot.buy_levels_tested !== undefined) {
+      result.buy_levels_tested = weeklySnapshot.buy_levels_tested;
+    }
+    if (weeklySnapshot.buy_levels_held !== undefined) {
+      result.buy_levels_held = weeklySnapshot.buy_levels_held;
+    }
+    if (weeklySnapshot.trim_levels_tested !== undefined) {
+      result.trim_levels_tested = weeklySnapshot.trim_levels_tested;
+    }
+    if (weeklySnapshot.trim_levels_effective !== undefined) {
+      result.trim_levels_effective = weeklySnapshot.trim_levels_effective;
+    }
+    if (weeklySnapshot.master_eject !== undefined) {
+      result.master_eject = weeklySnapshot.master_eject;
+    }
+  }
+
+  return result;
 }
 
 function extractWeekDates(
@@ -313,7 +593,8 @@ function extractCandle(
 function extractTimeframe(
   markdown: string,
   timeframe: "monthly" | "weekly" | "daily",
-  fm: WeeklyFrontmatter | null
+  fm: WeeklyFrontmatter | null,
+  tierVerdicts?: TierVerdictsData
 ): TimeframeData {
   // Get signal from frontmatter or markdown
   const signalKey = `${timeframe}_signal` as keyof WeeklyFrontmatter;
@@ -328,7 +609,7 @@ function extractTimeframe(
   );
   const cardMatch = markdown.match(cardPattern);
 
-  // Parse BX-Trender
+  // Parse BX-Trender - prefer Tier Verdicts, fallback to inline parsing
   const bxPattern = new RegExp(
     `${timeframe}[\\s\\S]*?BX-Trender[^|]*\\|[^|]*([^|]+)`,
     "i"
@@ -336,16 +617,32 @@ function extractTimeframe(
   const bxMatch = markdown.match(bxPattern);
   const bxText = bxMatch?.[1]?.trim() || "";
   const bxColor = bxText.toLowerCase().includes("green") ? "green" : "red";
-  const bxPattern2 = bxText.match(/(HH|HL|LL|LH)/i);
-  const bxTrenderPattern = bxPattern2?.[1]?.toUpperCase() || "—";
+  
+  // Get pattern from Tier Verdicts or inline parsing
+  let bxTrenderPattern = "—";
+  if (tierVerdicts) {
+    const verdictKey = `${timeframe}_pattern` as keyof TierVerdictsData;
+    bxTrenderPattern = (tierVerdicts[verdictKey] as string) || "—";
+  }
+  if (bxTrenderPattern === "—") {
+    const bxPattern2 = bxText.match(/(HH|HL|LL|LH)/i);
+    bxTrenderPattern = bxPattern2?.[1]?.toUpperCase() || "—";
+  }
 
-  // Parse structure
-  const structurePattern = new RegExp(
-    `${timeframe}[\\s\\S]*?Structure[^|]*\\|[^|]*([^|]+)`,
-    "i"
-  );
-  const structureMatch = markdown.match(structurePattern);
-  const structure = structureMatch?.[1]?.trim() || "—";
+  // Parse structure - prefer Tier Verdicts, fallback to inline parsing
+  let structure = "—";
+  if (tierVerdicts) {
+    const structureKey = `${timeframe}_structure` as keyof TierVerdictsData;
+    structure = (tierVerdicts[structureKey] as string) || "—";
+  }
+  if (structure === "—") {
+    const structurePattern = new RegExp(
+      `${timeframe}[\\s\\S]*?Structure[^|]*\\|[^|]*([^|]+)`,
+      "i"
+    );
+    const structureMatch = markdown.match(structurePattern);
+    structure = structureMatch?.[1]?.trim() || "—";
+  }
 
   // Parse EMA statuses
   const ema9Status = extractEmaStatus(markdown, timeframe, "9");
@@ -731,6 +1028,7 @@ function extractFlackoTake(markdown: string): string | undefined {
   // Look for "The 'So What'" or "Flacko AI's Take" section
   const patterns = [
     /##\s*💡\s*The\s*["']?So\s*What["']?\s*[—-]?\s*Flacko\s*AI['']?s?\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
+    /##\s*🧠?\s*Flacko\s*AI['']?s?\s*Weekly\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
     /##\s*Flacko\s*AI['']?s?\s*Take[\s\S]*?(?=##|---\s*\n\*|$)/i,
     /##\s*The\s*["']?So\s*What["']?[\s\S]*?(?=##|---\s*\n\*|$)/i,
   ];
@@ -760,13 +1058,12 @@ export function validateWeeklyReview(data: WeeklyReviewData): string[] {
     errors.push("Week dates are required");
   }
 
-  if (data.candle.close <= 0) {
-    errors.push("Valid candle close price is required");
+  if (data.candle.close <= 0 && (!data.close || data.close <= 0)) {
+    errors.push("Valid close price is required");
   }
 
-  if (!data.what_happened) {
-    errors.push("'What Happened' narrative is required");
-  }
+  // v3.0+ reports don't have what_happened — only validate for v1.0/v2.0
+  // Removed: what_happened requirement
 
   return errors;
 }

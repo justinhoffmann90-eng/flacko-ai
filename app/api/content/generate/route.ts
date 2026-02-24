@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { generateDailyModeCard } from "@/lib/content/daily-mode-card";
-import { generateHiroRecap } from "@/lib/content/hiro-recap";
-import { generateForecastVsActual } from "@/lib/content/forecast-vs-actual";
-import { generateWeeklyScorecard } from "@/lib/content/weekly-scorecard";
-import { generateEODAccuracyCard } from "@/lib/content/eod-accuracy-card";
+import OpenAI from "openai";
+import { createClient } from "@/lib/supabase/server";
+
+const SYSTEM_MESSAGE =
+  "You are a professional trading content creator for Flacko AI, a TSLA swing trading intelligence platform. Generate concise, engaging content based on the prompt provided. Output ONLY the content text, no explanations.";
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check admin status
     const { data: userData } = await supabase
       .from("users")
       .select("is_admin")
@@ -26,50 +26,54 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { type, date } = await request.json();
+    const body = await request.json();
+    const { prompt, contentKey } = body as { prompt?: string; contentKey?: string };
 
-    if (!type || !date) {
+    if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
-        { error: "Missing required fields: type, date" },
+        { error: "Missing required field: prompt" },
         { status: 400 }
       );
     }
 
-    let result;
-
-    switch (type) {
-      case "daily-mode-card":
-        result = await generateDailyModeCard(date);
-        break;
-      case "eod-accuracy-card":
-        result = await generateEODAccuracyCard(date);
-        break;
-      case "hiro-recap":
-        result = await generateHiroRecap(date);
-        break;
-      case "forecast-vs-actual":
-        result = await generateForecastVsActual(date);
-        break;
-      case "weekly-scorecard":
-        result = await generateWeeklyScorecard(date);
-        break;
-      default:
-        return NextResponse.json(
-          { error: `Unknown content type: ${type}` },
-          { status: 400 }
-        );
+    if (!contentKey || typeof contentKey !== "string") {
+      return NextResponse.json(
+        { error: "Missing required field: contentKey" },
+        { status: 400 }
+      );
     }
 
-    // Return error status if generator returned an error
-    if (result.error) {
-      return NextResponse.json(result, { status: 400 });
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OPENAI_API_KEY is not configured" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(result);
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_MESSAGE,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const content = completion.choices?.[0]?.message?.content?.trim() || "";
+
+    return NextResponse.json({ content });
   } catch (error) {
     console.error("Content generation error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: error instanceof Error ? error.message : "Generation failed" },
       { status: 500 }
     );
   }

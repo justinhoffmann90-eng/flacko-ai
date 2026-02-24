@@ -1,110 +1,68 @@
 ---
-title: "Master Eject"
-description: "The capital protection level — when to get out, no questions asked."
-readingTime: "4 min"
+title: "Kill Leverage"
+description: "The escalating defense zone — how capital protection actually works."
+readingTime: "6 min"
 ---
 
-## What Is the Master Eject?
+## What Kill Leverage Is (and Isn't)
 
-The **Master Eject** is a price level where you exit all positions. No hesitation. No hoping for a bounce. Just out.
-
-It's your **circuit breaker** for capital protection.
-
----
-
-## Why It Exists
-
-| Reason | Explanation |
-|--------|-------------|
-| **Limits drawdowns** | Small losses stay small |
-| **Removes emotion** | Decision is pre-made |
-| **Preserves capital** | Live to trade another day |
-| **Signals regime change** | If broken, structure has failed |
+Kill Leverage is **not full liquidation**. It is a **graduated defense process** designed to protect capital while preserving a core recovery position.
 
 ---
 
-## How It's Set
+## Core Trigger Sequence
 
-The Master Eject is placed below key support levels:
+### 1) First Close Below Weekly 21 EMA
+- Cut **all leverage** immediately (TSLL, calls, other leveraged risk)
+- Keep core shares for now
 
-| Consideration | Example |
-|---------------|---------|
-| Below Put Wall | Put Wall at $400 → Master Eject at $390 |
-| Below weekly EMA support | 21 EMA at $395 → Master Eject at $390 |
-| Technical structure | Major support at $395 → Master Eject at $388 |
+### 2) Second Consecutive Close Below Weekly 21 EMA
+- Trim TSLA exposure to **50% core hold**
+- Enter **EJECTED** state
 
-Typically **2-5% below** the lowest key support level.
-
----
-
-## What To Do When It Triggers
-
-| Step | Action |
-|------|--------|
-| 1 | **Exit immediately** — don't wait for confirmation |
-| 2 | **Close all TSLA positions** — calls, shares, whatever |
-| 3 | **Go to cash** — sit on hands |
-| 4 | **Wait for new report** — let the system recalibrate |
+This two-step design avoids one-day whipsaw exits while still forcing immediate leverage risk removal.
 
 ---
 
-## Master Eject vs Stop Loss
+## Context Layer: Put Wall Zone
 
-| Feature | Master Eject | Regular Stop |
-|---------|--------------|--------------|
-| **Scope** | All positions | Single position |
-| **Purpose** | Capital protection | Trade management |
-| **Flexibility** | None — it's absolute | Can be adjusted |
-| **Emotion** | Pre-decided | Often moved |
+After EJECTED transition:
+- If price reaches Put Wall zone and **HIRO is positive** with level holding, small share nibbles are allowed.
+- If price loses Put Wall support, the **200 SMA Override** becomes the primary deployment framework.
 
 ---
 
-## Example
+## 200 SMA Override Tiers (Verified)
 
-> **Today's Report:**
-> - Put Wall: $400
-> - Master Eject: $392
-> 
-> **During session:**
-> - 11:30 AM: TSLA drops to $393
-> - 11:45 AM: TSLA breaks $392
-> 
-> **Your action:**
-> - Exit all positions at $392
-> - Don't wait for $390 or $385
-> - Don't hope for a bounce
-> - Cash by 12:00 PM
+| Tier | Drawdown vs 200 SMA | Portfolio Allocation | Mix |
+|------|----------------------|----------------------|-----|
+| Tier 1 | -20% | 10% in shares | 100% TSLA |
+| Tier 2 | -30% | 25% | 60% TSLA / 40% TSLL |
+| Tier 3 | -40% | 40% | 40% TSLA / 60% TSLL |
+
+These are oversold override rules — separate from normal mode buying.
 
 ---
 
-## Common Mistakes
+## Max Invested Context During Downgrades
 
-| Mistake | Reality |
-|---------|---------|
-| "It'll bounce" | It might not — and you can't afford to find out |
-| Moving the eject lower | Defeats the purpose |
-| Waiting for confirmation | You already have it — price broke |
-| Re-entering same day | Wait for structure to rebuild |
+Before EJECTED, max invested caps are tiered guidance:
 
----
+| Transition | Guidance |
+|------------|----------|
+| GREEN → YELLOW | Usually no forced reduction required |
+| YELLOW → ORANGE | Soft reduction recommendation if overexposed |
+| ORANGE → RED | Strong suggestion to work toward defensive sizing |
+| Any → EJECTED | Mandatory: remove leverage and trim to 50% core |
 
-## The Hard Truth
-
-The Master Eject will sometimes trigger **right before a reversal**. That's okay.
-
-| Outcome | Result |
-|---------|--------|
-| Eject triggers, price reverses | You missed a bounce — acceptable |
-| Eject triggers, price keeps falling | You saved your capital — critical |
-
-The asymmetry is in your favor: **small misses vs. catastrophic losses**.
+Kill Leverage is where guidance becomes hard defense protocol.
 
 ---
 
 ## Key Takeaway
 
-The Master Eject isn't about being right. It's about **staying solvent**. Every great trader has a point where they simply get out.
-
----
-
-*Capital preservation beats being right. The Master Eject keeps you in the game.*
+Kill Leverage is a risk circuit breaker:
+1. Remove leverage on first structural break
+2. Confirm break before cutting core to 50%
+3. Use Put Wall + HIRO context for controlled re-entry
+4. Fall back to 200 SMA Override when structure worsens

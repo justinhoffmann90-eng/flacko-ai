@@ -1,28 +1,33 @@
 import { NextResponse } from "next/server";
 import { fetchTSLAPrice, fetchLastClose, PriceData } from "@/lib/price/fetcher";
-import { isMarketHours } from "@/lib/utils";
+import { isMarketHours, isExtendedHours } from "@/lib/utils";
 
 // In-memory cache for price (shared across requests in same instance)
 let priceCache: { data: PriceData; timestamp: number } | null = null;
 let closeCache: { price: number; timestamp: number } | null = null;
-const CACHE_TTL = 15000; // 15 seconds
+const MARKET_CACHE_TTL = 15000; // 15 seconds during market hours
+const EXTENDED_CACHE_TTL = 30000; // 30 seconds during extended hours
 const CLOSE_CACHE_TTL = 300000; // 5 minutes for close price (doesn't change often)
 
 export async function GET() {
   try {
     const now = Date.now();
     const marketOpen = isMarketHours();
+    const extendedHours = isExtendedHours();
 
-    // During market hours, fetch fresh price (with caching)
-    if (marketOpen) {
+    // During market hours OR extended hours, fetch live price (with caching)
+    if (marketOpen || extendedHours) {
+      const cacheTTL = marketOpen ? MARKET_CACHE_TTL : EXTENDED_CACHE_TTL;
+      
       // Check if cache is still valid
-      if (priceCache && now - priceCache.timestamp < CACHE_TTL) {
+      if (priceCache && now - priceCache.timestamp < cacheTTL) {
         return NextResponse.json({
           price: priceCache.data.price,
           change: priceCache.data.change,
           changePercent: priceCache.data.changePercent,
           timestamp: new Date(priceCache.timestamp).toISOString(),
-          isMarketOpen: true,
+          isMarketOpen: marketOpen,
+          isExtendedHours: extendedHours,
           cached: true,
         });
       }
@@ -37,7 +42,8 @@ export async function GET() {
           change: priceData.change,
           changePercent: priceData.changePercent,
           timestamp: new Date().toISOString(),
-          isMarketOpen: true,
+          isMarketOpen: marketOpen,
+          isExtendedHours: extendedHours,
           cached: false,
         });
       } catch (error) {
@@ -46,13 +52,14 @@ export async function GET() {
       }
     }
 
-    // Outside market hours: fetch previous close from Yahoo Finance
+    // Outside market hours and extended hours (overnight 8 PM - 4 AM ET, weekends)
     // Check cache first
     if (closeCache && now - closeCache.timestamp < CLOSE_CACHE_TTL) {
       return NextResponse.json({
         price: closeCache.price,
         timestamp: new Date(closeCache.timestamp).toISOString(),
         isMarketOpen: false,
+        isExtendedHours: false,
         cached: true,
       });
     }
@@ -66,6 +73,7 @@ export async function GET() {
         price: closePrice,
         timestamp: new Date().toISOString(),
         isMarketOpen: false,
+        isExtendedHours: false,
         cached: false,
       });
     } catch (error) {
@@ -77,6 +85,7 @@ export async function GET() {
           price: closeCache.price,
           timestamp: new Date(closeCache.timestamp).toISOString(),
           isMarketOpen: false,
+          isExtendedHours: false,
           cached: true,
           stale: true,
         });

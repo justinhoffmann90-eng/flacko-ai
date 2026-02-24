@@ -41,8 +41,10 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const serviceSupabase = await createServiceClient();
     const devBypass = process.env.DEV_BYPASS_AUTH === "true";
+    const adminSecretHeader = request.headers.get("authorization");
+    const isAdminSecret = adminSecretHeader === `Bearer ${process.env.ADMIN_SECRET}`;
 
-    if (!devBypass) {
+    if (!devBypass && !isAdminSecret) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,28 +62,39 @@ export async function POST(request: Request) {
       }
     }
 
-    const { markdown } = await request.json();
+    const { markdown, report_type, report_date: requestedDate } = await request.json();
 
     if (!markdown) {
       return NextResponse.json({ error: "Markdown content required" }, { status: 400 });
     }
 
+    const isWeekly = report_type === "weekly" || markdown.includes("# TSLA Weekly Review");
+
     // Parse the report
     const { parsed_data, extracted_data, warnings } = parseReport(markdown);
 
-    // Validate
-    const validationErrors = validateReport(extracted_data);
-    if (validationErrors.length > 0) {
-      await logReportGeneration({
-        reportDate: new Date().toISOString().split("T")[0],
-        status: 'failed',
-        source: 'api',
-        errorMessage: validationErrors.join(', '),
-      });
-      return NextResponse.json({
-        error: "Validation failed",
-        errors: validationErrors,
-      }, { status: 400 });
+    // Tag report type in parsed_data
+    if (isWeekly) {
+      parsed_data.report_type = "weekly";
+    }
+
+    // Validate — skip strict validation for weekly reports (different format)
+    if (!isWeekly) {
+      const validationErrors = validateReport(extracted_data);
+      if (validationErrors.length > 0) {
+        await logReportGeneration({
+          reportDate: new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }),
+          status: 'failed',
+          source: 'api',
+          errorMessage: validationErrors.join(', '),
+        });
+        return NextResponse.json({
+          error: "Validation failed",
+          errors: validationErrors,
+        }, { status: 400 });
+      }
+    } else {
+      warnings.push("Weekly report — daily validation skipped");
     }
 
     // CRITICAL: Validate alerts were extracted
@@ -126,8 +139,8 @@ export async function POST(request: Request) {
       console.log(`Alert summary: ${alertSummary}`);
     }
 
-    // Get report date (today's date)
-    const today = new Date().toISOString().split("T")[0];
+    // Get report date — use requested date if provided (for weekly/backdated reports), otherwise today
+    const today = requestedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 
     // Insert report
     const { data: report, error: insertError } = await serviceSupabase
@@ -175,8 +188,8 @@ export async function POST(request: Request) {
         fs.mkdirSync(dailyReportsDir, { recursive: true });
       }
       
-      // Save file with standard naming: TSLA_Daily_Report_YYYY-MM-DD.md
-      const filename = `TSLA_Daily_Report_${today}.md`;
+      // Save file with standard naming
+      const filename = isWeekly ? `TSLA_Weekly_Review_${today}.md` : `TSLA_Daily_Report_${today}.md`;
       const filepath = path.join(dailyReportsDir, filename);
       fs.writeFileSync(filepath, markdown, 'utf-8');
       
@@ -186,11 +199,13 @@ export async function POST(request: Request) {
       // Don't fail the whole request if local save fails
     }
 
-    // Create alerts for all active subscribers
-    const { data: subscribers, error: subsError } = await serviceSupabase
-      .from("subscriptions")
-      .select("user_id")
-      .in("status", ["active", "comped"]);
+    // Create alerts for all active subscribers (daily reports only — weekly reports don't have actionable alerts)
+    const { data: subscribers, error: subsError } = !isWeekly
+      ? await serviceSupabase
+          .from("subscriptions")
+          .select("user_id")
+          .in("status", ["active", "comped"])
+      : { data: null, error: null };
 
     if (subsError) {
       console.error("❌ Failed to fetch subscribers:", subsError);
@@ -297,23 +312,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // Send Discord notification for new report (full template)
-    const discordMessage = getNewReportDiscordMessage({
-      mode: extracted_data.mode?.current || "yellow",
-      reportDate: today,
-      closePrice: extracted_data.price?.close || 0,
-      changePct: extracted_data.price?.change_pct || 0,
-      alerts: extracted_data.alerts || [],
-      positioning: extracted_data.positioning,
-      tiers: extracted_data.tiers,
-      masterEject: extracted_data.master_eject?.price,
-      modeSummary: extracted_data.mode?.summary,
-      flackoTake: extracted_data.flacko_take,
-      scenarios: extracted_data.scenarios,
-      gammaRegime: extracted_data.gamma_regime,
-      hiro: extracted_data.hiro,
-    });
-    await sendReportNotification(discordMessage);
+    // Discord #reports notification — DISABLED during iterative editing.
+    // Re-uploads during the same day cause duplicate posts.
+    // Post manually via webhook after final version is confirmed.
+    // Template is ready in getNewReportDiscordMessage() when we want to re-enable.
+    // const discordMessage = getNewReportDiscordMessage({ ... });
+    // await sendReportNotification(discordMessage);
 
     // Auto-refresh Discord bot knowledge base with new report
     try {

@@ -8,6 +8,7 @@ import { MarkdownContent } from "@/components/report/markdown-content";
 import { ReportToggle } from "@/components/report/report-toggle";
 import { ExtractedReportData } from "@/types";
 import { AlertTriangle } from "lucide-react";
+import { CallOptionsWidget } from "@/components/report/call-options-widget";
 
 interface ReportRow {
   id: string;
@@ -28,9 +29,13 @@ export default async function ReportPage() {
     }
   }
 
+  // Fetch latest daily report (exclude weekly reports)
+  // Weekly reports have report_type = 'weekly'
+  // Daily reports have report_type = 'daily' or null (for old rows)
   const { data: reportData } = await supabase
     .from("reports")
     .select("*")
+    .or("report_type.is.null,report_type.eq.daily")
     .order("report_date", { ascending: false })
     .limit(1)
     .single();
@@ -65,11 +70,31 @@ export default async function ReportPage() {
   // Get positioning data
   const posture = extractedData?.positioning?.posture || extractedData?.position?.current_stance || "—";
 
-  // Parse daily cap % and format as "X% of avail. cash"
+  // Parse daily cap % and format as "X% of cash"
   const dailyCapStr = extractedData?.positioning?.daily_cap || "";
   const dailyCapMatch = dailyCapStr.match(/(\d+)/);
   const dailyCapPct = dailyCapMatch ? parseInt(dailyCapMatch[1]) : (extractedData?.position?.daily_cap_pct || null);
   const dailyCap = dailyCapPct ? `${dailyCapPct}% of cash` : "—";
+
+  const trimCapPct = extractedData?.trim_cap_pct;
+  const trimCap = trimCapPct ? `${trimCapPct}% / level` : "—";
+
+  const slowZone = extractedData?.slow_zone ?? extractedData?.pause_zone;
+  const closePrice = extractedData?.price?.close || 0;
+  const slowZoneActive = extractedData?.slow_zone_active === true;
+  const slowZoneNear = !!(slowZone && closePrice && Math.abs(closePrice - slowZone) / closePrice <= 0.01);
+
+  const callStatus = extractedData?.call_alert?.status || "NO_SIGNAL";
+  const callVariant: "green" | "yellow" | "orange" | "red" =
+    callStatus === "ACTIVE" ? "green" :
+    callStatus === "WATCHING" ? "yellow" :
+    callStatus === "AVOID" ? "red" : "orange";
+
+  const ejectStep = extractedData?.master_eject_step;
+  const putWall = extractedData?.key_levels?.put_wall;
+  const ejectLabel = ejectStep
+    ? `Step ${ejectStep}: ${formatPrice(masterEject)}${putWall && putWall !== masterEject ? `→${formatPrice(putWall)}` : ""}`
+    : formatPrice(masterEject);
 
   // Format date as "Thursday, Jan 29"
   const reportDate = new Date(report.report_date + 'T12:00:00');
@@ -89,28 +114,39 @@ export default async function ReportPage() {
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Mode</p>
             <Badge
-              variant={mode as "green" | "yellow" | "red"}
+              variant={mode as "green" | "yellow" | "orange" | "red"}
               className="mt-1 md:mt-2 text-sm md:text-base lg:text-lg px-3 md:px-4"
             >
               {mode.toUpperCase()}
             </Badge>
           </div>
+
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Positioning</p>
             <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{posture}</p>
           </div>
+
           <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Daily Cap</p>
             <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{dailyCap}</p>
+            {(slowZoneActive || slowZoneNear) && slowZone && (
+              <p className="text-[11px] md:text-xs text-yellow-500 mt-1">Slow Zone {formatPrice(slowZone)}</p>
+            )}
           </div>
+
           <div className="bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
             <p className="text-xs md:text-sm lg:text-base text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
               <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
               Eject
             </p>
-            <p className="text-lg md:text-xl lg:text-2xl font-bold text-red-500">{formatPrice(masterEject)}</p>
+            <p className="text-sm md:text-base lg:text-lg font-bold text-red-500 mt-1 md:mt-2">{formatPrice(masterEject)}</p>
           </div>
         </div>
+
+        {/* Call Options Alert Widget */}
+        {extractedData?.call_alert && (
+          <CallOptionsWidget data={extractedData.call_alert} reportDate={`${dayName}, ${monthDay}`} />
+        )}
 
         {/* Full Report Content */}
         <div className="bg-card border rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">

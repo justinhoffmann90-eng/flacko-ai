@@ -1,120 +1,64 @@
 ---
 title: "Slow Zone"
-description: "When momentum stalls — how to recognize it and what to do."
-readingTime: "5 min"
+description: "The sizing reducer that protects you when momentum fades."
+readingTime: "4 min"
 ---
 
-## What Is the Slow Zone?
+## What Is Slow Zone?
 
-The **Slow Zone** is a price region where momentum has stalled. Neither bulls nor bears are in control. It's a waiting game.
+Slow Zone is a **mechanical position-sizing modifier**.
 
----
-
-## Characteristics
-
-| Feature | Description |
-|---------|-------------|
-| **Low directional conviction** | No clear trend |
-| **Compressed price action** | Tight daily ranges |
-| **Mixed signals** | Conflicting indicators |
-| **Dealer neutrality** | Gamma balanced, no dominant flow |
+- **Trigger:** Price closes below **Daily 21 EMA × 0.98**
+- **Resume:** Price reclaims Daily 21 EMA
+- **Purpose:** Reduce buying speed when trend quality weakens
 
 ---
 
-## How to Identify It
+## Core Rule
 
-| Indicator | Slow Zone Signal |
-|-----------|------------------|
-| **HIRO** | Oscillating around 0, no sustained direction |
-| **Volume** | Below average, declining |
-| **EMAs** | Price chopping around 9/13, no clean trend |
-| **Range** | Daily moves <2% repeatedly |
-| **Gamma** | Near flip point, balanced positioning |
+In standard operation, Slow Zone halves your daily cap.  
+But ORANGE and RED are special:
+
+- **YELLOW:** 50% of normal cap
+- **ORANGE/RED:** **25% of normal cap** (not 50%)
 
 ---
 
-## Why It Happens
+## Slow Zone Caps by Mode
 
-| Cause | Explanation |
-|-------|-------------|
-| **Waiting for catalyst** | Earnings, Fed, macro event |
-| **Exhaustion** | After a big move, market rests |
-| **Indecision** | Buyers and sellers balanced |
-| **Holiday/low liquidity** | Reduced participation |
-
----
-
-## What To Do in the Slow Zone
-
-### ✅ Do This
-| Action | Reason |
-|--------|--------|
-| **Reduce position size** | Less conviction = less risk |
-| **Tighten ranges** | Fade extremes of the range |
-| **Be patient** | Don't force trades |
-| **Wait for breakout** | Let the market decide |
-
-### ❌ Don't Do This
-| Action | Reason |
-|--------|--------|
-| **Trade full size** | Whipsaws will hurt |
-| **Chase small moves** | They reverse quickly |
-| **Expect follow-through** | Breakouts fail in Slow Zone |
-| **Get frustrated** | Chop is part of the game |
+| Mode | Normal Daily Cap | Slow Zone Daily Cap |
+|------|------------------|---------------------|
+| 🟢 GREEN | 30% (subscriber view 25%) | Inactive |
+| 🟡 YELLOW (Improving) | 20% | Inactive |
+| 🟡 YELLOW | 17.5% | 8.75% |
+| 🟠 ORANGE | 10% | **2.5%** |
+| 🔴 RED | 5% | **1.25%** |
 
 ---
 
-## Slow Zone Trading Rules
+## Why ORANGE and RED Are Different
 
-| Rule | Application |
-|------|-------------|
-| **Half size max** | Even in Green mode, use 50% of cap |
-| **Tight stops** | Cut losers fast |
-| **Quick profits** | Take 50-70% of normal targets |
-| **Watch for resolution** | Slow Zones end with fast moves |
+In ORANGE/RED, risk is already elevated. If Slow Zone also triggers, conditions are deteriorating fast.  
+So the system cuts pace harder — to one-quarter of normal.
 
 ---
 
-## Exiting the Slow Zone
+## Slow Zone vs Master Eject
 
-The Slow Zone breaks when:
-
-| Signal | Direction |
-|--------|-----------|
-| HIRO sustains >+30% | Bullish breakout likely |
-| HIRO sustains <-30% | Bearish breakdown likely |
-| Volume spike (2x average) | Move incoming |
-| Clean break above/below range | New trend starting |
+| Feature | Slow Zone | Master Eject |
+|---------|-----------|--------------|
+| Anchor | Daily 21 EMA | Weekly 21 EMA |
+| Trigger Type | D21 × 0.98 close breach | W21 close/confirm breach |
+| Primary Effect | Reduce daily buy cap | Cut leverage, move to defense |
+| Goal | Slow accumulation | Protect portfolio structure |
 
 ---
 
-## Example
+## Key Takeaway
 
-> **Situation:**
-> - TSLA: $415-$420 for 4 days
-> - HIRO: -5% to +10% (oscillating)
-> - Daily volume: -30% vs average
-> - Mode: Yellow
-> 
-> **Read:** Slow Zone active
-> 
-> **Your plan:**
-> - Max 7.5% deployment (half of Yellow cap)
-> - Fade moves to $415 and $420
-> - Wait for sustained HIRO direction
-> - On breakout with volume, size up
+Slow Zone is a pacing rule, not an opinion:
+- YELLOW slows to half
+- ORANGE/RED slow to one-quarter
+- GREEN and YELLOW (Improving) ignore it
 
----
-
-## Key Takeaways
-
-| Point | Remember |
-|-------|----------|
-| **Slow Zone = patience** | Don't force it |
-| **Size down** | Half your normal size |
-| **Fade the range** | Until it breaks |
-| **Breakout = opportunity** | The resolution is tradeable |
-
----
-
-*The Slow Zone tests your discipline. Winners wait for clarity.*
+Use it exactly as written to avoid oversizing into weakening structure.

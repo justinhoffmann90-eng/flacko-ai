@@ -1,7 +1,7 @@
 import { ExtractedReportData, ParsedReportData, ReportAlert, TrafficLightMode, TierSignal, TierSignals, Positioning, LevelMapEntry } from "@/types";
 import matter from "gray-matter";
 
-export const PARSER_VERSION = "3.5.1"; // v3.5.1 clearer action language (no "X% of cap" math)
+export const PARSER_VERSION = "4.2.0"; // v4.2.0 support v4.1 daily guide sections + Action column
 
 /**
  * Transform action text to add clarifying context for subscribers
@@ -41,7 +41,7 @@ interface FrontmatterLevelV35 {
   price: number;
   name: string;
   action: string | null;
-  type?: 'trim' | 'watch' | 'current' | 'nibble' | 'pause' | 'caution' | 'eject';
+  type?: 'trim' | 'watch' | 'current' | 'nibble' | 'add' | 'pause' | 'caution' | 'eject' | 'slow_zone';
 }
 
 // Interface for YAML frontmatter data (v3.1/v3.5)
@@ -120,6 +120,40 @@ interface ReportFrontmatter {
   // Earnings
   earnings_date?: string;
   earnings_days_away?: number;
+
+  // v3.7 fields
+  trim_cap_pct?: number;  // Mode-based: GREEN=10, YELLOW=20, ORANGE=25, RED=30
+  ema_extension_pct?: number;  // % above Weekly 9 EMA
+  acceleration_zone?: number;  // Key Gamma Strike value
+  master_eject_rationale?: string;  // Why this level
+  fib_levels?: { price: number; label: string }[] | null;
+  prev_day_score?: number | null;  // Previous day's 100-point assessment score
+  prev_day_grade?: string | null;  // A/B/C/D/F
+  prev_day_system_value?: string | null;  // ADDED_VALUE/PROTECTED_CAPITAL/NEUTRAL/MINOR_COST/COST_MONEY
+
+  // v4.1 fields
+  daily_13ema?: number;
+  slow_zone?: number;
+  slow_zone_active?: boolean;
+  max_invested_pct?: number;
+  master_eject_step?: number;
+  call_alert_status?: string;
+  call_alert_setup?: string | null;
+  call_alert_priority?: string | null;
+  call_alert_conditions?: string[];
+  call_alert_spec?: {
+    delta?: string;
+    expiry?: string;
+    strike?: string;
+    budget?: string;
+  } | null;
+  bx_daily_state?: string;
+  bx_daily_histogram?: number;
+  bx_weekly_state?: string;
+  bx_weekly_histogram?: number;
+  bx_4h_state?: string;
+  bx_1h_state?: string;
+  data_source?: string;
 }
 
 interface ParseResult {
@@ -189,24 +223,36 @@ function parseSections(markdown: string, warnings: string[]): ParsedReportData {
     risk_alerts: "",
     previous_review: "",
     disclaimer: "",
+    indicator_dashboard: "",
+    pattern_statistics: "",
+    call_options_alert: "",
+    mode_change_triggers: "",
+    market_flow_context: "",
+    framework_reminder: "",
   };
 
   // Updated section markers to match actual report format (v2 and v3)
   const sectionPatterns: { key: keyof ParsedReportData; pattern: RegExp }[] = [
-    { key: "header", pattern: /^#\s+TSLA\s+Daily\s+Report/im },
+    { key: "header", pattern: /^#\s+TSLA\s+Daily\s+Report(?!\s*--\s*Supporting)/im },
     { key: "key_metrics", pattern: /##\s*\d*\.?\s*Executive Summary/i },
-    { key: "previous_review", pattern: /##\s*\d*\.?\s*(?:📊|✅)?\s*Previous Day|##\s*\d*\.?\s*Yesterday/i },
-    { key: "qqq_context", pattern: /##\s*\d*\.?\s*🌐?\s*QQQ|##\s*\d*\.?\s*Macro Context/i },
-    { key: "regime_assessment", pattern: /##\s*\d*\.?\s*🚦?\s*(?:Regime Status|Mode)/i },
-    { key: "claude_take", pattern: /##\s*\d*\.?\s*Claude's Take/i },
+    { key: "previous_review", pattern: /##\s*\d*\.?\s*(?:(?:📊|📋|✅)\s*)?Previous Day|##\s*\d*\.?\s*Yesterday/i },
+    { key: "qqq_context", pattern: /##\s*\d*\.?\s*(?:🌐\s*)?QQQ|##\s*\d*\.?\s*Macro Context/i },
+    { key: "regime_assessment", pattern: /##\s*\d*\.?\s*(?:🚦\s*)?(?:Regime Status|Mode:)/i },
+    { key: "claude_take", pattern: /##\s*\d*\.?\s*(?:🧠\s*)?(?:Flacko AI's Take|Claude's Take)/i },
     { key: "entry_quality", pattern: /##\s*\d*\.?\s*Should You Be Buying|##\s*\d*\.?\s*Entry Quality/i },
-    { key: "game_plan", pattern: /##\s*\d*\.?\s*(?:💡)?\s*(?:The Game Plan|Game Plan|Bottom Line)/i },
-    { key: "position_guidance", pattern: /##\s*\d*\.?\s*(?:💰|📊)?\s*(?:Position Sizing|Position|Today's Positioning)/i },
-    { key: "key_levels", pattern: /##\s*\d*\.?\s*(?:📍)?\s*(?:Key Levels|Levels Map)/i },
-    { key: "risk_alerts", pattern: /##\s*\d*\.?\s*(?:🚨|🔔)?\s*Alerts/i },
+    { key: "game_plan", pattern: /##\s*\d*\.?\s*(?:(?:💡|🎯)\s*)?(?:The Game Plan|Game Plan|Bottom Line|Tomorrow's Gameplan)/i },
+    { key: "position_guidance", pattern: /##\s*\d*\.?\s*(?:(?:💰|📊)\s*)?(?:Position Sizing|Position|Today's Positioning|Positioning for)/i },
+    { key: "key_levels", pattern: /##\s*\d*\.?\s*(?:📍\s*)?(?:Key Levels|Levels Map)/i },
+    { key: "risk_alerts", pattern: /##\s*\d*\.?\s*(?:(?:🚨|🔔)\s*)?Alert(?:s|\s+Levels)/i },
     { key: "technical_analysis", pattern: /##\s*\d*\.?\s*Technical Analysis/i },
-    { key: "spotgamma_analysis", pattern: /##\s*\d*\.?\s*(?:⚠️|🎯)?\s*(?:Discipline|SpotGamma)/i },
-    { key: "disclaimer", pattern: /##\s*\d*\.?\s*📸?\s*Overview|---\s*\n.*not financial advice/i },
+    { key: "spotgamma_analysis", pattern: /##\s*\d*\.?\s*(?:(?:⚠️|🎯)\s*)?(?:Discipline|SpotGamma)/i },
+    { key: "indicator_dashboard", pattern: /##\s*\d*\.?\s*(?:📈\s*)?Indicator Dashboard/i },
+    { key: "pattern_statistics", pattern: /##\s*\d*\.?\s*(?:📊\s*)?Active Pattern Statistics/i },
+    { key: "call_options_alert", pattern: /##\s*\d*\.?\s*(?:📞\s*)?Call Options Alert/i },
+    { key: "mode_change_triggers", pattern: /##\s*\d*\.?\s*(?:🔄\s*)?Mode Change Triggers/i },
+    { key: "market_flow_context", pattern: /##\s*\d*\.?\s*(?:📊\s*)?Market.*Flow.*Context/i },
+    { key: "framework_reminder", pattern: /##\s*\d*\.?\s*(?:🧭\s*)?Framework Reminder/i },
+    { key: "disclaimer", pattern: /##\s*\d*\.?\s*(?:📸\s*)?Overview|---\s*\n.*not financial advice/i },
   ];
 
   // Extract each section
@@ -460,10 +506,15 @@ function extractFromFrontmatter(
     range: { low: 0, high: 0 },
   };
 
-  // Master eject from frontmatter
+  // Master eject from frontmatter — NEVER hardcode action text
+  // Use rationale from report, or extract from eject-type levels
+  const ejectLevels = (fm.levels || []).filter((l: any) => l.type === 'eject');
+  const primaryEjectAction = ejectLevels.length > 0
+    ? ejectLevels.map((l: any) => `$${l.price}: ${l.action}`).join(' | ')
+    : fm.master_eject_rationale || "See daily report for action steps";
   const master_eject: ExtractedReportData["master_eject"] = {
     price: fm.master_eject || 0,
-    action: "Daily close below = exit all positions",
+    action: primaryEjectAction,
   };
 
   // Tiers from frontmatter (support v3.5, v3.1, and v3.0 field names)
@@ -528,7 +579,7 @@ function extractFromFrontmatter(
   // Alerts - extract from frontmatter levels array (v3.1) or fall back to markdown parsing
   let alerts: ReportAlert[] = [];
   if (fm.levels && fm.levels.length > 0) {
-    alerts = extractAlertsFromLevels(fm.levels, fm.price_close || 0);
+    alerts = extractAlertsFromLevels(fm.levels, fm.price_close || 0, fm.master_eject, fm.master_eject_rationale);
   }
   // If no alerts from frontmatter, try markdown parsing
   if (alerts.length === 0) {
@@ -557,7 +608,7 @@ function extractFromFrontmatter(
   }
 
   // v3.5 fields
-  const pause_zone = fm.pause_zone;
+  const pause_zone = fm.pause_zone ?? fm.slow_zone;
   const daily_9ema = fm.daily_9ema;
   const daily_21ema = fm.daily_21ema;
   const weekly_9ema = fm.weekly_9ema;
@@ -574,12 +625,44 @@ function extractFromFrontmatter(
     high_30day: fm.hiro_30day_high || 0,
   } : undefined;
 
+  // v3.7 fields
+  const trim_cap_pct = fm.trim_cap_pct;
+  const ema_extension_pct = fm.ema_extension_pct;
+  const acceleration_zone = fm.acceleration_zone;
+  const master_eject_rationale = fm.master_eject_rationale;
+  const fib_levels = fm.fib_levels;
+  const prev_day_score = fm.prev_day_score;
+  const prev_day_grade = fm.prev_day_grade;
+  const prev_day_system_value = fm.prev_day_system_value;
+
+  // v4.1 fields
+  const daily_13ema = fm.daily_13ema;
+  const slow_zone = fm.slow_zone ?? fm.pause_zone;
+  const slow_zone_active = fm.slow_zone_active;
+  const max_invested_pct = fm.max_invested_pct;
+  const master_eject_step = fm.master_eject_step;
+  const call_alert = fm.call_alert_status ? {
+    status: fm.call_alert_status,
+    setup: fm.call_alert_setup ?? null,
+    priority: fm.call_alert_priority ?? null,
+    conditions: fm.call_alert_conditions || [],
+    spec: fm.call_alert_spec ?? null,
+  } : undefined;
+  const bx_states = (fm.bx_daily_state || fm.bx_weekly_state || fm.bx_4h_state || fm.bx_1h_state) ? {
+    daily: fm.bx_daily_state || '',
+    daily_histogram: fm.bx_daily_histogram ?? 0,
+    weekly: fm.bx_weekly_state || '',
+    weekly_histogram: fm.bx_weekly_histogram ?? 0,
+    four_hour: fm.bx_4h_state || '',
+    one_hour: fm.bx_1h_state || '',
+  } : undefined;
+
   // Validate required fields
   if (price.close <= 0) {
     warnings.push("Could not extract close price from frontmatter");
   }
   if (master_eject.price <= 0) {
-    warnings.push("Could not extract Master Eject from frontmatter");
+    warnings.push("Could not extract Kill Leverage (Master Eject) from frontmatter");
   }
 
   // Build consolidated key_levels object for email templates
@@ -619,6 +702,23 @@ function extractFromFrontmatter(
     gamma_regime,
     hiro,
     correction_risk,
+    // v3.7 fields
+    trim_cap_pct,
+    ema_extension_pct,
+    acceleration_zone,
+    master_eject_rationale,
+    fib_levels,
+    prev_day_score,
+    prev_day_grade,
+    prev_day_system_value,
+    // v4.1 fields
+    daily_13ema,
+    slow_zone,
+    slow_zone_active,
+    max_invested_pct,
+    master_eject_step,
+    call_alert,
+    bx_states,
   };
 }
 
@@ -640,7 +740,7 @@ function extractKeyLevelPrice(levelsMap: LevelMapEntry[] | undefined, patterns: 
 // Convert frontmatter levels array to ReportAlert objects (v3.1/v3.5)
 // Trim actions (above current price) = upside, Nibble actions (below current price) = downside
 // v3.5 includes explicit 'type' field for level classification
-function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35)[], currentPrice: number): ReportAlert[] {
+function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35)[], currentPrice: number, masterEjectPrice?: number, masterEjectAction?: string): ReportAlert[] {
   const alerts: ReportAlert[] = [];
 
   for (const level of levels) {
@@ -654,10 +754,12 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
     if (level.name.toLowerCase().includes('current price')) continue;
     if (levelType === 'current') continue;
     
-    // Master Eject gets included as a special 'eject' type alert
-    const isMasterEject = level.name.toLowerCase().includes('master eject') || 
+    // Skip eject-type levels from the levels array entirely.
+    // Master Eject is added ONCE at the end using the frontmatter master_eject price.
+    const isMasterEject = level.name.toLowerCase().includes('kill leverage') || level.name.toLowerCase().includes('master eject') || 
                           levelType === 'eject' || 
                           action.includes('exit all');
+    if (isMasterEject) continue;
 
     // Determine type based on v3.5 type field first, then action keywords
     // Trim/Watch = upside (take profit), Nibble/Pause/Caution = downside (buy the dip)
@@ -668,7 +770,7 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type = 'downside';
     } else if (levelType === 'trim' || levelType === 'watch') {
       type = 'upside';
-    } else if (levelType === 'nibble' || levelType === 'pause' || levelType === 'caution') {
+    } else if (levelType === 'nibble' || levelType === 'pause' || levelType === 'caution' || levelType === 'slow_zone') {
       type = 'downside';
     } else if (action.includes('trim') || action.includes('breakout')) {
       type = 'upside';
@@ -679,17 +781,43 @@ function extractAlertsFromLevels(levels: (FrontmatterLevel | FrontmatterLevelV35
       type = level.price > currentPrice ? 'upside' : 'downside';
     }
 
-    // Generate contextual reason - Master Eject gets special warning message
-    const reason = isMasterEject 
-      ? "⚠️ WARNING: This is your line in the sand. If we CLOSE below this level, exit all positions. No exceptions."
-      : generateAlertReason(level.name, level.action, type);
+    const reason = generateAlertReason(level.name, level.action, type);
 
     alerts.push({
       type,
-      level_name: isMasterEject ? "Master Eject ⚠️" : level.name,
+      level_name: level.name,
       price: level.price,
-      action: isMasterEject ? "EXIT ALL if daily close below" : clarifyActionText(level.action) || level.action,
+      action: clarifyActionText(level.action) || level.action,
       reason,
+    });
+  }
+
+  // Add Master Eject alerts from levels array (preserves actual action text from report)
+  // DO NOT hardcode action text — use what the report says
+  const ejectLevels = levels.filter((l: any) => l.type === 'eject');
+  if (ejectLevels.length > 0) {
+    for (const ejectLevel of ejectLevels) {
+      // Skip if already added in the main loop above
+      const alreadyAdded = alerts.some(a => a.price === ejectLevel.price && a.level_name?.includes('Eject'));
+      if (!alreadyAdded) {
+        alerts.push({
+          type: 'downside',
+          level_name: `${ejectLevel.name} ⚠️`,
+          price: ejectLevel.price,
+          action: ejectLevel.action || "See daily report",
+          reason: `⚠️ Kill Leverage level: ${ejectLevel.action}`,
+        });
+      }
+    }
+  } else if (masterEjectPrice && masterEjectPrice > 0) {
+    // Fallback: only if no eject levels in array, use frontmatter price
+    // Still use frontmatter rationale if available, never hardcode "EXIT ALL"
+    alerts.push({
+      type: 'downside',
+      level_name: "Kill Leverage ⚠️",
+      price: masterEjectPrice,
+      action: masterEjectAction || "Defensive action required — see daily report for details",
+      reason: "⚠️ Kill Leverage level — refer to daily report for specific action steps.",
     });
   }
 
@@ -709,8 +837,8 @@ function extractMode(
   parsed: ParsedReportData,
   warnings: string[]
 ): ExtractedReportData["mode"] {
-  // v3.0 Pattern: ## 🚦 Mode: 🟢 GREEN or ## 🚦 Mode: [🟢/🟡/🟠/🔴] [GREEN/YELLOW/ORANGE/RED]
-  const v3Pattern = /##\s*🚦?\s*Mode:\s*([🔴🟠🟡🟢])\s*(GREEN|YELLOW|ORANGE|RED)(?:\s*\(([^)]+)\))?/i;
+  // v3.0 Pattern: ## 🚦 Mode: 🟢 GREEN or ## ⚡ Mode: [🟢/🟡/🟠/🔴] [GREEN/YELLOW/ORANGE/RED]
+  const v3Pattern = /##\s*(?:🚦|⚡|🔴|🟠|🟡|🟢)?\s*Mode:\s*([🔴🟠🟡🟢])\s*(GREEN|YELLOW|ORANGE|RED)(?:\s*\(([^)]+)\))?/i;
   const v3Match = markdown.match(v3Pattern);
 
   if (v3Match) {
@@ -857,29 +985,45 @@ function extractMasterEject(
   markdown: string,
   warnings: string[]
 ): ExtractedReportData["master_eject"] {
-  // v3.0 Pattern: Master Eject in Levels Map table
-  // | **Master Eject** | **$XXX** | Structure | — | **Daily close below = exit all** |
-  const levelsTablePattern = /\|\s*\*?\*?Master\s*Eject\*?\*?\s*\|\s*\*?\*?\$?([\d.]+)\*?\*?\s*\|/i;
-  const levelsMatch = markdown.match(levelsTablePattern);
-  if (levelsMatch) {
-    return {
-      price: parseFloat(levelsMatch[1]),
-      action: "Daily close below = exit all positions",
-    };
+  // v3.0 Pattern: Kill Leverage / Master Eject in Levels Map table
+  // | **Kill Leverage** | **$XXX** | Structure | — | **Daily close below = exit all** |
+  const levelsTablePatterns = [
+    /\|\s*\*?\*?Kill\s*Leverage\*?\*?\s*\|\s*\*?\*?\$?([\d.]+)\*?\*?\s*\|/i,
+    /\|\s*\*?\*?Master\s*Eject\*?\*?\s*\|\s*\*?\*?\$?([\d.]+)\*?\*?\s*\|/i,
+  ];
+
+  for (const pattern of levelsTablePatterns) {
+    const levelsMatch = markdown.match(pattern);
+    if (levelsMatch) {
+      return {
+        price: parseFloat(levelsMatch[1]),
+        action: "Daily close below = exit all positions",
+      };
+    }
   }
 
-  // v3.0 Pattern at end of Page 2: **Master Eject:** $XXX
-  const page2Pattern = /\*\*Master\s*Eject:\*\*\s*\$?([\d.]+)/i;
-  const page2Match = markdown.match(page2Pattern);
-  if (page2Match) {
-    return {
-      price: parseFloat(page2Match[1]),
-      action: "Daily close below = exit all positions",
-    };
+  // v3.0 Pattern at end of Page 2: **Kill Leverage:** $XXX (fallback: **Master Eject:** $XXX)
+  const page2Patterns = [
+    /\*\*Kill\s*Leverage:\*\*\s*\$?([\d.]+)/i,
+    /\*\*Master\s*Eject:\*\*\s*\$?([\d.]+)/i,
+  ];
+
+  for (const pattern of page2Patterns) {
+    const page2Match = markdown.match(pattern);
+    if (page2Match) {
+      return {
+        price: parseFloat(page2Match[1]),
+        action: "Daily close below = exit all positions",
+      };
+    }
   }
 
-  // Look for "Master Eject Level:" or "Master Eject:" patterns (legacy)
+  // Look for Kill Leverage patterns first (new standard), then Master Eject (legacy)
   const patterns = [
+    /Kill\s*Leverage\s*Level[:\s]*\$?([\d.]+)/i,
+    /Kill\s*Leverage[:\s]*\$?([\d.]+)/i,
+    /\*\*Kill\s*Leverage\*\*[:\s]*\$?([\d.]+)/i,
+    /NEW\s*Kill\s*Leverage[:\s]*\$?([\d.]+)/i,
     /Master\s*Eject\s*Level[:\s]*\$?([\d.]+)/i,
     /Master\s*Eject[:\s]*\$?([\d.]+)/i,
     /\*\*Master\s*Eject\*\*[:\s]*\$?([\d.]+)/i,
@@ -897,7 +1041,7 @@ function extractMasterEject(
     }
   }
 
-  warnings.push("Could not extract Master Eject price");
+  warnings.push("Could not extract Kill Leverage (Master Eject) price");
   return { price: 0, action: "Exit all positions" };
 }
 
@@ -1152,7 +1296,7 @@ export function validateReport(extracted: ExtractedReportData): string[] {
   }
 
   if (extracted.master_eject.price <= 0) {
-    errors.push("Master Eject price is required");
+    errors.push("Kill Leverage price is required");
   }
 
   // Relaxed: only require at least 2 alerts
@@ -1404,7 +1548,7 @@ function extractAlertsV3(markdown: string, warnings: string[]): ReportAlert[] | 
     if (isNaN(price) || price <= 0) continue;
 
     // Skip Master Eject row (it's extracted separately)
-    if (levelName.toLowerCase().includes('master eject')) continue;
+    if (levelName.toLowerCase().includes('kill leverage') || levelName.toLowerCase().includes('master eject')) continue;
 
     // Determine type: 🟢 = upside (take profit), 🔴 = downside (buy dip), 🟡 = neutral/caution
     const isDownside = emoji === '🔴';
@@ -1439,7 +1583,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
   // Find header line
   const headerIdx = lines.findIndex(l => 
-    l.includes('Price') && l.includes('Level') && l.includes('What To Do')
+    l.includes('Price') && l.includes('Level') && (l.includes('What To Do') || l.includes('Action'))
   );
   
   if (headerIdx === -1) return alerts;
@@ -1460,7 +1604,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
     let levelName = rowMatch[2].trim()
       .replace(/\*\*/g, '')  // Remove bold
-      .replace(/^[🎯📈⏸️🛡️⚠️❌📍]\s*/, '');  // Remove emoji prefix
+      .replace(/^[🎯📈⏸️🛡️⚠️❌📍⚡]\s*/, '');  // Remove emoji prefix
 
     const whatToDo = rowMatch[3].trim().replace(/\*\*/g, '');
 
@@ -1468,14 +1612,18 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
     if (levelName.toLowerCase().includes('current price')) continue;
 
     // Check if this is Master Eject
-    const isMasterEject = levelName.toLowerCase().includes('master eject') || 
+    const isMasterEject = levelName.toLowerCase().includes('kill leverage') || levelName.toLowerCase().includes('master eject') || 
                           whatToDo.toLowerCase().includes('exit all');
 
-    // Split action and reason on em-dash
+    // Split action and reason on em-dash or double-hyphen
     let action = whatToDo;
     let explicitReason = '';
     if (whatToDo.includes('—')) {
       const parts = whatToDo.split('—');
+      action = parts[0].trim();
+      explicitReason = parts[1]?.trim() || '';
+    } else if (whatToDo.includes('--')) {
+      const parts = whatToDo.split('--');
       action = parts[0].trim();
       explicitReason = parts[1]?.trim() || '';
     }
@@ -1489,7 +1637,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
       type = 'downside';
     } else if (act.includes('trim') || act.includes('breakout') || originalLevel.includes('🎯') || originalLevel.includes('📈')) {
       type = 'upside';
-    } else if (act.includes('nibble') || act.includes('stop adding') || act.includes('support') || 
+    } else if (act.includes('nibble') || act.includes('add') || act.includes('stop adding') || act.includes('support') || 
                act.includes('pause') || act.includes('caution') || act.includes('last') ||
                originalLevel.includes('🛡️') || originalLevel.includes('⏸️') || originalLevel.includes('⚠️')) {
       type = 'downside';
@@ -1506,7 +1654,7 @@ function parseAlertLevelsTable(section: string): ReportAlert[] {
 
     alerts.push({
       type,
-      level_name: isMasterEject ? "Master Eject ⚠️" : levelName,
+      level_name: isMasterEject ? "Kill Leverage ⚠️" : levelName,
       price,
       action: isMasterEject ? "EXIT ALL if daily close below" : action,
       reason,

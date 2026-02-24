@@ -16,5 +16,8 @@ export const EMAIL_FROM = process.env.EMAIL_FROM || "alerts@flacko.ai";
 export const resend = { 
   emails: { 
     send: async (params: Parameters<Resend["emails"]["send"]>[0]) => getResend().emails.send(params) 
-  } 
+  },
+  batch: {
+    send: async (params: Parameters<Resend["batch"]["send"]>[0]) => getResend().batch.send(params)
+  }
 };

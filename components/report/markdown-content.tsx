@@ -1,5 +1,6 @@
 "use client";
 
+import { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -161,31 +162,53 @@ function cleanContent(raw: string): string {
 
 // Tables render as-is from markdown - no transformations
 
+function getTextContent(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getTextContent).join(" ");
+  if (typeof node === "object" && "props" in node) {
+    return getTextContent((node as { props?: { children?: ReactNode } }).props?.children);
+  }
+  return "";
+}
+
+function shouldNoWrapCell(node: ReactNode): boolean {
+  const text = getTextContent(node).replace(/\s+/g, " ").trim();
+  // Only nowrap short price-like cells (e.g. "$421", "$405.50"), not long descriptions
+  return /[$€£¥]\s?\d/.test(text) && text.length < 15;
+}
+
 export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
 
   return (
-    <div className="markdown-content">
+    <div className="markdown-content [&_h2]:border-t [&_h2]:border-slate-600/60 [&_h2]:pt-8 [&_h2:first-of-type]:border-t-0 [&_h2:first-of-type]:pt-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          // Simple table rendering - no transformations
+          // Simple table rendering - horizontal scroll on mobile for wide tables
           table: ({ children }) => (
-            <div className="my-4">
-              <table className="w-full border-collapse">{children}</table>
+            <div className="my-4 -mx-4 px-4 max-w-full overflow-x-auto">
+              <table className="w-full border-collapse min-w-[400px]">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-slate-700">{children}</thead>
+            <thead className="bg-slate-700/80">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-[11px] md:text-xs lg:text-sm uppercase tracking-wider text-slate-200">
+            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-xs md:text-sm uppercase tracking-wider text-slate-200">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border/50 px-3 py-2 align-top text-sm md:text-base lg:text-lg">{children}</td>
+            <td
+              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg break-words ${
+                shouldNoWrapCell(children) ? "whitespace-nowrap" : ""
+              }`}
+            >
+              {children}
+            </td>
           ),
           tr: ({ children }) => (
             <tr className="even:bg-muted/20 hover:bg-muted/40 transition-colors">{children}</tr>
@@ -195,7 +218,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mt-8 mb-3 text-foreground flex items-center gap-2">{children}</h2>
+            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mt-10 mb-4 text-foreground flex items-center gap-2">{children}</h2>
           ),
           h3: ({ children }) => (
             <h3 className="text-base md:text-lg lg:text-xl font-semibold mt-5 mb-2 text-foreground/90">{children}</h3>
@@ -206,13 +229,13 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           ),
           // Lists
           ul: ({ children }) => (
-            <ul className="mb-4 ml-6 space-y-2 list-disc text-base md:text-lg lg:text-xl">{children}</ul>
+            <ul className="mb-4 ml-6 space-y-2 list-disc text-base md:text-lg lg:text-lg">{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-4 ml-6 space-y-4 list-decimal text-base md:text-lg lg:text-xl">{children}</ol>
+            <ol className="mb-4 ml-6 space-y-4 list-decimal text-base md:text-lg lg:text-lg">{children}</ol>
           ),
           li: ({ children }) => (
-            <li className="text-foreground/90 pl-1 text-base md:text-lg lg:text-xl">{children}</li>
+            <li className="text-foreground/90 pl-1 text-base md:text-lg lg:text-lg">{children}</li>
           ),
           // Emphasis
           strong: ({ children }) => (
@@ -239,7 +262,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           },
           // Blockquotes - for Flacko AI's Take sections
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-primary/60 pl-4 py-3 my-5 bg-primary/5 rounded-r-lg">
+            <blockquote className="border-l-4 border-primary pl-5 py-4 my-6 bg-primary/10 rounded-r-lg">
               {children}
             </blockquote>
           ),

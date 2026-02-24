@@ -8,6 +8,8 @@ import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getAlertEmailHtml } from "@/lib/resend/templates";
 import { TrafficLightMode, ReportAlert } from "@/types";
 
+export const maxDuration = 30;
+
 // Telegram backup notification for critical failures
 async function sendTelegramBackup(message: string): Promise<boolean> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -67,7 +69,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check if within market hours (9:30 AM - 4:00 PM ET, Mon-Fri)
+  // Check if within market hours (9:30 AM - 4:00 PM ET, Mon-Fri, excluding holidays)
   // Convert to ET for market hours check
   const now = new Date();
   const etTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -75,19 +77,74 @@ export async function GET(request: Request) {
   const minute = etTime.getMinutes();
   const day = etTime.getDay(); // 0=Sun, 6=Sat
   
+  // US stock market holidays (NYSE/NASDAQ) — MM-DD format for fixed dates
+  // Floating holidays use helper function below
+  const year = etTime.getFullYear();
+  const month = etTime.getMonth(); // 0-indexed
+  const date = etTime.getDate();
+  const dayOfWeek = etTime.getDay();
+  
+  function isMarketHoliday(): boolean {
+    // New Year's Day — Jan 1 (or observed on nearest weekday)
+    if (month === 0 && date === 1) return true;
+    if (month === 0 && date === 2 && dayOfWeek === 1) return true; // observed Monday
+    if (month === 11 && date === 31 && dayOfWeek === 5) return true; // observed Friday
+    
+    // MLK Day — 3rd Monday of January
+    if (month === 0 && dayOfWeek === 1 && date >= 15 && date <= 21) return true;
+    
+    // Presidents' Day — 3rd Monday of February
+    if (month === 1 && dayOfWeek === 1 && date >= 15 && date <= 21) return true;
+    
+    // Good Friday — varies (approximate: skip for now, add specific dates per year)
+    // 2025: Apr 18, 2026: Apr 3, 2027: Mar 26
+    const goodFridays: Record<number, string> = {
+      2025: "4-18", 2026: "4-3", 2027: "3-26", 2028: "4-14", 2029: "3-30",
+    };
+    if (goodFridays[year] === `${month + 1}-${date}`) return true;
+    
+    // Memorial Day — last Monday of May
+    if (month === 4 && dayOfWeek === 1 && date >= 25) return true;
+    
+    // Juneteenth — June 19 (or observed)
+    if (month === 5 && date === 19) return true;
+    if (month === 5 && date === 20 && dayOfWeek === 1) return true;
+    if (month === 5 && date === 18 && dayOfWeek === 5) return true;
+    
+    // Independence Day — July 4 (or observed)
+    if (month === 6 && date === 4) return true;
+    if (month === 6 && date === 5 && dayOfWeek === 1) return true;
+    if (month === 6 && date === 3 && dayOfWeek === 5) return true;
+    
+    // Labor Day — 1st Monday of September
+    if (month === 8 && dayOfWeek === 1 && date <= 7) return true;
+    
+    // Thanksgiving — 4th Thursday of November
+    if (month === 10 && dayOfWeek === 4 && date >= 22 && date <= 28) return true;
+    
+    // Christmas — Dec 25 (or observed)
+    if (month === 11 && date === 25) return true;
+    if (month === 11 && date === 26 && dayOfWeek === 1) return true;
+    if (month === 11 && date === 24 && dayOfWeek === 5) return true;
+    
+    return false;
+  }
+  
   const isWeekday = day >= 1 && day <= 5;
+  const isHoliday = isMarketHoliday();
   const timeInMinutes = hour * 60 + minute;
   const marketOpen = 9 * 60 + 30;  // 9:30 AM ET
   const marketClose = 16 * 60;      // 4:00 PM ET
   const isMarketHours = timeInMinutes >= marketOpen && timeInMinutes <= marketClose;
   
-  if (!isWeekday || !isMarketHours) {
+  if (!isWeekday || !isMarketHours || isHoliday) {
     return NextResponse.json({ 
       status: "skipped", 
-      reason: "outside market hours",
+      reason: isHoliday ? "market holiday" : "outside market hours",
       time: etTime.toISOString(),
       isWeekday,
-      isMarketHours
+      isMarketHours,
+      isHoliday,
     });
   }
 
@@ -119,6 +176,7 @@ export async function GET(request: Request) {
     const { data: report } = await supabase
       .from("reports")
       .select("id, extracted_data, report_date")
+      .or("report_type.is.null,report_type.eq.daily")
       .order("report_date", { ascending: false })
       .limit(1)
       .single();
@@ -304,106 +362,77 @@ export async function GET(request: Request) {
       putWall: extractedData.key_levels.put_wall,
     } : undefined;
 
-    // Send Discord alert (single message to #alerts channel)
-    const discordMessage = getAlertDiscordMessage({
-      alerts: Array.from(uniqueAlerts.values()),
-      mode: extractedData?.mode?.current || "yellow",
-      positioning: extractedData?.positioning?.posture || "",
-      keyLevels: discordKeyLevels,
-      masterEject: extractedData?.master_eject?.price,
-    });
-
-    const discordSent = await sendAlertMessage(discordMessage);
-    
-    // Log the delivery attempt
-    await logAlertDelivery(
-      supabase,
-      "alerts",
-      discordSent,
-      triggeredAlerts.length,
-      currentPrice,
-      discordSent ? undefined : "Discord webhook failed"
-    );
-
-    // CRITICAL: If Discord failed, send backup via Telegram
-    if (!discordSent) {
-      const alertList = Array.from(uniqueAlerts.values())
-        .map(a => `• $${a.price} - ${a.level_name}`)
-        .join("\n");
-      
-      const backupMessage = `🚨 <b>DISCORD ALERT FAILED</b> 🚨\n\nTSLA: $${currentPrice.toFixed(2)}\n\nAlerts that should have fired:\n${alertList}\n\n⚠️ Discord webhook is broken. Check Vercel env vars.`;
-      
-      const telegramSent = await sendTelegramBackup(backupMessage);
-      
-      console.error(`Discord alert failed! Telegram backup: ${telegramSent ? "sent" : "also failed"}`);
-      
-      return NextResponse.json({
-        success: false,
-        price: currentPrice,
-        triggeredCount: triggeredAlerts.length,
-        discordSent: false,
-        telegramBackup: telegramSent,
-        error: "Discord delivery failed - backup notification attempted",
-      });
-    }
-
-    // Create in-app notifications for all affected users
+    // Create in-app notifications for all affected users (batched)
     const userIds = new Set(triggeredAlerts.map((a) => a.user_id));
-    for (const userId of userIds) {
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "alert_triggered",
-        title: `Alert Triggered`,
-        body: `TSLA hit $${currentPrice.toFixed(2)}`,
-        metadata: {
-          price: currentPrice,
-          alerts: triggeredAlerts
-            .filter((a) => a.user_id === userId)
-            .map((a) => a.level_name),
-        },
-      });
+    const notificationsToInsert = Array.from(userIds).map((userId) => ({
+      user_id: userId,
+      type: "alert_triggered",
+      title: `Alert Triggered`,
+      body: `TSLA hit $${currentPrice.toFixed(2)}`,
+      metadata: {
+        price: currentPrice,
+        alerts: triggeredAlerts
+          .filter((a) => a.user_id === userId)
+          .map((a) => a.level_name),
+      },
+    }));
+    
+    if (notificationsToInsert.length > 0) {
+      await supabase.from("notifications").insert(notificationsToInsert);
     }
-
-    // Send email alerts to ALL active subscribers with email_alerts enabled
-    // Batch query to avoid N+1: fetch subscribers with their settings and email in one go
-    const { data: subscribersWithDetails } = await supabase
-      .from("subscriptions")
-      .select(`
-        user_id,
-        users!inner(id, email),
-        user_settings(email_alerts)
-      `)
-      .in("status", ["active", "comped"]);
-
-    // Flatten and filter to subscribers with email alerts enabled
-    const eligibleSubscribers = (subscribersWithDetails || []).filter((sub) => {
-      const settings = (sub as any).user_settings;
-      // Default to true if no settings or email_alerts not explicitly set
-      const emailAlertsEnabled = !settings || (settings as any).email_alerts !== false;
-      const email = (sub as any).users?.email;
-      return emailAlertsEnabled && email;
-    });
-
-    console.log(`Checking email alerts for ${eligibleSubscribers.length} eligible subscribers`);
 
     // Build the alerts array once (same for all users)
     const alertsToSend = Array.from(uniqueAlerts.values());
 
     // Build key levels from report data (once, not per-user)
+    const masterEjectData = (report.extracted_data as any)?.master_eject;
     const keyLevels = extractedData?.key_levels ? {
       hedgeWall: extractedData.key_levels.hedge_wall,
       gammaStrike: extractedData.key_levels.gamma_strike,
       putWall: extractedData.key_levels.put_wall,
       callWall: extractedData.key_levels.call_wall,
       masterEject: extractedData.key_levels.master_eject,
+      masterEjectAction: masterEjectData?.action,
     } : undefined;
 
     let emailsSent = 0;
     let emailsFailed = 0;
-    for (const sub of eligibleSubscribers) {
-      const userEmail = (sub as any).users?.email as string;
 
-      try {
+    // Send email alerts to ALL active subscribers with email_alerts enabled
+    // Batch query to avoid N+1: fetch subscribers with their settings and email in one go
+    try {
+      // Query subscribers and their emails (user_settings queried separately - no FK to subscriptions)
+      const { data: subscribersWithDetails } = await supabase
+        .from("subscriptions")
+        .select(`
+          user_id,
+          users!inner(id, email)
+        `)
+        .in("status", ["active", "comped", "trial"]);
+
+      // Get all user_settings to check email_alerts preference
+      const userIds = (subscribersWithDetails || []).map((s: any) => s.user_id);
+      const { data: allSettings } = await supabase
+        .from("user_settings")
+        .select("user_id, email_alerts")
+        .in("user_id", userIds);
+      
+      const settingsMap = new Map((allSettings || []).map((s: any) => [s.user_id, s]));
+
+      // Filter to subscribers with email alerts enabled
+      const eligibleSubscribers = (subscribersWithDetails || []).filter((sub) => {
+        const settings = settingsMap.get((sub as any).user_id);
+        // Default to true if no settings or email_alerts not explicitly set
+        const emailAlertsEnabled = !settings || (settings as any).email_alerts !== false;
+        const email = (sub as any).users?.email;
+        return emailAlertsEnabled && email;
+      });
+
+      console.log(`Checking email alerts for ${eligibleSubscribers.length} eligible subscribers`);
+
+      // Build batch email array (max 100 per batch for Resend)
+      const emailBatch = eligibleSubscribers.map((sub) => {
+        const userEmail = (sub as any).users?.email as string;
         const html = getAlertEmailHtml({
           userName: userEmail.split("@")[0],
           alerts: alertsToSend,
@@ -414,46 +443,114 @@ export async function GET(request: Request) {
           positioning: extractedData?.positioning?.posture,
         });
 
-        await resend.emails.send({
+        return {
           from: EMAIL_FROM,
           to: userEmail,
           subject: `TSLA Alert: $${currentPrice.toFixed(2)} - ${alertsToSend.map(a => a.level_name).join(", ")}`,
           html,
-        });
+        };
+      });
 
-        emailsSent++;
-        console.log(`Email alert sent to ${userEmail}`);
-      } catch (emailError) {
-        emailsFailed++;
-        console.error(`Failed to send email to ${userEmail}:`, emailError);
+      // Send all emails in a single batch request
+      if (emailBatch.length > 0) {
+        try {
+          const batchResult = await resend.batch.send(emailBatch);
+          
+          if (batchResult.data) {
+            emailsSent = batchResult.data.length;
+            console.log(`📧 Batch sent ${emailsSent} email alerts`);
+            
+            // Bulk update email_sent_at for all triggered alerts
+            const allTriggeredAlertIds = triggeredAlerts.map((a) => a.id);
+            if (allTriggeredAlertIds.length > 0) {
+              await supabase
+                .from("report_alerts")
+                .update({
+                  email_sent_at: new Date().toISOString(),
+                })
+                .in("id", allTriggeredAlertIds);
+            }
+          } else {
+            emailsFailed = emailBatch.length;
+            console.error("Batch email send returned no data");
+          }
+        } catch (batchError) {
+          emailsFailed = emailBatch.length;
+          console.error("Batch email send failed:", batchError);
+        }
       }
+
+      console.log(`📧 Email delivery: ${emailsSent} sent, ${emailsFailed} failed`);
+
+      // ALERT if email delivery had failures
+      if (emailsFailed > 0) {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
+        if (botToken && chatId) {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `⚠️ <b>EMAIL ALERTS PARTIALLY FAILED</b>\n\n${emailsSent} sent, ${emailsFailed} failed\n\nCheck Vercel logs for details.`,
+              parse_mode: "HTML",
+            }),
+          }).catch(e => console.error("Failed to send email failure notification:", e));
+        }
+      }
+    } catch (emailDeliveryError) {
+      emailsFailed++;
+      console.error("Email delivery section failed:", emailDeliveryError);
     }
 
-    console.log(`📧 Sent email alerts to ${emailsSent} subscribers`);
+    // Send Discord alert (single message to #alerts channel)
+    const discordMessage = getAlertDiscordMessage({
+      alerts: alertsToSend,
+      mode: extractedData?.mode?.current || "yellow",
+      positioning: extractedData?.positioning?.posture || "",
+      keyLevels: discordKeyLevels,
+      masterEject: extractedData?.key_levels?.master_eject,
+    });
 
-    // ALERT if email delivery had failures
-    if (emailsFailed > 0) {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
-      if (botToken && chatId) {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `⚠️ <b>EMAIL ALERTS PARTIALLY FAILED</b>\n\n${emailsSent} sent, ${emailsFailed} failed\n\nCheck Vercel logs for details.`,
-            parse_mode: "HTML",
-          }),
-        }).catch(e => console.error("Failed to send email failure notification:", e));
+    let discordSent = false;
+    let telegramBackup = false;
+
+    try {
+      discordSent = await sendAlertMessage(discordMessage);
+
+      // Log the delivery attempt
+      await logAlertDelivery(
+        supabase,
+        "alerts",
+        discordSent,
+        triggeredAlerts.length,
+        currentPrice,
+        discordSent ? undefined : "Discord webhook failed"
+      );
+
+      // CRITICAL: If Discord failed, send backup via Telegram
+      if (!discordSent) {
+        const alertList = alertsToSend
+          .map(a => `• $${a.price} - ${a.level_name}`)
+          .join("\n");
+
+        const backupMessage = `🚨 <b>DISCORD ALERT FAILED</b> 🚨\n\nTSLA: $${currentPrice.toFixed(2)}\n\nAlerts that should have fired:\n${alertList}\n\n⚠️ Discord webhook is broken. Check Vercel env vars.`;
+
+        telegramBackup = await sendTelegramBackup(backupMessage);
+        console.error(`Discord alert failed! Telegram backup: ${telegramBackup ? "sent" : "also failed"}`);
       }
+    } catch (discordError) {
+      console.error("Discord delivery section failed:", discordError);
     }
 
     return NextResponse.json({
       success: true,
       price: currentPrice,
       triggeredCount: triggeredAlerts.length,
-      discordSent: true,
+      discordSent,
+      telegramBackup,
       emailsSent,
+      emailsFailed,
     });
   } catch (error) {
     console.error("Alert check error:", error);

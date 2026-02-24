@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/dashboard/header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +8,67 @@ import { Button } from "@/components/ui/button";
 import { formatPrice, formatDateShort } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio, CalendarDays } from "lucide-react";
-import { LivePriceLadder } from "@/components/dashboard/live-price-ladder";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
-import { PositioningCard } from "@/components/dashboard/positioning-card";
+import { EducationHubCard } from "@/components/dashboard/education-hub-card";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
+
+// Lazy-load heavy components that fetch data or have complex rendering
+const LivePriceLadder = dynamic(
+  () => import("@/components/dashboard/live-price-ladder").then((mod) => ({ default: mod.LivePriceLadder })),
+  {
+    ssr: true,
+    loading: () => (
+      <Card className="p-4 md:p-6 lg:p-8 animate-pulse">
+        <div className="h-6 w-32 bg-zinc-700/50 rounded mb-4" />
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-12 bg-zinc-800/40 rounded-lg" />
+          ))}
+        </div>
+      </Card>
+    ),
+  }
+);
+
+const PositioningCard = dynamic(
+  () => import("@/components/dashboard/positioning-card").then((mod) => ({ default: mod.PositioningCard })),
+  {
+    ssr: true,
+    loading: () => (
+      <Card className="p-4 md:p-6 lg:p-8 animate-pulse">
+        <div className="h-6 w-40 bg-zinc-700/50 rounded mb-4" />
+        <div className="space-y-2">
+          <div className="h-4 bg-zinc-800/40 rounded" />
+          <div className="h-4 bg-zinc-800/40 rounded" />
+        </div>
+      </Card>
+    ),
+  }
+);
+
+const OrbSignalsCard = dynamic(
+  () => import("@/components/dashboard/orb-signals-card").then((mod) => ({ default: mod.OrbSignalsCard })),
+  {
+    ssr: false, // Client-only component that fetches data
+    loading: () => (
+      <Card className="p-4 md:p-6 lg:p-8 animate-pulse">
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-6 w-32 bg-zinc-700/50 rounded" />
+          <div className="h-8 w-24 bg-zinc-700/50 rounded-lg" />
+        </div>
+        <div className="space-y-3">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="h-16 bg-zinc-800/40 rounded-lg" />
+          ))}
+        </div>
+      </Card>
+    ),
+  }
+);
+
+// CallOptionsWidget removed — Orb replaces it
 
 interface ExtractedData {
   mode?: { current: string; label: string };
@@ -21,6 +77,19 @@ interface ExtractedData {
   tiers?: TierSignals;
   positioning?: Positioning;
   levels_map?: LevelMapEntry[];
+  call_alert?: {
+    status: string;
+    setup?: string | null;
+    priority?: string | null;
+    conditions?: string[];
+    backtest?: { avg_return?: string; win_rate?: string; n?: number; period?: string };
+    trigger_next?: string;
+    also_watching?: string;
+    stop_logic?: string;
+    mode_context?: string;
+    trim_guidance?: string;
+    clears_when?: string;
+  };
 }
 
 interface Report {
@@ -68,7 +137,9 @@ export default async function DashboardPage() {
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
-      redirect("/signup");
+      // Check if user might have a Stripe subscription that's out of sync
+      // Pass user context so signup page can show appropriate message
+      redirect("/subscribe?reason=no_access&email=" + encodeURIComponent(user.email || ""));
     }
 
     // Track dashboard visit
@@ -81,6 +152,7 @@ export default async function DashboardPage() {
   const { data: reportData } = await supabase
     .from("reports")
     .select("*")
+    .or("report_type.is.null,report_type.eq.daily")
     .order("report_date", { ascending: false })
     .limit(1)
     .single();
@@ -222,10 +294,16 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        {/* Orb — right below MODE on all screens */}
+        <div className="pt-1 md:pt-0">
+          <OrbSignalsCard />
+        </div>
+
         {/* Desktop: 2-column grid | Mobile: stacked */}
         <div className="md:grid md:grid-cols-2 md:gap-8 lg:gap-10 space-y-4 md:space-y-0">
           {/* Left column */}
           <div className="space-y-4">
+
             {/* Positioning Card */}
             {positioning && (
               <PositioningCard
@@ -250,7 +328,6 @@ export default async function DashboardPage() {
 
           {/* Right column */}
           <div className="space-y-4">
-
             {/* Upcoming Catalysts */}
             {upcomingCatalysts.length > 0 && (
               <Card className="p-4 md:p-6 lg:p-8">
@@ -291,6 +368,9 @@ export default async function DashboardPage() {
                 </div>
               </Card>
             )}
+
+            {/* Education Hub */}
+            <EducationHubCard />
 
             {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
             {!devBypass && !cashAvailable && (

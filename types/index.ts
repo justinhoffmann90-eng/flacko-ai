@@ -134,7 +134,7 @@ export interface Positioning {
   posture: string;
 }
 
-export type LevelType = 'trim' | 'watch' | 'current' | 'nibble' | 'pause' | 'caution' | 'eject';
+export type LevelType = 'trim' | 'watch' | 'current' | 'nibble' | 'pause' | 'caution' | 'eject' | 'slow_zone';
 
 export interface LevelMapEntry {
   level: string;
@@ -182,7 +182,7 @@ export interface ExtractedReportData {
   // Consolidated key levels (for email templates)
   key_levels?: KeyLevels;
   // v3.5 fields
-  pause_zone?: number;
+  pause_zone?: number;  // Also known as "Slow Zone" (Daily 21 EMA)
   daily_9ema?: number;
   daily_21ema?: number;
   weekly_9ema?: number;
@@ -192,6 +192,44 @@ export interface ExtractedReportData {
   gamma_regime?: 'Positive' | 'Negative';
   hiro?: HiroData;
   correction_risk?: 'LOW' | 'LOW-MODERATE' | 'MODERATE' | 'HIGH';
+  // v3.7 fields
+  trim_cap_pct?: number;  // Mode-based: GREEN=10, YELLOW=20, ORANGE=25, RED=30
+  ema_extension_pct?: number;  // % above Weekly 9 EMA (0 if below)
+  acceleration_zone?: number;  // Key Gamma Strike (triggers trim sequence when reclaimed)
+  master_eject_rationale?: string;  // Explanation of why this level
+  fib_levels?: { price: number; label: string }[] | null;  // Optional fib extension targets
+  prev_day_score?: number | null;  // Previous day's 100-point assessment score
+  prev_day_grade?: string | null;  // A/B/C/D/F
+  prev_day_system_value?: string | null;  // ADDED_VALUE/PROTECTED_CAPITAL/NEUTRAL/MINOR_COST/COST_MONEY
+
+  // v4.1 fields
+  slow_zone?: number;
+  slow_zone_active?: boolean;
+  max_invested_pct?: number;
+  master_eject_step?: number;
+  daily_13ema?: number;
+  call_alert?: {
+    status: string;
+    setup: string | null;
+    priority: string | null;
+    conditions: string[];
+    spec: { delta?: string; expiry?: string; strike?: string; budget?: string } | null;
+    backtest?: { avg_return?: string; win_rate?: string; n?: number; period?: string };
+    trigger_next?: string;
+    also_watching?: string;
+    stop_logic?: string;
+    mode_context?: string;
+    trim_guidance?: string;
+    clears_when?: string;
+  };
+  bx_states?: {
+    daily: string;
+    daily_histogram: number;
+    weekly: string;
+    weekly_histogram: number;
+    four_hour: string;
+    one_hour: string;
+  };
 }
 
 export interface ParsedReportData {
@@ -209,6 +247,13 @@ export interface ParsedReportData {
   risk_alerts: string;
   previous_review: string;
   disclaimer: string;
+  // v4.1 sections
+  indicator_dashboard: string;
+  pattern_statistics: string;
+  call_options_alert: string;
+  mode_change_triggers: string;
+  market_flow_context: string;
+  framework_reminder: string;
 }
 
 export interface Report {

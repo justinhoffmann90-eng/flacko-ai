@@ -18,6 +18,7 @@ interface UserRow {
     status: string;
     stripe_subscription_id: string | null;
     current_period_end: string | null;
+    locked_price_cents: number | null;
   };
 }
 
@@ -97,6 +98,17 @@ export default function AdminSubscribersPage() {
       default:
         return "secondary";
     }
+  }
+
+  function getTierFromPrice(priceCents: number | null | undefined): { label: string; color: "blue" | "purple" | "secondary" } {
+    if (priceCents === 1499) {
+      return { label: "Founder", color: "blue" };
+    } else if (priceCents === 2999) {
+      return { label: "Public", color: "purple" };
+    } else if (priceCents && priceCents > 0) {
+      return { label: "Custom", color: "secondary" };
+    }
+    return { label: "—", color: "secondary" };
   }
 
   // Count stats
@@ -189,7 +201,8 @@ export default function AdminSubscribersPage() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4">Email</th>
                   <th className="text-left py-3 px-4">Handle</th>
-                  <th className="text-left py-3 px-4">Status</th>
+                  <th className="text-left py-3 px-4">Tier</th>
+                  <th className="text-left py-3 px-4">Subscription</th>
                   <th className="text-left py-3 px-4">Discord</th>
                   <th className="text-left py-3 px-4">Joined</th>
                   <th className="text-left py-3 px-4">Actions</th>
@@ -199,6 +212,7 @@ export default function AdminSubscribersPage() {
                 {users.map((user) => {
                   const status = user.subscription?.status || "none";
                   const hasIssues = !user.discord_user_id || status === "none" || status === "past_due";
+                  const tier = getTierFromPrice(user.subscription?.locked_price_cents);
 
                   return (
                     <tr
@@ -210,6 +224,11 @@ export default function AdminSubscribersPage() {
                       </td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">
                         {user.x_handle || "—"}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant={tier.color}>
+                          {tier.label}
+                        </Badge>
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant={getStatusColor(status)}>

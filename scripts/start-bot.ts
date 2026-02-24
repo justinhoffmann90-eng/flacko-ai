@@ -34,6 +34,11 @@ WHEN ANSWERING:
 - Trade setup questions get tactical answers with entries/exits
 - 3-6 sentences depending on complexity
 
+KEY CONCEPTS YOU KNOW:
+- The "Orb" or "Orb Score" is Flacko AI's proprietary composite indicator (v3). It scores TSLA conditions 0-100 across 4 zones: FULL SEND (green, deploy leverage), NEUTRAL (hold), CAUTION (yellow, take profits on leverage), DEFENSIVE (red, cash). Based on 1,005 backtested trading days. When someone asks about "the Orb" or "Orb score", reference the current score from today's report and explain what the zone means.
+- "Kill Leverage" (formerly "Master Eject") is the level where leverage gets cut — calculated as Weekly 21 EMA × 0.99 with 2 consecutive daily close confirmation. It's NOT a full exit — shares stay, leverage goes.
+- Modes (GREEN/YELLOW/ORANGE/RED) define daily risk caps. Orb defines leverage positioning. They work together.
+
 WHAT NOT TO DO:
 - Don't be repetitive in structure or phrasing
 - Don't give vague answers when you have specific data
@@ -133,33 +138,85 @@ async function getRecentHiroMessages(client: Client): Promise<string> {
   }
 }
 
-// Fetch live market data from Yahoo Finance
+// Fetch a single ticker price from Yahoo Finance
+async function fetchYahooPrice(ticker: string): Promise<{ price: number; changePct: number } | null> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m&range=1d`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const meta = data.chart?.result?.[0]?.meta;
+    if (!meta?.regularMarketPrice) return null;
+    const price = meta.regularMarketPrice;
+    const prevClose = meta.chartPreviousClose || meta.previousClose;
+    const changePct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+    return { price, changePct };
+  } catch {
+    return null;
+  }
+}
+
+// Fetch a single ticker from Google Finance (fallback)
+async function fetchGooglePrice(ticker: string): Promise<{ price: number; changePct: number } | null> {
+  try {
+    const symbol = ticker === "^VIX" ? "VIX:INDEXCBOE" : `${ticker}:NASDAQ`;
+    const url = `https://www.google.com/finance/quote/${symbol}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+    const html = await response.text();
+    // Extract price from Google Finance HTML
+    const priceMatch = html.match(/data-last-price="([\d.]+)"/);
+    const changeMatch = html.match(/data-last-normal-market-change-percent="([+-]?[\d.]+)"/);
+    if (!priceMatch) return null;
+    return {
+      price: parseFloat(priceMatch[1]),
+      changePct: changeMatch ? parseFloat(changeMatch[1]) : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Fetch live market data with fallback sources
 async function getLiveMarketData(): Promise<string> {
   try {
     const tickers = ["TSLA", "^VIX", "QQQ"];
     const results = await Promise.all(tickers.map(async (ticker) => {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m&range=1d`;
-      const response = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      const meta = data.chart?.result?.[0]?.meta;
-      if (!meta) return null;
-      const price = meta.regularMarketPrice;
-      const prevClose = meta.chartPreviousClose || meta.previousClose;
-      const changePct = ((price - prevClose) / prevClose) * 100;
+      // Try Yahoo first, then Google Finance as fallback
+      let data = await fetchYahooPrice(ticker);
+      let source = "yahoo";
+      if (!data) {
+        data = await fetchGooglePrice(ticker);
+        source = "google";
+      }
+      if (!data) return null;
       const name = ticker === "^VIX" ? "VIX" : ticker;
       const prefix = ticker === "^VIX" ? "" : "$";
-      return `${name}: ${prefix}${price.toFixed(2)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)`;
+      return `${name}: ${prefix}${data.price.toFixed(2)} (${data.changePct >= 0 ? '+' : ''}${data.changePct.toFixed(2)}%)`;
     }));
     const valid = results.filter(Boolean);
-    if (valid.length === 0) return "";
+    if (valid.length === 0) {
+      // ALL sources failed — explicitly warn the model
+      console.warn("[LIVE DATA] All price sources failed — injecting warning");
+      return `\n\n[LIVE MARKET DATA UNAVAILABLE]\nAll price feeds are currently down. DO NOT quote specific current prices or pre-market prices. If asked about current price, say "I can't pull live data right now" and reference the most recent report's closing price instead, clearly labeling it as yesterday's close.`;
+    }
     const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
     return `\n\n[LIVE MARKET DATA as of ${now} CT]\n${valid.join(" | ")}\nUSE THESE CURRENT PRICES when answering about today's market.`;
   } catch (error) {
     console.error("[LIVE DATA ERROR]", error);
-    return "";
+    return `\n\n[LIVE MARKET DATA UNAVAILABLE]\nPrice feed error. DO NOT quote specific current prices. If asked, say "live data unavailable" and reference yesterday's closing price, clearly labeled as such.`;
   }
 }
 

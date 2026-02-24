@@ -2,22 +2,12 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/dashboard/header";
 import { Card, CardContent } from "@/components/ui/card";
-import { WeeklyReviewData } from "@/types/weekly-review";
-import {
-  ModeBanner,
-  TimeframeGrid,
-  ConfluenceBox,
-  WeekStats,
-  NarrativeCard,
-  LessonsGrid,
-  ThesisCheckCard,
-  ScenariosCard,
-  KeyLevelsCard,
-  CatalystsCard,
-  FlackoTakeCard,
-} from "@/components/weekly";
+import { Badge } from "@/components/ui/badge";
+import { MarkdownContent } from "@/components/report/markdown-content";
 import { ReportToggle } from "@/components/report/report-toggle";
-import { hasSubscriptionAccess } from "@/lib/subscription";
+import { WeeklyReviewData } from "@/types/weekly-review";
+import { formatPrice, formatPercent } from "@/lib/utils";
+import { AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface WeeklyReviewRow {
   id: string;
@@ -45,6 +35,29 @@ function formatWeekRange(startDate: string, endDate: string): string {
   return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${year}`;
 }
 
+// Get mode emoji
+function getModeEmoji(mode: string): string {
+  switch (mode) {
+    case 'green': return '🟢';
+    case 'yellow': return '🟡';
+    case 'orange': return '🟠';
+    case 'red': return '🔴';
+    default: return '⚪';
+  }
+}
+
+// Get trend icon
+function getTrendIcon(trend?: string) {
+  if (!trend) return <Minus className="h-4 w-4" />;
+  if (trend.toLowerCase().includes('improv') || trend.toLowerCase().includes('strengthen') || trend.toLowerCase().includes('bull')) {
+    return <TrendingUp className="h-4 w-4 text-green-500" />;
+  }
+  if (trend.toLowerCase().includes('weaken') || trend.toLowerCase().includes('deteriorat') || trend.toLowerCase().includes('bear')) {
+    return <TrendingDown className="h-4 w-4 text-red-500" />;
+  }
+  return <Minus className="h-4 w-4 text-yellow-500" />;
+}
+
 export default async function WeeklyReviewPage() {
   const devBypass = process.env.DEV_BYPASS_AUTH === "true";
   const supabase = devBypass ? await createServiceClient() : await createClient();
@@ -53,19 +66,6 @@ export default async function WeeklyReviewPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       redirect("/login");
-    }
-
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-
-    const sub = subscription as { status?: string; trial_ends_at?: string } | null;
-    const hasAccess = hasSubscriptionAccess(sub);
-
-    if (!hasAccess) {
-      redirect("/signup");
     }
   }
 
@@ -83,7 +83,7 @@ export default async function WeeklyReviewPage() {
     return (
       <>
         <Header title="Weekly Review" />
-        <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-4">
+        <main className="px-4 py-6 max-w-2xl mx-auto space-y-4">
           <ReportToggle />
           <Card>
             <CardContent className="pt-8 pb-8 text-center space-y-3">
@@ -103,127 +103,383 @@ export default async function WeeklyReviewPage() {
 
   const data = review.extracted_data;
   const weekRange = formatWeekRange(review.week_start, review.week_end);
+  const mode = (data.mode || "yellow").toLowerCase();
+  const changePct = data.candle?.change_pct ?? data.change_pct ?? 0;
+  const masterEject = data.master_eject || 0;
 
   return (
     <>
-      <Header title="Weekly Review" />
-      <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-6">
+      <Header title={`TSLA Weekly Review - ${weekRange}`} />
+      <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-6 md:space-y-8">
         {/* Daily/Weekly Toggle */}
         <ReportToggle />
 
-        {/* Header with Date */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-1">TSLA Weekly Review</h1>
-          <p className="text-muted-foreground">Week of {weekRange}</p>
+        {/* Quick Stats Bar */}
+        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-6">
+          {/* Mode */}
+          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Mode</p>
+            <div className="flex items-center justify-center gap-2 mt-1 md:mt-2">
+              <span className="text-lg md:text-xl">{getModeEmoji(mode)}</span>
+              <Badge
+                variant={mode as "green" | "yellow" | "red"}
+                className="text-sm md:text-base lg:text-lg px-3 md:px-4"
+              >
+                {mode.toUpperCase()}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Weekly Change */}
+          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Weekly Change</p>
+            <p className={`text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2 ${changePct >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+            </p>
+          </div>
+
+          {/* Master Eject - Full Width */}
+          <div className="col-span-2 bg-card border border-red-500/30 rounded-lg p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-xs md:text-sm lg:text-base text-red-500 uppercase tracking-wide flex items-center justify-center gap-1">
+              <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+              Master Eject
+            </p>
+            <p className="text-lg md:text-xl lg:text-2xl font-bold text-red-500">
+              {masterEject > 0 ? formatPrice(masterEject) : '—'}
+            </p>
+          </div>
         </div>
 
-        {/* Mode Banner */}
-        <ModeBanner
-          mode={data.mode}
-          modeTrend={data.mode_trend}
-          guidance={data.mode_guidance}
-          dailyCap={data.daily_cap_pct}
-        />
 
-        {/* Multi-Timeframe Spot Check */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            📊 Multi-Timeframe Spot Check
-          </h2>
-          <TimeframeGrid
-            monthly={data.monthly}
-            weekly={data.weekly}
-            daily={data.daily}
-          />
-          <div className="mt-4">
-            <ConfluenceBox
-              reading={data.confluence.reading}
-              explanation={data.confluence.explanation}
-            />
+        {/* System Scorecard */}
+        {data.weekly_avg_score && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📋 System Scorecard
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-white">{data.weekly_avg_score?.toFixed(0)}/100</span>
+                {data.weekly_grade && (
+                  <Badge variant="default" className="text-xs">{data.weekly_grade}</Badge>
+                )}
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">System Value</p>
+                  <p className="text-lg font-semibold">{data.system_value_days ?? '?'}/5 days</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">Buy Accuracy</p>
+                  <p className="text-lg font-semibold">
+                    {data.buy_levels_tested
+                      ? `${data.buy_levels_held}/${data.buy_levels_tested} (${Math.round((data.buy_levels_held! / data.buy_levels_tested) * 100)}%)`
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">Trim Accuracy</p>
+                  <p className="text-lg font-semibold">
+                    {data.trim_levels_tested
+                      ? `${data.trim_levels_effective}/${data.trim_levels_tested} (${Math.round((data.trim_levels_effective! / data.trim_levels_tested) * 100)}%)`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
-
-        {/* Weekly Candle */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            📊 Weekly Candle
-          </h2>
-          <WeekStats candle={data.candle} />
-        </section>
-
-        {/* What Happened */}
-        {data.what_happened && (
-          <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              📖 What Happened This Week
-            </h2>
-            <NarrativeCard content={data.what_happened} />
-          </section>
         )}
 
-        {/* What We Learned */}
-        {(data.lessons.what_worked.length > 0 ||
-          data.lessons.what_didnt.length > 0 ||
-          data.lessons.lessons_forward.length > 0) && (
-          <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              🎓 What We Learned
-            </h2>
-            <LessonsGrid lessons={data.lessons} />
-          </section>
-        )}
-
-        {/* Thesis Check */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            🎯 Thesis Check
-          </h2>
-          <ThesisCheckCard thesis={data.thesis} />
-        </section>
-
-        {/* Looking Ahead with Scenarios */}
-        {(data.looking_ahead || data.scenarios.length > 0) && (
-          <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              👀 Looking Ahead
-            </h2>
-            {data.looking_ahead && (
-              <NarrativeCard content={data.looking_ahead} />
-            )}
-            {data.scenarios.length > 0 && (
-              <div className="mt-4">
-                <ScenariosCard scenarios={data.scenarios} />
+        {/* Call Options Grade */}
+        {data.call_alert_score != null && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📞 Call Options Grade
+              </h3>
+              <span className="text-lg font-bold text-white">{data.call_alert_score}/25</span>
+            </div>
+            {data.call_alert_setups && data.call_alert_setups.length > 0 && (
+              <div className="p-4">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left px-3 py-2 text-xs uppercase text-muted-foreground">Setup</th>
+                      <th className="text-center px-3 py-2 text-xs uppercase text-muted-foreground">Status</th>
+                      <th className="text-center px-3 py-2 text-xs uppercase text-muted-foreground">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.call_alert_setups.map((setup, idx) => (
+                      <tr key={idx} className="border-t border-border/50">
+                        <td className="px-3 py-2 text-sm font-medium">{setup.name}</td>
+                        <td className="px-3 py-2 text-sm text-center">{setup.status}</td>
+                        <td className="px-3 py-2 text-sm text-center">{setup.result}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
-          </section>
+          </div>
+        )}
+
+        {/* Key Levels Table */}
+        {data.key_levels && data.key_levels.length > 0 && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📍 Key Levels for Next Week
+              </h3>
+            </div>
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Level</th>
+                  <th className="text-right px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Price</th>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.key_levels.map((level, idx) => (
+                  <tr key={idx} className="border-t border-border/50">
+                    <td className="px-4 py-3">
+                      <span className="mr-2">{level.emoji}</span>
+                      <span className="font-medium">{level.name}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold">
+                      {formatPrice(level.price)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {level.description}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Scenarios Table */}
+        {data.scenarios && data.scenarios.length > 0 && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                🔮 Weekly Scenarios
+              </h3>
+            </div>
+            <table className="w-full table-fixed">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-2 md:px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground w-16 md:w-24">Scenario</th>
+                  <th className="text-center px-2 md:px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground w-12 md:w-20">Probability</th>
+                  <th className="text-left px-2 md:px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Trigger</th>
+                  <th className="text-left px-2 md:px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Response</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.scenarios.map((scenario, idx) => (
+                  <tr key={idx} className="border-t border-border/50">
+                    <td className="px-2 md:px-4 py-3 align-top">
+                      <span className={`inline-flex items-center gap-1 md:gap-2 font-medium text-sm ${
+                        scenario.type === 'bull' ? 'text-green-500' :
+                        scenario.type === 'bear' ? 'text-red-500' :
+                        'text-yellow-500'
+                      }`}>
+                        {scenario.type === 'bull' ? '🐂' :
+                         scenario.type === 'bear' ? '🐻' : '⚖️'}
+                        <span className="hidden sm:inline">{scenario.type.charAt(0).toUpperCase() + scenario.type.slice(1)}</span>
+                      </span>
+                    </td>
+                    <td className="px-2 md:px-4 py-3 text-center align-top">
+                      <span className="font-semibold text-sm">{scenario.probability}%</span>
+                    </td>
+                    <td className="px-2 md:px-4 py-3 text-sm align-top">{scenario.trigger}</td>
+                    <td className="px-2 md:px-4 py-3 text-sm align-top">{scenario.response}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {/* Catalyst Calendar */}
         {data.catalysts && data.catalysts.length > 0 && (
-          <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              📅 Catalyst Calendar
-            </h2>
-            <CatalystsCard catalysts={data.catalysts} />
-          </section>
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📅 Catalyst Calendar
+              </h3>
+            </div>
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Event</th>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Impact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.catalysts.map((catalyst, idx) => (
+                  <tr key={idx} className="border-t border-border/50">
+                    <td className="px-4 py-3 text-sm font-medium">{catalyst.date}</td>
+                    <td className="px-4 py-3 text-sm">{catalyst.event}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{catalyst.impact || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
-        {/* Key Levels for Next Week */}
-        {data.key_levels && data.key_levels.length > 0 && (
-          <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-              📍 Key Levels for Next Week
-            </h2>
-            <KeyLevelsCard levels={data.key_levels} currentPrice={data.current_price} />
-          </section>
+        {/* Multi-Timeframe Spot Check */}
+        {(data.monthly || data.weekly || data.daily) && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                📊 Multi-Timeframe Spot Check
+              </h3>
+            </div>
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Timeframe</th>
+                  <th className="text-center px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Signal</th>
+                  <th className="text-center px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">BX Trender</th>
+                  <th className="text-left px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">Structure</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.monthly && (
+                  <tr className="border-t border-border/50">
+                    <td className="px-4 py-3 font-medium">Monthly</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-block w-3 h-3 rounded-full ${
+                        data.monthly.signal === 'green' ? 'bg-green-500' :
+                        data.monthly.signal === 'yellow' ? 'bg-yellow-500' :
+                        data.monthly.signal === 'red' ? 'bg-red-500' :
+                        'bg-gray-500'
+                      }`} />
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm">
+                      <span className={data.monthly.bx_trender?.color === 'green' ? 'text-green-500' : 'text-red-500'}>
+                        {data.monthly.bx_trender?.pattern || '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{data.monthly.structure}</td>
+                  </tr>
+                )}
+                {data.weekly && (
+                  <tr className="border-t border-border/50">
+                    <td className="px-4 py-3 font-medium">Weekly</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-block w-3 h-3 rounded-full ${
+                        data.weekly.signal === 'green' ? 'bg-green-500' :
+                        data.weekly.signal === 'yellow' ? 'bg-yellow-500' :
+                        data.weekly.signal === 'red' ? 'bg-red-500' :
+                        'bg-gray-500'
+                      }`} />
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm">
+                      <span className={data.weekly.bx_trender?.color === 'green' ? 'text-green-500' : 'text-red-500'}>
+                        {data.weekly.bx_trender?.pattern || '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{data.weekly.structure}</td>
+                  </tr>
+                )}
+                {data.daily && (
+                  <tr className="border-t border-border/50">
+                    <td className="px-4 py-3 font-medium">Daily</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-block w-3 h-3 rounded-full ${
+                        data.daily.signal === 'green' ? 'bg-green-500' :
+                        data.daily.signal === 'yellow' ? 'bg-yellow-500' :
+                        data.daily.signal === 'red' ? 'bg-red-500' :
+                        'bg-gray-500'
+                      }`} />
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm">
+                      <span className={data.daily.bx_trender?.color === 'green' ? 'text-green-500' : 'text-red-500'}>
+                        {data.daily.bx_trender?.pattern || '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{data.daily.structure}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {data.confluence && (
+              <div className="px-4 py-3 bg-muted/30 border-t border-border/50">
+                <p className="text-sm">
+                  <strong>Confluence:</strong> {data.confluence.reading}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{data.confluence.explanation}</p>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Flacko AI's Take / Conclusion */}
-        {data.flacko_take && (
-          <section>
-            <FlackoTakeCard content={data.flacko_take} />
-          </section>
+        {/* Thesis Check */}
+        {data.thesis && (
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <div className="bg-slate-700 px-4 py-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
+                🎯 Thesis Check
+              </h3>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <Badge 
+                  variant={
+                    data.thesis.status === 'intact' ? 'green' :
+                    data.thesis.status === 'strengthening' ? 'green' :
+                    data.thesis.status === 'weakening' ? 'yellow' :
+                    'default'
+                  }
+                >
+                  {data.thesis.status.replace('_', ' ').toUpperCase()}
+                </Badge>
+              </div>
+              
+              {data.thesis.supporting_points?.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2 text-green-500">✓ Supporting Points</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {data.thesis.supporting_points.map((point, idx) => (
+                      <li key={idx} className="text-sm text-muted-foreground">{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {data.thesis.concerning_points?.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2 text-red-500">⚠ Concerning Points</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {data.thesis.concerning_points.map((point, idx) => (
+                      <li key={idx} className="text-sm text-muted-foreground">{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {data.thesis.narrative && (
+                <div className="pt-3 border-t border-border/50">
+                  <p className="text-sm">{data.thesis.narrative}</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
+
+        {/* Full Markdown Content */}
+        <div className="bg-card border rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
+          <MarkdownContent content={review.raw_markdown} />
+        </div>
 
         {/* Disclaimer */}
         <p className="text-xs text-muted-foreground text-center px-4">

@@ -92,7 +92,7 @@ export default function LearnTopicPage({ params }: { params: { slug: string } })
           </div>
         ) : null}
 
-        <div className="max-w-none">
+        <div className="max-w-3xl">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeRaw]}
@@ -129,6 +129,50 @@ export default function LearnTopicPage({ params }: { params: { slug: string } })
               ),
               strong: ({ children }) => (
                 <strong className="text-foreground">{children}</strong>
+              ),
+              table: ({ children }) => (
+                <div className="mt-6 mb-4 overflow-x-auto rounded-lg border border-border/40">
+                  <table className="w-full text-sm">{children}</table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead className="bg-muted/50 border-b border-border/40">{children}</thead>
+              ),
+              tbody: ({ children }) => (
+                <tbody className="divide-y divide-border/30">{children}</tbody>
+              ),
+              tr: ({ children }) => (
+                <tr className="hover:bg-muted/20 transition-colors">{children}</tr>
+              ),
+              th: ({ children }) => (
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-foreground/70">{children}</th>
+              ),
+              td: ({ children }) => (
+                <td className="px-4 py-3 text-sm text-foreground/80 whitespace-normal break-words">{children}</td>
+              ),
+              blockquote: ({ children }) => (
+                <blockquote className="mt-4 border-l-4 border-primary/50 bg-muted/30 pl-4 py-3 pr-4 rounded-r-lg text-foreground/80 italic">{children}</blockquote>
+              ),
+              hr: () => (
+                <hr className="my-8 border-border/40" />
+              ),
+              code: ({ className, children, ...props }) => {
+                const isBlock = className?.includes("language-");
+                if (isBlock) {
+                  return (
+                    <div className="mt-4 mb-4 overflow-x-auto rounded-lg bg-zinc-900 border border-border/40 p-4">
+                      <code className="text-sm text-foreground/80 font-mono whitespace-pre">{children}</code>
+                    </div>
+                  );
+                }
+                return (
+                  <code className="bg-muted/50 text-foreground/90 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>
+                );
+              },
+              pre: ({ children }) => (
+                <div className="mt-4 mb-4 overflow-x-auto rounded-lg bg-zinc-900 border border-border/40 p-4">
+                  {children}
+                </div>
               ),
             }}
           >

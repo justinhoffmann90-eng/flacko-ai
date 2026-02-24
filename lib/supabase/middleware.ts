@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Define public routes that don't require authentication
-  const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/pricing", "/welcome", "/founder", "/learn", "/terms", "/privacy"];
+  const publicRoutes = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/pricing", "/welcome", "/founder", "/learn", "/terms", "/privacy", "/subscribe", "/accuracy"];
   const isPublicRoute = publicRoutes.some(
     (route) => request.nextUrl.pathname === route ||
                request.nextUrl.pathname.startsWith(route + "/") ||
@@ -59,6 +59,19 @@ export async function updateSession(request: NextRequest) {
   // Cron jobs have their own auth (Bearer token)
   if (request.nextUrl.pathname.startsWith("/api/cron")) {
     return supabaseResponse;
+  }
+
+  // Orb API endpoints (cron-triggered, use Bearer token auth)
+  if (request.nextUrl.pathname.startsWith("/api/orb")) {
+    return supabaseResponse;
+  }
+
+  // Report upload with admin secret (used by Clawd automation)
+  if (request.nextUrl.pathname === "/api/reports" && request.method === "POST") {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader === `Bearer ${process.env.ADMIN_SECRET}`) {
+      return supabaseResponse;
+    }
   }
 
   // Bot API endpoints (internal use for indexing/query)
@@ -89,6 +102,16 @@ export async function updateSession(request: NextRequest) {
 
   // Content preview/download (used by Content Hub)
   if (request.nextUrl.pathname.startsWith("/api/content")) {
+    return supabaseResponse;
+  }
+
+  // Reports latest endpoint (used by Content Hub for data injection)
+  if (request.nextUrl.pathname === "/api/reports/latest") {
+    return supabaseResponse;
+  }
+
+  // Reports notify endpoint (authenticated via bearer token, not user session)
+  if (request.nextUrl.pathname === "/api/reports/notify") {
     return supabaseResponse;
   }
 

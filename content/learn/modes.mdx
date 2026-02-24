@@ -1,68 +1,79 @@
 ---
 title: "Modes"
 description: "The risk dial that controls your position sizing every day."
-readingTime: "5 min"
+readingTime: "6 min"
 ---
 
-## What Are Modes?
+## The Six Modes
 
-Modes are your **daily risk dial**. Before you trade, check the mode — it tells you how much capital you can deploy.
+Modes are your **daily risk dial**. Before you trade, check the mode first — it tells you how much you can deploy, how much you can hold, and how aggressively you should trim.
 
----
+| Mode | Daily Buy Cap | Max Invested Cap | Trim Cap | Slow Zone Effect |
+|------|---------------|------------------|----------|------------------|
+| 🟢 **GREEN** | 30% rulebook (subscriber view: **up to 25%**) | 85% | 10% per level | Inactive |
+| 🟡 **YELLOW (Improving)** | 20% | 70% | **15%** | Inactive |
+| 🟡 **YELLOW** | 17.5% | 60% | 20% | Halves cap to 8.75% |
+| 🟠 **ORANGE** | 10% | 40% | 25% | Reduces to 2.5% |
+| 🔴 **RED** | 5% | 20% | 30% | Reduces to 1.25% |
+| ⬛ **EJECTED** | 0% (oversold override only) | 50% core hold | N/A | N/A |
 
-## The Four Modes
-
-| Mode | Daily Cap | When It's Set | What It Means |
-|------|-----------|---------------|---------------|
-| 🟢 **GREEN** | Up to 25% | Favorable conditions | Full send — market structure supports aggressive positioning |
-| 🟡 **YELLOW** | 15% or less | Mixed signals | Proceed with caution — be selective, wait for cleaner setups |
-| 🟠 **ORANGE** | 10% or less | Elevated risk | High caution — only high-conviction plays |
-| 🔴 **RED** | 5% or less | Defensive | Protect capital — nibbles only, if anything |
-
----
-
-## How Modes Are Set
-
-The daily report sets the mode based on:
-
-| Factor | What We Look At |
-|--------|-----------------|
-| **Gamma positioning** | Are dealers in positive or negative gamma? |
-| **Key levels** | Where are Call Wall, Put Wall, Gamma Strike? |
-| **Technical structure** | Weekly EMAs, trend direction |
-| **Volatility** | VIX levels, expected move |
+> **Subscriber simplification:** Daily reports use simplified caps for pace and consistency (GREEN 25%, YELLOW 15%, ORANGE 10%, RED 5%).
 
 ---
 
-## How to Use Modes
+## Important Label Notes
 
-### ✅ Do This
-- Check the mode **before the open**
-- Size positions **within your cap**
-- Respect mode changes mid-day if noted
+- **YELLOW (Improving)** is a valid documented state.
+- **ORANGE (Improving)** is also valid and can appear when **Tier 1 (Weekly) is LL** and **Tier 2 (Daily) is HL**.
 
-### ❌ Don't Do This
-- Ignore the mode because "you have conviction"
-- Exceed your daily cap
-- Trade aggressively in Red mode
+These improving labels mean internals are stabilizing, even if the broader structure is still defensive.
 
 ---
 
-## Example
+## Understanding the Caps
 
-> **Today's Mode: 🟡 YELLOW (15% cap)**
-> 
-> You have a $100,000 portfolio.
-> Maximum deployment today = $15,000.
-> 
-> If you want to take 2 positions, each should be ~$7,500 or less.
+### Daily Buy Cap
+How much of your **available cash** you can deploy in one day.
+
+### Max Invested Cap
+The maximum share of your **total portfolio** that can be in TSLA exposure for that mode.
+
+### Trim Cap
+How much of your **remaining position** to trim at each T-level.
+
+---
+
+## Slow Zone Modifier
+
+**Trigger:** Price closes below **Daily 21 EMA × 0.98**  
+**Resume:** When price reclaims the Daily 21 EMA
+
+| Mode Group | Slow Zone Impact |
+|-----------|------------------|
+| GREEN, YELLOW (Improving) | Inactive |
+| YELLOW | Halves daily cap |
+| ORANGE, RED | Reduces to **25% of normal cap** (not 50%) |
+
+**Examples:**
+- YELLOW: 17.5% → 8.75%
+- ORANGE: 10% → 2.5%
+- RED: 5% → 1.25%
+
+---
+
+## EJECTED Is a Defense State, Not Full Liquidation
+
+When Weekly 21 EMA breaks and confirms:
+1. Cut all leverage first
+2. Trim TSLA to 50%
+3. Keep core exposure
+4. Only add through oversold override rules
+
+This is graduated defense, not panic liquidation.
 
 ---
 
 ## Key Takeaway
 
-The mode isn't a suggestion — it's a **risk management rule**. Green doesn't mean "buy everything." Red doesn't mean "don't trade." It means **size accordingly**.
-
----
-
-*Your mode is set every morning in the Daily Report. Check it first.*
+Mode is not commentary — it's your **position-sizing rule set** for the day.  
+Start with the mode, then apply daily cap, max invested cap, trim cap, and Slow Zone exactly.

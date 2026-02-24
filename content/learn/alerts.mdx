@@ -1,87 +1,73 @@
 ---
 title: "Alerts"
 description: "How price alerts work and what to do when they fire."
-readingTime: "4 min"
+readingTime: "5 min"
 ---
 
-## What Are Alerts?
+## What an Alert Includes
 
-Alerts notify you when price hits a **key level**. Each alert includes:
+Each alert contains actionable context, not just a price ping.
 
-| Component | What It Tells You |
-|-----------|-------------------|
-| **Level** | The price that triggered (e.g., $420) |
-| **Name** | What the level is (e.g., Gamma Strike) |
-| **Action** | What to consider doing |
-| **Context** | Why this level matters |
+| Field | Meaning |
+|------|---------|
+| Level + label | The structural level that triggered |
+| Mode context | Current mode color, daily cap, and guidance |
+| Suggested action | Short execution prompt |
+| Reason | Why that level matters in current structure |
 
----
-
-## Alert Flow
-
-```
-Price hits level → Alert fires → You see notification → Execute your plan
-```
+Alerts are delivered via **email + Discord**.
 
 ---
 
-## Types of Levels
+## Mode Context in Alerts
 
-| Level | Typical Action | Why It Matters |
-|-------|----------------|----------------|
-| **Gamma Strike** | Watch for reaction | Highest gamma zone — price often reverses here |
-| **Call Wall** | Consider taking profits | Upside resistance from dealer hedging |
-| **Put Wall** | Look for bounce | Downside support from dealer hedging |
-| **Hedge Wall** | Expect resistance | Institutional hedging ceiling |
-| **Weekly EMA** | Trend confirmation | Break = potential trend change |
+| Mode | Simplified Daily Cap | Typical Posture |
+|------|----------------------|-----------------|
+| 🟢 GREEN | 25% | Offensive but structured |
+| 🟡 YELLOW | 15% | Balanced risk |
+| 🟠 ORANGE | 10% | Defensive accumulation |
+| 🔴 RED | 5% | Capital preservation first |
 
----
-
-## What To Do When Alert Fires
-
-### Step 1: Confirm the Mode
-Is the alert aligned with today's mode?
-
-| Mode | Alert Action |
-|------|--------------|
-| 🟢 GREEN | Full action per the alert |
-| 🟡 YELLOW | Half-size or wait for confirmation |
-| 🟠 ORANGE | Small position only |
-| 🔴 RED | Watch, don't chase |
-
-### Step 2: Check Price Action
-- Is price holding the level or breaking through?
-- What's the volume like?
-- Any divergence with HIRO?
-
-### Step 3: Execute
-- Use the suggested action as a **guide**, not a rule
-- Size according to your mode cap
-- Set your stop
+The alert message references this context so the same level is interpreted differently by mode.
 
 ---
 
-## Alert Example
+## Alert Types and Structural Reasons
 
-> **🔔 TSLA hit Gamma Strike at $415**
-> 
-> **Action:** "Add 10% of cap — testing key support"
-> 
-> **Your move:**
-> - Mode is Yellow (15% cap)
-> - 10% of 15% = 1.5% of portfolio
-> - Watch for bounce confirmation before entry
-
----
-
-## Key Rules
-
-| Rule | Why |
-|------|-----|
-| **Don't chase** | If you miss the level by 2%+, wait for next setup |
-| **Size by mode** | Alert + Green mode ≠ go all-in |
-| **Have a stop** | Every position needs an exit plan |
+| Alert Type | Why It Matters | Typical Response |
+|-----------|----------------|------------------|
+| **Gamma Strike** | Above strike often implies more stable/positive gamma behavior; below can increase instability | Watch for reclaim/hold or rejection |
+| **Call Wall** | Dealer positioning can cap upside near this zone | Trim into strength / avoid chasing |
+| **Put Wall** | Key downside support where flows can stabilize | Look for hold-and-bounce confirmation |
+| **Hedge Wall** | Often acts as resistance/supply zone | Reduce risk or wait for clean break |
+| **Weekly EMA Level** | Regime structure marker (trend health) | Reassess mode posture |
+| **Slow Zone Trigger** | Price closed below D21 × 0.98, buy pace must drop | Apply reduced daily cap immediately |
 
 ---
 
-*Alerts are triggers, not commands. Your job is to execute with discipline.*
+## Slow Zone Alert Behavior
+
+Slow Zone alerts explicitly state the cap adjustment:
+
+| Mode | Slow Zone Cap |
+|------|---------------|
+| YELLOW | 8.75% |
+| ORANGE | 2.5% |
+| RED | 1.25% |
+
+(ORANGE/RED use 25% of normal cap, not 50%.)
+
+---
+
+## Execution Checklist After Any Alert
+
+1. Confirm mode and cap context in the alert
+2. Check whether level is holding or breaking
+3. Apply sizing rules (daily cap + max invested)
+4. Execute only if plan and context align
+
+---
+
+## Key Takeaway
+
+Alerts are not generic notifications. They combine **level + mode + reasoning + action** so you can execute quickly with the right risk posture.

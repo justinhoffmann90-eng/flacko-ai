@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getNewReportEmailHtml } from "@/lib/resend/templates";
-import { TrafficLightMode } from "@/types";
+import { TrafficLightMode, ParsedReportData } from "@/types";
 
 // This endpoint is called after a new report is published to notify subscribers
 export async function POST(request: Request) {
@@ -12,11 +12,15 @@ export async function POST(request: Request) {
     const headersList = await headers();
     const authHeader = headersList.get("authorization");
 
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && authHeader !== `Bearer ${process.env.ADMIN_SECRET}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reportId } = await request.json();
+    const { reportId, todayGameplan, yesterdayRecap } = await request.json() as {
+      reportId?: string;
+      todayGameplan?: string;  // Forward-looking: bottom line, what to watch, action plan
+      yesterdayRecap?: string;  // Backward-looking: what happened yesterday, context
+    };
 
     if (!reportId) {
       return NextResponse.json({ error: "Report ID required" }, { status: 400 });
@@ -36,9 +40,29 @@ export async function POST(request: Request) {
     }
 
     const extractedData = report.extracted_data as {
-      mode?: { current: TrafficLightMode };
+      mode?: { current: TrafficLightMode; summary?: string };
       price?: { close: number; change_pct: number };
+      position?: { current_stance?: string; daily_cap_pct?: number };
+      tiers?: { long?: string; medium?: string; short?: string; hourly?: string };
+      key_levels?: {
+        gamma_strike?: number;
+        put_wall?: number;
+        call_wall?: number;
+        hedge_wall?: number;
+        master_eject?: number;
+      };
+      hiro?: { reading?: number };
+      max_invested_pct?: number;
+      correction_risk?: string;
+      slow_zone_active?: boolean;
+      slow_zone?: number;
+      master_eject?: { price: number; action: string };
+      gamma_regime?: string;
+      entry_quality?: { score: number };
+      alerts?: { type: "upside" | "downside"; level_name: string; price: number; action: string; reason?: string }[];
+      levels_map?: { type?: string; level: string; price: number; action: string }[];
     };
+    const parsedData = (report.parsed_data || {}) as Partial<ParsedReportData>;
 
     // Get all subscribers who want new report emails
     // Include active, comped, and valid trial subscriptions
@@ -79,16 +103,33 @@ export async function POST(request: Request) {
       const html = getNewReportEmailHtml({
         userName: user.email.split("@")[0],
         mode: extractedData?.mode?.current || "yellow",
-        reportDate: report.report_date,
+        reportDate: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "America/Chicago" }),
         closePrice: extractedData?.price?.close || 0,
         changePct: extractedData?.price?.change_pct || 0,
+        modeSummary: extractedData?.mode?.summary,
+        currentStance: extractedData?.position?.current_stance,
+        dailyCapPct: extractedData?.position?.daily_cap_pct ?? extractedData?.max_invested_pct,
+        correctionRisk: extractedData?.correction_risk,
+        tiers: extractedData?.tiers,
+        keyLevels: extractedData?.key_levels,
+        hiroReading: extractedData?.hiro?.reading,
+        slowZoneActive: extractedData?.slow_zone_active,
+        slowZone: extractedData?.slow_zone,
+        masterEject: extractedData?.master_eject,
+        gammaRegime: extractedData?.gamma_regime,
+        entryQualityScore: extractedData?.entry_quality?.score,
+        alerts: extractedData?.alerts,
+        levelsMap: extractedData?.levels_map,
+        positionGuidance: parsedData.position_guidance,
+        todayGameplan: todayGameplan || undefined,
+        yesterdayRecap: yesterdayRecap || undefined,
       });
 
       try {
         await resend.emails.send({
           from: EMAIL_FROM,
           to: user.email,
-          subject: `TSLA Daily Report - ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE`,
+          subject: `TSLA Morning Gameplan — ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Chicago" })}`,
           html,
         });
         sentCount++;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
@@ -28,6 +29,7 @@ export default function DashboardLayout({
             <nav className="mt-10 flex-1 space-y-2 px-3">
               <DesktopNavLink href="/dashboard" icon="home" label="Home" currentPath={pathname} />
               <DesktopNavLink href="/report" icon="file" label="Reports" currentPath={pathname} />
+              <DesktopNavLink href="/orb" icon="radar" label="Orb" currentPath={pathname} />
               <DesktopNavLink href="/catalysts" icon="spark" label="Catalysts" currentPath={pathname} />
               <DesktopNavLink href="/chat" icon="message" label="Chat" currentPath={pathname} />
               <DesktopNavLink href="/settings" icon="settings" label="Settings" currentPath={pathname} />
@@ -53,7 +55,7 @@ export default function DashboardLayout({
   );
 }
 
-// Desktop nav link component
+// Desktop nav link component - uses Link for automatic prefetching
 function DesktopNavLink({ 
   href, 
   icon, 
@@ -68,8 +70,9 @@ function DesktopNavLink({
   const isActive = currentPath === href;
   
   return (
-    <a
+    <Link
       href={href}
+      prefetch={true}
       className={`group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors ${
         isActive 
           ? "bg-primary/10 text-primary" 
@@ -78,7 +81,7 @@ function DesktopNavLink({
     >
       <NavIcon name={icon} className={`mr-4 h-6 w-6 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
       {label}
-    </a>
+    </Link>
   );
 }
 
@@ -108,6 +111,14 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
     message: (
       <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+    radar: (
+      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 12m-1 0a1 1 0 102 0 1 1 0 10-2 0" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 12m-5 0a5 5 0 1010 0 5 5 0 10-10 0" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 12m-9 0a9 9 0 1018 0 9 9 0 10-18 0" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v4M12 17v4" />
       </svg>
     ),
     settings: (

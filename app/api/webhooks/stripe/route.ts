@@ -222,8 +222,12 @@ export async function POST(request: Request) {
                 } catch (telegramError) {
                   console.error('Failed to send Telegram alert:', telegramError);
                 }
-              } else if (linkData?.properties?.action_link) {
+              } else if (linkData?.properties?.hashed_token) {
                 console.log(`[EMAIL] Generated password link for ${customerEmail}, sending email...`);
+                // Build token_hash URL through our /auth/callback endpoint
+                // This prevents email pre-scanners (Yahoo, Outlook SafeLinks) from consuming
+                // the single-use OTP token before the user clicks the link.
+                const setupLink = `https://www.flacko.ai/auth/callback?token_hash=${linkData.properties.hashed_token}&type=recovery&next=/reset-password`;
                 // Send email via Resend
                 const { resend, EMAIL_FROM } = await import("@/lib/resend/client");
                 const emailResult = await resend.emails.send({
@@ -256,14 +260,14 @@ export async function POST(request: Request) {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <a href="${linkData.properties.action_link}" style="display: inline-block; padding: 14px 28px; background-color: #ffffff; color: #0a0a0a; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
+                    <a href="${setupLink}" style="display: inline-block; padding: 14px 28px; background-color: #ffffff; color: #0a0a0a; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px;">
                       Set Password →
                     </a>
                   </td>
                 </tr>
               </table>
               <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 1.6; color: #71717a;">
-                This link expires in 24 hours. If you didn't create a Flacko AI account, you can safely ignore this email.
+                This link expires in 1 hour. If you didn't create a Flacko AI account, you can safely ignore this email.
               </p>
             </td>
           </tr>

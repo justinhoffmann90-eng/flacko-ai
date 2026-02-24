@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
-import PullToRefreshLib from "react-simple-pull-to-refresh";
+import { useState, useRef, useCallback, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 interface PullToRefreshProps {
   children: ReactNode;
@@ -9,90 +9,153 @@ interface PullToRefreshProps {
   disabled?: boolean;
 }
 
+const THRESHOLD = 60;
+const MAX_PULL = 100;
+const RESISTANCE = 0.4;
+
 export function PullToRefresh({ children, onRefresh, disabled = false }: PullToRefreshProps) {
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const pullStartY = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  // Detect standalone mode on mount
-  useEffect(() => {
-    setMounted(true);
-    const standalone = 
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    setIsStandalone(standalone);
-  }, []);
-
-  // Default refresh handler
-  const handleRefresh = async () => {
-    if (onRefresh) {
-      await onRefresh();
-    } else {
-      window.location.reload();
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (disabled || refreshing) return;
+    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
     }
-  };
+  }, [disabled, refreshing]);
 
-  // SSR safety + browser mode = just render children
-  if (!mounted || !isStandalone) {
-    return <>{children}</>;
-  }
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (pullStartY.current === null || disabled || refreshing) return;
+    const dy = e.touches[0].clientY - pullStartY.current;
+    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    if (dy > 0 && scrollTop <= 0) {
+      // Prevent native scroll while pulling
+      e.preventDefault();
+      setPullDistance(Math.min(dy * RESISTANCE, MAX_PULL));
+    } else {
+      // User scrolled up, cancel pull
+      pullStartY.current = null;
+      setPullDistance(0);
+    }
+  }, [disabled, refreshing]);
 
-  // PWA mode - use the library
+  const handleTouchEnd = useCallback(async () => {
+    if (pullStartY.current === null) return;
+    
+    if (pullDistance >= THRESHOLD && !refreshing && !disabled) {
+      setReleasing(true);
+      setRefreshing(true);
+      setPullDistance(THRESHOLD); // Snap to threshold
+
+      try {
+        if (onRefresh) {
+          await onRefresh();
+        } else {
+          // Use Next.js soft refresh — re-fetches server components without full reload
+          router.refresh();
+          // Small delay so the spinner is visible (router.refresh is near-instant visually)
+          await new Promise((r) => setTimeout(r, 600));
+        }
+      } catch {
+        // Silently handle refresh errors
+      }
+
+      setRefreshing(false);
+      setReleasing(false);
+    }
+    
+    setPullDistance(0);
+    pullStartY.current = null;
+  }, [pullDistance, refreshing, disabled, onRefresh, router]);
+
+  const progress = Math.min(pullDistance / THRESHOLD, 1);
+  const pastThreshold = pullDistance >= THRESHOLD;
+
   return (
-    <PullToRefreshLib
-      onRefresh={handleRefresh}
-      isPullable={!disabled}
-      pullDownThreshold={70}
-      maxPullDownDistance={120}
-      resistance={2}
-      pullingContent={<IOSSpinner spinning={false} />}
-      refreshingContent={<IOSSpinner spinning={true} />}
-      className="min-h-screen"
+    <div
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="relative"
     >
-      {children}
-    </PullToRefreshLib>
-  );
-}
-
-// iOS-style activity indicator
-function IOSSpinner({ spinning }: { spinning: boolean }) {
-  const lines = 12;
-  const size = 28;
-  
-  return (
-    <div className="flex justify-center py-3">
-      <div 
-        className={spinning ? "animate-spin" : ""}
-        style={{ 
-          width: size, 
-          height: size,
-          animationDuration: '0.8s',
-          animationTimingFunction: 'steps(12)',
+      {/* Pull indicator */}
+      <div
+        className="flex items-center justify-center overflow-hidden pointer-events-none"
+        style={{
+          height: refreshing ? THRESHOLD : pullDistance,
+          transition: releasing || (!refreshing && pullDistance === 0) ? "height 0.3s cubic-bezier(0.2, 0, 0, 1)" : "none",
         }}
       >
-        {Array.from({ length: lines }).map((_, i) => {
-          const rotation = (i * 360) / lines;
-          const opacity = 0.15 + (0.85 * (1 - i / lines));
-          
-          return (
-            <div
-              key={i}
+        <div className="relative flex items-center justify-center w-8 h-8">
+          {/* Circular progress / spinner */}
+          <svg
+            className={refreshing ? "animate-spin" : ""}
+            width={28}
+            height={28}
+            viewBox="0 0 28 28"
+            style={{
+              transform: refreshing ? undefined : `rotate(${progress * 270}deg)`,
+              transition: refreshing ? undefined : "transform 0.1s ease-out",
+              animationDuration: "0.7s",
+            }}
+          >
+            <circle
+              cx="14"
+              cy="14"
+              r="11"
+              fill="none"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth="2.5"
+            />
+            <circle
+              cx="14"
+              cy="14"
+              r="11"
+              fill="none"
+              stroke={pastThreshold || refreshing ? "#22c55e" : "rgba(255,255,255,0.35)"}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={`${(refreshing ? 0.7 : progress * 0.75) * 69.1} 69.1`}
               style={{
-                position: 'absolute',
-                width: 2.5,
-                height: size * 0.28,
-                left: '50%',
-                top: '50%',
-                marginLeft: -1.25,
-                marginTop: -size / 2 + size * 0.18,
-                borderRadius: 2,
-                backgroundColor: '#8E8E93',
-                opacity,
-                transform: `rotate(${rotation}deg)`,
-                transformOrigin: `center ${size / 2 - size * 0.18}px`,
+                transition: "stroke 0.2s ease",
               }}
             />
-          );
-        })}
+          </svg>
+          {/* Arrow indicator when past threshold */}
+          {pastThreshold && !refreshing && (
+            <svg
+              className="absolute"
+              width={12}
+              height={12}
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{
+                opacity: Math.min((pullDistance - THRESHOLD) / 20 + 0.5, 1),
+              }}
+            >
+              <path d="M6 9V3M3 5.5L6 2.5L9 5.5" />
+            </svg>
+          )}
+        </div>
+      </div>
+
+      {/* Content with transform for smooth pull effect */}
+      <div
+        style={{
+          transform: pullDistance > 0 || refreshing ? `translateY(0)` : undefined,
+        }}
+      >
+        {children}
       </div>
     </div>
   );

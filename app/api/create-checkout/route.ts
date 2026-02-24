@@ -22,7 +22,7 @@ export async function POST() {
     const stripe = getStripe();
     
     // Use same URL format as working signup-checkout endpoint
-    const baseUrl = "https://flacko.ai";
+    const baseUrl = "https://www.flacko.ai";
     
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
