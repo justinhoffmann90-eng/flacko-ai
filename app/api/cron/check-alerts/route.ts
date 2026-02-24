@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchRealtimePrice } from "@/lib/price/fetcher";
-import { sendAlertMessage } from "@/lib/discord/client";
+import { sendAlertMessage, DiscordSendResult } from "@/lib/discord/client";
 import { getAlertDiscordMessage } from "@/lib/discord/templates";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getAlertEmailHtml } from "@/lib/resend/templates";
@@ -44,7 +44,9 @@ async function logAlertDelivery(
   success: boolean,
   alertCount: number,
   price: number,
-  errorMessage?: string
+  errorMessage?: string,
+  discordMessageId?: string,
+  discordChannelId?: string,
 ) {
   try {
     await supabase.from("discord_alert_log").insert({
@@ -53,7 +55,12 @@ async function logAlertDelivery(
       status: success ? "success" : "failed",
       message_preview: `${alertCount} alerts triggered at $${price.toFixed(2)}`,
       error_message: errorMessage || null,
+      discord_message_id: discordMessageId || null,
+      discord_channel_id: discordChannelId || null,
     });
+    if (discordMessageId) {
+      console.log(`[ALERT LOG] message_id=${discordMessageId} stored — alert can be deleted/edited if needed`);
+    }
   } catch (error) {
     console.error("Failed to log alert delivery:", error);
   }
@@ -513,19 +520,24 @@ export async function GET(request: Request) {
     });
 
     let discordSent = false;
+    let discordMessageId: string | undefined;
     let telegramBackup = false;
 
     try {
-      discordSent = await sendAlertMessage(discordMessage);
+      const discordResult: DiscordSendResult = await sendAlertMessage(discordMessage);
+      discordSent = discordResult.success;
+      discordMessageId = discordResult.messageId;
 
-      // Log the delivery attempt
+      // Log the delivery attempt — now includes message ID so we can delete/edit if needed
       await logAlertDelivery(
         supabase,
         "alerts",
         discordSent,
         triggeredAlerts.length,
         currentPrice,
-        discordSent ? undefined : "Discord webhook failed"
+        discordSent ? undefined : (discordResult.error || "Discord webhook failed"),
+        discordMessageId,
+        process.env.DISCORD_ALERTS_CHANNEL_ID,
       );
 
       // CRITICAL: If Discord failed, send backup via Telegram
@@ -548,6 +560,7 @@ export async function GET(request: Request) {
       price: currentPrice,
       triggeredCount: triggeredAlerts.length,
       discordSent,
+      discordMessageId: discordMessageId || null,
       telegramBackup,
       emailsSent,
       emailsFailed,
