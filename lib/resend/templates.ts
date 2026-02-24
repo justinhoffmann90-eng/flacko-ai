@@ -1,31 +1,6 @@
 import { ReportAlert, TrafficLightMode } from "@/types";
 import { formatPrice, formatPercent } from "@/lib/utils";
-
-// Mode descriptions for context
-const modeDescriptions: Record<TrafficLightMode, { emoji: string; cap: string; guidance: string }> = {
-  green: {
-    emoji: "🟢",
-    cap: "up to 25%",
-    guidance: "Favorable conditions for swing entries. Consider adding on dips to key levels.",
-  },
-  yellow: {
-    emoji: "🟡", 
-    cap: "15% or less",
-    guidance: "Proceed with caution. Tighter stops, smaller positions. Wait for clearer signals.",
-  },
-  red: {
-    emoji: "🔴",
-    cap: "5% or less",
-    guidance: "Defensive stance. Protect capital. Nibbles only at extreme support.",
-  },
-};
-
-// Orange mode (between yellow and red)
-const orangeMode = {
-  emoji: "🟠",
-  cap: "10% or less",
-  guidance: "Elevated caution. Respect key levels. Size positions conservatively.",
-};
+import { MODE_INFO, ModeKey } from "@/lib/modes/constants";
 
 export function getAlertEmailHtml({
   userName,
@@ -50,17 +25,11 @@ export function getAlertEmailHtml({
   };
   positioning?: string;
 }) {
-  const modeColors: Record<string, string> = {
-    green: "#22c55e",
-    yellow: "#eab308",
-    orange: "#f97316",
-    red: "#ef4444",
-  };
-
-  // Determine if this is orange mode (mode is yellow but we treat it as orange based on context)
-  const displayMode = mode === "yellow" ? "orange" : mode;
-  const modeColor = modeColors[displayMode] || modeColors.yellow;
-  const modeInfo = displayMode === "orange" ? orangeMode : modeDescriptions[mode];
+  // Determine display mode — yellow is treated as orange in this app
+  const displayMode = (mode === "yellow" ? "orange" : mode) as ModeKey;
+  // Pull color + guidance from the shared constants (single source of truth)
+  const modeInfo = MODE_INFO[displayMode] ?? MODE_INFO.yellow;
+  const modeColor = modeInfo.color;
 
   // Build alert details with reasons
   const alertDetails = alerts
@@ -276,11 +245,7 @@ export function getNewReportEmailHtml({
   closePrice: number;
   changePct: number;
 }) {
-  const modeColors = {
-    green: "#22c55e",
-    yellow: "#eab308",
-    red: "#ef4444",
-  };
+  const modeColor = (MODE_INFO[mode as ModeKey] ?? MODE_INFO.yellow).color;
 
   return `
     <!DOCTYPE html>
@@ -302,8 +267,8 @@ export function getNewReportEmailHtml({
 
         <div style="background-color: #1f2937; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
           <div style="text-align: center; margin-bottom: 20px;">
-            <div style="display: inline-block; background-color: ${modeColors[mode]}20; border: 2px solid ${modeColors[mode]}; border-radius: 8px; padding: 16px 32px;">
-              <span style="color: ${modeColors[mode]}; font-weight: bold; font-size: 24px; text-transform: uppercase;">${mode} MODE</span>
+            <div style="display: inline-block; background-color: ${modeColor}20; border: 2px solid ${modeColor}; border-radius: 8px; padding: 16px 32px;">
+              <span style="color: ${modeColor}; font-weight: bold; font-size: 24px; text-transform: uppercase;">${mode} MODE</span>
             </div>
           </div>
 

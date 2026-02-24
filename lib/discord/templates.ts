@@ -1,6 +1,7 @@
 import { DiscordMessage, DiscordEmbed, DISCORD_COLORS } from "./client";
 import { ReportAlert, TrafficLightMode, Positioning, TierSignals } from "@/types";
 import { formatPrice } from "@/lib/utils";
+import { MODE_INFO, ModeKey } from "@/lib/modes/constants";
 
 /**
  * CRITICAL: Get the correct emoji for each mode/tier signal
@@ -34,13 +35,11 @@ function getColorEmoji(signal: string): string {
   }
 }
 
-// Mode descriptions for Discord alerts
-const modeGuidance: Record<string, { cap: string; guidance: string }> = {
-  green: { cap: "up to 25%", guidance: "Favorable conditions for swing entries." },
-  yellow: { cap: "15% or less", guidance: "Proceed with caution. Tighter stops." },
-  orange: { cap: "10% or less", guidance: "Elevated caution. Respect key levels. Size positions conservatively." },
-  red: { cap: "5% or less", guidance: "Defensive stance. Protect capital. Nibbles only." },
-};
+// Mode guidance — delegates to shared MODE_INFO (lib/modes/constants.ts).
+// Do NOT add mode strings here; edit the shared constants file instead.
+const modeGuidance: Record<string, { cap: string; guidance: string }> = Object.fromEntries(
+  Object.entries(MODE_INFO).map(([key, info]) => [key, { cap: info.cap, guidance: info.guidance }])
+);
 
 export function getAlertDiscordMessage({
   alerts,
