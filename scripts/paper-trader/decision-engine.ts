@@ -20,7 +20,8 @@ import { MODE_CONFIGS, TIER_MULTIPLIERS, TRIM_CAPS, MAX_INVESTED } from './types
 // Risk management constants
 const NO_NEW_POSITIONS_AFTER_HOUR = 15; // 3 PM CT
 const MAX_POSITIONS_PER_DAY = 2;
-const SUPPORT_THRESHOLD_PERCENT = 0.005; // 0.5% from support = "near"
+const SUPPORT_THRESHOLD_PERCENT = 0.01; // 1.0% from support = "near"
+const RESISTANCE_THRESHOLD_PERCENT = 0.005; // keep resistance proximity at 0.5%
 const TARGET_THRESHOLD_PERCENT = 0.003; // 0.3% from target = consider exit
 
 // Orb zone instrument mapping
@@ -154,9 +155,24 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   // Import TradeMode type for mode variable
   type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
   
-  // Check Orb zone — CAUTION/DEFENSIVE = no new buys
+  // Check Orb zone
   const zoneConfig = ORB_ZONE_CONFIG[orb.zone];
-  if (!zoneConfig.canBuy) {
+  const isCautionZone = orb.zone === 'CAUTION';
+  const isDefensiveZone = orb.zone === 'DEFENSIVE';
+  
+  if (isDefensiveZone) {
+    return {
+      action: 'hold',
+      price: quote.price,
+      reasoning: [
+        `orb zone: ${zoneConfig.emoji} ${orb.zone} — no new buys`,
+        `score: ${orb.score.toFixed(3)} — defensive posture`,
+      ],
+      confidence: 'high',
+    };
+  }
+  
+  if (!zoneConfig.canBuy && !isCautionZone) {
     return {
       action: 'hold',
       price: quote.price,
@@ -169,7 +185,10 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   }
   
   // Determine instrument based on Orb zone
-  let instrument = zoneConfig.instrument!;
+  let instrument: Instrument = isCautionZone ? 'TSLA' : zoneConfig.instrument!;
+  if (isCautionZone) {
+    reasoning.push(`🟡 CAUTION zone — TSLA nibbles only at support (no leverage)`);
+  }
   
   // ⚡ OVERRIDE: High-conviction dip buys upgrade NEUTRAL to TSLL
   const OVERRIDE_SETUPS = ['oversold-extreme', 'deep-value', 'capitulation'];
@@ -177,7 +196,7 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   const activeOverrides = activeSetups.filter(s => OVERRIDE_SETUPS.includes(s.setup_id));
   let isOverride = false;
   
-  if (orb.zone === 'NEUTRAL' && activeOverrides.length > 0) {
+  if (!isCautionZone && orb.zone === 'NEUTRAL' && activeOverrides.length > 0) {
     instrument = 'TSLL';
     isOverride = true;
     const overrideNames = activeOverrides.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
@@ -254,6 +273,18 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   
   if (nearSupport.isNear) {
     reasoning.push(`price near support: ${nearSupport.level} ($${nearSupport.price.toFixed(2)})`);
+  }
+  
+  if (isCautionZone && !nearSupport.isNear) {
+    return {
+      action: 'hold',
+      price: price,
+      reasoning: [
+        ...reasoning,
+        'CAUTION zone buys require support proximity (within 1.0%). not near a support level.',
+      ],
+      confidence: 'high',
+    };
   }
   
   if (nearResistance.isNear) {
@@ -567,24 +598,33 @@ function checkNearSupport(
   price: number,
   report: DailyReport
 ): { isNear: boolean; level: string; price: number } {
+  const isValidLevel = (value: number | null | undefined): value is number =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0;
+
   // SpotGamma walls
-  const supports: { name: string; price: number }[] = [
+  const wallSupports: { name: string; price: number }[] = [
     { name: 'put wall', price: report.putWall },
     { name: 'hedge wall', price: report.hedgeWall },
     { name: 'gamma strike', price: report.gammaStrike },
-  ].filter(s => s.price > 0);
+  ].filter(s => isValidLevel(s.price));
 
-  // Report levels (S1, S2, D9 EMA, D13 EMA, D21 EMA, etc.)
+  // Report levels (support + nibble levels)
   const reportSupports = (report.levels || [])
-    .filter(l => l.type === 'support' && l.price > 0 && l.price <= price * 1.01)
+    .filter(l => {
+      const name = (l.name || '').toLowerCase();
+      const levelType = String(l.type || '').toLowerCase();
+      const isNibble = levelType === 'nibble' || name.includes('nibble');
+      return isValidLevel(l.price) && (l.type === 'support' || isNibble);
+    })
     .map(l => ({ name: l.name, price: l.price }));
 
-  const allSupports = [...supports, ...reportSupports];
+  const allSupports = [...wallSupports, ...reportSupports]
+    .map(s => ({ ...s, distance: Math.abs(price - s.price) }))
+    .sort((a, b) => a.distance - b.distance);
   
   for (const support of allSupports) {
     const threshold = support.price * SUPPORT_THRESHOLD_PERCENT;
-    if (Math.abs(price - support.price) <= threshold || 
-        (price >= support.price && price <= support.price + threshold)) {
+    if (support.distance <= threshold) {
       return { isNear: true, level: support.name, price: support.price };
     }
   }
@@ -605,7 +645,7 @@ function checkNearResistance(
   ].filter(r => r.price > 0 && r.price > price);
   
   for (const resistance of resistances) {
-    const threshold = resistance.price * SUPPORT_THRESHOLD_PERCENT;
+    const threshold = resistance.price * RESISTANCE_THRESHOLD_PERCENT;
     if (resistance.price - price <= threshold) {
       return { isNear: true, level: resistance.name, price: resistance.price };
     }
