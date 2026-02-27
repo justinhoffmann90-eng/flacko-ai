@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Providers } from "./providers";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { PageTracker } from "@/components/page-tracker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({
           <ProgressBar />
         </Suspense>
         <Providers>{children}</Providers>
+        <PageTracker />
         <Analytics />
       </body>
     </html>
