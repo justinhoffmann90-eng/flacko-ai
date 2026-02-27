@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 interface AnalyticsData {
@@ -18,6 +17,25 @@ interface AnalyticsData {
   };
   emailStats: { sent: number; failed: number };
   churn: { last30Days: number };
+}
+
+interface TrafficAnalyticsData {
+  dailyViews: { date: string; views: number; uniqueVisitors: number }[];
+  topPages: { path: string; views: number; uniqueVisitors: number }[];
+  topReferrers: { referrer: string; views: number }[];
+  topLandingPages: { path: string; count: number }[];
+  utmBreakdown: {
+    source: string | null;
+    medium: string | null;
+    campaign: string | null;
+    views: number;
+    uniqueVisitors: number;
+  }[];
+  countryBreakdown: { country: string; views: number }[];
+  bounceRate: number;
+  avgSessionDuration: number;
+  conversionFunnel: { visitors: number; signups: number; subscribers: number };
+  totals: { views: number; uniqueVisitors: number; avgDailyViews: number };
 }
 
 function StatCard({
@@ -51,20 +69,53 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
   );
 }
 
+function formatDuration(ms: number) {
+  if (!ms || ms <= 0) return "0s";
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes <= 0) return `${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [traffic, setTraffic] = useState<TrafficAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/analytics")
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to load analytics");
-        return r.json();
-      })
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    let isActive = true;
+    const load = async () => {
+      try {
+        const [analyticsRes, trafficRes] = await Promise.all([
+          fetch("/api/admin/analytics"),
+          fetch("/api/admin/analytics/traffic"),
+        ]);
+
+        if (!analyticsRes.ok) throw new Error("Failed to load analytics");
+        if (!trafficRes.ok) throw new Error("Failed to load traffic analytics");
+
+        const [analyticsData, trafficData] = await Promise.all([
+          analyticsRes.json(),
+          trafficRes.json(),
+        ]);
+
+        if (!isActive) return;
+        setData(analyticsData);
+        setTraffic(trafficData);
+      } catch (e) {
+        if (!isActive) return;
+        setError(e instanceof Error ? e.message : "Failed to load analytics");
+      } finally {
+        if (isActive) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   if (loading) {
@@ -75,7 +126,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || !traffic) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <p className="text-red-400">{error || "Failed to load"}</p>
@@ -87,6 +138,17 @@ export default function AnalyticsPage() {
   const totalSubs = Object.values(data.subscribers).reduce((a, b) => a + b, 0);
   const maxDau = Math.max(...data.dau.map((d) => d.count), 1);
   const maxChat = Math.max(...data.chatStats.map((d) => d.totalMessages), 1);
+  const maxDailyViews = Math.max(...traffic.dailyViews.map((d) => d.views), 1);
+
+  const funnelVisitors = traffic.conversionFunnel.visitors;
+  const funnelSignups = traffic.conversionFunnel.signups;
+  const funnelSubscribers = traffic.conversionFunnel.subscribers;
+  const visitorToSignupRate =
+    funnelVisitors > 0 ? Math.round((funnelSignups / funnelVisitors) * 100) : 0;
+  const signupToSubscriberRate =
+    funnelSignups > 0 ? Math.round((funnelSubscribers / funnelSignups) * 100) : 0;
+  const visitorToSubscriberRate =
+    funnelVisitors > 0 ? Math.round((funnelSubscribers / funnelVisitors) * 100) : 0;
 
   // Report engagement rate
   const engagementRate =
@@ -133,6 +195,249 @@ export default function AnalyticsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-8">
+        {/* Website Traffic Overview */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Website Traffic Overview</h2>
+            <p className="text-xs text-white/40">Last 30 days</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <StatCard
+              label="Total Page Views (30d)"
+              value={traffic.totals.views}
+              color="text-cyan-400"
+            />
+            <StatCard
+              label="Unique Visitors"
+              value={traffic.totals.uniqueVisitors}
+              color="text-blue-400"
+            />
+            <StatCard
+              label="Avg Daily Views"
+              value={traffic.totals.avgDailyViews}
+              color="text-purple-400"
+            />
+            <StatCard
+              label="Bounce Rate"
+              value={`${traffic.bounceRate}%`}
+              sublabel="Single-page sessions"
+              color={traffic.bounceRate > 60 ? "text-red-400" : "text-yellow-400"}
+            />
+            <StatCard
+              label="Avg Session Duration"
+              value={formatDuration(traffic.avgSessionDuration)}
+              color="text-green-400"
+            />
+          </div>
+        </div>
+
+        {/* Daily Page Views */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">Daily Page Views (30 days)</h2>
+          {traffic.totals.views === 0 ? (
+            <p className="text-white/40 text-center py-8">No page views yet</p>
+          ) : (
+            <div className="space-y-2">
+              {traffic.dailyViews.slice(0, 14).map((day) => (
+                <div key={day.date} className="flex items-center gap-3">
+                  <span className="text-xs text-white/50 w-20 font-mono">
+                    {new Date(day.date + "T12:00:00").toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                  <div className="flex-1">
+                    <MiniBar value={day.views} max={maxDailyViews} color="bg-cyan-500" />
+                  </div>
+                  <div className="text-right w-28">
+                    <span className="text-sm font-medium text-white">{day.views}</span>
+                    <span className="text-xs text-white/40 ml-1">
+                      ({day.uniqueVisitors} visitors)
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Conversion Funnel */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">Conversion Funnel (30 days)</h2>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <div className="flex-1 p-4 rounded-lg bg-white/5">
+              <p className="text-xs text-white/50 uppercase tracking-wider">Visitors</p>
+              <p className="text-2xl font-bold text-white mt-1">{funnelVisitors}</p>
+            </div>
+            <div className="flex items-center justify-center text-white/50 text-sm lg:w-24">
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-wider">→</p>
+                <p className="text-sm font-semibold text-white">{visitorToSignupRate}%</p>
+              </div>
+            </div>
+            <div className="flex-1 p-4 rounded-lg bg-white/5">
+              <p className="text-xs text-white/50 uppercase tracking-wider">Signups</p>
+              <p className="text-2xl font-bold text-white mt-1">{funnelSignups}</p>
+            </div>
+            <div className="flex items-center justify-center text-white/50 text-sm lg:w-24">
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-wider">→</p>
+                <p className="text-sm font-semibold text-white">{signupToSubscriberRate}%</p>
+              </div>
+            </div>
+            <div className="flex-1 p-4 rounded-lg bg-white/5">
+              <p className="text-xs text-white/50 uppercase tracking-wider">Subscribers</p>
+              <p className="text-2xl font-bold text-white mt-1">{funnelSubscribers}</p>
+            </div>
+          </div>
+          <p className="text-xs text-white/40 mt-4">
+            Visitor → Subscriber conversion: {visitorToSubscriberRate}%
+          </p>
+        </Card>
+
+        {/* Top Pages */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">Top Pages</h2>
+          {traffic.topPages.length === 0 ? (
+            <p className="text-white/40 text-center py-8">No page view data yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/50 uppercase text-xs tracking-wider">
+                    <th className="text-left py-2 pr-4">Path</th>
+                    <th className="text-right py-2 pr-4">Views</th>
+                    <th className="text-right py-2">Unique</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {traffic.topPages.map((page) => (
+                    <tr key={page.path} className="border-b border-white/5 last:border-b-0">
+                      <td className="py-2 pr-4 text-white/80 break-all">{page.path}</td>
+                      <td className="py-2 pr-4 text-right text-white">{page.views}</td>
+                      <td className="py-2 text-right text-white/70">{page.uniqueVisitors}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Top Referrers */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">Top Referrers</h2>
+          {traffic.topReferrers.length === 0 ? (
+            <p className="text-white/40 text-center py-8">No referrer data yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/50 uppercase text-xs tracking-wider">
+                    <th className="text-left py-2 pr-4">Referrer</th>
+                    <th className="text-right py-2">Views</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {traffic.topReferrers.map((referrer) => (
+                    <tr key={referrer.referrer} className="border-b border-white/5 last:border-b-0">
+                      <td className="py-2 pr-4 text-white/80 break-all">{referrer.referrer}</td>
+                      <td className="py-2 text-right text-white">{referrer.views}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* UTM Campaign Performance */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">UTM Campaign Performance</h2>
+          {traffic.utmBreakdown.length === 0 ? (
+            <p className="text-white/40 text-center py-8">No UTM data yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/50 uppercase text-xs tracking-wider">
+                    <th className="text-left py-2 pr-4">Source</th>
+                    <th className="text-left py-2 pr-4">Medium</th>
+                    <th className="text-left py-2 pr-4">Campaign</th>
+                    <th className="text-right py-2 pr-4">Views</th>
+                    <th className="text-right py-2">Unique</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {traffic.utmBreakdown.map((utm, index) => (
+                    <tr key={`${utm.source}-${utm.medium}-${utm.campaign}-${index}`} className="border-b border-white/5 last:border-b-0">
+                      <td className="py-2 pr-4 text-white/80">{utm.source || "—"}</td>
+                      <td className="py-2 pr-4 text-white/80">{utm.medium || "—"}</td>
+                      <td className="py-2 pr-4 text-white/80">{utm.campaign || "—"}</td>
+                      <td className="py-2 pr-4 text-right text-white">{utm.views}</td>
+                      <td className="py-2 text-right text-white/70">{utm.uniqueVisitors}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Top Landing Pages */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">Top Landing Pages</h2>
+          {traffic.topLandingPages.length === 0 ? (
+            <p className="text-white/40 text-center py-8">No landing page data yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/50 uppercase text-xs tracking-wider">
+                    <th className="text-left py-2 pr-4">Path</th>
+                    <th className="text-right py-2">Sessions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {traffic.topLandingPages.map((page) => (
+                    <tr key={page.path} className="border-b border-white/5 last:border-b-0">
+                      <td className="py-2 pr-4 text-white/80 break-all">{page.path}</td>
+                      <td className="py-2 text-right text-white">{page.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Country Breakdown */}
+        <Card className="p-6 bg-white/5 border-white/10">
+          <h2 className="text-lg font-semibold text-white mb-4">Country Breakdown</h2>
+          {traffic.countryBreakdown.length === 0 ? (
+            <p className="text-white/40 text-center py-8">No country data yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/50 uppercase text-xs tracking-wider">
+                    <th className="text-left py-2 pr-4">Country</th>
+                    <th className="text-right py-2">Views</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {traffic.countryBreakdown.map((country) => (
+                    <tr key={country.country} className="border-b border-white/5 last:border-b-0">
+                      <td className="py-2 pr-4 text-white/80">{country.country}</td>
+                      <td className="py-2 text-right text-white">{country.views}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
         {/* Key Metrics Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <StatCard
