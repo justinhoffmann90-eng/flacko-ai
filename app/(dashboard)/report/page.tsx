@@ -10,6 +10,8 @@ import { ExtractedReportData } from "@/types";
 import { AlertTriangle } from "lucide-react";
 import { CallOptionsWidget } from "@/components/report/call-options-widget";
 
+export const dynamic = "force-dynamic";
+
 interface ReportRow {
   id: string;
   report_date: string;

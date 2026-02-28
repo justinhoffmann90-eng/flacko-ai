@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 // Discord webhook configuration — stored here instead of a local file path
 // so it works in production (Vercel) and local dev
 const DISCORD_CHANNELS: Record<string, { id: string; webhook: string; purpose: string }> = {

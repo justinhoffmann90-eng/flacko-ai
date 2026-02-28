@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateTweetDrafts } from "@/lib/tweets/generator";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();

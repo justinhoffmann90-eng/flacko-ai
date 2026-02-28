@@ -2,6 +2,8 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { parseWeeklyReview, validateWeeklyReview, WEEKLY_PARSER_VERSION } from "@/lib/parser/weekly-review";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const supabase = await createClient();

@@ -8,6 +8,8 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const supabase = await createClient();

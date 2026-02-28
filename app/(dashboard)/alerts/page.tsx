@@ -7,6 +7,8 @@ import { formatPrice, formatDate } from "@/lib/utils";
 import { ArrowUp, ArrowDown, AlertTriangle, MessageCircle } from "lucide-react";
 import { ExtractedReportData, ReportAlert } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 interface ReportData {
   report_date: string;
   extracted_data: ExtractedReportData;

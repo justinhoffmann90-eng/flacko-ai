@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { nanoid } from "nanoid";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/admin/invites
  * List all invite codes (admin only)

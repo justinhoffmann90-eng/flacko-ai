@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { addRoleToMember } from "@/lib/discord/bot";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Backfill job: Sync Discord roles for all active subscribers
  * Catches cases where user subscribed before linking Discord

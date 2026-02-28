@@ -9,6 +9,8 @@ import { ChevronRight, Calendar, CalendarDays } from "lucide-react";
 import { ExtractedReportData } from "@/types";
 import { WeeklyReviewData } from "@/types/weekly-review";
 
+export const dynamic = "force-dynamic";
+
 interface ReportListItem {
   id: string;
   report_date: string;

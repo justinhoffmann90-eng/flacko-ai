@@ -9,6 +9,8 @@ import { ExtractedReportData } from "@/types";
 import Link from "next/link";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

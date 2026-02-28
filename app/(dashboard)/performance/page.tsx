@@ -4,6 +4,8 @@ import { Header } from "@/components/dashboard/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExtractedReportData } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 interface ReportRow {
   report_date: string;
   extracted_data: ExtractedReportData;

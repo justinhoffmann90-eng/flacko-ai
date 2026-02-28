@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { promises as fs } from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/command-center - Fetch dashboard data (admin only)
 export async function GET() {
   try {
