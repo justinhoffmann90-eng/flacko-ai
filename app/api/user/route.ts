@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 // Whitelist of fields that users can update on their profile
 const userUpdateSchema = z.object({
   x_handle: z.string().optional(),

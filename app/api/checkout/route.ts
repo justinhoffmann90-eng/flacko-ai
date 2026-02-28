@@ -2,6 +2,8 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { createCheckoutSession } from "@/lib/stripe/server";
 
+export const dynamic = "force-dynamic";
+
 interface ExistingSubscription {
   status: string;
   is_founder?: boolean;

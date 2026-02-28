@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Catalyst } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/catalysts - Fetch upcoming catalysts
 export async function GET(request: Request) {
   try {

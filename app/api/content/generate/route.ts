@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 const SYSTEM_MESSAGE =
   "You are a professional trading content creator for Flacko AI, a TSLA swing trading intelligence platform. Generate concise, engaging content based on the prompt provided. Output ONLY the content text, no explanations.";
 

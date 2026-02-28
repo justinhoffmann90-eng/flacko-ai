@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { startOfWeek, endOfWeek, format, parseISO } from "date-fns";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/content/scheduled - Get scheduled content
 export async function GET(request: Request) {
   try {

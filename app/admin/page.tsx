@@ -6,6 +6,8 @@ import { ApiErrorLog } from "@/components/admin/api-error-log";
 import { ReportGenerationLog } from "@/components/admin/report-generation-log";
 import { TemplateEditor } from "@/components/admin/template-editor";
 
+export const dynamic = "force-dynamic";
+
 // Check if a date is stale (more than expected days old, accounting for weekends)
 function isReportStale(reportDate: string): { stale: boolean; daysSince: number; reason?: string } {
   const report = new Date(reportDate + 'T12:00:00');

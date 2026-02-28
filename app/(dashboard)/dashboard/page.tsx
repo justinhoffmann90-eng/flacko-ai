@@ -1,6 +1,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { Header } from "@/components/dashboard/header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +14,10 @@ import { hasSubscriptionAccess } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
 
+export const dynamic = "force-dynamic";
+
 // Lazy-load heavy components that fetch data or have complex rendering
-const LivePriceLadder = dynamic(
+const LivePriceLadder = dynamicImport(
   () => import("@/components/dashboard/live-price-ladder").then((mod) => ({ default: mod.LivePriceLadder })),
   {
     ssr: true,
@@ -32,7 +34,7 @@ const LivePriceLadder = dynamic(
   }
 );
 
-const PositioningCard = dynamic(
+const PositioningCard = dynamicImport(
   () => import("@/components/dashboard/positioning-card").then((mod) => ({ default: mod.PositioningCard })),
   {
     ssr: true,
@@ -48,7 +50,7 @@ const PositioningCard = dynamic(
   }
 );
 
-const OrbSignalsCard = dynamic(
+const OrbSignalsCard = dynamicImport(
   () => import("@/components/dashboard/orb-signals-card").then((mod) => ({ default: mod.OrbSignalsCard })),
   {
     ssr: false, // Client-only component that fetches data

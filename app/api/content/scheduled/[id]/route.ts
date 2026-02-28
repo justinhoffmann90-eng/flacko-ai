@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/content/scheduled/[id] - Get single item
 export async function GET(
   request: Request,

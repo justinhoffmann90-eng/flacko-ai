@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 // Lazy-load the heavy OrbClient component (1171 lines, lots of state/rendering logic)
-const OrbClient = dynamic(() => import("./OrbClient"), {
+const OrbClient = dynamicImport(() => import("./OrbClient"), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen p-4 bg-[#0a0a0c] flex items-center justify-center">

@@ -7,6 +7,8 @@ import { formatDate } from "@/lib/utils";
 import { Calendar, ExternalLink, Sparkles, Zap, Globe } from "lucide-react";
 import { CatalystFilters } from "@/components/dashboard/catalyst-filters";
 
+export const dynamic = "force-dynamic";
+
 interface Catalyst {
   id: string;
   event_date: string;

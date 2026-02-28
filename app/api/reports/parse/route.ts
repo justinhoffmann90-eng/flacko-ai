@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { parseReport, validateReport } from "@/lib/parser";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const devBypass = process.env.DEV_BYPASS_AUTH === "true";

@@ -9,6 +9,8 @@ import { WeeklyReviewData } from "@/types/weekly-review";
 import { formatPrice, formatPercent } from "@/lib/utils";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface WeeklyReviewRow {
   id: string;
   week_start: string;

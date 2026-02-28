@@ -4,6 +4,8 @@ import { createBillingPortalSession, getStripe } from "@/lib/stripe/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 
+export const dynamic = "force-dynamic";
+
 export async function POST() {
   try {
     const supabase = await createClient();
