@@ -67,6 +67,11 @@ const CONFIG = {
   NO_NEW_POSITIONS_AFTER: 15, // 3 PM CT
 };
 
+// Helper: get today's date in CT (America/Chicago) as YYYY-MM-DD
+function getTodayCT(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+}
+
 // Bot state
 let isRunning = false;
 let updateTimer: NodeJS.Timeout | null = null;
@@ -85,7 +90,7 @@ let sessionState = {
   tsllAvgCost: 0,           // TSLL avg cost
   realizedPnl: 0,
   todayTradesCount: 0,
-  currentDate: new Date().toISOString().split('T')[0],
+  currentDate: getTodayCT(),
   previousOrbZone: undefined as OrbZone | undefined,
   consecutiveClosesBelowKL: 0,  // Track consecutive daily closes below Kill Leverage
   levelsHitToday: new Set<string>(),  // Track which key levels have been hit today (avoid duplicate posts)
@@ -120,7 +125,7 @@ async function init(): Promise<boolean> {
   const savedState = await getBotState();
   if (savedState) {
     // Check if it's a new day
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayCT();
     if (savedState.currentDate !== today) {
       console.log('🌅 new day detected. resetting trade count.');
       sessionState.todayTradesCount = 0;
@@ -159,8 +164,8 @@ async function tradingLoop(): Promise<void> {
   if (!isRunning) return;
   
   try {
-    // Check if new day
-    const today = new Date().toISOString().split('T')[0];
+    // Check if new day (CT timezone)
+    const today = getTodayCT();
     if (sessionState.currentDate !== today) {
       sessionState.currentDate = today;
       sessionState.todayTradesCount = 0;
@@ -179,6 +184,7 @@ async function tradingLoop(): Promise<void> {
       // Check if bot already ran today (bot_date matches) — skip market open on restart
       const savedState = await getBotState();
       const alreadyRanToday = savedState?.currentDate === today;
+      console.log(`🔍 market open check: bot_date=${savedState?.currentDate} today=${today} alreadyRan=${alreadyRanToday}`);
       
       if (!alreadyRanToday) {
         const [quote, tsllQuote, report, orb] = await Promise.all([

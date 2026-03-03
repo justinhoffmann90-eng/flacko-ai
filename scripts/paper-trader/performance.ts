@@ -66,7 +66,7 @@ export async function updateBotState(
       realized_pnl: portfolio.realizedPnl,
       last_update_at: new Date().toISOString(),
       today_trades_count: todayTradesCount,
-      bot_date: new Date().toISOString().split('T')[0],
+      bot_date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }),
       current_orb_zone: orbZone || null,
       current_orb_score: orbScore || null,
       levels_hit_today: levelsHitToday || [],
@@ -231,7 +231,7 @@ export function calculateMultiPortfolio(
  */
 export async function getTodayTrades(): Promise<Trade[]> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     
     const { data, error } = await supabase
       .from('paper_trades')
@@ -269,7 +269,7 @@ export async function getTodayTrades(): Promise<Trade[]> {
  */
 export async function calculateTodayPnl(): Promise<number> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     
     const { data, error } = await supabase
       .from('paper_trades')
@@ -401,7 +401,7 @@ export async function recordDailyPortfolio(
   orbScore?: number
 ): Promise<void> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     const isMulti = 'tsla' in portfolio;
     
     const { error } = await supabase.from('paper_portfolio').upsert({
