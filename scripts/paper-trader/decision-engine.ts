@@ -20,7 +20,8 @@ import { MODE_CONFIGS, TIER_MULTIPLIERS, TRIM_CAPS, MAX_INVESTED } from './types
 // Risk management constants
 const NO_NEW_POSITIONS_AFTER_HOUR = 15; // 3 PM CT
 const MAX_POSITIONS_PER_DAY = 2;
-const SUPPORT_THRESHOLD_PERCENT = 0.01; // 1.0% from support = "near"
+const SUPPORT_THRESHOLD_PERCENT = 0.015; // 1.5% from support = "near"
+const SUPPORT_THRESHOLD_RED = 0.02; // 2.0% in RED mode (catch capitulation bounces)
 const RESISTANCE_THRESHOLD_PERCENT = 0.005; // keep resistance proximity at 0.5%
 const TARGET_THRESHOLD_PERCENT = 0.003; // 0.3% from target = consider exit
 
@@ -228,38 +229,75 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   const mode = report.mode;
   const tier = report.tier;
   
-  // Check Kill Leverage - NEVER buy below it (use TSLA price, not TSLL)
-  if (report.masterEject > 0 && quote.price < report.masterEject) {
-    return {
-      action: 'hold',
-      price: quote.price,
-      reasoning: [
-        `TSLA ($${quote.price.toFixed(2)}) below kill leverage ($${report.masterEject.toFixed(2)})`,
-        'no longs below kill leverage. capital preservation mode.',
-      ],
-      confidence: 'high',
-    };
-  }
-  
-  // RED mode = defensive, but NOT zero buying.
-  // System allows nibbles at support levels with 5% cap (1.25% w/ Slow Zone).
-  // Only shares (no TSLL) in RED. Skip entry if not near a support level.
-  if (mode === 'RED') {
-    instrument = 'TSLA'; // No leverage in RED, shares only
-    const nearSupport = checkNearSupport(quote.price, report);
-    if (!nearSupport.isNear) {
+  // Check Kill Leverage — below KL allows nibbles at named support only (shares, halved sizing)
+  // KL is a leverage/options kill switch, not a complete buy freeze.
+  // The alert system still fires "nibble at support" below KL.
+  const belowKillLeverage = report.masterEject > 0 && quote.price < report.masterEject;
+  if (belowKillLeverage) {
+    instrument = 'TSLA'; // Force shares only below KL, never leverage
+    const nearSupportKL = checkNearSupport(quote.price, report, 'RED');
+    if (!nearSupportKL.isNear) {
       return {
         action: 'hold',
-        price: price,
+        price: quote.price,
         reasoning: [
-          'mode is RED. defensive posture — nibbles at support only.',
-          'not near a support level. sitting tight.',
+          `TSLA ($${quote.price.toFixed(2)}) below kill leverage ($${report.masterEject.toFixed(2)})`,
+          'below KL — nibbles allowed at named support only. not near one.',
         ],
         confidence: 'high',
       };
     }
-    reasoning.push(`🔴 RED mode — nibble only at support: ${nearSupport.level} ($${nearSupport.price.toFixed(2)})`);
-    reasoning.push('shares only, no leverage. 5% cap (1.25% if Slow Zone active).');
+    reasoning.push(`⚠️ below kill leverage ($${report.masterEject.toFixed(2)}) — nibble only at ${nearSupportKL.level}`);
+    reasoning.push('shares only, halved sizing. controlled accumulation.');
+  }
+  
+  // RED mode = defensive, but NOT zero buying.
+  // System allows nibbles at support levels with 5% cap (2.5% w/ Slow Zone).
+  // Only shares (no TSLL) in RED. Skip entry if not near a support level.
+  // UNDERWEIGHT RULE: If exposure < 50% of RED max (< 10%) AND in Slow Zone,
+  // allow buying at current price even without named support proximity.
+  if (mode === 'RED') {
+    instrument = 'TSLA'; // No leverage in RED, shares only
+    const nearSupport = checkNearSupport(quote.price, report, mode);
+    
+    // Check if drastically underweight
+    const tslaVal = context.multiPortfolio.tsla?.value || 0;
+    const tsllVal = context.multiPortfolio.tsll?.value || 0;
+    const currentExp = (tslaVal + tsllVal) / context.multiPortfolio.totalValue;
+    const maxInvRed = MAX_INVESTED['RED'] || 0.20;
+    const isUnderweight = currentExp < (maxInvRed * 0.75); // < 15% when RED max is 20%
+    
+    // Slow Zone check for underweight accumulation
+    const slowZoneLvl = report.daily_21ema ? report.daily_21ema * 0.98 : null;
+    const inSlowZone = slowZoneLvl && quote.price < slowZoneLvl;
+    
+    if (!nearSupport.isNear) {
+      // Underweight accumulation: if < 50% of max AND in Slow Zone, buy anyway
+      if (isUnderweight && inSlowZone) {
+        reasoning.push(`🔴 RED mode — underweight accumulation (${(currentExp * 100).toFixed(1)}% vs ${(maxInvRed * 100).toFixed(0)}% max)`);
+        reasoning.push(`in Slow Zone ($${slowZoneLvl!.toFixed(2)}) — accumulating at current price`);
+        reasoning.push('shares only, no leverage.');
+      } else {
+        return {
+          action: 'hold',
+          price: price,
+          reasoning: [
+            'mode is RED. defensive posture — nibbles at support only.',
+            `not near a support level. ${isUnderweight ? 'underweight but not in Slow Zone — waiting.' : 'sitting tight.'}`,
+            `exposure: ${(currentExp * 100).toFixed(1)}% (max: ${(maxInvRed * 100).toFixed(0)}%)`,
+          ],
+          confidence: 'high',
+        };
+      }
+    } else {
+      reasoning.push(`🔴 RED mode — nibble at support: ${nearSupport.level} ($${nearSupport.price.toFixed(2)})`);
+      reasoning.push('shares only, no leverage.');
+    }
+    
+    // Catch-up sizing: first entry from 0% gets 2x daily cap
+    if (currentExp === 0) {
+      reasoning.push('⚡ CATCH-UP: first entry from 0% exposure — 2x daily cap');
+    }
   }
   
   // Check HIRO - avoid entry if heavy selling (lower quartile)
@@ -331,10 +369,30 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   const isSlowZoneExempt = mode === 'GREEN' || mode === 'YELLOW_IMPROVING';
   
   if (isSlowZoneActive && !isSlowZoneExempt) {
-    // In ORANGE/RED, reduce to 25% of normal (not 50%)
-    const slowZoneMultiplier = (['ORANGE', 'RED'].includes(mode)) ? 0.25 : 0.5;
+    // Slow Zone halves daily buy cap (all modes)
+    const slowZoneMultiplier = 0.5;
     positionPercent *= slowZoneMultiplier;
-    reasoning.push(`Slow Zone active ($${slowZoneLevel.toFixed(2)}) — cap reduced to ${(slowZoneMultiplier * 100)}% of normal`);
+    reasoning.push(`Slow Zone active ($${slowZoneLevel.toFixed(2)}) — cap halved to ${(positionPercent * 100).toFixed(1)}%`);
+  }
+  
+  // Below Kill Leverage: halve position size (controlled nibbles only)
+  if (belowKillLeverage) {
+    positionPercent *= 0.5;
+    reasoning.push(`below KL sizing: halved to ${(positionPercent * 100).toFixed(1)}%`);
+  }
+  
+  // Catch-up sizing: when significantly underweight in RED, deploy faster
+  // Goal: reach 50% of max (10%) within 2 trading days from 0%
+  if (mode === 'RED') {
+    const redMax = MAX_INVESTED['RED'] || 0.20;
+    const redTarget = redMax * 0.5; // 10% target
+    if (currentExposure < redTarget) {
+      // Scale multiplier based on how underweight: 0% → 2x, 5% → 1.5x, approaching 10% → 1x
+      const underweightRatio = 1 - (currentExposure / redTarget); // 1.0 at 0%, 0.5 at 5%, 0.0 at 10%
+      const catchupMultiplier = 1 + underweightRatio; // 2.0 at 0%, 1.5 at 5%, 1.0 at 10%
+      positionPercent *= catchupMultiplier;
+      reasoning.push(`catch-up: ${(currentExposure * 100).toFixed(1)}% exposure → ${catchupMultiplier.toFixed(1)}x sizing (target: ${(redTarget * 100).toFixed(0)}% in 2 days)`);
+    }
   }
   
   const positionValue = portfolio.cash * positionPercent;
@@ -353,12 +411,12 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   const targetPrice = determineTarget(price, report);
   const stopPrice = determineStop(price, report);
   
-  // Calculate risk/reward
+  // Calculate risk/reward (skip r/r gate when below KL — support nibbles are conviction-based)
   const risk = price - stopPrice;
   const reward = targetPrice - price;
-  const riskRewardRatio = reward / risk;
+  const riskRewardRatio = risk > 0 ? reward / risk : 0;
   
-  if (riskRewardRatio < 1.5) {
+  if (!belowKillLeverage && riskRewardRatio < 1.5) {
     reasoning.push(`r/r ratio ${riskRewardRatio.toFixed(2)} — need 1.5+ for entry`);
     return {
       action: 'hold',
@@ -596,8 +654,11 @@ function evaluateExit(context: DecisionContext): TradeSignal {
  */
 function checkNearSupport(
   price: number,
-  report: DailyReport
+  report: DailyReport,
+  mode?: string
 ): { isNear: boolean; level: string; price: number } {
+  // Use wider threshold in RED mode to catch capitulation bounces
+  const threshold_pct = (mode === 'RED') ? SUPPORT_THRESHOLD_RED : SUPPORT_THRESHOLD_PERCENT;
   const isValidLevel = (value: number | null | undefined): value is number =>
     typeof value === 'number' && Number.isFinite(value) && value > 0;
 
@@ -623,7 +684,7 @@ function checkNearSupport(
     .sort((a, b) => a.distance - b.distance);
   
   for (const support of allSupports) {
-    const threshold = support.price * SUPPORT_THRESHOLD_PERCENT;
+    const threshold = support.price * threshold_pct;
     if (support.distance <= threshold) {
       return { isNear: true, level: support.name, price: support.price };
     }
