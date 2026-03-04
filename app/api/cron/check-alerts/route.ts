@@ -197,7 +197,28 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get untriggered alerts for today's report
+    // ============================================================
+    // CORE RULE: Each price level fires AT MOST ONCE PER DAY.
+    // No matter how many times price oscillates around $400,
+    // subscribers get ONE alert for that level. Period.
+    // ============================================================
+
+    // Step 1: Find which price levels have ALREADY been triggered today
+    // (across ALL report uploads for this date — handles re-uploads)
+    const { data: alreadyTriggeredAlerts } = await supabase
+      .from("report_alerts")
+      .select("price, type")
+      .not("triggered_at", "is", null)
+      .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
+    
+    const alreadyFiredLevels = new Set<string>();
+    if (alreadyTriggeredAlerts) {
+      for (const a of alreadyTriggeredAlerts) {
+        alreadyFiredLevels.add(`${a.type}-${a.price}`);
+      }
+    }
+
+    // Step 2: Get untriggered alerts for the latest report
     const { data: pendingAlerts } = await supabase
       .from("report_alerts")
       .select(`
@@ -214,10 +235,9 @@ export async function GET(request: Request) {
       });
     }
 
-    // Check each alert — classify into triggered, missed, or pending
+    // Step 3: Check each alert — only trigger if price crossed AND level hasn't fired today
     const triggeredAlerts: typeof pendingAlerts = [];
-    const missedAlerts: typeof pendingAlerts = [];
-    const now = Date.now();
+    const skippedAlreadyFired: typeof pendingAlerts = [];
 
     for (const alert of pendingAlerts) {
       const shouldTrigger =
@@ -225,31 +245,24 @@ export async function GET(request: Request) {
         (alert.type === "downside" && currentPrice <= alert.price);
 
       if (shouldTrigger) {
-        // SAFEGUARD: Check if this is a "stale" alert from a recent parser update
-        const alertCreatedAt = alert.created_at ? new Date(alert.created_at).getTime() : 0;
-        const alertAgeMs = now - alertCreatedAt;
-        const isRecentlyCreated = alertAgeMs < 5 * 60 * 1000;
+        const levelKey = `${alert.type}-${alert.price}`;
         
-        const priceDiff = Math.abs(currentPrice - alert.price);
-        const priceDiffPercent = (priceDiff / alert.price) * 100;
-        const hasMovedPastSignificantly = priceDiffPercent > 0.75;
-        
-        if (isRecentlyCreated && hasMovedPastSignificantly) {
-          missedAlerts.push(alert);
-          console.log(`[STALE ALERT] Marking as missed: ${alert.level_name} @ $${alert.price} (price: $${currentPrice.toFixed(2)}, diff: ${priceDiffPercent.toFixed(2)}%, age: ${Math.round(alertAgeMs / 1000)}s)`);
+        if (alreadyFiredLevels.has(levelKey)) {
+          // This level already sent an alert today — mark it triggered but DON'T notify
+          skippedAlreadyFired.push(alert);
           continue;
         }
 
         triggeredAlerts.push(alert);
+        // Add to fired set so subsequent alerts for same level in this batch are also skipped
+        alreadyFiredLevels.add(levelKey);
       }
     }
 
-    // CRITICAL FIX: Batch-mark ALL triggered + missed alerts BEFORE sending Discord/emails.
-    // This prevents the spam bug where a timeout mid-loop leaves some alerts unmarked,
-    // causing the next cron run to re-trigger and send duplicate Discord messages.
+    // Step 4: Batch-mark ALL matching alerts (triggered + already-fired duplicates) in ONE query
     const allAlertIdsToMark = [
       ...triggeredAlerts.map(a => a.id),
-      ...missedAlerts.map(a => a.id),
+      ...skippedAlreadyFired.map(a => a.id),
     ];
     
     if (allAlertIdsToMark.length > 0) {
@@ -259,118 +272,19 @@ export async function GET(request: Request) {
         .in("id", allAlertIdsToMark);
       
       if (batchMarkError) {
-        console.error("[CRITICAL] Failed to batch-mark alerts as triggered:", batchMarkError);
-        // If we can't mark them, DON'T send Discord — we'd just spam again next run
+        console.error("[CRITICAL] Failed to batch-mark alerts:", batchMarkError);
         return NextResponse.json({
-          error: "Failed to mark alerts as triggered — aborting to prevent spam",
+          error: "Failed to mark alerts — aborting to prevent spam",
           detail: batchMarkError.message,
           price: currentPrice,
         }, { status: 500 });
       }
-      console.log(`[BATCH MARK] Marked ${allAlertIdsToMark.length} alerts as triggered (${triggeredAlerts.length} active, ${missedAlerts.length} missed)`);
-    }
-
-    // DEDUP CHECK: Don't send Discord if we already posted about these exact levels recently.
-    // This prevents spam when a report is re-uploaded (new report_id → new alerts → same levels).
-    if (triggeredAlerts.length > 0) {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      
-      const { data: recentPosts } = await supabase
-        .from("discord_alert_log")
-        .select("message_preview")
-        .eq("channel_name", "alerts")
-        .eq("status", "success")
-        .gte("created_at", oneHourAgo);
-      
-      if (recentPosts && recentPosts.length > 0) {
-        // Check if any recent post already covered these price levels
-        const alreadyPosted = recentPosts.some(post => {
-          const previewPrices = (post.message_preview || "").match(/\$[\d.]+/g)?.map(p => parseFloat(p.replace("$", "")));
-          if (!previewPrices) return false;
-          return triggeredAlerts.every(a => previewPrices.some(pp => Math.abs(pp - a.price) < 0.50));
-        });
-        
-        if (alreadyPosted) {
-          console.log(`[DEDUP] Skipping Discord post — same levels already posted within the last hour`);
-          // Still send emails (users may have missed them), but skip Discord
-          // Fall through to email section below with a flag
-          return NextResponse.json({
-            success: true,
-            price: currentPrice,
-            triggeredCount: triggeredAlerts.length,
-            discordSent: false,
-            discordSkipReason: "dedup — same levels posted within last hour",
-            emailsSent: 0,
-            emailsFailed: 0,
-          });
-        }
-      }
+      console.log(`[BATCH MARK] ${triggeredAlerts.length} new triggers, ${skippedAlreadyFired.length} already-fired (marked without notifying)`);
     }
     
-    // Log missed alerts for monitoring
-    if (missedAlerts.length > 0) {
-      console.log(`[ALERT SYSTEM] ${missedAlerts.length} stale alerts marked as missed (not sent to Discord)`);
+    if (skippedAlreadyFired.length > 0) {
+      console.log(`[ONCE-PER-DAY] Skipped ${skippedAlreadyFired.length} alerts — levels already fired today`);
     }
-    
-    // CRITICAL: Detect alerts that SHOULD have triggered but didn't
-    // This catches logic bugs where price crossed through a level but trigger failed
-    const possiblyMissedAlerts: typeof pendingAlerts = [];
-    
-    for (const alert of pendingAlerts) {
-      // Skip if we already processed this alert above
-      if (triggeredAlerts.includes(alert) || missedAlerts.includes(alert)) continue;
-      
-      const alertAgeMs = now - (alert.created_at ? new Date(alert.created_at).getTime() : now);
-      const isOldAlert = alertAgeMs > 30 * 60 * 1000; // More than 30 minutes old
-      
-      // Check if price has moved significantly PAST this alert level
-      // This suggests price crossed through but alert didn't fire
-      const priceDiff = currentPrice - alert.price;
-      const priceDiffPercent = Math.abs(priceDiff / alert.price) * 100;
-      
-      // For UPSIDE alerts: price should be BELOW the level, waiting to rise
-      // If price is significantly ABOVE an old upside alert, it was missed
-      const missedUpside = alert.type === "upside" && priceDiff > 0 && priceDiffPercent > 1.5;
-      
-      // For DOWNSIDE alerts: price should be ABOVE the level, waiting to fall
-      // If price is significantly BELOW an old downside alert, it was missed  
-      const missedDownside = alert.type === "downside" && priceDiff < 0 && priceDiffPercent > 1.5;
-      
-      if (isOldAlert && (missedUpside || missedDownside)) {
-        possiblyMissedAlerts.push(alert);
-      }
-    }
-    
-    // ALERT JUSTIN if we detect possibly missed alerts
-    if (possiblyMissedAlerts.length > 0) {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const chatId = process.env.TELEGRAM_ALERT_CHAT_ID;
-      
-      if (botToken && chatId) {
-        const alertList = possiblyMissedAlerts
-          .map(a => `• $${a.price} ${a.level_name} (${a.type}) — price is now $${currentPrice.toFixed(2)}`)
-          .join("\n");
-        
-        const message = `🚨 <b>POSSIBLY MISSED ALERTS DETECTED</b> 🚨\n\nThese alerts are >30 min old and price has moved >1.5% past the level without triggering:\n\n${alertList}\n\n<b>Action needed:</b> Check if these should have fired. May indicate a bug in alert type classification.`;
-        
-        try {
-          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: message,
-              parse_mode: "HTML",
-            }),
-          });
-        } catch (e) {
-          console.error("Failed to send missed alert notification:", e);
-        }
-      }
-      
-      console.error(`[CRITICAL] Possibly missed alerts detected: ${possiblyMissedAlerts.map(a => `${a.level_name}@$${a.price}`).join(", ")}`);
-    }
-
     if (triggeredAlerts.length === 0) {
       return NextResponse.json({
         message: "No alerts triggered",
