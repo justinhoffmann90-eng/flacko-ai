@@ -47,13 +47,15 @@ async function logAlertDelivery(
   errorMessage?: string,
   discordMessageId?: string,
   discordChannelId?: string,
+  levelPrices?: number[],
 ) {
   try {
+    const levelsStr = levelPrices?.length ? ` levels: ${levelPrices.map(p => `$${p}`).join(", ")}` : "";
     await supabase.from("discord_alert_log").insert({
       job_name: "check-alerts",
       channel_name: channelName,
       status: success ? "success" : "failed",
-      message_preview: `${alertCount} alerts triggered at $${price.toFixed(2)}`,
+      message_preview: `${alertCount} alert(s) at $${price.toFixed(2)}${levelsStr}`,
       error_message: errorMessage || null,
       discord_message_id: discordMessageId || null,
       discord_channel_id: discordChannelId || null,
@@ -212,7 +214,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // Check each alert
+    // Check each alert — classify into triggered, missed, or pending
     const triggeredAlerts: typeof pendingAlerts = [];
     const missedAlerts: typeof pendingAlerts = [];
     const now = Date.now();
@@ -224,42 +226,84 @@ export async function GET(request: Request) {
 
       if (shouldTrigger) {
         // SAFEGUARD: Check if this is a "stale" alert from a recent parser update
-        // If alert was created in the last 5 minutes AND price has already moved
-        // significantly past the level, mark as missed instead of triggering
         const alertCreatedAt = alert.created_at ? new Date(alert.created_at).getTime() : 0;
         const alertAgeMs = now - alertCreatedAt;
-        const isRecentlyCreated = alertAgeMs < 5 * 60 * 1000; // Less than 5 minutes old
+        const isRecentlyCreated = alertAgeMs < 5 * 60 * 1000;
         
-        // Calculate how far price has moved past the alert level
         const priceDiff = Math.abs(currentPrice - alert.price);
         const priceDiffPercent = (priceDiff / alert.price) * 100;
-        const hasMovedPastSignificantly = priceDiffPercent > 0.75; // More than 0.75% past level
+        const hasMovedPastSignificantly = priceDiffPercent > 0.75;
         
         if (isRecentlyCreated && hasMovedPastSignificantly) {
-          // This alert was just created but price already blew past it
-          // Mark as missed to prevent late/stale alerts
           missedAlerts.push(alert);
           console.log(`[STALE ALERT] Marking as missed: ${alert.level_name} @ $${alert.price} (price: $${currentPrice.toFixed(2)}, diff: ${priceDiffPercent.toFixed(2)}%, age: ${Math.round(alertAgeMs / 1000)}s)`);
-          
-          await supabase
-            .from("report_alerts")
-            .update({
-              triggered_at: new Date().toISOString(),
-            })
-            .eq("id", alert.id);
-          
           continue;
         }
 
         triggeredAlerts.push(alert);
+      }
+    }
 
-        // Mark as triggered
-        await supabase
-          .from("report_alerts")
-          .update({
-            triggered_at: new Date().toISOString(),
-          })
-          .eq("id", alert.id);
+    // CRITICAL FIX: Batch-mark ALL triggered + missed alerts BEFORE sending Discord/emails.
+    // This prevents the spam bug where a timeout mid-loop leaves some alerts unmarked,
+    // causing the next cron run to re-trigger and send duplicate Discord messages.
+    const allAlertIdsToMark = [
+      ...triggeredAlerts.map(a => a.id),
+      ...missedAlerts.map(a => a.id),
+    ];
+    
+    if (allAlertIdsToMark.length > 0) {
+      const { error: batchMarkError } = await supabase
+        .from("report_alerts")
+        .update({ triggered_at: new Date().toISOString() })
+        .in("id", allAlertIdsToMark);
+      
+      if (batchMarkError) {
+        console.error("[CRITICAL] Failed to batch-mark alerts as triggered:", batchMarkError);
+        // If we can't mark them, DON'T send Discord — we'd just spam again next run
+        return NextResponse.json({
+          error: "Failed to mark alerts as triggered — aborting to prevent spam",
+          detail: batchMarkError.message,
+          price: currentPrice,
+        }, { status: 500 });
+      }
+      console.log(`[BATCH MARK] Marked ${allAlertIdsToMark.length} alerts as triggered (${triggeredAlerts.length} active, ${missedAlerts.length} missed)`);
+    }
+
+    // DEDUP CHECK: Don't send Discord if we already posted about these exact levels recently.
+    // This prevents spam when a report is re-uploaded (new report_id → new alerts → same levels).
+    if (triggeredAlerts.length > 0) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      
+      const { data: recentPosts } = await supabase
+        .from("discord_alert_log")
+        .select("message_preview")
+        .eq("channel_name", "alerts")
+        .eq("status", "success")
+        .gte("created_at", oneHourAgo);
+      
+      if (recentPosts && recentPosts.length > 0) {
+        // Check if any recent post already covered these price levels
+        const alreadyPosted = recentPosts.some(post => {
+          const previewPrices = (post.message_preview || "").match(/\$[\d.]+/g)?.map(p => parseFloat(p.replace("$", "")));
+          if (!previewPrices) return false;
+          return triggeredAlerts.every(a => previewPrices.some(pp => Math.abs(pp - a.price) < 0.50));
+        });
+        
+        if (alreadyPosted) {
+          console.log(`[DEDUP] Skipping Discord post — same levels already posted within the last hour`);
+          // Still send emails (users may have missed them), but skip Discord
+          // Fall through to email section below with a flag
+          return NextResponse.json({
+            success: true,
+            price: currentPrice,
+            triggeredCount: triggeredAlerts.length,
+            discordSent: false,
+            discordSkipReason: "dedup — same levels posted within last hour",
+            emailsSent: 0,
+            emailsFailed: 0,
+          });
+        }
       }
     }
     
@@ -528,7 +572,7 @@ export async function GET(request: Request) {
       discordSent = discordResult.success;
       discordMessageId = discordResult.messageId;
 
-      // Log the delivery attempt — now includes message ID so we can delete/edit if needed
+      // Log the delivery attempt — includes message ID for edit/delete and level prices for dedup
       await logAlertDelivery(
         supabase,
         "alerts",
@@ -538,6 +582,7 @@ export async function GET(request: Request) {
         discordSent ? undefined : (discordResult.error || "Discord webhook failed"),
         discordMessageId,
         process.env.DISCORD_ALERTS_CHANNEL_ID,
+        alertsToSend.map(a => a.price),
       );
 
       // CRITICAL: If Discord failed, send backup via Telegram
