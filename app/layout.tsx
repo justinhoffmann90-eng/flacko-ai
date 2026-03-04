@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/react";
@@ -12,18 +12,19 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0a0a0a",
+};
+
 export const metadata: Metadata = {
   title: "flacko ai — the tsla operating system",
   description: "one system. every scenario covered. daily reports, price alerts, and a system that tells you when to pay attention.",
   keywords: ["TSLA", "trading", "swing trading", "stock analysis", "trading alerts", "operating system"],
   manifest: "/manifest.json",
-  themeColor: "#0a0a0a",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: "cover",
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

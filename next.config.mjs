@@ -6,7 +6,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   experimental: {
+    missingSuspenseWithCSRBailout: false,
     serverActions: {
       bodySizeLimit: '2mb',
     },
