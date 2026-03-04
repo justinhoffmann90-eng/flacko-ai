@@ -27,7 +27,7 @@ export default function FounderSignupPage() {
       const response = await fetch("/api/signup-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, founder: true, xHandle: cleanHandle || null }), // $14.99 + 45-day trial
+        body: JSON.stringify({ email, founder: true, xHandle: cleanHandle || null }), // $14.99/mo, no trial
       });
 
       const data = await response.json();
@@ -60,16 +60,16 @@ export default function FounderSignupPage() {
             Flacko AI
           </h1>
           <p className="text-2xl font-bold">
-            45 Days Free + Locked Pricing
+            50% Off — Locked Forever
           </p>
           <p className="text-muted-foreground">
-            Try everything free, then lock in founder pricing forever.
+            Lock in founder pricing before it&apos;s gone.
           </p>
         </div>
 
         {/* Pricing */}
         <div className="text-center space-y-2 py-2">
-          <div className="text-sm text-muted-foreground">After trial:</div>
+          <div className="text-sm text-muted-foreground">Regular price:</div>
           <div className="flex items-center justify-center gap-3">
             <span className="text-xl text-muted-foreground line-through">$29.99</span>
             <span className="text-sm bg-green-500/20 text-green-500 px-2.5 py-1 rounded-full font-medium">FOUNDER PRICE</span>
@@ -125,7 +125,7 @@ export default function FounderSignupPage() {
                     Redirecting...
                   </>
                 ) : (
-                  "Start 45-Day Free Trial"
+                  "Subscribe — $14.99/mo"
                 )}
               </Button>
               <p className="text-sm text-muted-foreground text-center">

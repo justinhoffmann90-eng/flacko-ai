@@ -67,10 +67,10 @@ export async function createCheckoutSession({
 }) {
   const stripe = getStripe();
   
-  // Founder: $14.99 + 45-day trial
-  // Public: $29.99 + no trial
+  // Founder: $14.99/mo, no trial
+  // Public: $29.99/mo, no trial
   const priceId = isFounder ? PRICE_IDS.founder : PRICE_IDS.public;
-  const trialDays = isFounder ? 45 : 0;
+  const trialDays = 0;
   
   const session = await stripe.checkout.sessions.create({
     customer_email: email,
