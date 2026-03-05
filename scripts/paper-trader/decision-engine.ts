@@ -598,39 +598,17 @@ function evaluateExit(context: DecisionContext): TradeSignal {
   }
   
   if (hiroNegative) {
-    // Extreme negative HIRO = trim exposure, don't liquidate
-    // Trim 30% of position (same as RED mode trim cap)
-    const trimPercent = TRIM_CAPS[report?.mode || 'RED'] || 0.30;
-    const trimShares = Math.floor(shares * trimPercent);
-    if (trimShares > 0) {
-      reasoning.push(`hiro extreme negative (${hiro.percentile30Day.toFixed(0)}%) — momentum shift`);
-      reasoning.push(`trimming ${trimShares} shares (${(trimPercent * 100).toFixed(0)}% of position), not liquidating`);
-      return {
-        action: 'sell',
-        instrument,
-        shares: trimShares,
-        price: currentPrice,
-        reasoning,
-        confidence: 'medium',
-      };
-    }
-    reasoning.push(`hiro extreme negative (${hiro.percentile30Day.toFixed(0)}%) — watching closely`);
+    // Extreme negative HIRO — log it but DON'T auto-trim.
+    // Today (Mar 4) proved HIRO can be -1.6B while TSLA rallies +3.44%.
+    // HIRO divergences are informational, not automatic sell triggers.
+    // Trimming is handled by trim levels (T1-T4) and mode changes only.
+    reasoning.push(`hiro extreme negative (${hiro.percentile30Day.toFixed(0)}%) — monitoring, not auto-trimming`);
+    reasoning.push('HIRO divergence noted — exits driven by levels and mode, not flow alone');
   }
   
-  // Time-based exit (near close with small profit)
-  const hour = new Date().getHours();
-  const nearClose = hour >= 14; // 2 PM CT
-  if (nearClose && unrealizedPnl > 0) {
-    reasoning.push('approaching close — taking profit into overnight risk');
-    return {
-      action: 'sell',
-      instrument,
-      shares,
-      price: currentPrice,
-      reasoning,
-      confidence: 'medium',
-    };
-  }
+  // Time-based exit REMOVED — Taylor is a SWING TRADER (3-6-9 month positions).
+  // Holding overnight is expected behavior, not a risk to avoid.
+  // Exits are driven by: trim levels, mode changes, Kill Leverage, NOT time of day.
   
   // Hold position
   reasoning.push(`${instrument} position looking good`);
@@ -662,11 +640,10 @@ function checkNearSupport(
   const isValidLevel = (value: number | null | undefined): value is number =>
     typeof value === 'number' && Number.isFinite(value) && value > 0;
 
-  // SpotGamma walls
+  // SpotGamma walls (support levels only — gamma strike excluded, it's in the report levels)
   const wallSupports: { name: string; price: number }[] = [
     { name: 'put wall', price: report.putWall },
     { name: 'hedge wall', price: report.hedgeWall },
-    { name: 'gamma strike', price: report.gammaStrike },
   ].filter(s => isValidLevel(s.price));
 
   // Report levels (support + nibble levels)
@@ -700,12 +677,19 @@ function checkNearResistance(
   price: number,
   report: DailyReport
 ): { isNear: boolean; level: string; price: number } {
-  const resistances = [
+  const hardcodedResistances = [
     { name: 'call wall', price: report.callWall },
-    { name: 'gamma strike', price: report.gammaStrike },
   ].filter(r => r.price > 0 && r.price > price);
+
+  // Include trim levels (T1-T4) from report as resistance
+  const trimResistances = (report.levels || [])
+    .filter(l => l.type === 'trim' && l.price > 0 && l.price > price)
+    .map(l => ({ name: l.name, price: l.price }));
+
+  const allResistances = [...hardcodedResistances, ...trimResistances]
+    .sort((a, b) => a.price - b.price);
   
-  for (const resistance of resistances) {
+  for (const resistance of allResistances) {
     const threshold = resistance.price * RESISTANCE_THRESHOLD_PERCENT;
     if (resistance.price - price <= threshold) {
       return { isNear: true, level: resistance.name, price: resistance.price };
