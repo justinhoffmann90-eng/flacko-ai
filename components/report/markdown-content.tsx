@@ -190,7 +190,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           // Simple table rendering - horizontal scroll on mobile for wide tables
           table: ({ children }) => (
             <div className="my-4 -mx-4 px-4 max-w-full overflow-x-auto">
-              <table className="w-full border-collapse min-w-[400px]">{children}</table>
+              <table className="w-full border-collapse table-fixed">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
@@ -203,7 +203,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           ),
           td: ({ children }) => (
             <td
-              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg break-words ${
+              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg break-words overflow-hidden ${
                 shouldNoWrapCell(children) ? "whitespace-nowrap" : ""
               }`}
             >
