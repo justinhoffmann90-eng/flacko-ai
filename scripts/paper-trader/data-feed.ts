@@ -484,11 +484,36 @@ function parseExtractedData(date: string, ed: any): DailyReport {
     daily_21ema: ed.daily_21ema || ed.d21_ema || null,
     levels: levels.map((l: any) => {
       // Normalize type — parser uses 'downside'/'upside', engine uses 'support'/'resistance'
+      // CRITICAL: levels_map from the API often has NO type field, so we also infer from the level name.
       const rawType = l.type || 'neutral';
-      let normalizedType: 'support' | 'resistance' | 'neutral' | 'trim' | 'target' | 'eject' = 'neutral';
-      if (rawType === 'downside' || rawType === 'support') normalizedType = 'support';
-      else if (rawType === 'upside' || rawType === 'resistance' || rawType === 'trim' || rawType === 'target') normalizedType = rawType as 'resistance' | 'trim' | 'target';
-      else if (rawType === 'eject') normalizedType = 'eject';
+      const levelName = (l.level || l.name || '').toLowerCase();
+      const actionName = (l.action || '').toLowerCase();
+      let normalizedType: 'support' | 'resistance' | 'neutral' | 'trim' | 'target' | 'eject' | 'nibble' = 'neutral';
+      
+      if (rawType === 'downside' || rawType === 'support' || rawType === 'nibble') {
+        normalizedType = 'support';
+      } else if (rawType === 'upside' || rawType === 'resistance' || rawType === 'trim' || rawType === 'target') {
+        normalizedType = rawType as 'resistance' | 'trim' | 'target';
+      } else if (rawType === 'eject') {
+        normalizedType = 'eject';
+      } else {
+        // Infer type from level name when type field is missing/neutral
+        if (levelName.startsWith('s1') || levelName.startsWith('s2') || levelName.startsWith('s3') || levelName.startsWith('s4')) {
+          normalizedType = 'support';
+        } else if (levelName.includes('put wall') || levelName.includes('hedge wall') || levelName.includes('200 sma') || levelName.includes('support')) {
+          normalizedType = 'support';
+        } else if (actionName.includes('nibble')) {
+          normalizedType = 'support';
+        } else if (levelName.startsWith('t1') || levelName.startsWith('t2') || levelName.startsWith('t3') || levelName.startsWith('t4')) {
+          normalizedType = 'trim';
+        } else if (actionName.includes('trim')) {
+          normalizedType = 'trim';
+        } else if (levelName.includes('kill leverage') || levelName.includes('master eject')) {
+          normalizedType = 'eject';
+        } else if (levelName.includes('slow zone')) {
+          normalizedType = 'support';
+        }
+      }
       return {
         name: l.level || l.name,
         price: l.price,

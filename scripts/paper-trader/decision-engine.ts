@@ -29,7 +29,7 @@ const TARGET_THRESHOLD_PERCENT = 0.003; // 0.3% from target = consider exit
 const ORB_ZONE_CONFIG: Record<OrbZone, { canBuy: boolean; instrument: Instrument | null; emoji: string }> = {
   FULL_SEND: { canBuy: true, instrument: 'TSLL', emoji: '🟢' },
   NEUTRAL: { canBuy: true, instrument: 'TSLA', emoji: '⚪' },
-  CAUTION: { canBuy: false, instrument: null, emoji: '🟡' },
+  CAUTION: { canBuy: true, instrument: 'TSLA', emoji: '🟡' },
   DEFENSIVE: { canBuy: false, instrument: null, emoji: '🔴' },
 };
 
