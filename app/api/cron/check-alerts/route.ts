@@ -205,11 +205,15 @@ export async function GET(request: Request) {
 
     // Step 1: Find which price levels have ALREADY been triggered today
     // (across ALL report uploads for this date — handles re-uploads)
+    // BUG FIX: Filter on triggered_at (when it fired), NOT created_at (when report was uploaded)
+    // Otherwise alerts created yesterday but firing today bypass the dedup
+    const todayMidnightET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+    todayMidnightET.setHours(0, 0, 0, 0);
     const { data: alreadyTriggeredAlerts } = await supabase
       .from("report_alerts")
       .select("price, type")
       .not("triggered_at", "is", null)
-      .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
+      .gte("triggered_at", todayMidnightET.toISOString());
     
     const alreadyFiredLevels = new Set<string>();
     if (alreadyTriggeredAlerts) {
