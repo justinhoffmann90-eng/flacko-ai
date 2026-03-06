@@ -55,3 +55,23 @@ export function isTrialSubscription(subscription: SubscriptionData | null): bool
   if (!subscription) return false;
   return subscription.status === 'trial' && hasSubscriptionAccess(subscription);
 }
+
+/**
+ * Get the appropriate redirect path when access is denied
+ * - past_due/canceled (expired)/unpaid → /subscription-inactive (explains why + how to fix)
+ * - no subscription → /signup
+ */
+export function getNoAccessRedirect(subscription: SubscriptionData | null): string {
+  if (!subscription) return '/signup';
+  
+  const { status } = subscription;
+  if (status === 'past_due' || status === 'unpaid') {
+    return '/subscription-inactive';
+  }
+  // Canceled with expired period
+  if (status === 'canceled') {
+    return '/subscription-inactive';
+  }
+  
+  return '/signup';
+}
