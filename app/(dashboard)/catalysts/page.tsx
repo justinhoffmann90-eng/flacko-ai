@@ -49,11 +49,11 @@ export default async function CatalystsPage({
       .single();
 
     const sub = subscription as { status?: string; trial_ends_at?: string } | null;
-    const { hasSubscriptionAccess } = await import("@/lib/subscription");
+    const { hasSubscriptionAccess, getNoAccessRedirect } = await import("@/lib/subscription");
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
-      redirect("/signup");
+      redirect(getNoAccessRedirect(sub));
     }
   }
 
