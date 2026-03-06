@@ -67,6 +67,11 @@ export async function sendAlert(setupId: string, newStatus: string, reason: stri
     tradeInfo = trade;
   }
 
+  if (isActivation && tradeInfo?.days_active && tradeInfo.days_active > 1) {
+    console.log(`[Orb Alerts] Skipping Day ${tradeInfo.days_active} email for ${displayName} — only send on activation`);
+    return;
+  }
+
   const { data: subscribers } = await supabase
     .from("subscriptions")
     .select(`
@@ -88,49 +93,80 @@ export async function sendAlert(setupId: string, newStatus: string, reason: stri
   // Send Discord alert (non-blocking)
   sendDiscordAlert(setupId, newStatus, reason, indicators, displayName, setupDef?.type, setupDef?.grade).catch(() => {});
 
-  // Build best backtest stat line
-  let bestStat = "";
-  if (setupDef?.gauge_median_return) {
-    bestStat = `${setupDef.gauge_median_return > 0 ? "+" : ""}${setupDef.gauge_median_return}% median return over ~${setupDef.gauge_median_days} days (N=${setupDef.backtest_n})`;
-  } else {
-    const horizons = [
-      { label: "60d", wr: setupDef?.backtest_win_rate_60d, ret: setupDef?.backtest_avg_return_60d },
-      { label: "20d", wr: setupDef?.backtest_win_rate_20d, ret: setupDef?.backtest_avg_return_20d },
-      { label: "10d", wr: setupDef?.backtest_win_rate_10d, ret: setupDef?.backtest_avg_return_10d },
-      { label: "5d", wr: setupDef?.backtest_win_rate_5d, ret: setupDef?.backtest_avg_return_5d },
-    ];
-    const best = horizons.find(h => h.wr != null);
-    if (best) {
-      bestStat = `${best.wr}% win rate at ${best.label}, ${best.ret! > 0 ? "+" : ""}${best.ret}% avg return (N=${setupDef?.backtest_n})`;
-    }
-  }
+  const backtestBars = setupDef?.backtest_n ?? "—";
+  const medianStat =
+    setupDef?.gauge_median_return != null && setupDef?.gauge_median_days != null
+      ? `${setupDef.gauge_median_return > 0 ? "+" : ""}${setupDef.gauge_median_return}% median return over ~${setupDef.gauge_median_days} days`
+      : "";
+  const horizonStats = [
+    { label: "5d", wr: setupDef?.backtest_win_rate_5d, ret: setupDef?.backtest_avg_return_5d },
+    { label: "20d", wr: setupDef?.backtest_win_rate_20d, ret: setupDef?.backtest_avg_return_20d },
+    { label: "60d", wr: setupDef?.backtest_win_rate_60d, ret: setupDef?.backtest_avg_return_60d },
+  ].filter((h) => h.wr != null);
+  const horizonGridHtml = horizonStats.length
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          ${horizonStats.map((stat, index) => {
+            const isFirst = index === 0;
+            const isLast = index === horizonStats.length - 1;
+            const borderRadius = isFirst ? "8px 0 0 8px" : isLast ? "0 8px 8px 0" : "0";
+            const divider = isLast ? "" : "border-right:1px solid #18181b;";
+            const winRate = stat.wr != null ? `${stat.wr}%` : "—";
+            const avgReturn = stat.ret != null ? `${stat.ret > 0 ? "+" : ""}${stat.ret}%` : "—";
+            return `
+            <td width="${Math.round(100 / horizonStats.length)}%" style="background-color:#27272a;padding:12px;text-align:center;${divider}border-radius:${borderRadius};">
+              <div style="font-size:16px;font-weight:700;color:#fafafa;">${winRate}</div>
+              <div style="font-size:13px;color:#d4d4d8;margin-top:2px;">${avgReturn}</div>
+              <div style="font-size:11px;color:#71717a;letter-spacing:0.4px;text-transform:uppercase;margin-top:6px;">${stat.label}</div>
+            </td>`;
+          }).join("")}
+        </tr>
+      </table>`
+    : "";
 
   // Determine signal color and action guidance
-  let statusColor: string;
   let statusEmoji: string;
   let actionText: string;
 
   if (isActivation && isBuy) {
-    statusColor = "#10b981"; // green
     statusEmoji = "🟢";
-    actionText = `This is a BUY signal (Grade ${setupDef?.grade || "—"}). Review the Orb page for sizing guidance based on your mode.`;
+    actionText = "Use your daily report's mode for position sizing.";
   } else if (isActivation && !isBuy) {
-    statusColor = "#ef4444"; // red
     statusEmoji = "🔴";
-    actionText = "This is an AVOID signal. Do NOT open new call positions. Consider trimming existing short-dated calls.";
-  } else if (!isActivation && isBuy) {
-    statusColor = "#71717a"; // zinc
-    statusEmoji = "⚪";
-    actionText = "This buy signal has deactivated. If you entered on this setup, review your position.";
+    actionText = "This is an AVOID signal. Do not open new call positions.";
   } else {
-    statusColor = "#71717a";
     statusEmoji = "⚪";
-    actionText = "This avoid signal has cleared. Conditions have normalized.";
+    actionText = "";
   }
 
   const subject = isActivation
     ? `${statusEmoji} Orb: ${displayName} ${isBuy ? "BUY" : "AVOID"} Signal Activated`
     : `${statusEmoji} Orb: ${displayName} Deactivated`;
+
+  const categoryTags = Array.isArray(setupDef?.category_tags) ? setupDef?.category_tags : [];
+  const categoryTagsHtml = categoryTags.length
+    ? `<div style="margin-top:8px;">${categoryTags.map((t: string) => `<span style="display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;color:#a1a1aa;background-color:#27272a;margin:0 4px 4px 0;">${t}</span>`).join("")}</div>`
+    : "";
+  const oneLinerHtml = setupDef?.one_liner
+    ? `<p style="margin:10px 0 0;font-size:13px;color:#a1a1aa;font-style:italic;">${setupDef.one_liner}</p>`
+    : "";
+  const actionBoxBg = isBuy ? "#052e16" : "#450a0a";
+  const actionBoxBorder = isBuy ? "#166534" : "#7f1d1d";
+  const actionBoxTextColor = isBuy ? "#10b981" : "#ef4444";
+  const actionBoxHtml = actionText
+    ? `<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background-color:${actionBoxBg};border:1px solid ${actionBoxBorder};font-size:13px;font-weight:600;color:${actionBoxTextColor};">${actionText}</div>`
+    : "";
+  const entryPrice = typeof tradeInfo?.entry_price === "number" ? tradeInfo.entry_price : null;
+  const returnPct = entryPrice != null && entryPrice !== 0
+    ? ((indicators.close - entryPrice) / entryPrice) * 100
+    : null;
+  const returnPctLabel = returnPct != null ? `${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(1)}%` : "—";
+  const returnPctColor = returnPct != null ? (returnPct >= 0 ? "#10b981" : "#ef4444") : "#a1a1aa";
+  const entryPriceLabel = entryPrice != null ? `$${entryPrice.toFixed(2)}` : "—";
+  const medianStatHtml = medianStat
+    ? `<p style="margin:0 0 12px;font-size:14px;color:#d4d4d8;">${medianStat}</p>`
+    : "";
+  const historicalHeaderMargin = medianStat || horizonGridHtml ? "8px" : "0";
 
   for (const sub of subscribers as any[]) {
     const email = sub.users?.email as string | undefined;
@@ -153,71 +189,50 @@ export async function sendAlert(setupId: string, newStatus: string, reason: stri
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
-                <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.5px;color:white;background-color:${isBuy ? "#10b981" : "#ef4444"};">${isBuy ? "BUY" : "AVOID"} #${setupDef?.number || ""}</span>
-                <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;color:#a1a1aa;background-color:#27272a;margin-left:6px;">${setupDef?.grade || ""}</span>
+                <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.5px;color:white;background-color:${isBuy ? "#10b981" : "#ef4444"};">${isBuy ? "BUY" : "AVOID"}</span>
+                <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;color:#a1a1aa;background-color:#27272a;margin-left:6px;">Grade ${setupDef?.grade || "—"}</span>
               </td>
               <td align="right">
-                <span style="font-size:13px;font-weight:700;color:${statusColor};text-transform:uppercase;">${statusEmoji} ${newStatus}</span>
+                <span style="font-size:13px;font-weight:700;color:${isBuy ? "#10b981" : "#ef4444"};text-transform:uppercase;">${statusEmoji} ACTIVATED</span>
               </td>
             </tr>
           </table>
           <h1 style="margin:12px 0 4px;font-size:22px;font-weight:700;color:#fafafa;">${displayName}</h1>
-          ${(setupDef?.category_tags || []).map((t: string) => `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;color:#a1a1aa;background-color:#27272a;margin-right:4px;">${t}</span>`).join("")}
-          <p style="margin:10px 0 0;font-size:14px;color:#a1a1aa;font-style:italic;">${setupDef?.one_liner || ""}</p>
+          ${categoryTagsHtml}
+          ${oneLinerHtml}
         </td></tr>
 
         <!-- Description -->
         <tr><td style="padding:16px 24px;">
           <p style="margin:0;font-size:14px;line-height:1.6;color:#d4d4d8;">${setupDef?.public_description || reason}</p>
+          ${actionBoxHtml}
         </td></tr>
 
-        <!-- Action -->
-        <tr><td style="padding:0 24px 16px;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:${isActivation && isBuy ? "#052e16" : isActivation ? "#450a0a" : "#27272a"};border-radius:8px;border:1px solid ${isActivation && isBuy ? "#166534" : isActivation ? "#7f1d1d" : "#3f3f46"};">
-            <tr><td style="padding:12px 16px;">
-              <p style="margin:0;font-size:13px;font-weight:600;color:${isActivation && isBuy ? "#86efac" : isActivation ? "#fca5a5" : "#a1a1aa"};">${actionText}</p>
-            </td></tr>
-          </table>
-        </td></tr>
-
-        ${tradeInfo ? `
-        <!-- Trade Info -->
+        <!-- Price -->
         <tr><td style="padding:0 24px 16px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td width="33%" style="padding:10px;background-color:#27272a;border-radius:8px 0 0 8px;text-align:center;">
+              <td width="33%" style="padding:10px;background-color:#27272a;border-radius:8px 0 0 8px;border-right:1px solid #18181b;text-align:center;">
                 <div style="font-size:11px;color:#71717a;margin-bottom:4px;">Entry</div>
-                <div style="font-size:16px;font-weight:700;color:#fafafa;">$${tradeInfo.entry_price?.toFixed(2) || "—"}</div>
+                <div style="font-size:16px;font-weight:700;color:#fafafa;">${entryPriceLabel}</div>
               </td>
-              <td width="34%" style="padding:10px;background-color:#27272a;text-align:center;">
+              <td width="34%" style="padding:10px;background-color:#27272a;border-right:1px solid #18181b;text-align:center;">
                 <div style="font-size:11px;color:#71717a;margin-bottom:4px;">TSLA Now</div>
                 <div style="font-size:16px;font-weight:700;color:#fafafa;">$${indicators.close.toFixed(2)}</div>
               </td>
               <td width="33%" style="padding:10px;background-color:#27272a;border-radius:0 8px 8px 0;text-align:center;">
-                <div style="font-size:11px;color:#71717a;margin-bottom:4px;">Day</div>
-                <div style="font-size:16px;font-weight:700;color:#fafafa;">${tradeInfo.days_active || 1}</div>
+                <div style="font-size:11px;color:#71717a;margin-bottom:4px;">Return</div>
+                <div style="font-size:16px;font-weight:700;color:${returnPctColor};">${returnPctLabel}</div>
               </td>
             </tr>
           </table>
         </td></tr>
-        ` : `
-        <!-- Price -->
-        <tr><td style="padding:0 24px 16px;text-align:center;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:10px;background-color:#27272a;border-radius:8px;text-align:center;">
-                <div style="font-size:11px;color:#71717a;margin-bottom:4px;">TSLA at Signal</div>
-                <div style="font-size:16px;font-weight:700;color:#fafafa;">$${indicators.close.toFixed(2)}</div>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-        `}
 
-        <!-- Backtest Stats -->
+        <!-- Historical Edge -->
         <tr><td style="padding:0 24px 16px;">
-          <div style="font-size:11px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Backtest Edge (905 bars)</div>
-          <p style="margin:0;font-size:14px;color:#d4d4d8;">${bestStat}</p>
+          <div style="font-size:11px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:${historicalHeaderMargin};">Historical Edge (${backtestBars} bars)</div>
+          ${medianStatHtml}
+          ${horizonGridHtml}
         </td></tr>
 
         ${setupDef?.risk_note ? `
@@ -230,7 +245,7 @@ export async function sendAlert(setupId: string, newStatus: string, reason: stri
         <!-- CTA -->
         <tr><td style="padding:16px 24px 24px;text-align:center;border-top:1px solid #27272a;">
           <a href="https://www.flacko.ai/orb" style="display:inline-block;padding:12px 32px;background-color:#10b981;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">View on Orb</a>
-          <p style="margin:12px 0 0;font-size:11px;color:#52525b;">Flacko AI | flacko.ai/orb</p>
+          <p style="margin:12px 0 0;font-size:11px;color:#52525b;">Flacko AI &bull; flacko.ai/orb</p>
         </td></tr>
 
       </table>
