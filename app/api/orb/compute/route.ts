@@ -299,7 +299,7 @@ async function runCompute() {
           }
         }
 
-        if (newStatus === "active" || (prevStatus === "active" && !result.is_active)) {
+        if (statusChanged && (newStatus === "active" || (prevStatus === "active" && !result.is_active))) {
           await sendAlert(result.setup_id, newStatus, result.reason, indicators);
         }
       }
