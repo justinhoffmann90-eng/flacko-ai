@@ -564,7 +564,7 @@ export async function postMarketOpen(
     if (orb.zone === 'CAUTION' || orb.zone === 'DEFENSIVE') {
       plan += `**buys:** none. ${orb.zone} zone — sitting in cash.\n`;
     } else {
-      const supports = (report.levels || []).filter(l => l.type === 'nibble' && l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
+      const supports = (report.levels || []).filter(l => l.type === 'nibble' && l.price < quote.price).sort((a, b) => b.price - a.price);
       
       if (supports.length > 0) {
         const buyLevel = supports[0];
@@ -575,7 +575,7 @@ export async function postMarketOpen(
           plan += `next buy: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — ${buyLevel2.action || 'add to position'}\n`;
         }
       } else {
-        plan += `**buys:** no support levels between here and kill leverage. need a pullback to get involved.\n`;
+        plan += `**buys:** no support levels below current price. waiting for a setup.\n`;
       }
       
       if (activeOverrides.length > 0) {
