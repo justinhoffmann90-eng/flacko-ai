@@ -2,31 +2,20 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { addRoleToMember } from "@/lib/discord/bot";
 
-// Disable Vercel caching - this must run fresh every time
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const maxDuration = 60;
 
 /**
  * Cron job: Sync Discord roles for all active subscribers
- * Runs every 2 minutes to catch users who just joined Discord
  * 
- * This handles the timing gap where users:
- * 1. Subscribe
- * 2. Link Discord (role assignment fails - not in server yet)
- * 3. Join Discord server
- * 4. Need role assigned (happens here)
+ * Processes in parallel batches of 10 to stay within Vercel timeout
+ * and Discord rate limits (~50 req/sec).
  */
 export async function GET(request: Request) {
-  // Force redeploy - check env vars
-  console.log('Sync starting at:', new Date().toISOString());
-  
   const supabase = await createServiceClient();
 
   try {
-    // Find all users with:
-    // 1. Active subscription
-    // 2. Discord linked (discord_user_id NOT NULL)
     const { data: activeSubscribers, error: subError } = await supabase
       .from("subscriptions")
       .select(`
@@ -53,53 +42,54 @@ export async function GET(request: Request) {
     let errorCount = 0;
     const errorSamples: string[] = [];
 
-    // Attempt to add role for each user
-    // Discord API will return success if role already assigned (idempotent)
-    for (const sub of activeSubscribers) {
-      const user = (sub as any).users;
-      const discordUserId = user.discord_user_id;
-
-      if (!discordUserId) {
-        continue;
-      }
-
-      try {
-        const result = await addRoleToMember(discordUserId);
-        if (result.success) {
-          successCount++;
-        } else {
-          // Only log if it's not "Unknown Member" (user hasn't joined yet)
-          if (!result.error?.includes("Unknown Member")) {
-            errorCount++;
-            if (errorSamples.length < 3) {
-              errorSamples.push(`${user.email}: ${result.error}`);
-            }
-            console.error(`Failed to add role for user ${user.id}:`, result.error);
-          }
-          // Unknown Member is expected - they'll get role on next run after joining
-        }
-      } catch (error: any) {
-        errorCount++;
-        if (errorSamples.length < 3) {
-          errorSamples.push(`${user.email}: ${error.message}`);
-        }
-        console.error(`Failed to add role for user ${user.id}:`, error);
-      }
+    // Process in parallel batches of 10
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < activeSubscribers.length; i += BATCH_SIZE) {
+      const batch = activeSubscribers.slice(i, i + BATCH_SIZE);
       
-      // Rate limit protection: 100ms delay between Discord API calls
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const results = await Promise.allSettled(
+        batch.map(async (sub) => {
+          const user = (sub as any).users;
+          const discordUserId = user.discord_user_id;
+          if (!discordUserId) return { skipped: true };
+
+          const result = await addRoleToMember(discordUserId);
+          if (result.success) {
+            return { success: true };
+          } else {
+            if (!result.error?.includes("Unknown Member")) {
+              return { success: false, error: `${user.email}: ${result.error}` };
+            }
+            return { skipped: true }; // Unknown Member = not in server yet
+          }
+        })
+      );
+
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          if (r.value.success) successCount++;
+          else if (r.value.error) {
+            errorCount++;
+            if (errorSamples.length < 3) errorSamples.push(r.value.error);
+          }
+        } else {
+          errorCount++;
+          if (errorSamples.length < 3) errorSamples.push(r.reason?.message || "Unknown error");
+        }
+      }
+
+      // Small delay between batches for rate limiting
+      if (i + BATCH_SIZE < activeSubscribers.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
     }
 
-    // Collect error details for debugging
-    const errorDetails: string[] = [];
-    
     return NextResponse.json({
       message: "Discord role sync completed",
       total: activeSubscribers.length,
       success: successCount,
       errors: errorCount,
       timestamp: new Date().toISOString(),
-      // Debug: show first 3 error messages
       debug: {
         botTokenSet: !!process.env.DISCORD_BOT_TOKEN,
         guildIdSet: !!process.env.DISCORD_GUILD_ID,
