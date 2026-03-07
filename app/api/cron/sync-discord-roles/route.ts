@@ -5,6 +5,7 @@ import { addRoleToMember } from "@/lib/discord/bot";
 // Disable Vercel caching - this must run fresh every time
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const maxDuration = 60;
 
 /**
  * Cron job: Sync Discord roles for all active subscribers
@@ -85,8 +86,8 @@ export async function GET(request: Request) {
         console.error(`Failed to add role for user ${user.id}:`, error);
       }
       
-      // Rate limit protection: 500ms delay between Discord API calls
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Rate limit protection: 100ms delay between Discord API calls
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Collect error details for debugging
