@@ -2,6 +2,8 @@
 // SMI: Stochastic Momentum Index (K=10, D=3, Smooth=3)
 // RSI: Wilder's smoothing (RMA) — matches TradingView ta.rsi()
 
+import yahooFinance from "yahoo-finance2";
+
 function ema(data: number[], span: number): number[] {
   const k = 2 / (span + 1);
   const result = [data[0]];
@@ -84,6 +86,48 @@ function classifyBxState(curr: number, prev: number): "HH" | "LH" | "HL" | "LL" 
   return "LL";
 }
 
+interface YahooWeeklyQuote {
+  date: Date;
+  close: number | null;
+}
+
+async function fetchVixWeeklyData(): Promise<{ vixClose: number; vixWeeklyChangePct: number }> {
+  try {
+    const period2 = new Date();
+    const period1 = new Date();
+    period1.setDate(period1.getDate() - 120);
+
+    const chart = await yahooFinance.chart("^VIX", {
+      period1,
+      period2,
+      interval: "1wk",
+    });
+
+    const quotes = ((chart as any)?.quotes || []) as YahooWeeklyQuote[];
+    const cleaned = quotes
+      .filter((q) => q?.date && q.close != null)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (cleaned.length < 2) {
+      return { vixClose: 0, vixWeeklyChangePct: 0 };
+    }
+
+    const latest = cleaned[cleaned.length - 1];
+    const prev = cleaned[cleaned.length - 2];
+    const vixClose = Number(latest.close ?? 0);
+    const prevClose = Number(prev.close ?? 0);
+    const vixWeeklyChangePct = prevClose > 0 ? ((vixClose - prevClose) / prevClose) * 100 : 0;
+
+    return {
+      vixClose: Number.isFinite(vixClose) ? vixClose : 0,
+      vixWeeklyChangePct: Number.isFinite(vixWeeklyChangePct) ? vixWeeklyChangePct : 0,
+    };
+  } catch (error) {
+    console.error("[ORB][VIX_FETCH_FAILED]", error);
+    return { vixClose: 0, vixWeeklyChangePct: 0 };
+  }
+}
+
 export async function computeIndicators(ticker: string) {
   const endDate = new Date();
   const startDate = new Date();
@@ -115,6 +159,8 @@ export async function computeIndicators(ticker: string) {
   if (quotes.length < 220) {
     throw new Error("Not enough OHLCV data to compute Orb indicators");
   }
+
+  const { vixClose, vixWeeklyChangePct } = await fetchVixWeeklyData();
 
   const n = quotes.length;
   const closes = quotes.map((q: any) => q.close as number);
@@ -188,6 +234,8 @@ export async function computeIndicators(ticker: string) {
     close: closes[i],
     volume: volumes[i],
     volumes,
+    vix_close: vixClose,
+    vix_weekly_change_pct: vixWeeklyChangePct,
 
     bx_daily: bx[i],
     bx_daily_prev: bx[prev],
