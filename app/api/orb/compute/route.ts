@@ -134,6 +134,7 @@ async function runCompute() {
           gauge_entry_value: s.gauge_entry_value,
           entry_price: s.entry_price,
           active_since: s.active_since,
+          active_day: s.active_day,
         },
       ])
     );
@@ -146,6 +147,8 @@ async function runCompute() {
       const newStatus = result.is_active ? "active" : result.is_watching ? "watching" : "inactive";
       const statusChanged = prevStatus !== newStatus;
       const existing = (prevStates || []).find((s: any) => s.setup_id === result.setup_id);
+      const activeSinceOverride = result.active_since_override;
+      const activeDayOverride = result.active_day_override;
 
       const stateUpdate: Record<string, unknown> = {
         setup_id: result.setup_id,
@@ -157,8 +160,8 @@ async function runCompute() {
       };
 
       if (newStatus === "active" && prevStatus !== "active") {
-        stateUpdate.active_since = indicators.date;
-        stateUpdate.active_day = 1;
+        stateUpdate.active_since = activeSinceOverride ?? indicators.date;
+        stateUpdate.active_day = activeDayOverride ?? 1;
         stateUpdate.entry_price = indicators.close;
         stateUpdate.entry_indicator_values = indicators;
         if (result.gauge_entry_value !== undefined) {
@@ -166,8 +169,8 @@ async function runCompute() {
           stateUpdate.gauge_target_value = result.gauge_target_value;
         }
       } else if (newStatus === "active") {
-        stateUpdate.active_day = (existing?.active_day || 0) + 1;
-        stateUpdate.active_since = prev?.active_since;
+        stateUpdate.active_day = activeDayOverride ?? (existing?.active_day || 0) + 1;
+        stateUpdate.active_since = activeSinceOverride ?? prev?.active_since;
         stateUpdate.entry_price = prev?.entry_price;
         stateUpdate.gauge_entry_value = prev?.gauge_entry_value ?? null;
       }
@@ -405,12 +408,16 @@ async function runCompute() {
     const snapshotRows = results.map((result) => {
       const prev = prevMap.get(result.setup_id);
       const newStatus = result.is_active ? "active" : result.is_watching ? "watching" : "inactive";
+      const prevStateRow = (prevStates || []).find((s: any) => s.setup_id === result.setup_id);
+      const activeDay = newStatus === "active"
+        ? (result.active_day_override ?? (prev?.status === "active" ? ((prevStateRow?.active_day || 0) + 1) : 1))
+        : null;
       return {
         date: indicators.date,
         setup_id: result.setup_id,
         status: newStatus,
         entry_price: newStatus === "active" ? (prev?.entry_price ?? indicators.close) : null,
-        active_day: newStatus === "active" ? ((prevStates || []).find((s: any) => s.setup_id === result.setup_id)?.active_day || 0) + (prev?.status === "active" ? 1 : 1) : null,
+        active_day: activeDay,
         conditions_met: result.conditions_met ?? null,
         reason: result.reason || null,
         gauge_current_value: result.gauge_current_value ?? null,

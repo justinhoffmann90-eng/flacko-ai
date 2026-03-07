@@ -1,6 +1,8 @@
 export interface Indicators {
   date: string;
   close: number;
+  vix_close: number;
+  vix_weekly_change_pct: number;
   bx_daily: number;
   bx_daily_prev: number;
   bx_daily_state: "HH" | "LH" | "HL" | "LL";
@@ -51,6 +53,8 @@ export interface SetupResult {
   gauge_entry_value?: number;
   gauge_current_value?: number;
   gauge_target_value?: number;
+  active_since_override?: string;
+  active_day_override?: number;
 }
 
 export interface PreviousState {
@@ -59,6 +63,23 @@ export interface PreviousState {
   gauge_entry_value?: number;
   entry_price?: number;
   active_since?: string;
+  active_day?: number;
+}
+
+function countTradingDays(startDate: string, endDate: string): number {
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+
+  let days = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const day = cursor.getUTCDay();
+    if (day !== 0 && day !== 6) days++;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return days;
 }
 
 export function suggestMode(
@@ -173,6 +194,7 @@ export function evaluateAllSetups(indicators: Indicators, previousStates: Map<st
     evaluateMomentumCrack(indicators),
     evaluateEmaShieldCaution(indicators, previousStates.get("ema-shield-caution")),
     evaluateEmaShieldBreak(indicators, previousStates.get("ema-shield-break"), previousStates.get("ema-shield-caution")),
+    evaluateVixSpikeReversal(indicators, previousStates.get("vix-spike-reversal")),
   ];
 }
 
@@ -404,6 +426,51 @@ function evaluateCapitulationBounce(ind: Indicators): SetupResult {
       : isWatching
       ? `${ind.consecutive_down} down days, RSI ${ind.rsi.toFixed(1)} - developing`
       : `Down streak: ${ind.consecutive_down}, RSI: ${ind.rsi.toFixed(1)}`,
+  };
+}
+
+function evaluateVixSpikeReversal(ind: Indicators, prev?: PreviousState): SetupResult {
+  const spike = ind.vix_weekly_change_pct >= 30;
+  const wasActive = prev?.status === "active";
+
+  if (spike) {
+    const resetNote = wasActive ? " (resetting 5d window)" : "";
+    return {
+      setup_id: "vix-spike-reversal",
+      is_active: true,
+      is_watching: false,
+      conditions_met: { vix_weekly_spike_30: true },
+      reason: `VIX weekly change ${ind.vix_weekly_change_pct.toFixed(1)}% >= 30%${resetNote}`,
+      active_since_override: ind.date,
+      active_day_override: 1,
+    };
+  }
+
+  if (wasActive) {
+    const daysActive = prev?.active_since
+      ? countTradingDays(prev.active_since, ind.date)
+      : typeof prev?.active_day === "number"
+      ? prev.active_day + 1
+      : 1;
+
+    if (daysActive > 0 && daysActive <= 5) {
+      return {
+        setup_id: "vix-spike-reversal",
+        is_active: true,
+        is_watching: false,
+        conditions_met: { vix_weekly_spike_30: false, within_5d_window: true },
+        reason: `Active - day ${daysActive}/5 since VIX spike`,
+        active_day_override: daysActive,
+      };
+    }
+  }
+
+  return {
+    setup_id: "vix-spike-reversal",
+    is_active: false,
+    is_watching: false,
+    conditions_met: { vix_weekly_spike_30: false },
+    reason: `VIX weekly change ${ind.vix_weekly_change_pct.toFixed(1)}% < 30%`,
   };
 }
 
