@@ -120,7 +120,22 @@ export function makeTradeDecision(context: DecisionContext): TradeSignal {
   
   // If we have a position, evaluate exit first
   if (portfolio.position || multiPortfolio.tsla || multiPortfolio.tsll) {
-    return evaluateExit(context);
+    const exitSignal = evaluateExit(context);
+    // If exit says sell, do it. If exit says hold, check if we should ADD more.
+    if (exitSignal.action === 'sell') {
+      return exitSignal;
+    }
+    // Check if below max invested — if so, fall through to evaluateEntry for add-to-position
+    const tslaVal = multiPortfolio.tsla?.value || 0;
+    const tsllVal = multiPortfolio.tsll?.value || 0;
+    const totalVal = multiPortfolio.totalValue || 1;
+    const currentExposure = (tslaVal + tsllVal) / totalVal;
+    const mode = report?.mode || 'YELLOW';
+    const maxInvestedCap = MAX_INVESTED[mode] || 0.60;
+    if (currentExposure >= maxInvestedCap) {
+      return exitSignal; // At max — don't add
+    }
+    // Below max — fall through to evaluateEntry to potentially add at support
   }
   
   // No position - evaluate entry
