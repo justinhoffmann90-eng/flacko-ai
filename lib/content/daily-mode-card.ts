@@ -80,7 +80,8 @@ function parseReportContent(content: string): ParsedReport {
     
     if (price > 0 && levelName && !levelName.includes('Level') && !levelName.includes('Price')) {
       let type = 'upside';
-      if (action.toLowerCase().includes('exit') || levelName.toLowerCase().includes('eject')) {
+      if (action.toLowerCase().includes('exit') || levelName.toLowerCase().includes('eject')
+          || levelName.toLowerCase().includes('kill leverage')) {
         type = 'eject';
       } else if (price < result.closePrice) {
         type = 'downside';

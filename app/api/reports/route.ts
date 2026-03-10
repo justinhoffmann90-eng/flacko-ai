@@ -258,9 +258,15 @@ export async function POST(request: Request) {
         
         if (alertsEnabled) {
           for (const alert of extracted_data.alerts) {
-            const normalizedType = canNormalizeType
-              ? (alert.price > reportClose ? "upside" : "downside")
-              : alert.type;
+            // Kill Leverage / Master Eject are always defensive (downside) alerts
+            // regardless of where price is relative to close.
+            // They should fire when price drops TO or BELOW the level.
+            const isDefensiveLevel = /kill.leverage|master.eject/i.test(alert.level_name || "");
+            const normalizedType = isDefensiveLevel
+              ? "downside"
+              : canNormalizeType
+                ? (alert.price > reportClose ? "upside" : "downside")
+                : alert.type;
 
             alertInserts.push({
               report_id: report.id,
