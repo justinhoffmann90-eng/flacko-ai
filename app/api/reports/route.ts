@@ -258,15 +258,21 @@ export async function POST(request: Request) {
         
         if (alertsEnabled) {
           for (const alert of extracted_data.alerts) {
-            // Kill Leverage / Master Eject are always defensive (downside) alerts
-            // regardless of where price is relative to close.
-            // They should fire when price drops TO or BELOW the level.
+            // Kill Leverage / Master Eject are always defensive (downside) alerts.
+            // They fire when price drops TO or BELOW the level.
+            // CRITICAL: If price is ALREADY below the defensive level at report time,
+            // the alert should be pre-triggered (already breached) — otherwise it
+            // fires immediately on the next cron check since currentPrice <= alertPrice
+            // is already true. There's no "crossing" detection.
             const isDefensiveLevel = /kill.leverage|master.eject/i.test(alert.level_name || "");
             const normalizedType = isDefensiveLevel
               ? "downside"
               : canNormalizeType
                 ? (alert.price > reportClose ? "upside" : "downside")
                 : alert.type;
+
+            // Pre-trigger defensive alerts if price is already below the level
+            const alreadyBreached = isDefensiveLevel && canNormalizeType && reportClose < alert.price;
 
             alertInserts.push({
               report_id: report.id,
@@ -276,6 +282,7 @@ export async function POST(request: Request) {
               level_name: alert.level_name,
               action: alert.action,
               reason: alert.reason,
+              ...(alreadyBreached ? { triggered_at: new Date().toISOString() } : {}),
             });
           }
         } else {
