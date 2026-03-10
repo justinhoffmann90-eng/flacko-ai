@@ -163,6 +163,14 @@ export async function GET(request: Request) {
     // Fetch current TSLA price
     const currentPrice = await fetchRealtimePrice();
 
+    // Get previous price from last run (for crossing detection)
+    const { data: prevConfig } = await supabase
+      .from("system_config")
+      .select("value")
+      .eq("key", "alert_system_status")
+      .single();
+    const previousPrice: number | null = (prevConfig?.value as any)?.last_price ?? null;
+
     // Update system config with last price and pending alert count
     const { data: pendingCount } = await supabase
       .from("report_alerts")
@@ -175,6 +183,7 @@ export async function GET(request: Request) {
         enabled: true,
         last_run: new Date().toISOString(),
         last_price: currentPrice,
+        previous_price: previousPrice,
         pending_alerts: pendingCount || 0,
       },
     };
@@ -239,14 +248,31 @@ export async function GET(request: Request) {
       });
     }
 
-    // Step 3: Check each alert — only trigger if price crossed AND level hasn't fired today
+    // Step 3: Check each alert — CROSSING DETECTION
+    // An alert fires only when price CROSSES the level between checks:
+    //   - upside: previousPrice < alert.price AND currentPrice >= alert.price
+    //   - downside: previousPrice > alert.price AND currentPrice <= alert.price
+    // If no previousPrice (first run), fall back to simple threshold check.
+    // This prevents alerts from firing just because price is already past the level.
     const triggeredAlerts: typeof pendingAlerts = [];
     const skippedAlreadyFired: typeof pendingAlerts = [];
 
     for (const alert of pendingAlerts) {
-      const shouldTrigger =
-        (alert.type === "upside" && currentPrice >= alert.price) ||
-        (alert.type === "downside" && currentPrice <= alert.price);
+      let shouldTrigger = false;
+
+      if (previousPrice !== null) {
+        // CROSSING detection: price must have been on the opposite side last check
+        if (alert.type === "upside") {
+          shouldTrigger = previousPrice < alert.price && currentPrice >= alert.price;
+        } else if (alert.type === "downside") {
+          shouldTrigger = previousPrice > alert.price && currentPrice <= alert.price;
+        }
+      } else {
+        // First run ever (no previous price) — use simple threshold as fallback
+        shouldTrigger =
+          (alert.type === "upside" && currentPrice >= alert.price) ||
+          (alert.type === "downside" && currentPrice <= alert.price);
+      }
 
       if (shouldTrigger) {
         const levelKey = `${alert.type}-${alert.price}`;
@@ -425,8 +451,13 @@ export async function GET(request: Request) {
         try {
           const batchResult = await resend.batch.send(emailBatch);
           
-          if (batchResult.data) {
-            emailsSent = batchResult.data.length;
+          // Resend SDK returns { data: { data: [...] }, error } — handle both nesting levels
+          const batchData = Array.isArray(batchResult.data)
+            ? batchResult.data
+            : (batchResult.data as any)?.data;
+          
+          if (batchData && Array.isArray(batchData)) {
+            emailsSent = batchData.length;
             console.log(`📧 Batch sent ${emailsSent} email alerts`);
             
             // Bulk update email_sent_at for all triggered alerts
