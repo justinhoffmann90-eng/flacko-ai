@@ -43,3 +43,7 @@ next-env.d.ts
 .env.vercel
 .env.prod
 __pycache__/
+.env.cron-check
+.env.pulled
+.env.vercel-prod
+.env.vercel.live

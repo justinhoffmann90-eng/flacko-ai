@@ -194,20 +194,17 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
     const scanName = isScan ? condition.trim().slice(5).trim() : undefined;
 
     try {
-      const payload = JSON.stringify({
-        condition: isScan ? undefined : condition.trim(),
-        scan: scanName,
-        ticker,
-        forward: forwardPeriods,
-        timeframe,
-      });
-
-      const res = await fetch("/api/backtest", {
+      const res = await fetch("/api/admin/orb/backtest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: payload,
+        body: JSON.stringify({
+          condition: isScan ? undefined : condition.trim(),
+          scan: scanName,
+          ticker,
+          forward: forwardPeriods,
+          timeframe,
+        }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Backtest failed");
