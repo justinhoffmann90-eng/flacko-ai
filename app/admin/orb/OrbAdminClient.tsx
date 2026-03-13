@@ -194,7 +194,7 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
     const scanName = isScan ? condition.trim().slice(5).trim() : undefined;
 
     try {
-      const res = await fetch("/api/admin/orb/backtest", {
+      const res = await fetch("/api/backtest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
