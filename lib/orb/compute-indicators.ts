@@ -1,318 +1,569 @@
-// BX-Trender: RSI(EMA(close,5) - EMA(close,20), 5) - 50
-// SMI: Stochastic Momentum Index (K=10, D=3, Smooth=3)
-// RSI: Wilder's smoothing (RMA) — matches TradingView ta.rsi()
+/**
+ * compute-indicators.ts
+ *
+ * Fetches OHLCV data from Yahoo Finance and computes all technical indicators
+ * needed by the ORB (Orb Research Bot) system.
+ *
+ * Indicator formulas are verified against TradingView — DO NOT change parameters.
+ */
 
 import yahooFinance from "yahoo-finance2";
+import type { Indicators } from "./evaluate-setups";
 
-function ema(data: number[], span: number): number[] {
-  const k = 2 / (span + 1);
-  const result = [data[0]];
-  for (let i = 1; i < data.length; i++) {
-    result.push(data[i] * k + result[i - 1] * (1 - k));
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface OHLCV {
+  date: Date;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+type BxtState = "HH" | "LH" | "HL" | "LL";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Yahoo Finance Fetch
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function fetchDailyBars(ticker: string, count: number): Promise<OHLCV[]> {
+  const endDate = new Date();
+  // Fetch extra days to account for weekends/holidays
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - Math.ceil(count * 1.5));
+
+  const result = await yahooFinance.chart(ticker, {
+    period1: startDate,
+    period2: endDate,
+    interval: "1d",
+  });
+
+  const quotes = result.quotes ?? [];
+  const bars: OHLCV[] = [];
+
+  for (const q of quotes) {
+    if (
+      q.open == null ||
+      q.high == null ||
+      q.low == null ||
+      q.close == null ||
+      q.volume == null
+    )
+      continue;
+    bars.push({
+      date: q.date,
+      open: q.open,
+      high: q.high,
+      low: q.low,
+      close: q.close,
+      volume: q.volume,
+    });
+  }
+
+  // Sort ascending by date
+  bars.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  return bars;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Weekly Resampling (Mon-Fri → weekly OHLCV)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function resampleWeekly(daily: OHLCV[]): OHLCV[] {
+  const weeks = new Map<string, OHLCV>();
+
+  for (const bar of daily) {
+    const d = bar.date;
+    // ISO week key: year + ISO week number
+    const weekKey = getIsoWeekKey(d);
+
+    if (!weeks.has(weekKey)) {
+      weeks.set(weekKey, {
+        date: bar.date,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume,
+      });
+    } else {
+      const w = weeks.get(weekKey)!;
+      w.high = Math.max(w.high, bar.high);
+      w.low = Math.min(w.low, bar.low);
+      w.close = bar.close; // last close of the week
+      w.volume += bar.volume;
+    }
+  }
+
+  return Array.from(weeks.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function getIsoWeekKey(d: Date): string {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  // Thursday in current week decides the year
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(
+    ((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
+  );
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Math Primitives
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Exponential Moving Average (Wilder-style seed = SMA of first `period` values) */
+function ema(values: number[], period: number): number[] {
+  if (values.length < period) return new Array(values.length).fill(NaN);
+  const k = 2 / (period + 1);
+  const result: number[] = new Array(values.length).fill(NaN);
+
+  // Seed with SMA
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += values[i];
+  result[period - 1] = sum / period;
+
+  for (let i = period; i < values.length; i++) {
+    result[i] = values[i] * k + result[i - 1] * (1 - k);
   }
   return result;
 }
 
-/** Wilder's smoothing (RMA) — alpha = 1/span. Used by TradingView ta.rsi(). */
-function rma(data: number[], span: number): number[] {
-  const k = 1 / span;
-  const result = [data[0]];
-  for (let i = 1; i < data.length; i++) {
-    result.push(data[i] * k + result[i - 1] * (1 - k));
+/** Simple Moving Average */
+function sma(values: number[], period: number): number[] {
+  const result: number[] = new Array(values.length).fill(NaN);
+  for (let i = period - 1; i < values.length; i++) {
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += values[j];
+    result[i] = sum / period;
   }
   return result;
 }
 
-function sma(data: number[], period: number): number[] {
-  return data.map((_, i) => {
-    if (i < period - 1) return Number.NaN;
-    const slice = data.slice(i - period + 1, i + 1);
-    return slice.reduce((a, b) => a + b, 0) / period;
-  });
-}
+/** Wilder's RSI */
+function wilderRsi(values: number[], period: number): number[] {
+  const result: number[] = new Array(values.length).fill(NaN);
+  if (values.length < period + 1) return result;
 
-function rsi(data: number[], period = 14): number[] {
-  const deltas = data.map((v, i) => (i === 0 ? 0 : v - data[i - 1]));
-  const gains = deltas.map((d) => (d > 0 ? d : 0));
-  const losses = deltas.map((d) => (d < 0 ? -d : 0));
-
-  const avgGain = rma(gains, period);
-  const avgLoss = rma(losses, period);
-
-  return avgGain.map((g, i) => {
-    if (avgLoss[i] === 0) return 100;
-    const rs = g / avgLoss[i];
-    return 100 - 100 / (1 + rs);
-  });
-}
-
-function smi(close: number[], high: number[], low: number[], kLength = 10, dLength = 3, smooth = 3) {
-  const n = close.length;
-  const ll: number[] = [];
-  const hh: number[] = [];
-
-  for (let i = 0; i < n; i++) {
-    const start = Math.max(0, i - kLength + 1);
-    ll.push(Math.min(...low.slice(start, i + 1)));
-    hh.push(Math.max(...high.slice(start, i + 1)));
+  let gains = 0;
+  let losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = values[i] - values[i - 1];
+    if (diff > 0) gains += diff;
+    else losses += Math.abs(diff);
   }
+  gains /= period;
+  losses /= period;
 
-  const relDiff = close.map((c, i) => c - (hh[i] + ll[i]) / 2);
-  const relRange = hh.map((h, i) => h - ll[i]);
+  const rs0 = losses === 0 ? Infinity : gains / losses;
+  result[period] = losses === 0 ? 100 : 100 - 100 / (1 + rs0);
 
-  const d1 = ema(relDiff, dLength);
-  const d2 = ema(d1, smooth);
-  const r1 = ema(relRange, dLength);
-  const r2 = ema(r1, smooth);
-
-  const smiValues = d2.map((d, i) => (r2[i] !== 0 ? (100 * d) / (r2[i] / 2) : 0));
-  const smiSignal = ema(smiValues, smooth);
-
-  return { smi: smiValues, signal: smiSignal };
+  for (let i = period + 1; i < values.length; i++) {
+    const diff = values[i] - values[i - 1];
+    const gain = diff > 0 ? diff : 0;
+    const loss = diff < 0 ? Math.abs(diff) : 0;
+    gains = (gains * (period - 1) + gain) / period;
+    losses = (losses * (period - 1) + loss) / period;
+    const rs = losses === 0 ? Infinity : gains / losses;
+    result[i] = losses === 0 ? 100 : 100 - 100 / (1 + rs);
+  }
+  return result;
 }
 
-function bxTrender(close: number[], l1 = 5, l2 = 20, l3 = 5): number[] {
-  const emaFast = ema(close, l1);
-  const emaSlow = ema(close, l2);
-  const diff = emaFast.map((f, i) => f - emaSlow[i]);
-  const bxRsi = rsi(diff, l3);
-  return bxRsi.map((v) => v - 50);
+/** Highest value over a rolling window */
+function highest(values: number[], period: number): number[] {
+  const result: number[] = new Array(values.length).fill(NaN);
+  for (let i = period - 1; i < values.length; i++) {
+    let max = -Infinity;
+    for (let j = i - period + 1; j <= i; j++) max = Math.max(max, values[j]);
+    result[i] = max;
+  }
+  return result;
 }
 
-function classifyBxState(curr: number, prev: number): "HH" | "LH" | "HL" | "LL" {
-  if (curr > 0 && curr > prev) return "HH";
-  if (curr > 0) return "LH";
-  if (curr > prev) return "HL";
+/** Lowest value over a rolling window */
+function lowest(values: number[], period: number): number[] {
+  const result: number[] = new Array(values.length).fill(NaN);
+  for (let i = period - 1; i < values.length; i++) {
+    let min = Infinity;
+    for (let j = i - period + 1; j <= i; j++) min = Math.min(min, values[j]);
+    result[i] = min;
+  }
+  return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BX Trender: RSI(EMA(close, 5) - EMA(close, 20), 5) - 50
+// ─────────────────────────────────────────────────────────────────────────────
+
+function computeBxt(closes: number[]): number[] {
+  const ema5 = ema(closes, 5);
+  const ema20 = ema(closes, 20);
+  const diff: number[] = closes.map((_, i) => {
+    if (isNaN(ema5[i]) || isNaN(ema20[i])) return NaN;
+    return ema5[i] - ema20[i];
+  });
+  const rsiOfDiff = wilderRsi(diff, 5);
+  return rsiOfDiff.map((v) => (isNaN(v) ? NaN : v - 50));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BXT State: HH/LH/HL/LL
+// Compare current vs previous. H = current > prev, L = current < prev
+// State: first letter = current direction, second = prev direction
+// ─────────────────────────────────────────────────────────────────────────────
+
+function deriveBxtState(curr: number, prev: number, prevState: BxtState): BxtState {
+  // H if current > previous, L otherwise
+  const currH = curr > prev;
+  // The second letter comes from the previous state's first letter
+  const prevWasH = prevState[0] === "H";
+  if (currH && prevWasH) return "HH";
+  if (!currH && prevWasH) return "LH";
+  if (currH && !prevWasH) return "HL";
   return "LL";
 }
 
-interface YahooWeeklyQuote {
-  date: Date;
-  close: number | null;
-}
-
-async function fetchVixWeeklyData(): Promise<{ vixClose: number; vixWeeklyChangePct: number }> {
-  try {
-    const period2 = new Date();
-    const period1 = new Date();
-    period1.setDate(period1.getDate() - 120);
-
-    const chart = await yahooFinance.chart("^VIX", {
-      period1,
-      period2,
-      interval: "1wk",
-    });
-
-    const quotes = ((chart as any)?.quotes || []) as YahooWeeklyQuote[];
-    const cleaned = quotes
-      .filter((q) => q?.date && q.close != null)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    if (cleaned.length < 2) {
-      return { vixClose: 0, vixWeeklyChangePct: 0 };
+function computeBxtStates(bxt: number[]): BxtState[] {
+  const states: BxtState[] = new Array(bxt.length).fill("LL") as BxtState[];
+  // Need at least 2 non-NaN values
+  let firstValid = -1;
+  for (let i = 0; i < bxt.length; i++) {
+    if (!isNaN(bxt[i])) {
+      firstValid = i;
+      break;
     }
-
-    const latest = cleaned[cleaned.length - 1];
-    const prev = cleaned[cleaned.length - 2];
-    const vixClose = Number(latest.close ?? 0);
-    const prevClose = Number(prev.close ?? 0);
-    const vixWeeklyChangePct = prevClose > 0 ? ((vixClose - prevClose) / prevClose) * 100 : 0;
-
-    return {
-      vixClose: Number.isFinite(vixClose) ? vixClose : 0,
-      vixWeeklyChangePct: Number.isFinite(vixWeeklyChangePct) ? vixWeeklyChangePct : 0,
-    };
-  } catch (error) {
-    console.error("[ORB][VIX_FETCH_FAILED]", error);
-    return { vixClose: 0, vixWeeklyChangePct: 0 };
   }
+  if (firstValid < 0) return states;
+
+  // Seed first state: assume HH if value > 0, LL otherwise
+  states[firstValid] = bxt[firstValid] > 0 ? "HH" : "LL";
+
+  for (let i = firstValid + 1; i < bxt.length; i++) {
+    if (isNaN(bxt[i])) {
+      states[i] = states[i - 1];
+      continue;
+    }
+    const prev = isNaN(bxt[i - 1]) ? bxt[i] : bxt[i - 1];
+    states[i] = deriveBxtState(bxt[i], prev, states[i - 1]);
+  }
+  return states;
 }
 
-export async function computeIndicators(ticker: string) {
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 600);
+// ─────────────────────────────────────────────────────────────────────────────
+// SMI (Stochastic Momentum Index)
+// %K period=10, %D period=3, EMA signal=3
+// Range: ~-100 to +100
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const period1 = Math.floor(startDate.getTime() / 1000);
-  const period2 = Math.floor(endDate.getTime() / 1000);
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${period2}&interval=1d`;
-  const resp = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" },
+function computeSmi(bars: OHLCV[], kPeriod = 10, dPeriod = 3, emaPeriod = 3): { smi: number[]; signal: number[] } {
+  const n = bars.length;
+  const highs = bars.map((b) => b.high);
+  const lows = bars.map((b) => b.low);
+  const closes = bars.map((b) => b.close);
+
+  const highestK = highest(highs, kPeriod);
+  const lowestK = lowest(lows, kPeriod);
+
+  // M = (close - midpoint), where midpoint = (HH + LL) / 2
+  const m: number[] = closes.map((c, i) => {
+    if (isNaN(highestK[i]) || isNaN(lowestK[i])) return NaN;
+    return c - (highestK[i] + lowestK[i]) / 2;
   });
-  if (!resp.ok) throw new Error(`Yahoo Finance HTTP ${resp.status}: ${await resp.text()}`);
-  const json = await resp.json();
-  const chart = json.chart?.result?.[0];
-  if (!chart) throw new Error("No chart data returned from Yahoo Finance");
-  
-  const timestamps = chart.timestamp || [];
-  const q = chart.indicators?.quote?.[0] || {};
-  const rawQuotes = timestamps.map((t: number, i: number) => ({
-    date: new Date(t * 1000),
-    open: q.open?.[i],
-    high: q.high?.[i],
-    low: q.low?.[i],
-    close: q.close?.[i],
-    volume: q.volume?.[i],
-  }));
-  
-  const quotes = rawQuotes.filter((r: any) => r.close != null && r.high != null && r.low != null && r.open != null);
-  if (quotes.length < 220) {
-    throw new Error("Not enough OHLCV data to compute Orb indicators");
-  }
 
-  const { vixClose, vixWeeklyChangePct } = await fetchVixWeeklyData();
+  // D = highest - lowest range over kPeriod
+  const rangeFull: number[] = highs.map((_, i) => {
+    if (isNaN(highestK[i]) || isNaN(lowestK[i])) return NaN;
+    return highestK[i] - lowestK[i];
+  });
 
-  const n = quotes.length;
-  const closes = quotes.map((q: any) => q.close as number);
-  const highs = quotes.map((q: any) => q.high as number);
-  const lows = quotes.map((q: any) => q.low as number);
-  const opens = quotes.map((q: any) => q.open as number);
-  const volumes = quotes.map((q: any) => Number(q.volume ?? 0));
+  // Smooth M and D with double EMA (dPeriod then emaPeriod)
+  // Replace NaN with 0 for EMA seeding
+  const mClean = m.map((v) => (isNaN(v) ? 0 : v));
+  const dClean = rangeFull.map((v) => (isNaN(v) ? 0 : v));
 
-  const bx = bxTrender(closes, 5, 20, 5);
-  const rsiValues = rsi(closes, 14);
-  const smiResult = smi(closes, highs, lows, 10, 3, 3);
-  const ema9 = ema(closes, 9);
-  const ema21 = ema(closes, 21);
-  const sma200 = sma(closes, 200);
+  const mSmooth1 = ema(mClean, dPeriod);
+  const mSmooth2 = ema(mSmooth1.map((v) => (isNaN(v) ? 0 : v)), emaPeriod);
 
-  const weeklyBars: { close: number; high: number; low: number; open: number; date: Date }[] = [];
-  let weekStart = 0;
+  const dSmooth1 = ema(dClean, dPeriod);
+  const dSmooth2 = ema(dSmooth1.map((v) => (isNaN(v) ? 0 : v)), emaPeriod);
 
-  for (let i = 1; i <= n; i++) {
-    const isLast = i === n;
-    const isNewWeek =
-      !isLast && new Date(quotes[i].date as Date).getDay() < new Date(quotes[i - 1].date as Date).getDay();
-
-    if (isNewWeek || isLast) {
-      const slice = quotes.slice(weekStart, i);
-      weeklyBars.push({
-        open: slice[0].open as number,
-        high: Math.max(...slice.map((q: any) => q.high as number)),
-        low: Math.min(...slice.map((q: any) => q.low as number)),
-        close: slice[slice.length - 1].close as number,
-        date: slice[0].date as Date, // Use FIRST day (Monday) to match TradingView request.security("W")
-      });
-      weekStart = i;
+  const smiValues: number[] = new Array(n).fill(NaN);
+  for (let i = 0; i < n; i++) {
+    if (isNaN(mSmooth2[i]) || isNaN(dSmooth2[i])) continue;
+    if (Math.abs(dSmooth2[i]) < 1e-10) {
+      smiValues[i] = 0;
+    } else {
+      smiValues[i] = (mSmooth2[i] / (dSmooth2[i] / 2)) * 100;
     }
   }
 
-  const wCloses = weeklyBars.map((w) => w.close);
-  const wBx = bxTrender(wCloses, 5, 20, 5);
-  const wEma9 = ema(wCloses, 9);
-  const wEma13 = ema(wCloses, 13);
-  const wEma21 = ema(wCloses, 21);
+  // Signal = EMA(smi, emaPeriod)
+  const smiClean = smiValues.map((v) => (isNaN(v) ? 0 : v));
+  const signalValues = ema(smiClean, emaPeriod);
 
-  const lastWeekIdx = weeklyBars.length - 1;
-  const prevWeekIdx = Math.max(0, lastWeekIdx - 1);
+  return { smi: smiValues, signal: signalValues };
+}
 
-  const wBxState = classifyBxState(wBx[lastWeekIdx], wBx[prevWeekIdx]);
-  const wBxStatePrev = prevWeekIdx > 0 ? classifyBxState(wBx[prevWeekIdx], wBx[Math.max(0, prevWeekIdx - 1)]) : "LL";
-  const wTransition = wBxStatePrev !== wBxState ? `${wBxStatePrev}_to_${wBxState}` : null;
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Export
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const i = n - 1;
-  const prev = n - 2;
-  const prev3 = Math.max(0, n - 4);
+export async function computeIndicators(
+  ticker: string
+): Promise<Indicators & { open: number; volume: number; volumes: number[] }> {
+  // Suppress deprecation notice about historical()
+  yahooFinance.suppressNotices(["ripHistorical"]);
 
-  let consDown = 0;
-  let consUp = 0;
-  for (let j = i; j > 0; j--) {
-    if (closes[j] < closes[j - 1]) consDown++;
+  // Fetch 400 daily bars for enough history (300+ needed after warmup)
+  const [dailyBars, vixBars] = await Promise.all([
+    fetchDailyBars(ticker, 400),
+    fetchDailyBars("^VIX", 400),
+  ]);
+
+  if (dailyBars.length < 50) {
+    throw new Error(`Insufficient daily data for ${ticker}: got ${dailyBars.length} bars`);
+  }
+
+  // Weekly resampling
+  const weeklyBars = resampleWeekly(dailyBars);
+  const vixWeekly = resampleWeekly(vixBars);
+
+  // ── Extract arrays ──────────────────────────────────────────────────────────
+  const closes = dailyBars.map((b) => b.close);
+  const wCloses = weeklyBars.map((b) => b.close);
+  const vixCloses = vixBars.map((b) => b.close);
+  const vixWCloses = vixWeekly.map((b) => b.close);
+
+  const n = closes.length;
+  const wN = wCloses.length;
+
+  // ── BXT Daily ──────────────────────────────────────────────────────────────
+  const bxtDaily = computeBxt(closes);
+  const bxtDailyStates = computeBxtStates(bxtDaily);
+
+  const bxDailyCurr = bxtDaily[n - 1];
+  const bxDailyPrev = bxtDaily[n - 2];
+  const bxDailyState = bxtDailyStates[n - 1];
+  const bxDailyStatePrev = bxtDailyStates[n - 2];
+
+  // ── BXT Weekly ─────────────────────────────────────────────────────────────
+  const bxtWeekly = computeBxt(wCloses);
+  const bxtWeeklyStates = computeBxtStates(bxtWeekly);
+
+  const bxWeeklyCurr = bxtWeekly[wN - 1];
+  const bxWeeklyPrev = bxtWeekly[wN - 2];
+  const bxWeeklyState = bxtWeeklyStates[wN - 1];
+  const bxWeeklyStatePrev = bxtWeeklyStates[wN - 2];
+
+  // BXT Weekly Transition (only if it changed this bar)
+  let bxWeeklyTransition: string | null = null;
+  if (bxWeeklyState !== bxWeeklyStatePrev) {
+    const prevKey = bxWeeklyStatePrev.replace("HH", "HH").replace("LH", "LH").replace("HL", "HL").replace("LL", "LL");
+    const currKey = bxWeeklyState;
+    bxWeeklyTransition = `${prevKey}_to_${currKey}`;
+    // Normalize to use underscore: "LL_to_HL" format
+    bxWeeklyTransition = `${bxWeeklyStatePrev}_to_${bxWeeklyState}`;
+  }
+
+  // ── Daily HH Streak ────────────────────────────────────────────────────────
+  let dailyHhStreak = 0;
+  for (let i = n - 1; i >= 0; i--) {
+    if (bxtDailyStates[i] === "HH") dailyHhStreak++;
     else break;
   }
-  for (let j = i; j > 0; j--) {
-    if (closes[j] > closes[j - 1]) consUp++;
+
+  // ── RSI ────────────────────────────────────────────────────────────────────
+  const rsiArr = wilderRsi(closes, 14);
+  const rsiCurr = rsiArr[n - 1];
+  const rsiPrev = rsiArr[n - 2];
+  const rsiChange3d = rsiCurr - (isNaN(rsiArr[n - 4]) ? rsiCurr : rsiArr[n - 4]);
+
+  // ── SMI ────────────────────────────────────────────────────────────────────
+  const { smi: smiArr, signal: smiSignalArr } = computeSmi(dailyBars, 10, 3, 3);
+  const smiCurr = smiArr[n - 1];
+  const smiSignalCurr = smiSignalArr[n - 1];
+  const smiPrev = smiArr[n - 2];
+  const smiSignalPrev = smiSignalArr[n - 2];
+  const smiChange3d = smiCurr - (isNaN(smiArr[n - 4]) ? smiCurr : smiArr[n - 4]);
+
+  // SMI crosses
+  const smiBullCross = smiPrev <= smiSignalPrev && smiCurr > smiSignalCurr;
+  const smiBearCross = smiPrev >= smiSignalPrev && smiCurr < smiSignalCurr;
+
+  // ── Daily EMAs ─────────────────────────────────────────────────────────────
+  const ema9Arr = ema(closes, 9);
+  const ema21Arr = ema(closes, 21);
+  const ema9Curr = ema9Arr[n - 1];
+  const ema21Curr = ema21Arr[n - 1];
+
+  // ── SMA 200 ────────────────────────────────────────────────────────────────
+  const sma200Arr = sma(closes, 200);
+  const sma200Curr = sma200Arr[n - 1];
+  const close = closes[n - 1];
+
+  const priceVsEma9 = ((close - ema9Curr) / ema9Curr) * 100;
+  const priceVsEma21 = ((close - ema21Curr) / ema21Curr) * 100;
+  const sma200Dist = ((close - sma200Curr) / sma200Curr) * 100;
+
+  // ── Weekly EMAs ────────────────────────────────────────────────────────────
+  const wEma9Arr = ema(wCloses, 9);
+  const wEma13Arr = ema(wCloses, 13);
+  const wEma21Arr = ema(wCloses, 21);
+  const wEma9 = wEma9Arr[wN - 1];
+  const wEma13 = wEma13Arr[wN - 1];
+  const wEma21 = wEma21Arr[wN - 1];
+
+  const weeklyEmasStacked = wEma9 > wEma13 && wEma13 > wEma21;
+  const priceAboveWeekly13 = close > wEma13;
+  const priceAboveWeekly21 = close > wEma21;
+  const priceAboveWeeklyAll = close > wEma9 && close > wEma13 && close > wEma21;
+
+  // ── VIX ────────────────────────────────────────────────────────────────────
+  const vixN = vixCloses.length;
+  const vixClose = vixN > 0 ? vixCloses[vixN - 1] : 0;
+
+  // Weekly VIX change
+  const vixWN = vixWCloses.length;
+  let vixWeeklyChangePct = 0;
+  if (vixWN >= 2 && vixWCloses[vixWN - 2] > 0) {
+    vixWeeklyChangePct = ((vixWCloses[vixWN - 1] - vixWCloses[vixWN - 2]) / vixWCloses[vixWN - 2]) * 100;
+  }
+
+  // ── Consecutive Up/Down ───────────────────────────────────────────────────
+  let consecutiveDown = 0;
+  let consecutiveUp = 0;
+  for (let i = n - 1; i >= 1; i--) {
+    const chg = closes[i] - closes[i - 1];
+    if (consecutiveDown === 0 && chg < 0) consecutiveDown++;
+    else if (consecutiveDown > 0 && chg < 0) consecutiveDown++;
+    else if (consecutiveDown > 0) break;
+  }
+  for (let i = n - 1; i >= 1; i--) {
+    const chg = closes[i] - closes[i - 1];
+    if (consecutiveUp === 0 && chg > 0) consecutiveUp++;
+    else if (consecutiveUp > 0 && chg > 0) consecutiveUp++;
+    else if (consecutiveUp > 0) break;
+  }
+
+  // Stabilization days: consecutive days where low >= prior day's low
+  let stabilizationDays = 0;
+  for (let i = n - 1; i >= 1; i--) {
+    if (dailyBars[i].low >= dailyBars[i - 1].low) stabilizationDays++;
     else break;
   }
 
-  const dailyState = classifyBxState(bx[i], bx[prev]);
-  const dailyStatePrev = classifyBxState(bx[prev], bx[Math.max(0, prev - 1)]);
+  // ── EMA Shield metrics ────────────────────────────────────────────────────
 
-  return {
-    date: new Date(quotes[i].date as Date).toISOString().split("T")[0],
-    open: opens[i],
-    close: closes[i],
-    volume: volumes[i],
+  // ema9_slope_5d: 5-day % change of EMA9 (from 5 bars ago to now)
+  const ema9FiveDaysAgo = ema9Arr[n - 6];
+  const ema9Slope5d =
+    !isNaN(ema9FiveDaysAgo) && ema9FiveDaysAgo !== 0
+      ? ((ema9Curr - ema9FiveDaysAgo) / ema9FiveDaysAgo) * 100
+      : 0;
+
+  // days_below_ema9: consecutive days where close < ema9
+  let daysBelowEma9 = 0;
+  for (let i = n - 1; i >= 0; i--) {
+    if (closes[i] < ema9Arr[i]) daysBelowEma9++;
+    else break;
+  }
+
+  // was_full_bull_5d: was close > ema9 AND ema9 > ema21 on any of last 5 days
+  let wasFullBull5d = false;
+  for (let i = n - 5; i < n; i++) {
+    if (i < 0) continue;
+    if (closes[i] > ema9Arr[i] && ema9Arr[i] > ema21Arr[i]) {
+      wasFullBull5d = true;
+      break;
+    }
+  }
+
+  // ── Date ──────────────────────────────────────────────────────────────────
+  const lastBar = dailyBars[n - 1];
+  const dateStr = lastBar.date.toISOString().slice(0, 10);
+
+  // ── Today's Open / Volume / Volumes ───────────────────────────────────────
+  const todayOpen = lastBar.open;
+  const todayVolume = lastBar.volume;
+  const volumes = dailyBars.slice(-30).map((b) => b.volume);
+
+  // ── Assemble result ────────────────────────────────────────────────────────
+  const indicators: Indicators & { open: number; volume: number; volumes: number[] } = {
+    date: dateStr,
+    close,
+    open: todayOpen,
+    volume: todayVolume,
     volumes,
+
+    // VIX
     vix_close: vixClose,
     vix_weekly_change_pct: vixWeeklyChangePct,
 
-    bx_daily: bx[i],
-    bx_daily_prev: bx[prev],
-    bx_daily_state: dailyState,
-    bx_daily_state_prev: dailyStatePrev,
+    // BXT Daily
+    bx_daily: bxDailyCurr,
+    bx_daily_prev: bxDailyPrev,
+    bx_daily_state: bxDailyState,
+    bx_daily_state_prev: bxDailyStatePrev,
 
-    bx_weekly: wBx[lastWeekIdx],
-    bx_weekly_prev: wBx[prevWeekIdx],
-    bx_weekly_state: wBxState,
-    bx_weekly_state_prev: wBxStatePrev,
-    bx_weekly_transition: wTransition,
+    // BXT Weekly
+    bx_weekly: bxWeeklyCurr,
+    bx_weekly_prev: bxWeeklyPrev,
+    bx_weekly_state: bxWeeklyState,
+    bx_weekly_state_prev: bxWeeklyStatePrev,
+    bx_weekly_transition: bxWeeklyTransition,
 
-    rsi: rsiValues[i],
-    rsi_prev: rsiValues[prev],
-    rsi_change_3d: rsiValues[i] - (rsiValues[prev3] || rsiValues[0]),
+    // HH streak
+    daily_hh_streak: dailyHhStreak,
 
-    smi: smiResult.smi[i],
-    smi_signal: smiResult.signal[i],
-    smi_prev: smiResult.smi[prev],
-    smi_signal_prev: smiResult.signal[prev],
-    smi_change_3d: smiResult.smi[i] - (smiResult.smi[prev3] || 0),
-    smi_bull_cross: smiResult.smi[prev] <= smiResult.signal[prev] && smiResult.smi[i] > smiResult.signal[i],
-    smi_bear_cross: smiResult.smi[prev] >= smiResult.signal[prev] && smiResult.smi[i] < smiResult.signal[i],
+    // RSI
+    rsi: rsiCurr,
+    rsi_prev: rsiPrev,
+    rsi_change_3d: rsiChange3d,
 
-    ema9: ema9[i],
-    ema21: ema21[i],
-    sma200: sma200[i],
-    sma200_dist: ((closes[i] - sma200[i]) / sma200[i]) * 100,
+    // SMI
+    smi: smiCurr,
+    smi_signal: smiSignalCurr,
+    smi_prev: smiPrev,
+    smi_signal_prev: smiSignalPrev,
+    smi_change_3d: smiChange3d,
+    smi_bull_cross: smiBullCross,
+    smi_bear_cross: smiBearCross,
 
-    price_vs_ema9: ((closes[i] - ema9[i]) / ema9[i]) * 100,
-    price_vs_ema21: ((closes[i] - ema21[i]) / ema21[i]) * 100,
+    // Daily EMAs
+    ema9: ema9Curr,
+    ema21: ema21Curr,
+    price_vs_ema9: priceVsEma9,
+    price_vs_ema21: priceVsEma21,
 
-    consecutive_down: consDown,
-    consecutive_up: consUp,
-    stabilization_days: (() => {
-      let days = 0;
-      for (let j = i; j > 0; j--) {
-        if (lows[j] >= lows[j - 1]) days++;
-        else break;
-      }
-      return days;
-    })(),
+    // SMA 200
+    sma200: sma200Curr,
+    sma200_dist: sma200Dist,
 
-    weekly_ema9: wEma9[lastWeekIdx],
-    weekly_ema13: wEma13[lastWeekIdx],
-    weekly_ema21: wEma21[lastWeekIdx],
-    weekly_emas_stacked: wEma9[lastWeekIdx] > wEma13[lastWeekIdx] && wEma13[lastWeekIdx] > wEma21[lastWeekIdx],
-    price_above_weekly_all:
-      closes[i] > wEma9[lastWeekIdx] && closes[i] > wEma13[lastWeekIdx] && closes[i] > wEma21[lastWeekIdx],
-    price_above_weekly_13: closes[i] > wEma13[lastWeekIdx],
-    price_above_weekly_21: closes[i] > wEma21[lastWeekIdx],
+    // Weekly EMAs
+    weekly_ema9: wEma9,
+    weekly_ema13: wEma13,
+    weekly_ema21: wEma21,
+    weekly_emas_stacked: weeklyEmasStacked,
+    price_above_weekly_13: priceAboveWeekly13,
+    price_above_weekly_21: priceAboveWeekly21,
+    price_above_weekly_all: priceAboveWeeklyAll,
 
-    // EMA Shield indicators
-    ema9_slope_5d: i >= 5 ? ((ema9[i] / ema9[i - 5]) - 1) * 100 : 0,
-    days_below_ema9: (() => {
-      let days = 0;
-      for (let j = i; j >= 0; j--) {
-        if (closes[j] < ema9[j]) days++;
-        else break;
-      }
-      return days;
-    })(),
-    was_full_bull_5d: (() => {
-      for (let j = Math.max(1, i - 4); j <= i; j++) {
-        if (closes[j] > ema9[j] && ema9[j] > ema21[j]) return true;
-      }
-      return false;
-    })(),
+    // Consecutive / Stabilization
+    consecutive_down: consecutiveDown,
+    consecutive_up: consecutiveUp,
+    stabilization_days: stabilizationDays,
 
-    daily_hh_streak: (() => {
-      let streak = 0;
-      for (let j = i; j >= 2; j--) {
-        const state = classifyBxState(bx[j], bx[j - 1]);
-        if (state === "HH") streak++;
-        else break;
-      }
-      return streak;
-    })(),
+    // EMA Shield
+    ema9_slope_5d: ema9Slope5d,
+    days_below_ema9: daysBelowEma9,
+    was_full_bull_5d: wasFullBull5d,
   };
+
+  return indicators;
 }
