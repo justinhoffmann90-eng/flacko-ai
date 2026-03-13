@@ -194,17 +194,38 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
     const scanName = isScan ? condition.trim().slice(5).trim() : undefined;
 
     try {
-      const res = await fetch("/api/admin/orb/backtest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          condition: isScan ? undefined : condition.trim(),
-          scan: scanName,
-          ticker,
-          forward: forwardPeriods,
-          timeframe,
-        }),
+      // Try Vercel API first, fall back to direct Mac Mini proxy
+      const payload = JSON.stringify({
+        condition: isScan ? undefined : condition.trim(),
+        scan: scanName,
+        ticker,
+        forward: forwardPeriods,
+        timeframe,
       });
+
+      let res: Response;
+      try {
+        res = await fetch("/api/admin/orb/backtest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+        });
+        // If Vercel API returns engine error, try direct proxy
+        if (!res.ok) {
+          const errCheck = await res.clone().json().catch(() => ({}));
+          if (errCheck.error?.includes("Engine") || errCheck.error?.includes("Proxy")) {
+            throw new Error("fallback to direct");
+          }
+        }
+      } catch {
+        // Direct call to Mac Mini backtest proxy
+        res = await fetch("https://adaptation-vsnet-none-colony.trycloudflare.com/backtest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+        });
+      }
+
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Backtest failed");
