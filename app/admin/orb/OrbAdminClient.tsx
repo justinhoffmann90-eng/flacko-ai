@@ -37,7 +37,7 @@ const RED = "#ef4444";
 const AMBER = "#eab308";
 const BLUE = "#3b82f6";
 
-export function OrbAdminClient() {
+export default function OrbAdminClient() {
   const [activeTab, setActiveTab] = useState<Tab>("active");
   const [setups, setSetups] = useState<Setup[]>([]);
   const [loading, setLoading] = useState(false);
