@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/api/backtest", "destination": "/api/backtest/index.py" }
+  ],
   "crons": [
     {
       "path": "/api/cron/cleanup-grace-periods",
