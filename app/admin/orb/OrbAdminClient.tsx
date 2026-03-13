@@ -75,7 +75,7 @@ const TABS = ["active", "testing", "backlog", "archived"] as const;
 type Tab = typeof TABS[number];
 
 const FAVORITE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"];
-const PERIODS = ["1w", "2w", "4w", "6w", "8w", "10w", "13w"] as const;
+const PERIODS = ["1d", "5d", "10d", "30d", "1w", "2w", "4w", "6w", "8w", "10w"] as const;
 
 const BG = "#111118";
 const CARD_BG = "rgba(255,255,255,0.05)";
@@ -169,7 +169,6 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
   const [condition, setCondition] = useState("");
   const [ticker, setTicker] = useState("TSLA");
   const [forwardPeriods, setForwardPeriods] = useState<string[]>([...PERIODS]);
-  const [minStreak, setMinStreak] = useState(6);
   const [timeframe, setTimeframe] = useState<string>("weekly");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -202,7 +201,6 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
           condition: isScan ? undefined : condition.trim(),
           scan: scanName,
           ticker,
-          minStreak,
           forward: forwardPeriods,
           timeframe,
         }),
@@ -315,10 +313,10 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
             <span style={labelStyle("Timeframe")}>Applies to all indicators below</span>
             <div style={{ display: "flex", gap: 6 }}>
               {([
-                { label: "Weekly", value: "weekly" },
-                { label: "Daily", value: "daily" },
+                { label: "Weekly", value: "weekly", note: "" },
+                { label: "Daily", value: "daily", note: "" },
                 { label: "4H", value: "4h", note: "~60 days history" },
-                { label: "Monthly", value: "monthly" },
+                { label: "Monthly", value: "monthly", note: "" },
               ] as const).map((tf) => {
                 const isActive = timeframe === tf.value;
                 return (
@@ -415,39 +413,6 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
               </div>
             </div>
 
-            {/* Price */}
-            <div>
-              <span style={{ ...labelStyle("Price"), color: TEXT_DIM }}>Price Action</span>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[
-                  { label: "Close > Open (green bar)", value: "close > open" },
-                  { label: "Close < Open (red bar)", value: "close < open" },
-                ].map((chip) => (
-                  <button key={chip.value} onClick={() => setCondition((prev) => prev.trim() ? `${prev.trim()} AND ${chip.value}` : chip.value)}
-                    style={{ background: `rgba(255,255,255,0.06)`, color: TEXT_DIM, border: `1px solid rgba(255,255,255,0.12)`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `rgba(255,255,255,0.12)`; }}
-                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `rgba(255,255,255,0.06)`; }}
-                  >{chip.label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Named Scans */}
-            <div>
-              <span style={{ ...labelStyle("Scans"), color: "#a78bfa" }}>Pre-Built Scans</span>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[
-                  { label: "🔬 BXT Consecutive LL Scan", value: "scan:bxt-consecutive-ll" },
-                ].map((chip) => (
-                  <button key={chip.value} onClick={() => setCondition(chip.value)}
-                    style={{ background: `#a78bfa15`, color: "#a78bfa", border: `1px solid #a78bfa33`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `#a78bfa30`; }}
-                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `#a78bfa15`; }}
-                  >{chip.label}</button>
-                ))}
-              </div>
-            </div>
-
             {/* Clear button */}
             {condition.trim() && (
               <button onClick={() => setCondition("")}
@@ -500,28 +465,6 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Min streak */}
-          <div>
-            <span style={labelStyle("Min Streak")}>Min Streak</span>
-            <input
-              type="number"
-              value={minStreak}
-              onChange={(e) => setMinStreak(Number(e.target.value))}
-              min={1}
-              max={20}
-              style={{
-                width: 72,
-                background: "rgba(255,255,255,0.04)",
-                border: `1px solid ${CARD_BORDER}`,
-                borderRadius: 6,
-                color: TEXT,
-                padding: "7px 10px",
-                fontSize: 13,
-                fontFamily: MONO,
-              }}
-            />
           </div>
         </div>
 
@@ -585,6 +528,24 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
       {/* Results */}
       {result && tickerResult && (
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Backtest details bar */}
+          <div style={{ background: "rgba(96,165,250,0.08)", border: `1px solid rgba(96,165,250,0.2)`, borderRadius: 8, padding: "10px 16px", display: "flex", gap: 20, flexWrap: "wrap", fontSize: 12, fontFamily: MONO, color: TEXT_DIM }}>
+            <span><strong style={{ color: TEXT }}>Ticker:</strong> {ticker}</span>
+            <span><strong style={{ color: TEXT }}>Timeframe:</strong> {timeframe.toUpperCase()}</span>
+            <span><strong style={{ color: TEXT }}>Condition:</strong> {condition}</span>
+            {hasSignals && signals.length > 0 && (
+              <>
+                <span><strong style={{ color: TEXT }}>Data range:</strong> {(() => {
+                  const dates = signals.map(s => s.signal_date).filter(Boolean).sort();
+                  if (dates.length < 2) return "—";
+                  const first = dates[0]?.slice(0, 4);
+                  const last = dates[dates.length - 1]?.slice(0, 4);
+                  const years = first && last ? Number(last) - Number(first) : 0;
+                  return `${first} – ${last} (${years}+ years)`;
+                })()}</span>
+              </>
+            )}
+          </div>
           {/* Summary stats banner */}
           {tickerResult.counts && (
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
