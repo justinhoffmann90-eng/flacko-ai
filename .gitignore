@@ -42,3 +42,4 @@ next-env.d.ts
 .env.vercel-check
 .env.vercel
 .env.prod
+__pycache__/
