@@ -306,65 +306,149 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
           />
         </div>
 
-        {/* Indicator chips — click to insert into condition */}
-        <div>
-          <span style={labelStyle("Indicators")}>Click to add — combine with AND</span>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {[
-              { label: "Weekly RSI < 35", value: "weekly_rsi < 35", cat: "momentum" },
-              { label: "Weekly RSI < 40", value: "weekly_rsi < 40", cat: "momentum" },
-              { label: "Weekly RSI < 50", value: "weekly_rsi < 50", cat: "momentum" },
-              { label: "Weekly RSI > 70", value: "weekly_rsi > 70", cat: "momentum" },
-              { label: "BXT Consecutive LL ≥ 6", value: "bxt_consecutive_ll >= 6", cat: "bxt" },
-              { label: "BXT Consecutive LL ≥ 8", value: "bxt_consecutive_ll >= 8", cat: "bxt" },
-              { label: "BXT Consecutive LL ≥ 10", value: "bxt_consecutive_ll >= 10", cat: "bxt" },
-              { label: "BXT > 0 (bullish)", value: "bxt > 0", cat: "bxt" },
-              { label: "BXT < 0 (bearish)", value: "bxt < 0", cat: "bxt" },
-              { label: "BXT < -20", value: "bxt < -20", cat: "bxt" },
-              { label: "EMA 9 > EMA 21", value: "ema_9 > ema_21", cat: "ema" },
-              { label: "EMA 9 < EMA 21", value: "ema_9 < ema_21", cat: "ema" },
-              { label: "Close > EMA 13", value: "close > ema_13", cat: "ema" },
-              { label: "Close < EMA 21", value: "close < ema_21", cat: "ema" },
-              { label: "Close > EMA 9", value: "close > ema_9", cat: "ema" },
-              { label: "Close < EMA 9", value: "close < ema_9", cat: "ema" },
-              { label: "🔬 BXT LL Scan", value: "scan:bxt-consecutive-ll", cat: "scan" },
-            ].map((chip) => {
-              const catColors: Record<string, string> = { momentum: AMBER, bxt: GREEN, ema: BLUE, scan: "#a78bfa" };
-              const c = catColors[chip.cat] || TEXT_DIM;
-              return (
-                <button
-                  key={chip.value}
-                  onClick={() => {
-                    if (chip.cat === "scan") {
-                      setCondition(chip.value);
-                    } else {
-                      setCondition((prev) => {
-                        const trimmed = prev.trim();
-                        if (!trimmed) return chip.value;
-                        return `${trimmed} AND ${chip.value}`;
-                      });
-                    }
-                  }}
-                  style={{
-                    background: `${c}15`,
-                    color: c,
-                    border: `1px solid ${c}33`,
-                    borderRadius: 20,
-                    padding: "5px 12px",
-                    fontSize: 11,
-                    fontFamily: MONO,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    transition: "all 0.15s",
-                  }}
-                  onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `${c}30`; }}
-                  onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `${c}15`; }}
-                >
-                  {chip.label}
-                </button>
-              );
-            })}
+        {/* Condition Builder — Timeframe + Indicator groups */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Timeframe selector */}
+          <div>
+            <span style={labelStyle("Timeframe")}>Applies to all indicators below</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {(["Weekly", "Daily", "4H", "1H", "Monthly"] as const).map((tf) => {
+                const tfEnabled = tf === "Weekly"; // Only weekly supported in engine currently
+                return (
+                  <button
+                    key={tf}
+                    onClick={() => { /* timeframe state managed via condition prefix */ }}
+                    disabled={!tfEnabled}
+                    title={!tfEnabled ? `${tf} timeframe — coming soon (engine expansion needed)` : undefined}
+                    style={{
+                      background: tf === "Weekly" ? `${BLUE}33` : "rgba(255,255,255,0.04)",
+                      color: tf === "Weekly" ? BLUE : tfEnabled ? TEXT_DIM : "rgba(255,255,255,0.15)",
+                      border: `1px solid ${tf === "Weekly" ? BLUE + "66" : CARD_BORDER}`,
+                      borderRadius: 6,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontFamily: MONO,
+                      fontWeight: 700,
+                      cursor: tfEnabled ? "pointer" : "not-allowed",
+                      opacity: tfEnabled ? 1 : 0.4,
+                    }}
+                  >
+                    {tf}{!tfEnabled ? " 🔒" : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Indicator groups */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* RSI */}
+            <div>
+              <span style={{ ...labelStyle("RSI"), color: AMBER }}>RSI (Relative Strength Index)</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "RSI < 30", value: "weekly_rsi < 30" },
+                  { label: "RSI < 35", value: "weekly_rsi < 35" },
+                  { label: "RSI < 40", value: "weekly_rsi < 40" },
+                  { label: "RSI < 50", value: "weekly_rsi < 50" },
+                  { label: "RSI > 60", value: "weekly_rsi > 60" },
+                  { label: "RSI > 70", value: "weekly_rsi > 70" },
+                  { label: "RSI > 80", value: "weekly_rsi > 80" },
+                ].map((chip) => (
+                  <button key={chip.value} onClick={() => setCondition((prev) => prev.trim() ? `${prev.trim()} AND ${chip.value}` : chip.value)}
+                    style={{ background: `${AMBER}15`, color: AMBER, border: `1px solid ${AMBER}33`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `${AMBER}30`; }}
+                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `${AMBER}15`; }}
+                  >{chip.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* BXT */}
+            <div>
+              <span style={{ ...labelStyle("BXT"), color: GREEN }}>BX Trender</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "BXT > 0 (bullish)", value: "bxt > 0" },
+                  { label: "BXT < 0 (bearish)", value: "bxt < 0" },
+                  { label: "BXT < -20", value: "bxt < -20" },
+                  { label: "BXT < -30", value: "bxt < -30" },
+                  { label: "BXT > 20", value: "bxt > 20" },
+                  { label: "Consecutive LL ≥ 6", value: "bxt_consecutive_ll >= 6" },
+                  { label: "Consecutive LL ≥ 8", value: "bxt_consecutive_ll >= 8" },
+                  { label: "Consecutive LL ≥ 10", value: "bxt_consecutive_ll >= 10" },
+                ].map((chip) => (
+                  <button key={chip.value} onClick={() => setCondition((prev) => prev.trim() ? `${prev.trim()} AND ${chip.value}` : chip.value)}
+                    style={{ background: `${GREEN}15`, color: GREEN, border: `1px solid ${GREEN}33`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `${GREEN}30`; }}
+                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `${GREEN}15`; }}
+                  >{chip.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* EMAs */}
+            <div>
+              <span style={{ ...labelStyle("EMA"), color: BLUE }}>Moving Averages</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "Close > EMA 9", value: "close > ema_9" },
+                  { label: "Close < EMA 9", value: "close < ema_9" },
+                  { label: "Close > EMA 13", value: "close > ema_13" },
+                  { label: "Close < EMA 13", value: "close < ema_13" },
+                  { label: "Close > EMA 21", value: "close > ema_21" },
+                  { label: "Close < EMA 21", value: "close < ema_21" },
+                  { label: "EMA 9 > EMA 21", value: "ema_9 > ema_21" },
+                  { label: "EMA 9 < EMA 21", value: "ema_9 < ema_21" },
+                ].map((chip) => (
+                  <button key={chip.value} onClick={() => setCondition((prev) => prev.trim() ? `${prev.trim()} AND ${chip.value}` : chip.value)}
+                    style={{ background: `${BLUE}15`, color: BLUE, border: `1px solid ${BLUE}33`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `${BLUE}30`; }}
+                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `${BLUE}15`; }}
+                  >{chip.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price */}
+            <div>
+              <span style={{ ...labelStyle("Price"), color: TEXT_DIM }}>Price Action</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "Close > Open (green bar)", value: "close > open" },
+                  { label: "Close < Open (red bar)", value: "close < open" },
+                ].map((chip) => (
+                  <button key={chip.value} onClick={() => setCondition((prev) => prev.trim() ? `${prev.trim()} AND ${chip.value}` : chip.value)}
+                    style={{ background: `rgba(255,255,255,0.06)`, color: TEXT_DIM, border: `1px solid rgba(255,255,255,0.12)`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `rgba(255,255,255,0.12)`; }}
+                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `rgba(255,255,255,0.06)`; }}
+                  >{chip.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Named Scans */}
+            <div>
+              <span style={{ ...labelStyle("Scans"), color: "#a78bfa" }}>Pre-Built Scans</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "🔬 BXT Consecutive LL Scan", value: "scan:bxt-consecutive-ll" },
+                ].map((chip) => (
+                  <button key={chip.value} onClick={() => setCondition(chip.value)}
+                    style={{ background: `#a78bfa15`, color: "#a78bfa", border: `1px solid #a78bfa33`, borderRadius: 20, padding: "5px 12px", fontSize: 11, fontFamily: MONO, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                    onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `#a78bfa30`; }}
+                    onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `#a78bfa15`; }}
+                  >{chip.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Clear button */}
+            {condition.trim() && (
+              <button onClick={() => setCondition("")}
+                style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.04)", color: TEXT_DIM, border: `1px solid ${CARD_BORDER}`, borderRadius: 6, padding: "4px 12px", fontSize: 11, fontFamily: MONO, cursor: "pointer" }}
+              >✕ Clear condition</button>
+            )}
           </div>
         </div>
 
