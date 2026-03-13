@@ -170,6 +170,7 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
   const [ticker, setTicker] = useState("TSLA");
   const [forwardPeriods, setForwardPeriods] = useState<string[]>([...PERIODS]);
   const [minStreak, setMinStreak] = useState(6);
+  const [timeframe, setTimeframe] = useState<string>("weekly");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -203,6 +204,7 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
           ticker,
           minStreak,
           forward: forwardPeriods,
+          timeframe,
         }),
       });
       const data = await res.json();
@@ -312,28 +314,31 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
           <div>
             <span style={labelStyle("Timeframe")}>Applies to all indicators below</span>
             <div style={{ display: "flex", gap: 6 }}>
-              {(["Weekly", "Daily", "4H", "1H", "Monthly"] as const).map((tf) => {
-                const tfEnabled = tf === "Weekly"; // Only weekly supported in engine currently
+              {([
+                { label: "Weekly", value: "weekly" },
+                { label: "Daily", value: "daily" },
+                { label: "4H", value: "4h", note: "~60 days history" },
+                { label: "Monthly", value: "monthly" },
+              ] as const).map((tf) => {
+                const isActive = timeframe === tf.value;
                 return (
                   <button
-                    key={tf}
-                    onClick={() => { /* timeframe state managed via condition prefix */ }}
-                    disabled={!tfEnabled}
-                    title={!tfEnabled ? `${tf} timeframe — coming soon (engine expansion needed)` : undefined}
+                    key={tf.value}
+                    onClick={() => setTimeframe(tf.value)}
+                    title={tf.note ?? undefined}
                     style={{
-                      background: tf === "Weekly" ? `${BLUE}33` : "rgba(255,255,255,0.04)",
-                      color: tf === "Weekly" ? BLUE : tfEnabled ? TEXT_DIM : "rgba(255,255,255,0.15)",
-                      border: `1px solid ${tf === "Weekly" ? BLUE + "66" : CARD_BORDER}`,
+                      background: isActive ? `${BLUE}33` : "rgba(255,255,255,0.04)",
+                      color: isActive ? BLUE : TEXT_DIM,
+                      border: `1px solid ${isActive ? BLUE + "66" : CARD_BORDER}`,
                       borderRadius: 6,
                       padding: "6px 14px",
                       fontSize: 12,
                       fontFamily: MONO,
                       fontWeight: 700,
-                      cursor: tfEnabled ? "pointer" : "not-allowed",
-                      opacity: tfEnabled ? 1 : 0.4,
+                      cursor: "pointer",
                     }}
                   >
-                    {tf}{!tfEnabled ? " 🔒" : ""}
+                    {tf.label}
                   </button>
                 );
               })}

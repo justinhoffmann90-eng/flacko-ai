@@ -22,12 +22,14 @@ export async function POST(request: NextRequest) {
     scan,
     minStreak,
     forward,
+    timeframe = "weekly",
   }: {
     condition?: string;
     ticker?: string;
     scan?: string;
     minStreak?: number;
     forward?: string[];
+    timeframe?: string;
   } = body;
 
   if (!condition && !scan) {
@@ -45,6 +47,7 @@ export async function POST(request: NextRequest) {
     args.push("--condition", condition);
   }
   args.push("--ticker", ticker);
+  if (timeframe && timeframe !== "weekly") args.push("--tf", timeframe);
   if (minStreak) args.push("--min-streak", String(minStreak));
   if (forward && forward.length > 0) {
     // Engine expects comma-separated like "1w,2w,4w"
