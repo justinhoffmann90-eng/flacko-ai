@@ -74,19 +74,19 @@ interface BacktestResult {
 const TABS = ["active", "testing", "backlog", "archived"] as const;
 type Tab = typeof TABS[number];
 
-const TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL"] as const;
+const TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"] as const;
 const PERIODS = ["1w", "2w", "4w", "6w", "8w", "10w", "13w"] as const;
 
-const BG = "#0a0a0c";
-const CARD_BG = "rgba(255,255,255,0.02)";
-const CARD_BORDER = "rgba(255,255,255,0.06)";
-const TEXT = "#f0f0f0";
-const TEXT_DIM = "rgba(255,255,255,0.4)";
-const TEXT_DIMMER = "rgba(255,255,255,0.25)";
-const GREEN = "#22c55e";
-const RED = "#ef4444";
-const AMBER = "#eab308";
-const BLUE = "#3b82f6";
+const BG = "#111118";
+const CARD_BG = "rgba(255,255,255,0.05)";
+const CARD_BORDER = "rgba(255,255,255,0.12)";
+const TEXT = "#f5f5f5";
+const TEXT_DIM = "rgba(255,255,255,0.6)";
+const TEXT_DIMMER = "rgba(255,255,255,0.4)";
+const GREEN = "#34d399";
+const RED = "#f87171";
+const AMBER = "#fbbf24";
+const BLUE = "#60a5fa";
 const MONO = "'JetBrains Mono', 'Fira Code', monospace";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -304,6 +304,68 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
               boxSizing: "border-box",
             }}
           />
+        </div>
+
+        {/* Indicator chips — click to insert into condition */}
+        <div>
+          <span style={labelStyle("Indicators")}>Click to add — combine with AND</span>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[
+              { label: "Weekly RSI < 35", value: "weekly_rsi < 35", cat: "momentum" },
+              { label: "Weekly RSI < 40", value: "weekly_rsi < 40", cat: "momentum" },
+              { label: "Weekly RSI < 50", value: "weekly_rsi < 50", cat: "momentum" },
+              { label: "Weekly RSI > 70", value: "weekly_rsi > 70", cat: "momentum" },
+              { label: "BXT Consecutive LL ≥ 6", value: "bxt_consecutive_ll >= 6", cat: "bxt" },
+              { label: "BXT Consecutive LL ≥ 8", value: "bxt_consecutive_ll >= 8", cat: "bxt" },
+              { label: "BXT Consecutive LL ≥ 10", value: "bxt_consecutive_ll >= 10", cat: "bxt" },
+              { label: "BXT > 0 (bullish)", value: "bxt > 0", cat: "bxt" },
+              { label: "BXT < 0 (bearish)", value: "bxt < 0", cat: "bxt" },
+              { label: "BXT < -20", value: "bxt < -20", cat: "bxt" },
+              { label: "EMA 9 > EMA 21", value: "ema_9 > ema_21", cat: "ema" },
+              { label: "EMA 9 < EMA 21", value: "ema_9 < ema_21", cat: "ema" },
+              { label: "Close > EMA 13", value: "close > ema_13", cat: "ema" },
+              { label: "Close < EMA 21", value: "close < ema_21", cat: "ema" },
+              { label: "Close > EMA 9", value: "close > ema_9", cat: "ema" },
+              { label: "Close < EMA 9", value: "close < ema_9", cat: "ema" },
+              { label: "🔬 BXT LL Scan", value: "scan:bxt-consecutive-ll", cat: "scan" },
+            ].map((chip) => {
+              const catColors: Record<string, string> = { momentum: AMBER, bxt: GREEN, ema: BLUE, scan: "#a78bfa" };
+              const c = catColors[chip.cat] || TEXT_DIM;
+              return (
+                <button
+                  key={chip.value}
+                  onClick={() => {
+                    if (chip.cat === "scan") {
+                      setCondition(chip.value);
+                    } else {
+                      setCondition((prev) => {
+                        const trimmed = prev.trim();
+                        if (!trimmed) return chip.value;
+                        return `${trimmed} AND ${chip.value}`;
+                      });
+                    }
+                  }}
+                  style={{
+                    background: `${c}15`,
+                    color: c,
+                    border: `1px solid ${c}33`,
+                    borderRadius: 20,
+                    padding: "5px 12px",
+                    fontSize: 11,
+                    fontFamily: MONO,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => { (e.target as HTMLElement).style.background = `${c}30`; }}
+                  onMouseLeave={(e) => { (e.target as HTMLElement).style.background = `${c}15`; }}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Controls row */}
