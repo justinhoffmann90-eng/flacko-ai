@@ -105,6 +105,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Backtest engine (public — used by Orb explorer and public backtest tool)
+  if (request.nextUrl.pathname.startsWith("/api/backtest")) {
+    return supabaseResponse;
+  }
+
   // Reports latest endpoint (used by Content Hub for data injection)
   if (request.nextUrl.pathname === "/api/reports/latest") {
     return supabaseResponse;
