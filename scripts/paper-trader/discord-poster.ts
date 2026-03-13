@@ -79,22 +79,29 @@ function portfolioFooter(portfolio: Portfolio | MultiPortfolio): string {
     const multi = portfolio as MultiPortfolio;
     if (multi.tsla && multi.tsla.shares > 0) {
       const pct = ((multi.tsla.shares * multi.tsla.currentPrice) / totalVal * 100).toFixed(0);
-      lines.push(`TSLA: ${multi.tsla.shares.toLocaleString()} shares (${pct}% of port)`);
+      const costDiff = ((multi.tsla.currentPrice - multi.tsla.avgCost) / multi.tsla.avgCost * 100);
+      lines.push(`TSLA: ${multi.tsla.shares.toLocaleString()} shares (${pct}% of port) | avg: $${fmtDollar(multi.tsla.avgCost, 2)} → $${fmtDollar(multi.tsla.currentPrice, 2)} (${withSignPercent(costDiff)})`);
     } else {
       lines.push(`TSLA: 0 shares`);
     }
     if (multi.tsll && multi.tsll.shares > 0) {
       const pct = ((multi.tsll.shares * multi.tsll.currentPrice) / totalVal * 100).toFixed(0);
-      lines.push(`TSLL: ${multi.tsll.shares.toLocaleString()} shares (${pct}% of port)`);
+      const costDiff = ((multi.tsll.currentPrice - multi.tsll.avgCost) / multi.tsll.avgCost * 100);
+      lines.push(`TSLL: ${multi.tsll.shares.toLocaleString()} shares (${pct}% of port) | avg: $${fmtDollar(multi.tsll.avgCost, 2)} → $${fmtDollar(multi.tsll.currentPrice, 2)} (${withSignPercent(costDiff)})`);
     }
     const cashPct = ((multi.cash / totalVal) * 100).toFixed(0);
     lines.push(`cash: $${fmtDollar(multi.cash)} (${cashPct}%)`);
+    if (multi.unrealizedPnl !== 0) {
+      lines.push(`unrealized: ${withSign(multi.unrealizedPnl)}`);
+    }
   } else {
     const single = portfolio as Portfolio;
     if (single.position && single.position.shares > 0) {
       const posVal = single.position.currentValue;
       const pct = ((posVal / totalVal) * 100).toFixed(0);
-      lines.push(`TSLA: ${single.position.shares.toLocaleString()} shares (${pct}% of port)`);
+      const costDiff = ((single.position.entryPrice - single.position.avgCost) / single.position.avgCost * 100);
+      lines.push(`TSLA: ${single.position.shares.toLocaleString()} shares (${pct}% of port) | avg: $${fmtDollar(single.position.avgCost, 2)} → $${fmtDollar(single.position.entryPrice, 2)} (${withSignPercent(costDiff)})`);
+      lines.push(`unrealized: ${withSign(single.position.unrealizedPnl)}`);
     } else {
       lines.push(`TSLA: 0 shares`);
     }
@@ -158,6 +165,37 @@ export async function postStatusUpdate(
   let content = `**⚔️ TAYLOR — STATUS UPDATE — ${timeStr} CT**\n\n`;
   content += `TSLA $${fmtDollar(quote.price, 2)} (${withSignPercent(quote.changePercent)})\n`;
   
+  // Per-position breakdown: current price vs avg cost
+  const isMulti = 'tsla' in portfolio;
+  if (isMulti) {
+    const multi = portfolio as MultiPortfolio;
+    if (multi.tsla && multi.tsla.shares > 0) {
+      const costDiff = ((multi.tsla.currentPrice - multi.tsla.avgCost) / multi.tsla.avgCost * 100);
+      content += `  TSLA ${multi.tsla.shares.toLocaleString()} sh | avg $${fmtDollar(multi.tsla.avgCost, 2)} → $${fmtDollar(multi.tsla.currentPrice, 2)} (${withSignPercent(costDiff)}) | unreal: ${withSign(multi.tsla.unrealizedPnl)}\n`;
+    }
+    if (multi.tsll && multi.tsll.shares > 0) {
+      const costDiff = ((multi.tsll.currentPrice - multi.tsll.avgCost) / multi.tsll.avgCost * 100);
+      content += `  TSLL ${multi.tsll.shares.toLocaleString()} sh | avg $${fmtDollar(multi.tsll.avgCost, 2)} → $${fmtDollar(multi.tsll.currentPrice, 2)} (${withSignPercent(costDiff)}) | unreal: ${withSign(multi.tsll.unrealizedPnl)}\n`;
+    }
+    if (multi.unrealizedPnl !== 0) {
+      content += `total unrealized: ${withSign(multi.unrealizedPnl)}\n`;
+    }
+  } else {
+    const single = portfolio as Portfolio;
+    if (single.position && single.position.shares > 0) {
+      const costDiff = single.position.unrealizedPnlPercent;
+      content += `  TSLA ${single.position.shares.toLocaleString()} sh | avg $${fmtDollar(single.position.avgCost, 2)} → $${fmtDollar(single.position.entryPrice, 2)} (${withSignPercent(costDiff)}) | unreal: ${withSign(single.position.unrealizedPnl)}\n`;
+    }
+  }
+
+  // Day's mark-to-market change
+  const portfolioVal = portfolio.totalValue || 100000;
+  const startingCap = portfolio.startingCapital || 100000;
+  const dayChange = portfolio.totalValue - startingCap;
+  if (dayChange !== 0) {
+    content += `day mtm: ${withSign(dayChange)} (${withSignPercent(dayChange / startingCap * 100)})\n`;
+  }
+
   content += `\n${orbZoneEmoji(orb.zone)} orb: ${orb.zone} (${orb.score >= 0 ? '+' : ''}${orb.score.toFixed(2)})\n`;
   content += `take: ${flackoTake}\n`;
   
@@ -564,18 +602,31 @@ export async function postMarketOpen(
     if (orb.zone === 'CAUTION' || orb.zone === 'DEFENSIVE') {
       plan += `**buys:** none. ${orb.zone} zone — sitting in cash.\n`;
     } else {
-      const supports = (report.levels || []).filter(l => l.type === 'nibble' && l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
+      // Support levels above kill leverage (full conviction buys)
+      const supportsAboveKL = (report.levels || []).filter(l => (l.type === 'support' || l.type === 'nibble') && l.price < quote.price && l.price > report.masterEject).sort((a, b) => b.price - a.price);
+      // Support levels below kill leverage (nibble-only with halved sizing)
+      const supportsBelowKL = (report.levels || []).filter(l => (l.type === 'support' || l.type === 'nibble') && l.price < quote.price && l.price <= report.masterEject).sort((a, b) => b.price - a.price);
       
-      if (supports.length > 0) {
-        const buyLevel = supports[0];
+      if (supportsAboveKL.length > 0) {
+        const buyLevel = supportsAboveKL[0];
         const distPct = ((quote.price - buyLevel.price) / quote.price * 100).toFixed(1);
         plan += `**buys:** ${instrument} at ${buyLevel.name} ($${buyLevel.price.toFixed(0)}, ${distPct}% below) — ${maxCap}% of cash per ${mode} mode cap\n`;
-        if (supports.length > 1) {
-          const buyLevel2 = supports[1];
+        if (supportsAboveKL.length > 1) {
+          const buyLevel2 = supportsAboveKL[1];
           plan += `next buy: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — ${buyLevel2.action || 'add to position'}\n`;
         }
+      } else if (supportsBelowKL.length > 0) {
+        // All support is below kill leverage — show nibble levels with risk context
+        const buyLevel = supportsBelowKL[0];
+        const distPct = ((quote.price - buyLevel.price) / quote.price * 100).toFixed(1);
+        const halfCap = Math.round(maxCap / 2);
+        plan += `**buys:** TSLA only at ${buyLevel.name} ($${buyLevel.price.toFixed(0)}, ${distPct}% below) — ⚠️ below kill leverage, nibble ${halfCap}% max, no leverage\n`;
+        if (supportsBelowKL.length > 1) {
+          const buyLevel2 = supportsBelowKL[1];
+          plan += `next nibble: ${buyLevel2.name} ($${buyLevel2.price.toFixed(0)}) — shares only, confirmation required\n`;
+        }
       } else {
-        plan += `**buys:** no support levels between here and kill leverage. need a pullback to get involved.\n`;
+        plan += `**buys:** no support levels in range. need a pullback to get involved.\n`;
       }
       
       if (activeOverrides.length > 0) {
@@ -663,7 +714,8 @@ export async function postMarketClose(
     }
   }
   
-  content += `\nday's p&l: ${withSign(dayPnl)} (${withSignPercent(dayPnl / 100000 * 100)})\n`;
+  const portfolioVal = portfolio.totalValue || 100000;
+  content += `\nday's p&l: ${withSign(dayPnl)} (${withSignPercent(dayPnl / portfolioVal * 100)})\n`;
   
   if (dayPnlByInstrument) {
     if (dayPnlByInstrument.tsla !== 0 || dayPnlByInstrument.tsll !== 0) {
