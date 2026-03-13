@@ -83,6 +83,24 @@ function getCacheKey(ticker: string, timeframe: Timeframe): string {
 
 // ─── Yahoo Finance data fetching ───────────────────────────────────────────────
 
+async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRateLimit = msg.includes("Too Many Requests") || msg.includes("429") || msg.includes("rate limit");
+      if (isRateLimit && attempt < maxRetries) {
+        const delay = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000; // 2s, 4s, 8s + jitter
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
 async function fetchOHLCV(ticker: string, timeframe: Timeframe): Promise<OHLCVBar[]> {
   const cacheKey = getCacheKey(ticker, timeframe);
   const cached = dataCache.get(cacheKey);
@@ -98,10 +116,12 @@ async function fetchOHLCV(ticker: string, timeframe: Timeframe): Promise<OHLCVBa
   if (timeframe === "4h") {
     // Fetch 1h bars for last 60 days, then resample to 4H
     const period1 = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-    const result = await yahooFinance.chart(ticker, {
-      period1: period1.toISOString().slice(0, 10),
-      interval: "1h",
-    });
+    const result = await fetchWithRetry(() =>
+      yahooFinance.chart(ticker, {
+        period1: period1.toISOString().slice(0, 10),
+        interval: "1h",
+      })
+    );
 
     const rawBars = extractBars(result);
     bars = resampleTo4H(rawBars);
@@ -114,10 +134,12 @@ async function fetchOHLCV(ticker: string, timeframe: Timeframe): Promise<OHLCVBa
     };
     const interval = intervalMap[timeframe];
 
-    const result = await yahooFinance.chart(ticker, {
-      period1: "2005-01-01",
-      interval: interval as "1d" | "1wk" | "1mo",
-    });
+    const result = await fetchWithRetry(() =>
+      yahooFinance.chart(ticker, {
+        period1: "2005-01-01",
+        interval: interval as "1d" | "1wk" | "1mo",
+      })
+    );
 
     bars = extractBars(result);
   }
