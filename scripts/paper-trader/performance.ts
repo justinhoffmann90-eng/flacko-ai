@@ -265,21 +265,51 @@ export async function getTodayTrades(): Promise<Trade[]> {
 }
 
 /**
- * Calculate today's P&L from completed trades
+ * Calculate today's total P&L (realized from sells + unrealized mark-to-market on open positions).
+ * 
+ * Day P&L = realized_pnl from today's sells
+ *         + unrealized change on positions held from yesterday (current price - previous close) * shares
+ *         + unrealized P&L on positions opened today (current price - avg cost) * shares
+ *
+ * For simplicity we use: realized from today's sells + total current unrealized on all open positions
+ * minus the unrealized snapshot from market open (stored in paper_portfolio previous day).
+ * 
+ * Fallback: if no previous day snapshot, use realized + current unrealized.
  */
 export async function calculateTodayPnl(): Promise<number> {
   try {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     
-    const { data, error } = await supabase
+    // Realized P&L from today's sells
+    const { data: sellData, error: sellError } = await supabase
       .from('paper_trades')
       .select('realized_pnl')
       .eq('action', 'sell')
       .gte('timestamp', today);
 
-    if (error) throw error;
+    if (sellError) throw sellError;
+    const realizedToday = (sellData || []).reduce((sum, t) => sum + (t.realized_pnl || 0), 0);
 
-    return (data || []).reduce((sum, t) => sum + (t.realized_pnl || 0), 0);
+    // Get current portfolio unrealized P&L
+    const { data: portfolio, error: portError } = await supabase
+      .from('paper_portfolio')
+      .select('unrealized_pnl, date')
+      .order('date', { ascending: false })
+      .limit(2);
+
+    if (portError) throw portError;
+
+    // Current unrealized (today's latest snapshot or live)
+    const currentUnrealized = portfolio?.[0]?.unrealized_pnl || 0;
+    
+    // Previous day's closing unrealized
+    const prevUnrealized = (portfolio && portfolio.length > 1 && portfolio[1].date !== today)
+      ? portfolio[1].unrealized_pnl || 0
+      : (portfolio?.[0]?.date !== today && portfolio?.[0]?.unrealized_pnl) || 0;
+
+    // Day P&L = realized from sells + change in unrealized
+    const unrealizedChange = currentUnrealized - prevUnrealized;
+    return realizedToday + unrealizedChange;
   } catch (error) {
     console.error('Error calculating today P&L:', error);
     return 0;
