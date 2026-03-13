@@ -717,6 +717,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Try Mac Mini engine first (has no Yahoo rate limit issues)
+  const PROXY_URL = process.env.BACKTEST_PROXY_URL;
+  if (PROXY_URL) {
+    try {
+      const proxyRes = await fetch(`${PROXY_URL}/backtest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ condition, ticker: tickerUpper, timeframe: tf }),
+        signal: AbortSignal.timeout(50000),
+      });
+      if (proxyRes.ok) {
+        const proxyData = await proxyRes.json();
+        return NextResponse.json(proxyData);
+      }
+    } catch {
+      // Proxy unavailable — fall through to local computation
+    }
+  }
+
   // Parse condition
   let parsedCondition;
   try {
@@ -728,7 +747,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Fetch data
+  // Fetch data (fallback: direct Yahoo Finance)
   let rawBars: OHLCVBar[];
   try {
     rawBars = await fetchOHLCV(tickerUpper, tf);
