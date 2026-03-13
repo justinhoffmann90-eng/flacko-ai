@@ -6,6 +6,7 @@ import { evaluateAllSetups, PreviousState, suggestMode } from "@/lib/orb/evaluat
 import { sendAlert } from "@/lib/orb/alerts";
 import { computeOrbScore, assignZone, transitionMessage } from "@/lib/orb/score";
 import { sendDownsideZoneAlert } from "@/lib/orb/zone-alerts";
+import { incrementalUpdateOHLCV } from "@/lib/ohlcv/incremental-update";
 
 export const maxDuration = 30;
 
@@ -568,6 +569,12 @@ async function runCompute() {
     };
 
     await writeScorecard();
+
+    // ── Incremental OHLCV update (keeps backtest DB fresh) ──────────────────
+    // Fire-and-forget: don't block the response or fail the cron if this errors.
+    incrementalUpdateOHLCV(supabase).catch((err) => {
+      console.error("[ORB][OHLCV_UPDATE_FAILED]", err);
+    });
 
     return NextResponse.json({
       success: true,

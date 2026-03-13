@@ -1,32 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import {
+  BxtState,
+  computeAllIndicators,
+  OHLCVBar,
+  IndicatorBar,
+} from "@/lib/indicators";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 30;
+
+// ─── Supabase client ──────────────────────────────────────────────────────────
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Timeframe = "weekly" | "daily" | "4h" | "monthly";
-
-interface OHLCVBar {
-  date: Date;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-interface IndicatorBar extends OHLCVBar {
-  rsi: number | null;
-  bxt: number | null;
-  bxt_state: "HH" | "LH" | "HL" | "LL" | null;
-  bxt_consecutive_ll: number;
-  ema_9: number | null;
-  ema_13: number | null;
-  ema_21: number | null;
-  sma_200: number | null;
-}
 
 interface SummaryPeriod {
   n: number;
@@ -66,23 +60,76 @@ interface TickerResult {
   };
 }
 
-// ─── In-memory cache (1-hour TTL) ─────────────────────────────────────────────
+// ─── Supabase data fetch ───────────────────────────────────────────────────────
 
-interface CacheEntry {
-  bars: OHLCVBar[];
-  fetchedAt: number;
+/**
+ * Fetches all ohlcv_bars rows for a ticker+timeframe from Supabase.
+ * Returns IndicatorBar[] (all indicators pre-computed).
+ *
+ * Falls back to Yahoo Finance fetch + in-process computation if the table
+ * doesn't exist or has no data for the requested ticker/timeframe.
+ */
+async function fetchBarsFromDB(
+  ticker: string,
+  timeframe: Timeframe
+): Promise<IndicatorBar[]> {
+  // Only weekly/daily/monthly are in ohlcv_bars (4h is not supported in DB)
+  if (timeframe === "4h") {
+    return fetchBarsFromYahoo(ticker, timeframe);
+  }
+
+  const { data, error } = await supabase
+    .from("ohlcv_bars")
+    .select(
+      "bar_date,open,high,low,close,volume,rsi,bxt,bxt_state,bxt_consecutive_ll,ema_9,ema_13,ema_21,sma_200"
+    )
+    .eq("ticker", ticker)
+    .eq("timeframe", timeframe)
+    .order("bar_date", { ascending: true });
+
+  if (error) {
+    // Table doesn't exist or query error — fall back to Yahoo
+    console.warn(
+      `[backtest] DB query failed (${error.code}: ${error.message}), falling back to Yahoo`
+    );
+    return fetchBarsFromYahoo(ticker, timeframe);
+  }
+
+  if (!data || data.length === 0) {
+    // No data in DB for this ticker/timeframe yet — fall back to Yahoo
+    console.warn(
+      `[backtest] No data in ohlcv_bars for ${ticker}/${timeframe}, falling back to Yahoo`
+    );
+    return fetchBarsFromYahoo(ticker, timeframe);
+  }
+
+  // Map DB rows to IndicatorBar[]
+  return data.map((row: any): IndicatorBar => ({
+    date: new Date(row.bar_date),
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    close: row.close,
+    volume: row.volume,
+    rsi: row.rsi,
+    bxt: row.bxt,
+    bxt_state: row.bxt_state as BxtState,
+    bxt_consecutive_ll: row.bxt_consecutive_ll ?? 0,
+    ema_9: row.ema_9,
+    ema_13: row.ema_13,
+    ema_21: row.ema_21,
+    sma_200: row.sma_200,
+  }));
 }
 
-const dataCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+// ─── Yahoo Finance fallback (identical to original implementation) ─────────────
 
-function getCacheKey(ticker: string, timeframe: Timeframe): string {
-  return `${ticker.toUpperCase()}:${timeframe}`;
-}
-
-// ─── Yahoo Finance data fetching ───────────────────────────────────────────────
-
-async function fetchYahooChart(ticker: string, interval: string, period1: string, range?: string): Promise<OHLCVBar[]> {
+async function fetchYahooChart(
+  ticker: string,
+  interval: string,
+  period1: string,
+  range?: string
+): Promise<OHLCVBar[]> {
   const maxRetries = 3;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -97,13 +144,19 @@ async function fetchYahooChart(ticker: string, interval: string, period1: string
 
       const res = await fetch(url, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         },
       });
 
       if (res.status === 429) {
         if (attempt < maxRetries) {
-          await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000));
+          await new Promise((r) =>
+            setTimeout(
+              r,
+              Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000
+            )
+          );
           continue;
         }
         throw new Error("Yahoo Finance rate limit after retries");
@@ -138,8 +191,16 @@ async function fetchYahooChart(ticker: string, interval: string, period1: string
       return bars;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if ((msg.includes("429") || msg.includes("rate limit")) && attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000));
+      if (
+        (msg.includes("429") || msg.includes("rate limit")) &&
+        attempt < maxRetries
+      ) {
+        await new Promise((r) =>
+          setTimeout(
+            r,
+            Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000
+          )
+        );
         continue;
       }
       throw err;
@@ -148,36 +209,8 @@ async function fetchYahooChart(ticker: string, interval: string, period1: string
   throw new Error("Max retries exceeded");
 }
 
-async function fetchOHLCV(ticker: string, timeframe: Timeframe): Promise<OHLCVBar[]> {
-  const cacheKey = getCacheKey(ticker, timeframe);
-  const cached = dataCache.get(cacheKey);
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-    return cached.bars;
-  }
-
-  let bars: OHLCVBar[];
-
-  if (timeframe === "4h") {
-    const rawBars = await fetchYahooChart(ticker, "1h", "", "60d");
-    bars = resampleTo4H(rawBars);
-  } else {
-    const intervalMap: Record<Timeframe, string> = {
-      weekly: "1wk",
-      daily: "1d",
-      monthly: "1mo",
-      "4h": "1h",
-    };
-    bars = await fetchYahooChart(ticker, intervalMap[timeframe], "2005-01-01");
-  }
-
-  dataCache.set(cacheKey, { bars, fetchedAt: Date.now() });
-  return bars;
-}
-
 function resampleTo4H(bars: OHLCVBar[]): OHLCVBar[] {
-  // Group hourly bars into 4-hour buckets (0-3, 4-7, 8-11, 12-15, 16-19, 20-23)
   const buckets = new Map<string, OHLCVBar[]>();
-
   for (const bar of bars) {
     const d = bar.date;
     const bucketHour = Math.floor(d.getHours() / 4) * 4;
@@ -185,9 +218,8 @@ function resampleTo4H(bars: OHLCVBar[]): OHLCVBar[] {
     if (!buckets.has(key)) buckets.set(key, []);
     buckets.get(key)!.push(bar);
   }
-
   const result: OHLCVBar[] = [];
-  for (const [, group] of buckets) {
+  for (const group of Array.from(buckets.values())) {
     if (group.length === 0) continue;
     result.push({
       date: group[0].date,
@@ -198,182 +230,34 @@ function resampleTo4H(bars: OHLCVBar[]): OHLCVBar[] {
       volume: group.reduce((s, b) => s + b.volume, 0),
     });
   }
-
   return result.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
-// ─── Indicator math ────────────────────────────────────────────────────────────
-
-function computeEMA(values: number[], period: number): (number | null)[] {
-  const k = 2 / (period + 1);
-  const result: (number | null)[] = new Array(values.length).fill(null);
-  let ema: number | null = null;
-
-  for (let i = 0; i < values.length; i++) {
-    if (ema === null) {
-      // Seed with simple average of first `period` values
-      if (i < period - 1) continue;
-      ema = values.slice(0, period).reduce((s, v) => s + v, 0) / period;
-      result[i] = ema;
-    } else {
-      ema = values[i] * k + ema * (1 - k);
-      result[i] = ema;
-    }
-  }
-  return result;
-}
-
-function computeWildersRSI(values: number[], period: number = 14): (number | null)[] {
-  const result: (number | null)[] = new Array(values.length).fill(null);
-  if (values.length < period + 1) return result;
-
-  // Calculate initial avg gain/loss using SMA of first `period` changes
-  let avgGain = 0;
-  let avgLoss = 0;
-  for (let i = 1; i <= period; i++) {
-    const change = values[i] - values[i - 1];
-    if (change > 0) avgGain += change;
-    else avgLoss += Math.abs(change);
-  }
-  avgGain /= period;
-  avgLoss /= period;
-
-  if (avgLoss === 0) {
-    result[period] = 100;
+async function fetchBarsFromYahoo(
+  ticker: string,
+  timeframe: Timeframe
+): Promise<IndicatorBar[]> {
+  let rawBars: OHLCVBar[];
+  if (timeframe === "4h") {
+    const rawBars1h = await fetchYahooChart(ticker, "1h", "", "60d");
+    rawBars = resampleTo4H(rawBars1h);
   } else {
-    const rs = avgGain / avgLoss;
-    result[period] = 100 - 100 / (1 + rs);
+    const intervalMap: Record<Timeframe, string> = {
+      weekly: "1wk",
+      daily: "1d",
+      monthly: "1mo",
+      "4h": "1h",
+    };
+    rawBars = await fetchYahooChart(
+      ticker,
+      intervalMap[timeframe],
+      "2005-01-01"
+    );
   }
-
-  for (let i = period + 1; i < values.length; i++) {
-    const change = values[i] - values[i - 1];
-    const gain = change > 0 ? change : 0;
-    const loss = change < 0 ? Math.abs(change) : 0;
-
-    avgGain = (avgGain * (period - 1) + gain) / period;
-    avgLoss = (avgLoss * (period - 1) + loss) / period;
-
-    if (avgLoss === 0) {
-      result[i] = 100;
-    } else {
-      const rs = avgGain / avgLoss;
-      result[i] = 100 - 100 / (1 + rs);
-    }
-  }
-
-  return result;
+  return computeAllIndicators(rawBars);
 }
 
-function computeSMA(values: number[], period: number): (number | null)[] {
-  const result: (number | null)[] = new Array(values.length).fill(null);
-  for (let i = period - 1; i < values.length; i++) {
-    let sum = 0;
-    for (let j = i - period + 1; j <= i; j++) sum += values[j];
-    result[i] = sum / period;
-  }
-  return result;
-}
-
-function subtractArrays(a: (number | null)[], b: (number | null)[]): (number | null)[] {
-  return a.map((v, i) => (v != null && b[i] != null ? v - b[i]! : null));
-}
-
-// ─── BXT: RSI(EMA(close,5) - EMA(close,20), 5) - 50 ─────────────────────────
-
-function computeBXT(closes: number[]): (number | null)[] {
-  const ema5 = computeEMA(closes, 5);
-  const ema20 = computeEMA(closes, 20);
-  const diff = subtractArrays(ema5, ema20);
-
-  // RSI of diff — need actual numeric values; fill nulls with 0 for RSI seed
-  const diffForRSI = diff.map((v) => v ?? 0);
-  const rsiOfDiff = computeWildersRSI(diffForRSI, 5);
-
-  return rsiOfDiff.map((v) => (v != null ? v - 50 : null));
-}
-
-type BxtState = "HH" | "LH" | "HL" | "LL" | null;
-
-function computeBXTStates(bxt: (number | null)[]): BxtState[] {
-  const states: BxtState[] = new Array(bxt.length).fill(null);
-  for (let i = 1; i < bxt.length; i++) {
-    const prev = bxt[i - 1];
-    const curr = bxt[i];
-    if (prev == null || curr == null) continue;
-
-    if (curr > prev) {
-      // Higher value: HH if prev was also going up, but we only look at current vs prev
-      // Using simple HH/LH/HL/LL: compare current high/low vs previous
-      // BXT "state" = direction of current bar vs previous bar + direction of prior bar vs bar before
-      // Simplified: just compare i vs i-1 (current), and i-1 vs i-2 (previous direction)
-      if (i < 2 || bxt[i - 2] == null) {
-        states[i] = curr > prev ? "HH" : "LL";
-        continue;
-      }
-      const prevPrev = bxt[i - 2]!;
-      if (prev >= prevPrev) {
-        states[i] = "HH"; // curr > prev AND prev >= prevPrev → both up → HH
-      } else {
-        states[i] = "HL"; // curr > prev AND prev < prevPrev → turned up from lower → HL
-      }
-    } else {
-      if (i < 2 || bxt[i - 2] == null) {
-        states[i] = "LL";
-        continue;
-      }
-      const prevPrev = bxt[i - 2]!;
-      if (prev <= prevPrev) {
-        states[i] = "LL"; // curr < prev AND prev <= prevPrev → both down → LL
-      } else {
-        states[i] = "LH"; // curr < prev AND prev > prevPrev → turned down from higher → LH
-      }
-    }
-  }
-  return states;
-}
-
-function computeBXTConsecutiveLL(states: BxtState[]): number[] {
-  const result: number[] = new Array(states.length).fill(0);
-  let streak = 0;
-  for (let i = 0; i < states.length; i++) {
-    if (states[i] === "LL") {
-      streak++;
-    } else if (states[i] !== null) {
-      streak = 0;
-    }
-    result[i] = streak;
-  }
-  return result;
-}
-
-// ─── Compute all indicators ────────────────────────────────────────────────────
-
-function computeIndicators(bars: OHLCVBar[]): IndicatorBar[] {
-  const closes = bars.map((b) => b.close);
-
-  const rsi14 = computeWildersRSI(closes, 14);
-  const bxt = computeBXT(closes);
-  const bxtStates = computeBXTStates(bxt);
-  const bxtConsLL = computeBXTConsecutiveLL(bxtStates);
-  const ema9 = computeEMA(closes, 9);
-  const ema13 = computeEMA(closes, 13);
-  const ema21 = computeEMA(closes, 21);
-  const sma200 = computeSMA(closes, 200);
-
-  return bars.map((bar, i) => ({
-    ...bar,
-    rsi: rsi14[i],
-    bxt: bxt[i],
-    bxt_state: bxtStates[i],
-    bxt_consecutive_ll: bxtConsLL[i],
-    ema_9: ema9[i],
-    ema_13: ema13[i],
-    ema_21: ema21[i],
-    sma_200: sma200[i],
-  }));
-}
-
-// ─── Condition parsing ─────────────────────────────────────────────────────────
+// ─── Condition parsing (unchanged from original) ──────────────────────────────
 
 type Operator = "<" | ">" | "<=" | ">=" | "==" | "!=";
 
@@ -391,20 +275,28 @@ interface ParsedCondition {
 }
 
 const KNOWN_VARS = [
-  "rsi", "bxt", "bxt_consecutive_ll",
-  "ema_9", "ema_13", "ema_21", "sma_200",
-  "close", "open", "high", "low", "volume",
-  // aliases with prefix
-  "weekly_rsi", "daily_rsi", "monthly_rsi",
+  "rsi",
+  "bxt",
+  "bxt_consecutive_ll",
+  "ema_9",
+  "ema_13",
+  "ema_21",
+  "sma_200",
+  "close",
+  "open",
+  "high",
+  "low",
+  "volume",
+  "weekly_rsi",
+  "daily_rsi",
+  "monthly_rsi",
 ];
 
 function normalizeVar(v: string): string {
-  // Strip timeframe prefix aliases (weekly_rsi → rsi, etc.)
   return v.replace(/^(weekly|daily|monthly|4h)_/, "");
 }
 
 function parseCondition(condition: string): ParsedCondition {
-  // Tokenize on AND/OR (case-insensitive)
   const parts = condition.split(/\b(AND|OR)\b/i);
   const clauses: Clause[] = [];
   const logic: ("AND" | "OR")[] = [];
@@ -419,7 +311,6 @@ function parseCondition(condition: string): ParsedCondition {
     } else if (trimmed.toUpperCase() === "OR") {
       logic.push("OR");
     } else {
-      // Parse a single clause: var OP value  or  var OP var
       const match = trimmed.match(
         /^([a-z_0-9]+)\s*(<=|>=|!=|==|<|>)\s*([a-z_0-9.+-]+)$/i
       );
@@ -432,7 +323,6 @@ function parseCondition(condition: string): ParsedCondition {
       const lhs = normalizeVar(lhsRaw.toLowerCase());
       const rhs = rhsRaw.trim();
 
-      // Is rhs a variable name?
       const rhsNorm = normalizeVar(rhs.toLowerCase());
       const isVarVsVar = KNOWN_VARS.some((v) => normalizeVar(v) === rhsNorm);
 
@@ -462,21 +352,37 @@ function parseCondition(condition: string): ParsedCondition {
   return { clauses, logic };
 }
 
-function getIndicatorValue(bar: IndicatorBar, variable: string): number | null {
+function getIndicatorValue(
+  bar: IndicatorBar,
+  variable: string
+): number | null {
   switch (variable) {
-    case "rsi": return bar.rsi;
-    case "bxt": return bar.bxt;
-    case "bxt_consecutive_ll": return bar.bxt_consecutive_ll;
-    case "ema_9": return bar.ema_9;
-    case "ema_13": return bar.ema_13;
-    case "ema_21": return bar.ema_21;
-    case "sma_200": return bar.sma_200;
-    case "close": return bar.close;
-    case "open": return bar.open;
-    case "high": return bar.high;
-    case "low": return bar.low;
-    case "volume": return bar.volume;
-    default: return null;
+    case "rsi":
+      return bar.rsi;
+    case "bxt":
+      return bar.bxt;
+    case "bxt_consecutive_ll":
+      return bar.bxt_consecutive_ll;
+    case "ema_9":
+      return bar.ema_9;
+    case "ema_13":
+      return bar.ema_13;
+    case "ema_21":
+      return bar.ema_21;
+    case "sma_200":
+      return bar.sma_200;
+    case "close":
+      return bar.close;
+    case "open":
+      return bar.open;
+    case "high":
+      return bar.high;
+    case "low":
+      return bar.low;
+    case "volume":
+      return bar.volume;
+    default:
+      return null;
   }
 }
 
@@ -494,17 +400,27 @@ function evaluateClause(bar: IndicatorBar, clause: Clause): boolean {
   }
 
   switch (clause.operator) {
-    case "<":  return lhsVal < rhsVal;
-    case ">":  return lhsVal > rhsVal;
-    case "<=": return lhsVal <= rhsVal;
-    case ">=": return lhsVal >= rhsVal;
-    case "==": return lhsVal === rhsVal;
-    case "!=": return lhsVal !== rhsVal;
-    default:   return false;
+    case "<":
+      return lhsVal < rhsVal;
+    case ">":
+      return lhsVal > rhsVal;
+    case "<=":
+      return lhsVal <= rhsVal;
+    case ">=":
+      return lhsVal >= rhsVal;
+    case "==":
+      return lhsVal === rhsVal;
+    case "!=":
+      return lhsVal !== rhsVal;
+    default:
+      return false;
   }
 }
 
-function evaluateCondition(bar: IndicatorBar, parsed: ParsedCondition): boolean {
+function evaluateCondition(
+  bar: IndicatorBar,
+  parsed: ParsedCondition
+): boolean {
   if (parsed.clauses.length === 0) return false;
 
   let result = evaluateClause(bar, parsed.clauses[0]);
@@ -522,7 +438,7 @@ function evaluateCondition(bar: IndicatorBar, parsed: ParsedCondition): boolean 
   return result;
 }
 
-// ─── Forward return calculation ────────────────────────────────────────────────
+// ─── Forward return calculation (unchanged from original) ─────────────────────
 
 const FORWARD_PERIODS: Record<Timeframe, number[]> = {
   weekly: [1, 2, 4, 6, 8, 10],
@@ -542,7 +458,9 @@ function median(arr: number[]): number {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
 }
 
 function computeForwardReturns(
@@ -556,7 +474,6 @@ function computeForwardReturns(
   const maxPeriod = Math.max(...periods);
   const totalBars = bars.length;
 
-  // For each signal, compute returns for each period
   interface SignalData {
     idx: number;
     bar: IndicatorBar;
@@ -577,9 +494,9 @@ function computeForwardReturns(
 
     for (const p of periods) {
       if (idx + p < totalBars) {
-        returns[p] = ((bars[idx + p].close - entryClose) / entryClose) * 100;
+        returns[p] =
+          ((bars[idx + p].close - entryClose) / entryClose) * 100;
 
-        // Max upside/downside within the window [idx+1, idx+p]
         let maxUp = -Infinity;
         let maxDn = Infinity;
         for (let j = idx + 1; j <= idx + p && j < totalBars; j++) {
@@ -599,7 +516,6 @@ function computeForwardReturns(
     return { idx, bar, completed, returns, maxUpside, maxDownside };
   });
 
-  // Build signal records
   const signals: SignalRecord[] = signalData.map((sd) => ({
     signal_date: sd.bar.date.toISOString().slice(0, 10),
     signal_close: parseFloat(sd.bar.close.toFixed(4)),
@@ -607,7 +523,6 @@ function computeForwardReturns(
     completed: sd.completed,
   }));
 
-  // Mark current and active (last two incomplete signals)
   const incompleteIndices = signals
     .map((s, i) => (!s.completed ? i : -1))
     .filter((i) => i >= 0);
@@ -619,7 +534,6 @@ function computeForwardReturns(
     signals[incompleteIndices[0]].is_active = true;
   }
 
-  // Build summary per period
   const summary: Record<string, SummaryPeriod> = {};
   for (const p of periods) {
     const completedData = signalData.filter(
@@ -654,16 +568,28 @@ function computeForwardReturns(
       n: completedData.length,
       wins,
       win_rate_pct: `${Math.round((wins / completedData.length) * 100)}%`,
-      avg_return: parseFloat((rets.reduce((s, v) => s + v, 0) / rets.length).toFixed(2)),
+      avg_return: parseFloat(
+        (rets.reduce((s, v) => s + v, 0) / rets.length).toFixed(2)
+      ),
       median_return: parseFloat(median(rets).toFixed(2)),
       best: parseFloat(Math.max(...rets).toFixed(2)),
       worst: parseFloat(Math.min(...rets).toFixed(2)),
-      avg_max_upside: upsides.length > 0
-        ? parseFloat((upsides.reduce((s, v) => s + v, 0) / upsides.length).toFixed(2))
-        : null,
-      avg_max_downside: downsides.length > 0
-        ? parseFloat((downsides.reduce((s, v) => s + v, 0) / downsides.length).toFixed(2))
-        : null,
+      avg_max_upside:
+        upsides.length > 0
+          ? parseFloat(
+              (
+                upsides.reduce((s, v) => s + v, 0) / upsides.length
+              ).toFixed(2)
+            )
+          : null,
+      avg_max_downside:
+        downsides.length > 0
+          ? parseFloat(
+              (
+                downsides.reduce((s, v) => s + v, 0) / downsides.length
+              ).toFixed(2)
+            )
+          : null,
     };
   }
 
@@ -690,7 +616,6 @@ export async function POST(request: NextRequest) {
     condition,
     ticker = "TSLA",
     timeframe = "weekly",
-    // forward param accepted but we use defaults per timeframe
   } = body;
 
   if (!condition || !condition.trim()) {
@@ -702,7 +627,9 @@ export async function POST(request: NextRequest) {
 
   if (!["weekly", "daily", "4h", "monthly"].includes(timeframe)) {
     return NextResponse.json(
-      { error: `Invalid timeframe: "${timeframe}". Must be weekly, daily, 4h, or monthly.` },
+      {
+        error: `Invalid timeframe: "${timeframe}". Must be weekly, daily, 4h, or monthly.`,
+      },
       { status: 400 }
     );
   }
@@ -717,27 +644,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Try Mac Mini engine first (has no Yahoo rate limit issues)
-  const PROXY_URL = process.env.BACKTEST_PROXY_URL;
-  if (PROXY_URL) {
-    try {
-      const proxyRes = await fetch(`${PROXY_URL}/backtest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ condition, ticker: tickerUpper, timeframe: tf }),
-        signal: AbortSignal.timeout(50000),
-      });
-      if (proxyRes.ok) {
-        const proxyData = await proxyRes.json();
-        return NextResponse.json(proxyData);
-      }
-    } catch {
-      // Proxy unavailable — fall through to local computation
-    }
-  }
-
   // Parse condition
-  let parsedCondition;
+  let parsedCondition: ParsedCondition;
   try {
     parsedCondition = parseCondition(condition.trim());
   } catch (err) {
@@ -747,21 +655,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Fetch data (fallback: direct Yahoo Finance)
-  let rawBars: OHLCVBar[];
+  // Fetch bars (Supabase first, Yahoo fallback)
+  let indicatorBars: IndicatorBar[];
   try {
-    rawBars = await fetchOHLCV(tickerUpper, tf);
+    indicatorBars = await fetchBarsFromDB(tickerUpper, tf);
   } catch (err: unknown) {
     const msg = (err as Error).message ?? String(err);
-    if (msg.includes("No fundamentals data found") || msg.includes("Not Found") || msg.includes("404")) {
+    if (
+      msg.includes("No fundamentals data found") ||
+      msg.includes("Not Found") ||
+      msg.includes("404")
+    ) {
       return NextResponse.json(
         { error: `Invalid or unknown ticker: "${tickerUpper}"` },
         { status: 400 }
       );
     }
-    if (msg.includes("Too Many Requests") || msg.includes("429") || msg.includes("rate limit")) {
+    if (
+      msg.includes("Too Many Requests") ||
+      msg.includes("429") ||
+      msg.includes("rate limit")
+    ) {
       return NextResponse.json(
-        { error: "Yahoo Finance rate limit hit. Please retry in a moment." },
+        {
+          error:
+            "Yahoo Finance rate limit hit. Please retry in a moment.",
+        },
         { status: 429 }
       );
     }
@@ -771,15 +690,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (rawBars.length === 0) {
+  if (indicatorBars.length === 0) {
     return NextResponse.json(
-      { error: `No price data returned for ticker "${tickerUpper}" with timeframe "${tf}".` },
+      {
+        error: `No price data returned for ticker "${tickerUpper}" with timeframe "${tf}".`,
+      },
       { status: 400 }
     );
   }
-
-  // Compute indicators
-  const indicatorBars = computeIndicators(rawBars);
 
   // Find signal bars
   const signalIndices: number[] = [];
@@ -792,7 +710,11 @@ export async function POST(request: NextRequest) {
   // Compute forward returns
   const periods = FORWARD_PERIODS[tf];
   const periodLabels = PERIOD_LABELS[tf];
-  const { signals, summary } = computeForwardReturns(indicatorBars, signalIndices, periods);
+  const { signals, summary } = computeForwardReturns(
+    indicatorBars,
+    signalIndices,
+    periods
+  );
 
   const completedCount = signals.filter((s) => s.completed).length;
   const incompleteSignals = signals.filter((s) => !s.completed);
