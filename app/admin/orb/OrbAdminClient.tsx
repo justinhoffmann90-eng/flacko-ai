@@ -74,7 +74,7 @@ interface BacktestResult {
 const TABS = ["active", "testing", "backlog", "archived"] as const;
 type Tab = typeof TABS[number];
 
-const TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"] as const;
+const FAVORITE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"];
 const PERIODS = ["1w", "2w", "4w", "6w", "8w", "10w", "13w"] as const;
 
 const BG = "#111118";
@@ -167,7 +167,7 @@ function ForwardReturnsTable({ summary }: { summary: Record<string, SummaryPerio
 
 function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
   const [condition, setCondition] = useState("");
-  const [ticker, setTicker] = useState<typeof TICKERS[number]>("TSLA");
+  const [ticker, setTicker] = useState("TSLA");
   const [forwardPeriods, setForwardPeriods] = useState<string[]>([...PERIODS]);
   const [minStreak, setMinStreak] = useState(6);
   const [running, setRunning] = useState(false);
@@ -372,9 +372,26 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
           {/* Ticker */}
           <div>
-            <span style={labelStyle("Ticker")}>Ticker</span>
-            <div style={{ display: "flex", gap: 6 }}>
-              {TICKERS.map((t) => (
+            <span style={labelStyle("Ticker")}>Ticker (any valid symbol)</span>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <input
+                type="text"
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value.toUpperCase().replace(/[^A-Z.]/g, ""))}
+                placeholder="TSLA"
+                style={{
+                  width: 90,
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${CARD_BORDER}`,
+                  borderRadius: 6,
+                  color: TEXT,
+                  padding: "7px 10px",
+                  fontSize: 13,
+                  fontFamily: MONO,
+                  fontWeight: 700,
+                }}
+              />
+              {FAVORITE_TICKERS.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTicker(t)}
@@ -383,10 +400,10 @@ function BacktestExplorer({ onSaved }: { onSaved: () => void }) {
                     color: ticker === t ? BLUE : TEXT_DIM,
                     border: `1px solid ${ticker === t ? BLUE + "66" : CARD_BORDER}`,
                     borderRadius: 6,
-                    padding: "6px 12px",
-                    fontSize: 12,
+                    padding: "5px 10px",
+                    fontSize: 11,
                     fontFamily: MONO,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     cursor: "pointer",
                   }}
                 >
