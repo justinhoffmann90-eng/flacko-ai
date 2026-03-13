@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import yahooFinance from "yahoo-finance2";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -83,16 +82,64 @@ function getCacheKey(ticker: string, timeframe: Timeframe): string {
 
 // ─── Yahoo Finance data fetching ───────────────────────────────────────────────
 
-async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+async function fetchYahooChart(ticker: string, interval: string, period1: string, range?: string): Promise<OHLCVBar[]> {
+  const maxRetries = 3;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn();
+      let url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}`;
+      if (range) {
+        url += `&range=${range}`;
+      } else {
+        const p1 = Math.floor(new Date(period1).getTime() / 1000);
+        const p2 = Math.floor(Date.now() / 1000);
+        url += `&period1=${p1}&period2=${p2}`;
+      }
+
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        },
+      });
+
+      if (res.status === 429) {
+        if (attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000));
+          continue;
+        }
+        throw new Error("Yahoo Finance rate limit after retries");
+      }
+
+      if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status}`);
+
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      if (!result) throw new Error(`No data returned for ${ticker}`);
+
+      const timestamps: number[] = result.timestamp ?? [];
+      const quote = result.indicators?.quote?.[0] ?? {};
+      const opens: number[] = quote.open ?? [];
+      const highs: number[] = quote.high ?? [];
+      const lows: number[] = quote.low ?? [];
+      const closes: number[] = quote.close ?? [];
+      const volumes: number[] = quote.volume ?? [];
+
+      const bars: OHLCVBar[] = [];
+      for (let i = 0; i < timestamps.length; i++) {
+        if (closes[i] == null || opens[i] == null) continue;
+        bars.push({
+          date: new Date(timestamps[i] * 1000),
+          open: opens[i],
+          high: highs[i] ?? opens[i],
+          low: lows[i] ?? opens[i],
+          close: closes[i],
+          volume: volumes[i] ?? 0,
+        });
+      }
+      return bars;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      const isRateLimit = msg.includes("Too Many Requests") || msg.includes("429") || msg.includes("rate limit");
-      if (isRateLimit && attempt < maxRetries) {
-        const delay = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000; // 2s, 4s, 8s + jitter
-        await new Promise((r) => setTimeout(r, delay));
+      if ((msg.includes("429") || msg.includes("rate limit")) && attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000));
         continue;
       }
       throw err;
@@ -108,22 +155,10 @@ async function fetchOHLCV(ticker: string, timeframe: Timeframe): Promise<OHLCVBa
     return cached.bars;
   }
 
-  // Suppress yahoo-finance2 notices
-  yahooFinance.suppressNotices(["yahooSurvey", "ripHistorical"]);
-
   let bars: OHLCVBar[];
 
   if (timeframe === "4h") {
-    // Fetch 1h bars for last 60 days, then resample to 4H
-    const period1 = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-    const result = await fetchWithRetry(() =>
-      yahooFinance.chart(ticker, {
-        period1: period1.toISOString().slice(0, 10),
-        interval: "1h",
-      })
-    );
-
-    const rawBars = extractBars(result);
+    const rawBars = await fetchYahooChart(ticker, "1h", "", "60d");
     bars = resampleTo4H(rawBars);
   } else {
     const intervalMap: Record<Timeframe, string> = {
@@ -132,67 +167,11 @@ async function fetchOHLCV(ticker: string, timeframe: Timeframe): Promise<OHLCVBa
       monthly: "1mo",
       "4h": "1h",
     };
-    const interval = intervalMap[timeframe];
-
-    const result = await fetchWithRetry(() =>
-      yahooFinance.chart(ticker, {
-        period1: "2005-01-01",
-        interval: interval as "1d" | "1wk" | "1mo",
-      })
-    );
-
-    bars = extractBars(result);
+    bars = await fetchYahooChart(ticker, intervalMap[timeframe], "2005-01-01");
   }
 
   dataCache.set(cacheKey, { bars, fetchedAt: Date.now() });
   return bars;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractBars(result: any): OHLCVBar[] {
-  const quotes = result?.quotes ?? result?.indicators?.quote?.[0] ?? [];
-  const timestamps = result?.timestamp ?? [];
-
-  if (Array.isArray(quotes) && quotes.length > 0 && quotes[0]?.date !== undefined) {
-    // quotes array format (from chart())
-    return quotes
-      .filter(
-        (q: { date?: Date; open?: number; high?: number; low?: number; close?: number; volume?: number }) =>
-          q.close != null && q.open != null
-      )
-      .map((q: { date?: Date; open?: number; high?: number; low?: number; close?: number; volume?: number }) => ({
-        date: q.date instanceof Date ? q.date : new Date(q.date!),
-        open: q.open ?? 0,
-        high: q.high ?? 0,
-        low: q.low ?? 0,
-        close: q.close ?? 0,
-        volume: q.volume ?? 0,
-      }));
-  }
-
-  // Fallback: parallel arrays format
-  if (timestamps.length > 0) {
-    const closes = result?.indicators?.quote?.[0]?.close ?? [];
-    const opens = result?.indicators?.quote?.[0]?.open ?? [];
-    const highs = result?.indicators?.quote?.[0]?.high ?? [];
-    const lows = result?.indicators?.quote?.[0]?.low ?? [];
-    const volumes = result?.indicators?.quote?.[0]?.volume ?? [];
-    const bars: OHLCVBar[] = [];
-    for (let i = 0; i < timestamps.length; i++) {
-      if (closes[i] == null) continue;
-      bars.push({
-        date: new Date(timestamps[i] * 1000),
-        open: opens[i] ?? 0,
-        high: highs[i] ?? 0,
-        low: lows[i] ?? 0,
-        close: closes[i],
-        volume: volumes[i] ?? 0,
-      });
-    }
-    return bars;
-  }
-
-  return [];
 }
 
 function resampleTo4H(bars: OHLCVBar[]): OHLCVBar[] {
