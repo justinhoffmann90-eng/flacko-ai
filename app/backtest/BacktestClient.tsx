@@ -5,7 +5,7 @@ import { BacktestExplorer } from "@/components/orb/BacktestExplorer";
 
 const FAVORITE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"];
 const SUBSCRIBE_URL = "/signup";
-const MAX_FREE_SCANS_PER_DAY = 3;
+const MAX_FREE_SCANS_PER_DAY = 10;
 const MAX_PUBLIC_PEERS = 3;
 
 function getScansToday(): number {
