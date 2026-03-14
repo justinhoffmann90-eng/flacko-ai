@@ -122,6 +122,43 @@ function peerStateStyle(state: PeerRow["state"]) {
   }
 }
 
+// ─── Collapsible Section ─────────────────────────────────────────────────────
+
+function CollapsibleSection({
+  title,
+  defaultOpen = false,
+  badge,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  badge?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-zinc-900/40 transition"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            {title}
+          </span>
+          {badge && (
+            <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {badge}
+            </span>
+          )}
+        </div>
+        <span className="text-zinc-500 text-sm">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
+  );
+}
+
 function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPeriod> }) {
   const periods = ["5", "10", "20", "60"].filter((period) => summary[period]);
   if (periods.length === 0) return null;
@@ -131,16 +168,7 @@ function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPerio
       <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
         <thead>
           <tr className="text-zinc-500 border-b border-zinc-800">
-            {[
-              "Period",
-              "N",
-              "Wins",
-              "Win%",
-              "Avg",
-              "Median",
-              "Best",
-              "Worst",
-            ].map((heading) => (
+            {["Period", "N", "Wins", "Win%", "Avg", "Median", "Best", "Worst"].map((heading) => (
               <th key={heading} className={`py-2 px-2 ${heading === "Period" ? "text-left" : "text-right"}`}>
                 {heading}
               </th>
@@ -169,150 +197,149 @@ function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPerio
   );
 }
 
-function SetupCard({ setup }: { setup: ScanSetup }) {
+function SetupCard({ setup, defaultOpen = false }: { setup: ScanSetup; defaultOpen?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultOpen);
   const badge = statusBadge(setup.status);
   const trueConditions = Object.entries(setup.conditions_met || {}).filter(([, value]) => Boolean(value));
   const showInstances = setup.backtest.instances.length > 0;
 
   return (
-    <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5">
-      <div className="flex flex-wrap items-start gap-2">
-        <span
-          className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold tracking-[0.08em] ${badge.cls}`}
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          {badge.label}
-        </span>
-        <span
-          className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold tracking-[0.08em] ${
-            setup.type === "buy"
-              ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
-              : "border-red-500/25 bg-red-500/10 text-red-300"
-          }`}
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          {setup.type.toUpperCase()} #{setup.number}
-        </span>
-      </div>
-
-      <div className="mt-3">
-        <h3 className="text-lg font-semibold text-zinc-100">{setup.public_name || setup.name}</h3>
-        {setup.one_liner && <p className="mt-1 text-sm text-zinc-300">{setup.one_liner}</p>}
-      </div>
-
-      <p
-        className="mt-3 rounded-lg border border-zinc-700/70 bg-zinc-900/60 px-3 py-2 text-[12px] text-zinc-300"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+    <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 overflow-hidden">
+      {/* Always-visible header */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-4 sm:p-5 text-left hover:bg-zinc-800/20 transition"
       >
-        {setup.reason}
-      </p>
-
-      {setup.active_streak && (
-        <div
-          className="mt-3 grid gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[11px] text-sky-100 sm:grid-cols-3"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          <div>Active Since: {setup.active_streak.active_since ?? "—"}</div>
-          <div>Active Day: {setup.active_streak.active_day ?? "—"}</div>
-          <div>Entry: {setup.active_streak.entry_price != null ? `$${setup.active_streak.entry_price.toFixed(2)}` : "—"}</div>
-        </div>
-      )}
-
-      <div className="mt-4">
-        <p
-          className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          CONDITIONS MET ({trueConditions.length}/{Object.keys(setup.conditions_met || {}).length})
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(setup.conditions_met || {}).map(([key, value]) => (
-            <span
-              key={key}
-              className={`rounded-full border px-2 py-1 text-[10px] ${
-                value
-                  ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-400"
-              }`}
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
-              {key.replace(/_/g, " ")}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <p
-          className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          RELEVANT INDICATORS
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {Object.entries(setup.relevant_indicators || {}).map(([key, value]) => (
-            <div
-              key={key}
-              className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[11px]"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
-              <span className="text-zinc-500">{key.replace(/_/g, " ")}</span>
-              <span className="text-zinc-200">
-                {typeof value === "number" ? value.toFixed(2) : String(value)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-        <p
-          className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          FORWARD RETURN SUMMARY
-        </p>
-        {setup.backtest.message && !showInstances ? (
-          <p className="text-sm text-zinc-400">{setup.backtest.message}</p>
-        ) : (
-          <ForwardSummaryTable summary={setup.backtest.summary} />
-        )}
-      </div>
-
-      {showInstances && (
-        <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-          <p
-            className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500"
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold tracking-[0.08em] ${badge.cls}`}
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           >
-            HISTORICAL INSTANCES ({setup.backtest.n})
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              <thead>
-                <tr className="border-b border-zinc-800 text-zinc-500">
-                  <th className="px-2 py-2 text-left">Date</th>
-                  <th className="px-2 py-2 text-right">Entry</th>
-                  <th className="px-2 py-2 text-right">5d</th>
-                  <th className="px-2 py-2 text-right">10d</th>
-                  <th className="px-2 py-2 text-right">20d</th>
-                  <th className="px-2 py-2 text-right">60d</th>
-                </tr>
-              </thead>
-              <tbody>
-                {setup.backtest.instances.slice(0, 12).map((instance) => (
-                  <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
-                    <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
-                    <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
-                    <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
-                    <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
-                    <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
-                    <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {badge.label}
+          </span>
+          <span
+            className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold tracking-[0.08em] ${
+              setup.type === "buy"
+                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                : "border-red-500/25 bg-red-500/10 text-red-300"
+            }`}
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {setup.type.toUpperCase()} #{setup.number}
+          </span>
+          <span className="ml-auto text-zinc-500 text-sm">{expanded ? "▲" : "▼"}</span>
+        </div>
+        <div className="mt-2">
+          <h3 className="text-base font-semibold text-zinc-100">{setup.public_name || setup.name}</h3>
+          {setup.one_liner && <p className="mt-1 text-xs text-zinc-400">{setup.one_liner}</p>}
+        </div>
+        <p
+          className="mt-2 text-[11px] text-zinc-400"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          {setup.reason}
+        </p>
+      </button>
+
+      {/* Expandable details */}
+      {expanded && (
+        <div className="px-4 pb-5 sm:px-5 space-y-4 border-t border-zinc-800/50">
+          {setup.active_streak && (
+            <div
+              className="mt-3 grid gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[11px] text-sky-100 sm:grid-cols-3"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              <div>Active Since: {setup.active_streak.active_since ?? "—"}</div>
+              <div>Active Day: {setup.active_streak.active_day ?? "—"}</div>
+              <div>Entry: {setup.active_streak.entry_price != null ? `$${setup.active_streak.entry_price.toFixed(2)}` : "—"}</div>
+            </div>
+          )}
+
+          <div>
+            <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              CONDITIONS MET ({trueConditions.length}/{Object.keys(setup.conditions_met || {}).length})
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(setup.conditions_met || {}).map(([key, value]) => (
+                <span
+                  key={key}
+                  className={`rounded-full border px-2 py-1 text-[10px] ${
+                    value
+                      ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                  }`}
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  {key.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
           </div>
+
+          <div>
+            <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              RELEVANT INDICATORS
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {Object.entries(setup.relevant_indicators || {}).map(([key, value]) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[11px]"
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  <span className="text-zinc-500">{key.replace(/_/g, " ")}</span>
+                  <span className="text-zinc-200">
+                    {typeof value === "number" ? value.toFixed(2) : String(value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+            <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              FORWARD RETURN SUMMARY
+            </p>
+            {setup.backtest.message && !showInstances ? (
+              <p className="text-sm text-zinc-400">{setup.backtest.message}</p>
+            ) : (
+              <ForwardSummaryTable summary={setup.backtest.summary} />
+            )}
+          </div>
+
+          {showInstances && (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+              <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                HISTORICAL INSTANCES ({setup.backtest.n})
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <thead>
+                    <tr className="border-b border-zinc-800 text-zinc-500">
+                      <th className="px-2 py-2 text-left">Date</th>
+                      <th className="px-2 py-2 text-right">Entry</th>
+                      <th className="px-2 py-2 text-right">5d</th>
+                      <th className="px-2 py-2 text-right">10d</th>
+                      <th className="px-2 py-2 text-right">20d</th>
+                      <th className="px-2 py-2 text-right">60d</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {setup.backtest.instances.slice(0, 12).map((instance) => (
+                      <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
+                        <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
+                        <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
+                        <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
+                        <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
+                        <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
+                        <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -325,6 +352,7 @@ export default function BacktestClient() {
   const [data, setData] = useState<ScanResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showExplorer, setShowExplorer] = useState(false);
 
   const runScan = useCallback(async (ticker: string) => {
     setLoading(true);
@@ -396,8 +424,8 @@ export default function BacktestClient() {
 
         <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3">
-            <h2 className="text-xl font-semibold">Section 1 · Auto-Scan</h2>
-            <p className="text-sm text-zinc-400">Pick a ticker and we evaluate all ORB setups against current market conditions.</p>
+            <h2 className="text-xl font-semibold">Auto-Scan</h2>
+            <p className="text-sm text-zinc-400">Pick a ticker — we evaluate all ORB setups against current conditions.</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
@@ -453,7 +481,8 @@ export default function BacktestClient() {
           )}
 
           {data && (
-            <div className="space-y-5">
+            <div className="space-y-4">
+              {/* RIGHT NOW — always open */}
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
                 <p className="mb-2 text-[10px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   RIGHT NOW · {data.ticker} · {data.date} ET
@@ -466,10 +495,8 @@ export default function BacktestClient() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-                <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  PEER COMPARISON (9 TICKERS)
-                </p>
+              {/* PEER COMPARISON — collapsible, default open */}
+              <CollapsibleSection title="PEER COMPARISON" badge={`${data.peer_comparison.length} TICKERS`} defaultOpen={true}>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   {data.peer_comparison.map((peer) => (
                     <div
@@ -485,13 +512,15 @@ export default function BacktestClient() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </CollapsibleSection>
 
+              {/* SCENARIO COMPARISON — collapsible, default open only if <5 scenarios */}
               {data.scenarios.length > 0 && (
-                <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-                  <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    SCENARIO COMPARISON · CLOSEST HISTORICAL INSTANCES
-                  </p>
+                <CollapsibleSection
+                  title="SCENARIO COMPARISON · CLOSEST HISTORICAL INSTANCES"
+                  badge={`${data.scenarios.length}`}
+                  defaultOpen={data.scenarios.length <= 4}
+                >
                   <div className="grid gap-3 md:grid-cols-2">
                     {data.scenarios.map((scenario) => (
                       <div key={`${scenario.setup_id}-${scenario.date}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
@@ -515,13 +544,11 @@ export default function BacktestClient() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </CollapsibleSection>
               )}
 
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-                <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  INDICATOR SNAPSHOT
-                </p>
+              {/* INDICATOR SNAPSHOT — collapsible, default closed */}
+              <CollapsibleSection title="INDICATOR SNAPSHOT" badge={`${Object.keys(data.indicators).length}`}>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   {Object.entries(data.indicators).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/70 px-2 py-1 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -530,52 +557,65 @@ export default function BacktestClient() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </CollapsibleSection>
 
+              {/* ACTIVE SETUPS — cards default expanded */}
               {groupedSetups.active.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-emerald-300">Active Setups ({groupedSetups.active.length})</h3>
                   <div className="grid gap-4 lg:grid-cols-2">
                     {groupedSetups.active.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} />
                     ))}
                   </div>
                 </div>
               )}
 
+              {/* WATCHING SETUPS — cards default collapsed */}
               {groupedSetups.watching.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-amber-300">Watching Setups ({groupedSetups.watching.length})</h3>
                   <div className="grid gap-4 lg:grid-cols-2">
                     {groupedSetups.watching.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} />
                     ))}
                   </div>
                 </div>
               )}
 
-              <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
-                <p className="text-sm text-zinc-300">
-                  Inactive setups: <span className="font-semibold text-zinc-100">{groupedSetups.inactive.length}</span>
-                </p>
-                <p className="mt-1 text-xs text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  {groupedSetups.inactive.map((setup) => setup.public_name || setup.name).join(" • ") || "—"}
-                </p>
-              </div>
+              {/* INACTIVE — collapsed summary */}
+              <CollapsibleSection title="INACTIVE SETUPS" badge={`${groupedSetups.inactive.length}`}>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {groupedSetups.inactive.map((setup) => (
+                    <SetupCard key={setup.id} setup={setup} defaultOpen={false} />
+                  ))}
+                </div>
+              </CollapsibleSection>
             </div>
           )}
         </section>
 
-        <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
-          <h2 className="text-xl font-semibold">Section 2 · Custom Explorer</h2>
-          <p className="mb-4 mt-1 text-sm text-zinc-400">
-            Run ad-hoc conditions with indicator chips, timeframe controls, forward periods, and Save to Orb.
-          </p>
-
-          <BacktestExplorer onSaved={() => {}} />
+        {/* CUSTOM EXPLORER — collapsible section */}
+        <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 overflow-hidden">
+          <button
+            onClick={() => setShowExplorer(!showExplorer)}
+            className="w-full flex items-center justify-between p-4 sm:p-6 text-left hover:bg-zinc-800/20 transition"
+          >
+            <div>
+              <h2 className="text-xl font-semibold">Custom Explorer</h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                Run ad-hoc conditions with indicator chips, timeframe controls, and forward periods.
+              </p>
+            </div>
+            <span className="text-zinc-500 text-lg">{showExplorer ? "▲" : "▼"}</span>
+          </button>
+          {showExplorer && (
+            <div className="px-4 pb-6 sm:px-6">
+              <BacktestExplorer onSaved={() => {}} />
+            </div>
+          )}
         </section>
       </div>
     </div>
   );
 }
-

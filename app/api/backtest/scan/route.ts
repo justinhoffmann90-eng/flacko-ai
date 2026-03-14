@@ -720,16 +720,40 @@ async function computeIndicatorsFromOhlcv(
     }
   }
 
-  const vixClose = vixDailyRows && vixDailyRows.length > 0
-    ? toNumber(vixDailyRows[vixDailyRows.length - 1].close) ?? 0
-    : 0;
-
+  // VIX: try DB first, fall back to Yahoo if not in ohlcv_bars
+  let vixClose = 0;
   let vixWeeklyChangePct = 0;
-  if (vixWeeklyRows && vixWeeklyRows.length >= 2) {
-    const latestVixWeek = toNumber(vixWeeklyRows[vixWeeklyRows.length - 1].close);
-    const prevVixWeek = toNumber(vixWeeklyRows[vixWeeklyRows.length - 2].close);
-    if (latestVixWeek != null && prevVixWeek != null && prevVixWeek !== 0) {
-      vixWeeklyChangePct = ((latestVixWeek - prevVixWeek) / prevVixWeek) * 100;
+
+  if (vixDailyRows && vixDailyRows.length > 0) {
+    vixClose = toNumber(vixDailyRows[vixDailyRows.length - 1].close) ?? 0;
+    if (vixWeeklyRows && vixWeeklyRows.length >= 2) {
+      const latestVixWeek = toNumber(vixWeeklyRows[vixWeeklyRows.length - 1].close);
+      const prevVixWeek = toNumber(vixWeeklyRows[vixWeeklyRows.length - 2].close);
+      if (latestVixWeek != null && prevVixWeek != null && prevVixWeek !== 0) {
+        vixWeeklyChangePct = ((latestVixWeek - prevVixWeek) / prevVixWeek) * 100;
+      }
+    }
+  } else {
+    // Fallback: fetch VIX from Yahoo Finance
+    try {
+      const yahooFinance = (await import("yahoo-finance2")).default;
+      const vixResult = await yahooFinance.historical("^VIX", {
+        period1: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        interval: "1d",
+      });
+      if (vixResult && vixResult.length > 0) {
+        vixClose = vixResult[vixResult.length - 1]?.close ?? 0;
+        // Compute weekly change from last 5+ trading days
+        if (vixResult.length >= 6) {
+          const latestVix = vixResult[vixResult.length - 1]?.close ?? 0;
+          const weekAgoVix = vixResult[Math.max(0, vixResult.length - 6)]?.close ?? 0;
+          if (weekAgoVix > 0) {
+            vixWeeklyChangePct = ((latestVix - weekAgoVix) / weekAgoVix) * 100;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[scan] VIX Yahoo fallback failed:", e instanceof Error ? e.message : e);
     }
   }
 
