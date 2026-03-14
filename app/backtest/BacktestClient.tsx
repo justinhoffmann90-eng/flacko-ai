@@ -641,12 +641,35 @@ export default function BacktestClient() {
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Mode: {data.right_now.suggestion}</span>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Confidence: {data.right_now.confidence.toUpperCase()}</span>
-                  <span className="rounded bg-zinc-900/60 px-2 py-1">Source: {data.source}</span>
                 </div>
               </div>
 
-              {/* PEER COMPARISON — collapsible, limited to 3 for public */}
-              <CollapsibleSection title="PEER COMPARISON" badge={`${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={true}>
+              {/* ACTIVE SETUPS — full width, default expanded */}
+              {groupedSetups.active.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-emerald-300">Active Setups ({groupedSetups.active.length})</h3>
+                  <div className="space-y-4">
+                    {groupedSetups.active.map((setup) => (
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* WATCHING SETUPS — limited view */}
+              {groupedSetups.watching.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-amber-300">Watching Setups ({groupedSetups.watching.length})</h3>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {groupedSetups.watching.map((setup) => (
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} limited />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* PEER COMPARISON — collapsible, after setups */}
+              <CollapsibleSection title="PEER COMPARISON" badge={`${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   {data.peer_comparison.slice(0, MAX_PUBLIC_PEERS).map((peer) => (
                     <div
@@ -664,17 +687,17 @@ export default function BacktestClient() {
                 </div>
                 {data.peer_comparison.length > MAX_PUBLIC_PEERS && (
                   <div className="mt-3">
-                    <SubscribeCTA message={`Subscribe to see all ${data.peer_comparison.length} tickers in the peer comparison.`} compact />
+                    <SubscribeCTA message={`Subscribe to see all ${data.peer_comparison.length} tickers.`} compact />
                   </div>
                 )}
               </CollapsibleSection>
 
-              {/* SCENARIO COMPARISON — collapsible, default open only if <5 scenarios */}
+              {/* SCENARIO COMPARISON — collapsible, default closed */}
               {data.scenarios.length > 0 && (
                 <CollapsibleSection
-                  title="SCENARIO COMPARISON · CLOSEST HISTORICAL INSTANCES"
+                  title="SCENARIO COMPARISON"
                   badge={`${data.scenarios.length}`}
-                  defaultOpen={data.scenarios.length <= 4}
+                  defaultOpen={false}
                 >
                   <div className="grid gap-3 md:grid-cols-2">
                     {data.scenarios.map((scenario) => (
@@ -702,33 +725,9 @@ export default function BacktestClient() {
                 </CollapsibleSection>
               )}
 
-              {/* ACTIVE SETUPS — cards default expanded */}
-              {groupedSetups.active.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-emerald-300">Active Setups ({groupedSetups.active.length})</h3>
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    {groupedSetups.active.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* WATCHING SETUPS — limited view */}
-              {groupedSetups.watching.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-amber-300">Watching Setups ({groupedSetups.watching.length})</h3>
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    {groupedSetups.watching.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} limited />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Inline CTA after setups */}
+              {/* Inline CTA */}
               {(groupedSetups.active.length > 0 || groupedSetups.watching.length > 0) && (
-                <SubscribeCTA message="Seeing value? Get the full picture — all forward periods, condition breakdowns, and historical instances." />
+                <SubscribeCTA message="Subscribe for condition breakdowns, real-time alerts, and unlimited scans." />
               )}
 
               {/* INACTIVE — gated for subscribers */}
