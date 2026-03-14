@@ -317,19 +317,19 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
           )}
 
           {limited ? (
-            /* PUBLIC VIEW: only show 20D summary line + CTA */
+            /* PUBLIC VIEW: full forward return table but no conditions/indicators/instances */
             <div className="space-y-3 mt-3">
-              {setup.backtest.summary?.["20"] && (
-                <div className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 text-[12px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  <span className="text-zinc-400">20D:</span>
-                  <span className="text-zinc-200">n={setup.backtest.summary["20"].n}</span>
-                  <span className="text-zinc-200">Win: {setup.backtest.summary["20"].win_rate_pct}</span>
-                  <span className={setup.backtest.summary["20"].avg_return >= 0 ? "text-emerald-300" : "text-red-300"}>
-                    Avg: {fmtPct(setup.backtest.summary["20"].avg_return)}
-                  </span>
-                </div>
-              )}
-              <SubscribeCTA message="Subscribe for full backtest history, all forward periods, and conditions breakdown." compact />
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  FORWARD RETURN SUMMARY · {setup.backtest.n} INSTANCES
+                </p>
+                {setup.backtest.n > 0 ? (
+                  <ForwardSummaryTable summary={setup.backtest.summary} />
+                ) : (
+                  <p className="text-sm text-zinc-400">{setup.backtest.message || "No historical instances found."}</p>
+                )}
+              </div>
+              <SubscribeCTA message="Subscribe for historical instances, condition breakdowns, and real-time alerts." compact />
             </div>
           ) : (
             /* SUBSCRIBER VIEW: full details */
@@ -540,7 +540,7 @@ export default function BacktestClient() {
               <input
                 value={tickerInput}
                 onChange={(event) => setTickerInput(event.target.value.toUpperCase())}
-                placeholder="TSLA"
+                placeholder="Enter any ticker..."
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-100 outline-none ring-emerald-500/30 transition focus:ring sm:w-44"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               />
@@ -549,9 +549,12 @@ export default function BacktestClient() {
                 className="rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
-                {loading ? "Scanning..." : "Run Auto-Scan"}
+                {loading ? "Scanning..." : "Scan"}
               </button>
             </form>
+            <p className="text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free scans remaining today` : "Click a ticker or type your own"}
+            </p>
 
             <div className="flex flex-wrap gap-2">
               {FAVORITE_TICKERS.map((ticker) => (
