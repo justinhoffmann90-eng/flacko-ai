@@ -580,12 +580,12 @@ async function computeDynamicBacktestRows(
   ticker: string,
   setupFilter: Set<string>,
 ): Promise<Map<string, BacktestRow[]>> {
-  // Fetch full history for the ticker (paginated past 1000 rows)
+  // Fetch last 20 years of data (~5040 trading days)
   const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows] = await Promise.all([
-    fetchOhlcvRows(supabase, ticker, "daily", 15000),
-    fetchOhlcvRows(supabase, ticker, "weekly", 5000),
-    fetchOhlcvRows(supabase, "^VIX", "daily", 5000),
-    fetchOhlcvRows(supabase, "^VIX", "weekly", 2000),
+    fetchOhlcvRows(supabase, ticker, "daily", 5100),
+    fetchOhlcvRows(supabase, ticker, "weekly", 1100),
+    fetchOhlcvRows(supabase, "^VIX", "daily", 5100),
+    fetchOhlcvRows(supabase, "^VIX", "weekly", 1100),
   ]);
 
   if (!dailyRows || !weeklyRows || dailyRows.length < BACKTEST_START_INDEX || weeklyRows.length < 10) {
@@ -828,7 +828,7 @@ async function computeSeasonality(
   next_30d: { avg_return: number; win_rate: number; n: number } | null;
 }> {
   // Fetch all monthly bars or compute from daily bars
-  const allDaily = await fetchOhlcvRows(supabase, ticker, "daily", 15000);
+  const allDaily = await fetchOhlcvRows(supabase, ticker, "daily", 5100);
   if (!allDaily || allDaily.length < 250) return { monthly: [], next_30d: null };
 
   // Group bars by year-month to get monthly returns
