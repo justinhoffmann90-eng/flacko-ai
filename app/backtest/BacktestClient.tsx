@@ -5,7 +5,7 @@ import { BacktestExplorer } from "@/components/orb/BacktestExplorer";
 
 const FAVORITE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"];
 const SUBSCRIBE_URL = "/signup";
-const MAX_FREE_SCANS_PER_DAY = 1;
+const MAX_FREE_SCANS_PER_DAY = 3;
 const MAX_PUBLIC_PEERS = 3;
 
 function getScansToday(): number {
@@ -435,18 +435,21 @@ export default function BacktestClient() {
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // Check scans on mount
   useEffect(() => {
     setScansUsed(getScansToday());
   }, []);
 
-  const runScan = useCallback(async (ticker: string) => {
-    // Check rate limit before scanning (first scan is free)
-    const currentScans = getScansToday();
-    if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
-      setRateLimited(true);
-      return;
+  const runScan = useCallback(async (ticker: string, skipRateLimit = false) => {
+    // Check rate limit — skip for the initial page load
+    if (!skipRateLimit) {
+      const currentScans = getScansToday();
+      if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
+        setRateLimited(true);
+        return;
+      }
     }
 
     setLoading(true);
@@ -463,8 +466,11 @@ export default function BacktestClient() {
       }
 
       setData(body as ScanResponse);
-      const newCount = incrementScans();
-      setScansUsed(newCount);
+      // Don't count the initial page load
+      if (!skipRateLimit) {
+        const newCount = incrementScans();
+        setScansUsed(newCount);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setData(null);
@@ -474,7 +480,12 @@ export default function BacktestClient() {
   }, []);
 
   useEffect(() => {
-    runScan(selectedTicker);
+    if (isFirstLoad) {
+      runScan(selectedTicker, true);
+      setIsFirstLoad(false);
+    } else {
+      runScan(selectedTicker);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTicker]);
 
