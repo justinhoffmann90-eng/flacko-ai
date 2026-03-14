@@ -685,62 +685,101 @@ export default function BacktestClient() {
                 </div>
               )}
 
-              {/* SEASONALITY — next 30 days free, full year for subscribers */}
+              {/* SEASONALITY — visual bar chart */}
               {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
                 const currentMonth = new Date().getMonth(); // 0-indexed
-                // Show next 2 months (free preview)
-                const freeMonths = [
-                  data.seasonality.monthly[currentMonth],
-                  data.seasonality.monthly[(currentMonth + 1) % 12],
-                ];
-                const lockedCount = 10;
+                const months = data.seasonality.monthly;
+                const maxAbs = Math.max(...months.map((m) => Math.abs(m.avg_return)), 1);
+                // Free: show current month + next 2 months (3 total)
+                const freeIndices = new Set([currentMonth, (currentMonth + 1) % 12, (currentMonth + 2) % 12]);
+
                 return (
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-purple-300">Seasonality</h3>
+
+                    {/* Next 30 days highlight */}
                     {data.seasonality.next_30d && (
                       <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
-                        <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          NEXT 30 DAYS · HISTORICAL AVERAGE
+                        <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          NEXT 30 DAYS · BASED ON {data.seasonality.next_30d.n} YEARS
                         </p>
-                        <div className="flex gap-6 text-sm" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          <span className={data.seasonality.next_30d.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}>
-                            Avg: {fmtPct(data.seasonality.next_30d.avg_return)}
-                          </span>
-                          <span className="text-zinc-300">Win Rate: {data.seasonality.next_30d.win_rate.toFixed(0)}%</span>
-                          <span className="text-zinc-500">n={data.seasonality.next_30d.n}</span>
+                        <div className="flex items-center gap-8">
+                          <div>
+                            <p className={`text-3xl font-bold ${data.seasonality.next_30d.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                              {data.seasonality.next_30d.avg_return >= 0 ? "+" : ""}{data.seasonality.next_30d.avg_return.toFixed(2)}%
+                            </p>
+                            <p className="text-[10px] text-purple-300/70 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>AVG RETURN</p>
+                          </div>
+                          <div>
+                            <p className="text-3xl font-bold text-zinc-200" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                              {data.seasonality.next_30d.win_rate.toFixed(0)}%
+                            </p>
+                            <p className="text-[10px] text-purple-300/70 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>WIN RATE</p>
+                          </div>
                         </div>
                       </div>
                     )}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-                      <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                        MONTHLY PERFORMANCE
+
+                    {/* Bar chart — all 12 months */}
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
+                      <p className="mb-4 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        MONTHLY AVG RETURN · {months[0]?.n || 0} YEARS OF DATA
                       </p>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          <thead>
-                            <tr className="border-b border-zinc-800 text-zinc-500">
-                              <th className="px-2 py-2 text-left">Month</th>
-                              <th className="px-2 py-2 text-right">Avg</th>
-                              <th className="px-2 py-2 text-right">Median</th>
-                              <th className="px-2 py-2 text-right">Win%</th>
-                              <th className="px-2 py-2 text-right">Years</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {freeMonths.map((m) => (
-                              <tr key={m.month} className="border-b border-zinc-900/80">
-                                <td className="px-2 py-2 text-zinc-200 font-semibold">{m.name}</td>
-                                <td className={`px-2 py-2 text-right ${m.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(m.avg_return)}</td>
-                                <td className={`px-2 py-2 text-right ${m.median_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(m.median_return)}</td>
-                                <td className="px-2 py-2 text-right text-zinc-300">{m.win_rate.toFixed(0)}%</td>
-                                <td className="px-2 py-2 text-right text-zinc-400">{m.n}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+
+                      <div className="flex items-end gap-1.5 sm:gap-2" style={{ height: "180px" }}>
+                        {months.map((m, idx) => {
+                          const isFree = freeIndices.has(idx);
+                          const isCurrent = idx === currentMonth;
+                          const barHeight = Math.max((Math.abs(m.avg_return) / maxAbs) * 70, 4); // 4-70% height
+                          const isPositive = m.avg_return >= 0;
+
+                          return (
+                            <div key={m.month} className="flex flex-1 flex-col items-center justify-end h-full relative">
+                              {/* Value label */}
+                              <div className={`mb-1 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                <span className={isPositive ? "text-emerald-300" : "text-red-300"}>
+                                  {isPositive ? "+" : ""}{m.avg_return.toFixed(1)}%
+                                </span>
+                              </div>
+
+                              {/* Bar */}
+                              <div
+                                className={`w-full rounded-t-sm transition-all ${
+                                  !isFree
+                                    ? "bg-zinc-700/40 blur-[2px]"
+                                    : isPositive
+                                      ? isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
+                                      : isCurrent ? "bg-red-400" : "bg-red-500/70"
+                                } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                style={{ height: `${barHeight}%`, minHeight: "4px" }}
+                              />
+
+                              {/* Win rate dot */}
+                              {isFree && (
+                                <div className="mt-1.5 text-[8px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  {m.win_rate.toFixed(0)}%
+                                </div>
+                              )}
+
+                              {/* Month label */}
+                              <div className={`mt-0.5 text-[9px] sm:text-[10px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                {m.name}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+
+                      {/* Legend */}
+                      <div className="mt-4 flex items-center gap-4 text-[9px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked</span>
+                      </div>
+
                       <div className="mt-3">
-                        <SubscribeCTA message={`Subscribe to see all 12 months of ${data.ticker} seasonality data.`} compact />
+                        <SubscribeCTA message={`Subscribe to unlock all 12 months of ${data.ticker} seasonality + condition breakdowns.`} compact />
                       </div>
                     </div>
                   </div>
