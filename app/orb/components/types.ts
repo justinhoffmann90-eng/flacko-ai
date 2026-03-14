@@ -77,3 +77,19 @@ export type IndicatorSnapshotData = {
   vixWeeklyChangePct: number | null;
 };
 
+export type PeerTickerData = {
+  latestClose: number | null;
+  change1dPct: number | null;
+  change5dPct: number | null;
+  rsi14: number | null;
+  aboveSma200: boolean | null;
+};
+
+export type PeerComparisonData = {
+  qqq: PeerTickerData;
+  spy: PeerTickerData;
+  correlation: {
+    tsla_qqq_20d: number | null;
+    tsla_spy_20d: number | null;
+  };
+};

@@ -3,15 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { IndicatorSnapshot } from "./components/IndicatorSnapshot";
+import { PeerComparison } from "./components/PeerComparison";
 import { OrbScoreWidget } from "./components/OrbScoreWidget";
 import { SetupCard } from "./components/SetupCard";
 import { SetupSection } from "./components/SetupSection";
-import type { IndicatorSnapshotData, OrbRow, OrbScoreData, SetupHistory, Trade } from "./components/types";
+import type {
+  IndicatorSnapshotData,
+  OrbRow,
+  OrbScoreData,
+  PeerComparisonData,
+  SetupHistory,
+  Trade,
+} from "./components/types";
 
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [orbScore, setOrbScore] = useState<OrbScoreData | null>(null);
   const [indicatorSnapshot, setIndicatorSnapshot] = useState<IndicatorSnapshotData | null>(null);
+  const [peerComparison, setPeerComparison] = useState<PeerComparisonData | null>(null);
   const [scoreExpanded, setScoreExpanded] = useState(false);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
   const [historyBySetup, setHistoryBySetup] = useState<Record<string, SetupHistory>>({});
@@ -70,6 +79,7 @@ export default function OrbClient() {
       setOrbScore(null);
       setTrackingTrades([]);
       setIndicatorSnapshot(null);
+      setPeerComparison(null);
       return;
     }
 
@@ -77,6 +87,7 @@ export default function OrbClient() {
     setOrbScore(data?.score ?? null);
     setTrackingTrades(Array.isArray(data?.trackingTrades) ? data.trackingTrades : []);
     setIndicatorSnapshot(data?.indicatorSnapshot ?? null);
+    setPeerComparison(data?.peerComparison ?? null);
   }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -288,6 +299,7 @@ export default function OrbClient() {
         )}
 
         <IndicatorSnapshot snapshot={indicatorSnapshot} isDesktop={isDesktop} desktopFont={desktopFont} />
+        <PeerComparison peerComparison={peerComparison} isDesktop={isDesktop} desktopFont={desktopFont} />
 
         <div className={isDesktop ? "space-y-3" : "space-y-2"}>
           <SetupSection
