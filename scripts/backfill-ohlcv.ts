@@ -64,6 +64,7 @@ const DEFAULT_TICKERS = [
   "MU",
   "BABA",
   "AMZN",
+  "^VIX",
 ];
 
 type Timeframe = "weekly" | "daily" | "monthly";

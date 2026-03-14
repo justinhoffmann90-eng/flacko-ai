@@ -31,6 +31,7 @@ const TICKERS = [
   "MU",
   "BABA",
   "AMZN",
+  "^VIX",
 ];
 
 type Timeframe = "weekly" | "daily" | "monthly";
