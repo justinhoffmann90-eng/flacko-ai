@@ -69,6 +69,44 @@ async function fetchDailyBars(ticker: string, count: number): Promise<OHLCV[]> {
   return bars;
 }
 
+async function fetchHourlyBars(ticker: string, lookbackDays = 60): Promise<OHLCV[]> {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - lookbackDays);
+
+  const result = await yahooFinance.chart(ticker, {
+    period1: startDate,
+    period2: endDate,
+    interval: "1h",
+  });
+
+  const quotes = result.quotes ?? [];
+  const bars: OHLCV[] = [];
+
+  for (const q of quotes) {
+    if (
+      q.open == null ||
+      q.high == null ||
+      q.low == null ||
+      q.close == null ||
+      q.volume == null
+    )
+      continue;
+
+    bars.push({
+      date: q.date,
+      open: q.open,
+      high: q.high,
+      low: q.low,
+      close: q.close,
+      volume: q.volume,
+    });
+  }
+
+  bars.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return bars;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Weekly Resampling (Mon-Fri → weekly OHLCV)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,6 +138,33 @@ function resampleWeekly(daily: OHLCV[]): OHLCV[] {
   }
 
   return Array.from(weeks.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function resample4H(hourlyBars: OHLCV[]): OHLCV[] {
+  const buckets = new Map<string, OHLCV[]>();
+
+  for (const bar of hourlyBars) {
+    const d = bar.date;
+    const bucketHour = Math.floor(d.getUTCHours() / 4) * 4;
+    const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${bucketHour}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key)!.push(bar);
+  }
+
+  const out: OHLCV[] = [];
+  for (const group of buckets.values()) {
+    if (!group.length) continue;
+    out.push({
+      date: group[0].date,
+      open: group[0].open,
+      high: Math.max(...group.map((bar) => bar.high)),
+      low: Math.min(...group.map((bar) => bar.low)),
+      close: group[group.length - 1].close,
+      volume: group.reduce((sum, bar) => sum + bar.volume, 0),
+    });
+  }
+
+  return out.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 function getIsoWeekKey(d: Date): string {
@@ -321,9 +386,10 @@ export async function computeIndicators(
   yahooFinance.suppressNotices(["ripHistorical"]);
 
   // Fetch 400 daily bars for enough history (300+ needed after warmup)
-  const [dailyBars, vixBars] = await Promise.all([
+  const [dailyBars, vixBars, hourlyBars] = await Promise.all([
     fetchDailyBars(ticker, 400),
     fetchDailyBars("^VIX", 400),
+    fetchHourlyBars(ticker, 60).catch(() => []),
   ]);
 
   if (dailyBars.length < 50) {
@@ -333,6 +399,7 @@ export async function computeIndicators(
   // Weekly resampling
   const weeklyBars = resampleWeekly(dailyBars);
   const vixWeekly = resampleWeekly(vixBars);
+  const bars4h = resample4H(hourlyBars);
 
   // ── Extract arrays ──────────────────────────────────────────────────────────
   const closes = dailyBars.map((b) => b.close);
@@ -342,6 +409,7 @@ export async function computeIndicators(
 
   const n = closes.length;
   const wN = wCloses.length;
+  const h4N = bars4h.length;
 
   // ── BXT Daily ──────────────────────────────────────────────────────────────
   const bxtDaily = computeBxt(closes);
@@ -392,14 +460,26 @@ export async function computeIndicators(
   const smiSignalPrev = smiSignalArr[n - 2];
   const smiChange3d = smiCurr - (isNaN(smiArr[n - 4]) ? smiCurr : smiArr[n - 4]);
 
+  // Weekly / 4H SMI snapshot values
+  const { smi: smiWeeklyArr } = computeSmi(weeklyBars, 10, 3, 3);
+  const smiWeeklyCurr = wN > 0 ? smiWeeklyArr[wN - 1] : NaN;
+
+  const smi4hCurr = (() => {
+    if (h4N < 10) return NaN;
+    const { smi: smi4hArr } = computeSmi(bars4h, 10, 3, 3);
+    return smi4hArr[h4N - 1];
+  })();
+
   // SMI crosses
   const smiBullCross = smiPrev <= smiSignalPrev && smiCurr > smiSignalCurr;
   const smiBearCross = smiPrev >= smiSignalPrev && smiCurr < smiSignalCurr;
 
   // ── Daily EMAs ─────────────────────────────────────────────────────────────
   const ema9Arr = ema(closes, 9);
+  const ema13Arr = ema(closes, 13);
   const ema21Arr = ema(closes, 21);
   const ema9Curr = ema9Arr[n - 1];
+  const ema13Curr = ema13Arr[n - 1];
   const ema21Curr = ema21Arr[n - 1];
 
   // ── SMA 200 ────────────────────────────────────────────────────────────────
@@ -534,9 +614,12 @@ export async function computeIndicators(
     smi_change_3d: smiChange3d,
     smi_bull_cross: smiBullCross,
     smi_bear_cross: smiBearCross,
+    smi_weekly: smiWeeklyCurr,
+    smi_4h: smi4hCurr,
 
     // Daily EMAs
     ema9: ema9Curr,
+    ema13: ema13Curr,
     ema21: ema21Curr,
     price_vs_ema9: priceVsEma9,
     price_vs_ema21: priceVsEma21,

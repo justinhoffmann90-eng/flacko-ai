@@ -8,6 +8,10 @@ export const revalidate = 0;
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
+    const toNumber = (value: unknown): number | null => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
 
     const { data: definitions, error: definitionsError } = await supabase
       .from("orb_setup_definitions")
@@ -76,10 +80,35 @@ export async function GET(request: NextRequest) {
     // Fetch latest Orb Score
     const { data: latestIndicator } = await supabase
       .from("orb_daily_indicators")
-      .select("date, orb_score, orb_zone, orb_zone_prev")
+      .select("date, orb_score, orb_zone, orb_zone_prev, bx_daily, bx_weekly, rsi, smi, ema9, ema21, weekly_ema13")
       .order("date", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    const latestStateWithIndicators = [...(states || [])]
+      .filter((state: any) => state?.current_indicators)
+      .sort((a: any, b: any) => {
+        const aTs = new Date(a?.updated_at || 0).getTime();
+        const bTs = new Date(b?.updated_at || 0).getTime();
+        return bTs - aTs;
+      })[0];
+
+    const currentIndicators = latestStateWithIndicators?.current_indicators || {};
+
+    const indicatorSnapshot = {
+      date: (currentIndicators?.date as string | undefined) || (latestIndicator?.date as string | undefined) || null,
+      smiDaily: toNumber(currentIndicators?.smi ?? latestIndicator?.smi),
+      smiWeekly: toNumber(currentIndicators?.smi_weekly),
+      smi4h: toNumber(currentIndicators?.smi_4h),
+      bxtDaily: toNumber(currentIndicators?.bx_daily ?? latestIndicator?.bx_daily),
+      bxtWeekly: toNumber(currentIndicators?.bx_weekly ?? latestIndicator?.bx_weekly),
+      rsi: toNumber(currentIndicators?.rsi ?? latestIndicator?.rsi),
+      ema9: toNumber(currentIndicators?.ema9 ?? latestIndicator?.ema9),
+      ema13: toNumber(currentIndicators?.ema13 ?? currentIndicators?.weekly_ema13 ?? latestIndicator?.weekly_ema13),
+      ema21: toNumber(currentIndicators?.ema21 ?? latestIndicator?.ema21),
+      vixClose: toNumber(currentIndicators?.vix_close),
+      vixWeeklyChangePct: toNumber(currentIndicators?.vix_weekly_change_pct),
+    };
 
     // Fetch open tracking-horizon trades (signals that fired recently but conditions no longer met)
     const { data: trackingTrades } = await supabase
@@ -111,6 +140,7 @@ export async function GET(request: NextRequest) {
       } : null,
       setups: merged,
       trackingTrades: trackingTrades || [],
+      indicatorSnapshot,
     });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });

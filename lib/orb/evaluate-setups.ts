@@ -20,7 +20,10 @@ export interface Indicators {
   smi_change_3d: number;
   smi_bull_cross: boolean;
   smi_bear_cross: boolean;
+  smi_weekly?: number;
+  smi_4h?: number;
   ema9: number;
+  ema13?: number;
   ema21: number;
   sma200: number;
   sma200_dist: number;
