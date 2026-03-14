@@ -15,8 +15,9 @@ export const config = {
      * - public folder assets (images, json, etc.)
      * - api/price-cache (public price endpoint for Taylor)
      * - api/cron (cron endpoints authenticated via CRON_SECRET)
-     * - api/backtest (public backtest engine — Python serverless function)
+     * - api/backtest (public backtest engine)
+     * - backtest (public backtest page)
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|api/price-cache|api/cron|api/backtest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|api/price-cache|api/cron|api/backtest|backtest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)",
   ],
 };

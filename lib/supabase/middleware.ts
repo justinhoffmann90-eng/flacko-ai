@@ -105,8 +105,8 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Backtest engine (public — used by Orb explorer and public backtest tool)
-  if (request.nextUrl.pathname.startsWith("/api/backtest")) {
+  // Backtest (public — page + API)
+  if (request.nextUrl.pathname.startsWith("/api/backtest") || request.nextUrl.pathname.startsWith("/backtest")) {
     return supabaseResponse;
   }
 
