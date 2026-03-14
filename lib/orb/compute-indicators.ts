@@ -386,9 +386,56 @@ export async function computeIndicators(
   yahooFinance.suppressNotices(["ripHistorical"]);
 
   // Fetch 400 daily bars for enough history (300+ needed after warmup)
+  // VIX fetch with retry + Supabase fallback
+  async function fetchVixWithFallback(): Promise<OHLCV[]> {
+    // Try Yahoo Finance twice
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const bars = await fetchDailyBars("^VIX", 400);
+        if (bars.length > 10) return bars;
+      } catch (e) {
+        console.warn(`[VIX] Yahoo attempt ${attempt + 1} failed: ${e}`);
+        if (attempt === 0) await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+
+    // Fallback: fetch from ohlcv_bars in Supabase
+    console.warn("[VIX] Yahoo failed, falling back to Supabase ohlcv_bars");
+    try {
+      const { createServiceClient } = await import("@/lib/supabase/server");
+      const supabase = await createServiceClient();
+      const { data, error } = await supabase
+        .from("ohlcv_bars")
+        .select("bar_date, open, high, low, close, volume")
+        .eq("ticker", "^VIX")
+        .eq("timeframe", "daily")
+        .order("bar_date", { ascending: true })
+        .limit(400);
+
+      if (error || !data || data.length === 0) {
+        console.error("[VIX] Supabase fallback also failed:", error?.message);
+        return [];
+      }
+
+      return data
+        .filter((r: any) => r.open != null && r.close != null)
+        .map((r: any) => ({
+          date: new Date(r.bar_date),
+          open: r.open,
+          high: r.high,
+          low: r.low,
+          close: r.close,
+          volume: r.volume || 0,
+        }));
+    } catch (e) {
+      console.error("[VIX] Supabase fallback error:", e);
+      return [];
+    }
+  }
+
   const [dailyBars, vixBars, hourlyBars] = await Promise.all([
     fetchDailyBars(ticker, 400),
-    fetchDailyBars("^VIX", 400),
+    fetchVixWithFallback(),
     fetchHourlyBars(ticker, 60).catch(() => []),
   ]);
 

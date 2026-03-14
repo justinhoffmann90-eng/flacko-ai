@@ -25,20 +25,38 @@ export const SETUP_TYPES: Record<string, "buy" | "avoid"> = {
   "momentum-crack": "avoid", "ema-shield-caution": "avoid", "ema-shield-break": "avoid",
 };
 
+// Weights v4 — recalibrated 2026-03-14 using edge × sample-confidence
+// Edge = avg 20D return (buy) or -avg 20D return (avoid)
+// Confidence = min(1, sqrt(N/20)) to penalize small samples
+// Final weight = clamp(0.15, edge_rank × confidence, 0.60)
 export const WEIGHTS: Record<string, number> = {
-  "oversold-extreme": 0.60, "climactic-volume-reversal": 0.48, "capitulation": 0.51, "momentum-crack": 0.22,
-  "overextended": 0.49, "deep-value": 0.47, "goldilocks": 0.44,
-  "smi-overbought": 0.44, "trend-confirm": 0.43, "regime-shift": 0.28,
-  "ema-shield-caution": 0.39, "dual-ll": 0.39, "trend-ride": 0.35,
-  "momentum-flip": 0.33, "green-shoots": 0.32, "smi-oversold-gauge": 0.47,
-  "trend-continuation": 0.47, "ema-shield-break": 0.30, "vix-spike-reversal": 0.35,
+  "oversold-extreme": 0.55,           // edge=53.5% but N=2, penalized for sample
+  "deep-value": 0.45,                 // edge=8.8%, N=14, 57% win, 86% at 60D
+  "trend-confirm": 0.42,              // edge=6.4%, N=45, 62% win — workhorse
+  "goldilocks": 0.42,                 // edge=5.8%, N=40, 63% win — reliable
+  "climactic-volume-reversal": 0.42,  // edge=5.6%, N=20, 70% win — volume-based
+  "trend-ride": 0.35,                 // edge=4.8%, N=18, 61% win
+  "momentum-crack": 0.35,             // edge=4.5%, N=8, 88% win at 20D — small N but strong
+  "overextended": 0.35,               // edge=4.4%, N=18, 61% win — was overweighted at 0.49
+  "momentum-flip": 0.33,              // edge=3.5%, N=21, 71% win
+  "dual-ll": 0.33,                    // edge=2.8%, N=46, consistent across timeframes
+  "ema-shield-caution": 0.30,         // edge=1.7%, N=33, early warning
+  "capitulation": 0.30,               // edge=2.9%, N=14, 50% win — was overweighted at 0.51
+  "regime-shift": 0.28,               // edge=7.3% but N=7 — penalized for sample
+  "green-shoots": 0.28,               // edge=3.1%, N=40, 53% win — weak conviction
+  "ema-shield-break": 0.25,           // edge=2.9%, N=31, follow-through signal
+  "vix-spike-reversal": 0.25,         // edge unknown (VIX data was broken), N=12
+  "trend-continuation": 0.20,         // edge=0.07%, N=45 — near zero, was 0.47
+  "smi-oversold-gauge": 0.20,         // edge=-0.8%, N=20 — negative edge, was 0.47
+  "smi-overbought": 0.18,             // edge=-1.9% (wrong direction), N=12, was 0.44
 };
 
-// Zone thresholds from v3 backtest (percentile-calibrated)
+// Zone thresholds v4 — proportionally adjusted for new weight range
+// Score range: -1.76 (all avoid) to +4.45 (all buy)
 export const THRESHOLDS = {
-  FULL_SEND: 0.686,
-  NEUTRAL: -0.117,
-  CAUTION: -0.729,
+  FULL_SEND: 0.584,
+  NEUTRAL: -0.100,
+  CAUTION: -0.621,
 };
 
 export function computeOrbScore(setupStates: { setup_id: string; status: string }[]): number {
