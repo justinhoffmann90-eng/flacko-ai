@@ -14,7 +14,8 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const PEER_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"] as const;
-const BACKTEST_DATA_TICKER = "TSLA";
+const VALIDATED_BACKTEST_TICKER = "TSLA";
+const BACKTEST_START_INDEX = 250; // Need ~250 bars for SMA200 lookback
 
 type ScanStatus = "active" | "watching" | "inactive";
 type ReturnColumn = "ret_5d" | "ret_10d" | "ret_20d" | "ret_60d";
@@ -509,6 +510,315 @@ function buildRelevantIndicators(setupId: string, indicators: Indicators) {
   }
 }
 
+// ─── Helper for finite number check ──────────────────────────────────────────
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+// ─── Build a BacktestRow from a signal ───────────────────────────────────────
+function buildBacktestRow(
+  setupId: string,
+  signalDate: string,
+  signalClose: number,
+  closes: number[],
+  signalIndex: number,
+): BacktestRow {
+  const fwdReturn = (offset: number): number | null => {
+    const idx = signalIndex + offset;
+    if (idx >= closes.length || !isFiniteNumber(closes[idx])) return null;
+    return round(((closes[idx] - signalClose) / signalClose) * 100);
+  };
+  const ret5 = fwdReturn(5);
+  const ret10 = fwdReturn(10);
+  const ret20 = fwdReturn(20);
+  const ret60 = fwdReturn(60);
+  return {
+    setup_id: setupId,
+    signal_date: signalDate,
+    signal_price: signalClose,
+    ret_5d: ret5,
+    ret_10d: ret10,
+    ret_20d: ret20,
+    ret_60d: ret60,
+    is_win_5d: ret5 != null ? ret5 > 0 : null,
+    is_win_10d: ret10 != null ? ret10 > 0 : null,
+    is_win_20d: ret20 != null ? ret20 > 0 : null,
+    is_win_60d: ret60 != null ? ret60 > 0 : null,
+  };
+}
+
+// ─── Update previousStates from setup results ───────────────────────────────
+function updatePreviousStates(
+  prevMap: Map<string, PreviousState>,
+  results: SetupResult[],
+  date: string,
+  close: number,
+) {
+  for (const r of results) {
+    const prev = prevMap.get(r.setup_id);
+    const status: "active" | "watching" | "inactive" = r.is_active
+      ? "active"
+      : r.is_watching
+      ? "watching"
+      : "inactive";
+    prevMap.set(r.setup_id, {
+      setup_id: r.setup_id,
+      status,
+      gauge_entry_value: r.gauge_entry_value ?? prev?.gauge_entry_value,
+      entry_price: r.is_active ? (prev?.status === "active" ? prev.entry_price : close) : undefined,
+      active_since: r.is_active ? (prev?.status === "active" ? prev.active_since : date) : undefined,
+      active_day: r.is_active
+        ? (prev?.status === "active" && typeof prev.active_day === "number" ? prev.active_day + 1 : 1)
+        : undefined,
+    });
+  }
+}
+
+// ─── On-the-fly historical backtest walk ─────────────────────────────────────
+async function computeDynamicBacktestRows(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+  setupFilter: Set<string>,
+): Promise<Map<string, BacktestRow[]>> {
+  // Fetch ALL bars (no limit) for historical walk
+  const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows] = await Promise.all([
+    fetchOhlcvRows(supabase, ticker, "daily", 10000),
+    fetchOhlcvRows(supabase, ticker, "weekly", 3000),
+    fetchOhlcvRows(supabase, "^VIX", "daily", 10000),
+    fetchOhlcvRows(supabase, "^VIX", "weekly", 3000),
+  ]);
+
+  if (!dailyRows || !weeklyRows || dailyRows.length < BACKTEST_START_INDEX || weeklyRows.length < 10) {
+    return new Map();
+  }
+
+  // Pre-compute full arrays
+  const closes = dailyRows.map((r) => r.close);
+  const highs = dailyRows.map((r) => r.high);
+  const lows = dailyRows.map((r) => r.low);
+  const volumes = dailyRows.map((r) => r.volume);
+  const rsiSeries = dailyRows.map((r) => toNumber(r.rsi) ?? Number.NaN);
+  const ema9Series = dailyRows.map((r) => toNumber(r.ema_9) ?? Number.NaN);
+  const ema21Series = dailyRows.map((r) => toNumber(r.ema_21) ?? Number.NaN);
+  const sma200Series = dailyRows.map((r) => toNumber(r.sma_200) ?? Number.NaN);
+
+  // SMI for entire series
+  const smiResult = computeSmi(highs, lows, closes);
+
+  // BXT states
+  const dailyBxtSeries = dailyRows.map((r) => toNumber(r.bxt) ?? Number.NaN);
+  const dailyInferredStates = inferBxtStates(dailyBxtSeries);
+  const weeklyBxtSeries = weeklyRows.map((r) => toNumber(r.bxt) ?? Number.NaN);
+  const weeklyInferredStates = inferBxtStates(weeklyBxtSeries);
+  const weeklyEma9Series = weeklyRows.map((r) => toNumber(r.ema_9) ?? Number.NaN);
+  const weeklyEma13Series = weeklyRows.map((r) => toNumber(r.ema_13) ?? Number.NaN);
+  const weeklyEma21Series = weeklyRows.map((r) => toNumber(r.ema_21) ?? Number.NaN);
+
+  // VIX arrays
+  const vixDailyCloses = vixDailyRows ? vixDailyRows.map((r) => r.close) : [];
+  const vixWeeklyCloses = vixWeeklyRows ? vixWeeklyRows.map((r) => r.close) : [];
+  const vixDailyDates = vixDailyRows ? vixDailyRows.map((r) => r.bar_date) : [];
+  const vixWeeklyDates = vixWeeklyRows ? vixWeeklyRows.map((r) => r.bar_date) : [];
+
+  // Build date→index maps for weekly and VIX alignment
+  const weeklyDateIndex = new Map<string, number>();
+  weeklyRows.forEach((r, i) => weeklyDateIndex.set(r.bar_date, i));
+
+  // Map each daily bar to its corresponding weekly bar index
+  const weeklyIndexByDaily: number[] = new Array(dailyRows.length).fill(-1);
+  let lastWeeklyIdx = 0;
+  for (let i = 0; i < dailyRows.length; i++) {
+    const d = dailyRows[i].bar_date;
+    // Find the latest weekly bar on or before this daily bar
+    while (lastWeeklyIdx + 1 < weeklyRows.length && weeklyRows[lastWeeklyIdx + 1].bar_date <= d) {
+      lastWeeklyIdx++;
+    }
+    if (weeklyRows[lastWeeklyIdx].bar_date <= d) {
+      weeklyIndexByDaily[i] = lastWeeklyIdx;
+    }
+  }
+
+  // Map daily bars to VIX indices
+  const vixDailyIndexByDaily: number[] = new Array(dailyRows.length).fill(-1);
+  let lastVixDailyIdx = 0;
+  for (let i = 0; i < dailyRows.length; i++) {
+    const d = dailyRows[i].bar_date;
+    while (lastVixDailyIdx + 1 < vixDailyDates.length && vixDailyDates[lastVixDailyIdx + 1] <= d) {
+      lastVixDailyIdx++;
+    }
+    if (vixDailyDates.length > 0 && vixDailyDates[lastVixDailyIdx] <= d) {
+      vixDailyIndexByDaily[i] = lastVixDailyIdx;
+    }
+  }
+
+  const vixWeeklyIndexByDaily: number[] = new Array(dailyRows.length).fill(-1);
+  let lastVixWeeklyIdx = 0;
+  for (let i = 0; i < dailyRows.length; i++) {
+    const d = dailyRows[i].bar_date;
+    while (lastVixWeeklyIdx + 1 < vixWeeklyDates.length && vixWeeklyDates[lastVixWeeklyIdx + 1] <= d) {
+      lastVixWeeklyIdx++;
+    }
+    if (vixWeeklyDates.length > 0 && vixWeeklyDates[lastVixWeeklyIdx] <= d) {
+      vixWeeklyIndexByDaily[i] = lastVixWeeklyIdx;
+    }
+  }
+
+  // Pre-compute derived series
+  const consecutiveDownSeries: number[] = new Array(dailyRows.length).fill(0);
+  const consecutiveUpSeries: number[] = new Array(dailyRows.length).fill(0);
+  const stabilizationSeries: number[] = new Array(dailyRows.length).fill(0);
+  const dailyHhStreakSeries: number[] = new Array(dailyRows.length).fill(0);
+  const daysBelowEma9Series: number[] = new Array(dailyRows.length).fill(0);
+  const wasFullBull5dSeries: boolean[] = new Array(dailyRows.length).fill(false);
+
+  for (let i = 1; i < dailyRows.length; i++) {
+    // consecutive down
+    if (closes[i] < closes[i - 1]) consecutiveDownSeries[i] = consecutiveDownSeries[i - 1] + 1;
+    // consecutive up
+    if (closes[i] > closes[i - 1]) consecutiveUpSeries[i] = consecutiveUpSeries[i - 1] + 1;
+    // stabilization (higher lows)
+    if (lows[i] >= lows[i - 1]) stabilizationSeries[i] = stabilizationSeries[i - 1] + 1;
+    // daily HH streak
+    const state = normalizeBxtState(dailyRows[i].bxt_state) ?? dailyInferredStates[i] ?? "LL";
+    if (state === "HH") dailyHhStreakSeries[i] = dailyHhStreakSeries[i - 1] + 1;
+    // days below ema9
+    const barEma9 = ema9Series[i];
+    if (isFiniteNumber(barEma9) && closes[i] < barEma9) {
+      daysBelowEma9Series[i] = daysBelowEma9Series[i - 1] + 1;
+    }
+    // was full bull in last 5 days
+    let wasBull = false;
+    for (let j = Math.max(0, i - 4); j <= i; j++) {
+      const bEma9 = ema9Series[j];
+      const bEma21 = ema21Series[j];
+      if (!isFiniteNumber(bEma9) || !isFiniteNumber(bEma21) || !Number.isFinite(closes[j])) continue;
+      if (closes[j] > bEma9 && bEma9 > bEma21) { wasBull = true; break; }
+    }
+    wasFullBull5dSeries[i] = wasBull;
+  }
+
+  // Walk through bars and evaluate setups
+  const rowsBySetup = new Map<string, BacktestRow[]>();
+  const previousStates = new Map<string, PreviousState>();
+  const startIndex = Math.max(BACKTEST_START_INDEX, 5);
+
+  for (let i = startIndex; i < dailyRows.length; i++) {
+    if (i < 3) continue;
+
+    const weeklyIndex = weeklyIndexByDaily[i];
+    if (weeklyIndex < 1) continue;
+
+    const close = closes[i];
+    const rsi = rsiSeries[i];
+    const rsiPrev = rsiSeries[i - 1];
+    const bxtDaily = dailyBxtSeries[i];
+    const bxtDailyPrev = dailyBxtSeries[i - 1];
+    const e9 = ema9Series[i];
+    const e21 = ema21Series[i];
+    const s200 = sma200Series[i];
+    const wEma9 = weeklyEma9Series[weeklyIndex];
+    const wEma13 = weeklyEma13Series[weeklyIndex];
+    const wEma21 = weeklyEma21Series[weeklyIndex];
+    const bxtWeekly = weeklyBxtSeries[weeklyIndex];
+    const bxtWeeklyPrev = weeklyBxtSeries[weeklyIndex - 1];
+    const smiCurr = smiResult.smi[i];
+    const smiSignalCurr = smiResult.signal[i];
+    const smiPrev = smiResult.smi[i - 1];
+    const smiSignalPrev = smiResult.signal[i - 1];
+    const smiPrev3 = smiResult.smi[Math.max(0, i - 3)];
+
+    if (
+      !isFiniteNumber(close) || !isFiniteNumber(rsi) || !isFiniteNumber(rsiPrev) ||
+      !isFiniteNumber(bxtDaily) || !isFiniteNumber(bxtDailyPrev) ||
+      !isFiniteNumber(e9) || !isFiniteNumber(e21) || !isFiniteNumber(s200) ||
+      !isFiniteNumber(wEma9) || !isFiniteNumber(wEma13) || !isFiniteNumber(wEma21) ||
+      !isFiniteNumber(bxtWeekly) || !isFiniteNumber(bxtWeeklyPrev) ||
+      !Number.isFinite(smiCurr) || !Number.isFinite(smiSignalCurr) ||
+      !Number.isFinite(smiPrev) || !Number.isFinite(smiSignalPrev) || !Number.isFinite(smiPrev3)
+    ) continue;
+
+    const bxDailyState = normalizeBxtState(dailyRows[i].bxt_state) ?? dailyInferredStates[i] ?? "LL";
+    const bxDailyStatePrev = normalizeBxtState(dailyRows[i - 1].bxt_state ?? null) ?? dailyInferredStates[i - 1] ?? "LL";
+    const bxWeeklyState = normalizeBxtState(weeklyRows[weeklyIndex].bxt_state) ?? weeklyInferredStates[weeklyIndex] ?? "LL";
+    const bxWeeklyStatePrev = normalizeBxtState(weeklyRows[weeklyIndex - 1].bxt_state ?? null) ?? weeklyInferredStates[weeklyIndex - 1] ?? "LL";
+
+    const vixDailyIndex = vixDailyIndexByDaily[i];
+    const vixClose = vixDailyIndex >= 0 && Number.isFinite(vixDailyCloses[vixDailyIndex]) ? vixDailyCloses[vixDailyIndex] : 0;
+    const vixWeeklyIndex = vixWeeklyIndexByDaily[i];
+    let vixWeeklyChangePct = 0;
+    if (vixWeeklyIndex >= 1) {
+      const lv = vixWeeklyCloses[vixWeeklyIndex];
+      const pv = vixWeeklyCloses[vixWeeklyIndex - 1];
+      if (Number.isFinite(lv) && Number.isFinite(pv) && pv !== 0) {
+        vixWeeklyChangePct = ((lv - pv) / pv) * 100;
+      }
+    }
+
+    const ema9FiveDaysAgo = ema9Series[Math.max(0, i - 5)];
+    const ema9Slope5d = isFiniteNumber(ema9FiveDaysAgo) && ema9FiveDaysAgo !== 0
+      ? ((e9 - ema9FiveDaysAgo) / ema9FiveDaysAgo) * 100 : 0;
+
+    const recentVolumes = volumes.slice(Math.max(0, i - 29), i + 1).map((v) => (Number.isFinite(v) ? v : 0));
+
+    const indicators: Indicators & { open: number; volume: number; volumes: number[] } = {
+      date: dailyRows[i].bar_date,
+      close, open: toNumber(dailyRows[i].open) ?? close,
+      volume: Number.isFinite(volumes[i]) ? volumes[i] : 0,
+      volumes: recentVolumes,
+      vix_close: vixClose, vix_weekly_change_pct: vixWeeklyChangePct,
+      bx_daily: bxtDaily, bx_daily_prev: bxtDailyPrev,
+      bx_daily_state: bxDailyState, bx_daily_state_prev: bxDailyStatePrev,
+      bx_weekly: bxtWeekly, bx_weekly_prev: bxtWeeklyPrev,
+      bx_weekly_state: bxWeeklyState, bx_weekly_state_prev: bxWeeklyStatePrev,
+      bx_weekly_transition: bxWeeklyState !== bxWeeklyStatePrev ? `${bxWeeklyStatePrev}_to_${bxWeeklyState}` : null,
+      rsi, rsi_prev: rsiPrev,
+      rsi_change_3d: rsi - (toNumber(dailyRows[Math.max(0, i - 3)]?.rsi) ?? rsiPrev),
+      smi: smiCurr, smi_signal: smiSignalCurr,
+      smi_prev: smiPrev, smi_signal_prev: smiSignalPrev,
+      smi_change_3d: smiCurr - smiPrev3,
+      smi_bull_cross: smiPrev <= smiSignalPrev && smiCurr > smiSignalCurr,
+      smi_bear_cross: smiPrev >= smiSignalPrev && smiCurr < smiSignalCurr,
+      ema9: e9, ema21: e21, sma200: s200,
+      sma200_dist: ((close - s200) / s200) * 100,
+      price_vs_ema9: ((close - e9) / e9) * 100,
+      price_vs_ema21: ((close - e21) / e21) * 100,
+      consecutive_down: consecutiveDownSeries[i], consecutive_up: consecutiveUpSeries[i],
+      stabilization_days: stabilizationSeries[i],
+      weekly_ema9: wEma9, weekly_ema13: wEma13, weekly_ema21: wEma21,
+      weekly_emas_stacked: wEma9 > wEma13 && wEma13 > wEma21,
+      price_above_weekly_all: close > wEma9 && close > wEma13 && close > wEma21,
+      price_above_weekly_13: close > wEma13,
+      price_above_weekly_21: close > wEma21,
+      daily_hh_streak: dailyHhStreakSeries[i],
+      ema9_slope_5d: ema9Slope5d,
+      days_below_ema9: daysBelowEma9Series[i],
+      was_full_bull_5d: wasFullBull5dSeries[i],
+    };
+
+    const setupResults = evaluateAllSetups(indicators, previousStates);
+
+    for (const result of setupResults) {
+      if (!setupFilter.has(result.setup_id)) continue;
+      const previousStatus = previousStates.get(result.setup_id)?.status ?? "inactive";
+      if (result.is_active && previousStatus !== "active") {
+        const row = buildBacktestRow(result.setup_id, indicators.date, indicators.close, closes, i);
+        const existing = rowsBySetup.get(result.setup_id);
+        if (existing) existing.push(row);
+        else rowsBySetup.set(result.setup_id, [row]);
+      }
+    }
+
+    updatePreviousStates(previousStates, setupResults, indicators.date, indicators.close);
+  }
+
+  // Sort each setup's rows descending by date
+  for (const rows of rowsBySetup.values()) {
+    rows.sort((a, b) => b.signal_date.localeCompare(a.signal_date));
+  }
+
+  return rowsBySetup;
+}
+
 function buildCurrentSummarySentence(params: {
   ticker: string;
   modeSuggestion: ReturnType<typeof suggestMode>;
@@ -516,21 +826,12 @@ function buildCurrentSummarySentence(params: {
   avoidActiveCount: number;
   watchingCount: number;
   average20d: number | null;
-  hasTslaHistory: boolean;
 }) {
-  const {
-    ticker,
-    modeSuggestion,
-    buyActiveCount,
-    avoidActiveCount,
-    watchingCount,
-    average20d,
-    hasTslaHistory,
-  } = params;
+  const { ticker, modeSuggestion, buyActiveCount, avoidActiveCount, watchingCount, average20d } = params;
 
-  const expectancy = hasTslaHistory && average20d != null
+  const expectancy = average20d != null
     ? `${average20d >= 0 ? "+" : ""}${average20d.toFixed(2)}% at 20d`
-    : "not available yet (TSLA-only backtests)";
+    : "not yet computed";
 
   return `${ticker} is currently ${modeSuggestion.suggestion} (${modeSuggestion.confidence} confidence) with ${buyActiveCount} buy active, ${avoidActiveCount} avoid active, and ${watchingCount} watching; historical expectancy from similar active setups is ${expectancy}.`;
 }
@@ -831,7 +1132,7 @@ async function evaluateTickerNow(
   source: "ohlcv_bars" | "yahoo";
 }> {
   const { indicators, source } = await resolveIndicators(supabase, ticker);
-  const prevMap = ticker === BACKTEST_DATA_TICKER ? tslaPrevMap : new Map<string, PreviousState>();
+  const prevMap = ticker === VALIDATED_BACKTEST_TICKER ? tslaPrevMap : new Map<string, PreviousState>();
   const setupResults = evaluateAllSetups(indicators, prevMap);
   const mode = suggestMode(indicators, setupResults.filter((setup) => setup.is_active));
   return { indicators, setupResults, mode, source };
@@ -961,10 +1262,7 @@ export async function GET(request: NextRequest) {
             ret_60d: number | null;
           }>,
           summary: {} as Record<string, SummaryPeriod>,
-          message:
-            ticker !== BACKTEST_DATA_TICKER
-              ? "No historical data for this ticker yet. Backtest instances currently exist for TSLA only."
-              : "No historical instances found.",
+          message: "No historical instances found.",
         },
       };
     });
@@ -973,22 +1271,29 @@ export async function GET(request: NextRequest) {
       .filter((setup) => setup.status === "active" || setup.status === "watching")
       .map((setup) => setup.id);
 
-    if (ticker === BACKTEST_DATA_TICKER && activeOrWatchingIds.length > 0) {
-      const { data: backtestRows, error: backtestError } = await supabase
-        .from("orb_backtest_instances")
-        .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
-        .in("setup_id", activeOrWatchingIds)
-        .order("signal_date", { ascending: false });
+    if (activeOrWatchingIds.length > 0) {
+      let rowsBySetup = new Map<string, BacktestRow[]>();
 
-      if (backtestError) {
-        return NextResponse.json({ error: backtestError.message }, { status: 500 });
-      }
+      if (ticker === VALIDATED_BACKTEST_TICKER) {
+        // TSLA: use manually validated backtest instances
+        const { data: backtestRows, error: backtestError } = await supabase
+          .from("orb_backtest_instances")
+          .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
+          .in("setup_id", activeOrWatchingIds)
+          .order("signal_date", { ascending: false });
 
-      const rowsBySetup = new Map<string, BacktestRow[]>();
-      for (const row of (backtestRows as BacktestRow[]) || []) {
-        const list = rowsBySetup.get(row.setup_id) ?? [];
-        list.push(row);
-        rowsBySetup.set(row.setup_id, list);
+        if (backtestError) {
+          return NextResponse.json({ error: backtestError.message }, { status: 500 });
+        }
+
+        for (const row of (backtestRows as BacktestRow[]) || []) {
+          const list = rowsBySetup.get(row.setup_id) ?? [];
+          list.push(row);
+          rowsBySetup.set(row.setup_id, list);
+        }
+      } else {
+        // All other tickers: compute on-the-fly from ohlcv_bars history
+        rowsBySetup = await computeDynamicBacktestRows(supabase, ticker, new Set(activeOrWatchingIds));
       }
 
       for (const setup of setupPayload) {
@@ -1093,7 +1398,6 @@ export async function GET(request: NextRequest) {
       avoidActiveCount: activeAvoid,
       watchingCount,
       average20d,
-      hasTslaHistory: ticker === BACKTEST_DATA_TICKER,
     });
 
     return NextResponse.json({
@@ -1130,7 +1434,7 @@ export async function GET(request: NextRequest) {
       scenarios: scenarioComparisons,
       setups: sortedSetups,
       meta: {
-        backtest_data_ticker: BACKTEST_DATA_TICKER,
+        backtest_source: ticker === VALIDATED_BACKTEST_TICKER ? "orb_backtest_instances" : "ohlcv_scan",
       },
     });
   } catch (error) {
