@@ -135,6 +135,15 @@ interface ScenarioRow {
   ret_60d: number | null;
 }
 
+interface SeasonalityMonth {
+  month: number;
+  name: string;
+  avg_return: number;
+  median_return: number;
+  win_rate: number;
+  n: number;
+}
+
 interface ScanResponse {
   ticker: string;
   date: string;
@@ -146,11 +155,16 @@ interface ScanResponse {
     confidence: "high" | "medium" | "low";
     reasoning: string[];
   };
+  seasonality?: {
+    monthly: SeasonalityMonth[];
+    next_30d: { avg_return: number; win_rate: number; n: number } | null;
+  };
   peer_comparison: PeerRow[];
   scenarios: ScenarioRow[];
   setups: ScanSetup[];
   meta?: {
-    backtest_data_ticker?: string;
+    backtest_source?: string;
+    data_range?: { earliest: string | null; latest: string | null; years: number | null };
   };
 }
 
@@ -641,6 +655,9 @@ export default function BacktestClient() {
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Mode: {data.right_now.suggestion}</span>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Confidence: {data.right_now.confidence.toUpperCase()}</span>
+                  {data.meta?.data_range?.years && (
+                    <span className="rounded bg-zinc-900/60 px-2 py-1">Data: {data.meta.data_range.years}y ({data.meta.data_range.earliest?.split("-")[0]}–{data.meta.data_range.latest?.split("-")[0]})</span>
+                  )}
                 </div>
               </div>
 
@@ -667,6 +684,68 @@ export default function BacktestClient() {
                   </div>
                 </div>
               )}
+
+              {/* SEASONALITY — next 30 days free, full year for subscribers */}
+              {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
+                const currentMonth = new Date().getMonth(); // 0-indexed
+                // Show next 2 months (free preview)
+                const freeMonths = [
+                  data.seasonality.monthly[currentMonth],
+                  data.seasonality.monthly[(currentMonth + 1) % 12],
+                ];
+                const lockedCount = 10;
+                return (
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-purple-300">Seasonality</h3>
+                    {data.seasonality.next_30d && (
+                      <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
+                        <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          NEXT 30 DAYS · HISTORICAL AVERAGE
+                        </p>
+                        <div className="flex gap-6 text-sm" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          <span className={data.seasonality.next_30d.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}>
+                            Avg: {fmtPct(data.seasonality.next_30d.avg_return)}
+                          </span>
+                          <span className="text-zinc-300">Win Rate: {data.seasonality.next_30d.win_rate.toFixed(0)}%</span>
+                          <span className="text-zinc-500">n={data.seasonality.next_30d.n}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                      <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        MONTHLY PERFORMANCE
+                      </p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          <thead>
+                            <tr className="border-b border-zinc-800 text-zinc-500">
+                              <th className="px-2 py-2 text-left">Month</th>
+                              <th className="px-2 py-2 text-right">Avg</th>
+                              <th className="px-2 py-2 text-right">Median</th>
+                              <th className="px-2 py-2 text-right">Win%</th>
+                              <th className="px-2 py-2 text-right">Years</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {freeMonths.map((m) => (
+                              <tr key={m.month} className="border-b border-zinc-900/80">
+                                <td className="px-2 py-2 text-zinc-200 font-semibold">{m.name}</td>
+                                <td className={`px-2 py-2 text-right ${m.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(m.avg_return)}</td>
+                                <td className={`px-2 py-2 text-right ${m.median_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(m.median_return)}</td>
+                                <td className="px-2 py-2 text-right text-zinc-300">{m.win_rate.toFixed(0)}%</td>
+                                <td className="px-2 py-2 text-right text-zinc-400">{m.n}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-3">
+                        <SubscribeCTA message={`Subscribe to see all 12 months of ${data.ticker} seasonality data.`} compact />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* PEER COMPARISON — collapsible, after setups */}
               <CollapsibleSection title="PEER COMPARISON" badge={`${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>

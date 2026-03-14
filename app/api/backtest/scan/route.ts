@@ -580,12 +580,12 @@ async function computeDynamicBacktestRows(
   ticker: string,
   setupFilter: Set<string>,
 ): Promise<Map<string, BacktestRow[]>> {
-  // Fetch ALL bars (no limit) for historical walk
+  // Fetch full history for the ticker (paginated past 1000 rows)
   const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows] = await Promise.all([
-    fetchOhlcvRows(supabase, ticker, "daily", 10000),
-    fetchOhlcvRows(supabase, ticker, "weekly", 3000),
-    fetchOhlcvRows(supabase, "^VIX", "daily", 10000),
-    fetchOhlcvRows(supabase, "^VIX", "weekly", 3000),
+    fetchOhlcvRows(supabase, ticker, "daily", 15000),
+    fetchOhlcvRows(supabase, ticker, "weekly", 5000),
+    fetchOhlcvRows(supabase, "^VIX", "daily", 5000),
+    fetchOhlcvRows(supabase, "^VIX", "weekly", 2000),
   ]);
 
   if (!dailyRows || !weeklyRows || dailyRows.length < BACKTEST_START_INDEX || weeklyRows.length < 10) {
@@ -819,6 +819,122 @@ async function computeDynamicBacktestRows(
   return rowsBySetup;
 }
 
+// ─── Seasonality computation ─────────────────────────────────────────────────
+async function computeSeasonality(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+): Promise<{
+  monthly: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }>;
+  next_30d: { avg_return: number; win_rate: number; n: number } | null;
+}> {
+  // Fetch all monthly bars or compute from daily bars
+  const allDaily = await fetchOhlcvRows(supabase, ticker, "daily", 15000);
+  if (!allDaily || allDaily.length < 250) return { monthly: [], next_30d: null };
+
+  // Group bars by year-month to get monthly returns
+  const monthlyReturns: Map<number, number[]> = new Map();
+  for (let m = 1; m <= 12; m++) monthlyReturns.set(m, []);
+
+  // Walk through and compute month-over-month returns
+  let prevMonthClose: number | null = null;
+  let prevMonth: number | null = null;
+
+  for (const bar of allDaily) {
+    const d = new Date(bar.bar_date + "T12:00:00Z");
+    const month = d.getMonth() + 1; // 1-12
+
+    if (prevMonth !== null && month !== prevMonth && prevMonthClose !== null) {
+      // Month changed — record return for the NEW month that just completed
+      const ret = ((bar.close - prevMonthClose) / prevMonthClose) * 100;
+      // The return belongs to prevMonth (the month that just ended)
+      monthlyReturns.get(prevMonth)!.push(ret);
+    }
+
+    // Track last bar of each month
+    if (prevMonth !== null && month !== prevMonth) {
+      prevMonthClose = bar.close;
+    } else if (prevMonthClose === null) {
+      prevMonthClose = bar.close;
+    }
+    prevMonth = month;
+  }
+
+  // Actually, let me redo this properly — compute return for each calendar month
+  // by looking at close on first and last trading day of each month
+  const monthBuckets: Map<string, { first: number; last: number }> = new Map(); // "YYYY-MM" → first/last close
+  for (const bar of allDaily) {
+    const key = bar.bar_date.substring(0, 7); // "YYYY-MM"
+    const existing = monthBuckets.get(key);
+    if (!existing) {
+      monthBuckets.set(key, { first: bar.close, last: bar.close });
+    } else {
+      existing.last = bar.close;
+    }
+  }
+
+  // Compute monthly returns
+  const monthReturnsByMonth: Map<number, number[]> = new Map();
+  for (let m = 1; m <= 12; m++) monthReturnsByMonth.set(m, []);
+
+  const sortedKeys = [...monthBuckets.keys()].sort();
+  for (let i = 1; i < sortedKeys.length; i++) {
+    const prevKey = sortedKeys[i - 1];
+    const currKey = sortedKeys[i];
+    const prevBucket = monthBuckets.get(prevKey)!;
+    const currBucket = monthBuckets.get(currKey)!;
+    const monthNum = parseInt(currKey.split("-")[1], 10);
+    const ret = ((currBucket.last - prevBucket.last) / prevBucket.last) * 100;
+    monthReturnsByMonth.get(monthNum)!.push(ret);
+  }
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthly = [];
+  for (let m = 1; m <= 12; m++) {
+    const returns = monthReturnsByMonth.get(m)!;
+    if (returns.length === 0) {
+      monthly.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
+      continue;
+    }
+    const sorted = [...returns].sort((a, b) => a - b);
+    const med = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+    const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
+    const wins = returns.filter((r) => r > 0).length;
+    monthly.push({
+      month: m,
+      name: monthNames[m - 1],
+      avg_return: round(avg),
+      median_return: round(med),
+      win_rate: round((wins / returns.length) * 100),
+      n: returns.length,
+    });
+  }
+
+  // Next 30 days — what month are we in now and what does the next month look like?
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  // Blend current month remaining + next month proportionally
+  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+  const daysFromNextMonth = Math.max(0, 30 - daysLeftInMonth);
+  const currMonthData = monthly[currentMonth - 1];
+  const nextMonthData = monthly[nextMonth - 1];
+
+  let next30d = null;
+  if (currMonthData.n > 0) {
+    if (daysFromNextMonth > 0 && nextMonthData.n > 0) {
+      const blend = (currMonthData.avg_return * daysLeftInMonth + nextMonthData.avg_return * daysFromNextMonth) / 30;
+      const blendWin = (currMonthData.win_rate * daysLeftInMonth + nextMonthData.win_rate * daysFromNextMonth) / 30;
+      next30d = { avg_return: round(blend), win_rate: round(blendWin), n: Math.min(currMonthData.n, nextMonthData.n) };
+    } else {
+      next30d = { avg_return: currMonthData.avg_return, win_rate: currMonthData.win_rate, n: currMonthData.n };
+    }
+  }
+
+  return { monthly, next_30d: next30d };
+}
+
 function buildCurrentSummarySentence(params: {
   ticker: string;
   modeSuggestion: ReturnType<typeof suggestMode>;
@@ -872,16 +988,29 @@ async function fetchOhlcvRows(
   timeframe: "daily" | "weekly",
   limit: number,
 ): Promise<OhlcvRow[] | null> {
-  const { data, error } = await supabase
-    .from("ohlcv_bars")
-    .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
-    .eq("ticker", ticker)
-    .eq("timeframe", timeframe)
-    .order("bar_date", { ascending: false })
-    .limit(limit);
+  // Supabase REST caps at 1000 rows per request — paginate for larger fetches
+  const PAGE_SIZE = 1000;
+  const allRows: OhlcvRow[] = [];
+  let offset = 0;
 
-  if (error || !data || data.length === 0) return null;
-  return [...(data as OhlcvRow[])].reverse();
+  while (allRows.length < limit) {
+    const pageLimit = Math.min(PAGE_SIZE, limit - allRows.length);
+    const { data, error } = await supabase
+      .from("ohlcv_bars")
+      .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
+      .eq("ticker", ticker)
+      .eq("timeframe", timeframe)
+      .order("bar_date", { ascending: true })
+      .range(offset, offset + pageLimit - 1);
+
+    if (error || !data || data.length === 0) break;
+    allRows.push(...(data as OhlcvRow[]));
+    if (data.length < pageLimit) break; // No more rows
+    offset += data.length;
+  }
+
+  if (allRows.length === 0) return null;
+  return allRows; // Already ascending
 }
 
 async function computeIndicatorsFromOhlcv(
@@ -1391,6 +1520,9 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Compute seasonality
+    const seasonality = await computeSeasonality(supabase, ticker);
+
     const rightNowSentence = buildCurrentSummarySentence({
       ticker,
       modeSuggestion: evaluatedTicker.mode,
@@ -1430,11 +1562,34 @@ export async function GET(request: NextRequest) {
         confidence: evaluatedTicker.mode.confidence,
         reasoning: evaluatedTicker.mode.reasoning,
       },
+      seasonality,
       peer_comparison: peerComparison,
       scenarios: scenarioComparisons,
       setups: sortedSetups,
       meta: {
         backtest_source: ticker === VALIDATED_BACKTEST_TICKER ? "orb_backtest_instances" : "ohlcv_scan",
+        data_range: await (async () => {
+          const { data: rangeData } = await supabase
+            .from("ohlcv_bars")
+            .select("bar_date")
+            .eq("ticker", ticker)
+            .eq("timeframe", "daily")
+            .order("bar_date", { ascending: true })
+            .limit(1);
+          const { data: latestData } = await supabase
+            .from("ohlcv_bars")
+            .select("bar_date")
+            .eq("ticker", ticker)
+            .eq("timeframe", "daily")
+            .order("bar_date", { ascending: false })
+            .limit(1);
+          const earliest = (rangeData as OhlcvRow[])?.[0]?.bar_date ?? null;
+          const latest = (latestData as OhlcvRow[])?.[0]?.bar_date ?? null;
+          const years = earliest && latest
+            ? Math.round((new Date(latest).getTime() - new Date(earliest).getTime()) / (365.25 * 24 * 60 * 60 * 1000) * 10) / 10
+            : null;
+          return { earliest, latest, years };
+        })(),
       },
     });
   } catch (error) {
