@@ -317,7 +317,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
           )}
 
           {limited ? (
-            /* PUBLIC VIEW: full forward return table but no conditions/indicators/instances */
+            /* PUBLIC VIEW: forward return table + historical instances, no conditions/indicators */
             <div className="space-y-3 mt-3">
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
                 <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -329,7 +329,47 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                   <p className="text-sm text-zinc-400">{setup.backtest.message || "No historical instances found."}</p>
                 )}
               </div>
-              <SubscribeCTA message="Subscribe for historical instances, condition breakdowns, and real-time alerts." compact />
+
+              {showInstances && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                  <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    HISTORICAL INSTANCES ({setup.backtest.n})
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <thead>
+                        <tr className="border-b border-zinc-800 text-zinc-500">
+                          <th className="px-2 py-2 text-left">Date</th>
+                          <th className="px-2 py-2 text-right">Entry</th>
+                          <th className="px-2 py-2 text-right">5d</th>
+                          <th className="px-2 py-2 text-right">10d</th>
+                          <th className="px-2 py-2 text-right">20d</th>
+                          <th className="px-2 py-2 text-right">60d</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {setup.backtest.instances.slice(0, 8).map((instance) => (
+                          <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
+                            <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
+                            <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {setup.backtest.instances.length > 8 && (
+                    <p className="mt-2 text-[10px] text-zinc-500 text-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      Showing 8 of {setup.backtest.instances.length} instances
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <SubscribeCTA message="Subscribe for condition breakdowns, real-time alerts, and unlimited scans." compact />
             </div>
           ) : (
             /* SUBSCRIBER VIEW: full details */
@@ -435,21 +475,16 @@ export default function BacktestClient() {
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-
   // Check scans on mount
   useEffect(() => {
     setScansUsed(getScansToday());
   }, []);
 
-  const runScan = useCallback(async (ticker: string, skipRateLimit = false) => {
-    // Check rate limit — skip for the initial page load
-    if (!skipRateLimit) {
-      const currentScans = getScansToday();
-      if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
-        setRateLimited(true);
-        return;
-      }
+  const doScan = useCallback(async (ticker: string) => {
+    const currentScans = getScansToday();
+    if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
+      setRateLimited(true);
+      return;
     }
 
     setLoading(true);
@@ -466,11 +501,8 @@ export default function BacktestClient() {
       }
 
       setData(body as ScanResponse);
-      // Don't count the initial page load
-      if (!skipRateLimit) {
-        const newCount = incrementScans();
-        setScansUsed(newCount);
-      }
+      const newCount = incrementScans();
+      setScansUsed(newCount);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setData(null);
@@ -479,22 +511,17 @@ export default function BacktestClient() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isFirstLoad) {
-      runScan(selectedTicker, true);
-      setIsFirstLoad(false);
-    } else {
-      runScan(selectedTicker);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTicker]);
-
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalized = tickerInput.toUpperCase().replace(/[^A-Z.^-]/g, "").slice(0, 10);
     if (!normalized) return;
     setTickerInput(normalized);
     setSelectedTicker(normalized);
+    doScan(normalized);
+  };
+
+  const handleScanClick = () => {
+    doScan(selectedTicker);
   };
 
   const groupedSetups = useMemo(() => {
@@ -552,9 +579,6 @@ export default function BacktestClient() {
                 {loading ? "Scanning..." : "Scan"}
               </button>
             </form>
-            <p className="text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              {scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free scans remaining today` : "Click a ticker or type your own"}
-            </p>
 
             <div className="flex flex-wrap gap-2">
               {FAVORITE_TICKERS.map((ticker) => (
@@ -575,6 +599,20 @@ export default function BacktestClient() {
                 </button>
               ))}
             </div>
+
+            {!data && !loading && (
+              <button
+                onClick={handleScanClick}
+                className="w-full rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                Scan {selectedTicker}
+              </button>
+            )}
+
+            <p className="text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free scans remaining today` : "Select a ticker, then click Scan"}
+            </p>
           </div>
 
           {error && (
