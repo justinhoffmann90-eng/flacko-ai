@@ -45,6 +45,8 @@ export interface Indicators {
   ema9_slope_5d: number; // 5-day rate of change of Daily 9 EMA (%)
   days_below_ema9: number; // consecutive days close < ema9
   was_full_bull_5d: boolean; // was close > ema9 AND ema9 > ema21 on any of last 5 days
+  volume?: number; // today's volume
+  volumes?: number[]; // last ~30 daily volumes for relative volume calc
 }
 
 export interface SetupResult {
@@ -198,6 +200,7 @@ export function evaluateAllSetups(indicators: Indicators, previousStates: Map<st
     evaluateEmaShieldCaution(indicators, previousStates.get("ema-shield-caution")),
     evaluateEmaShieldBreak(indicators, previousStates.get("ema-shield-break"), previousStates.get("ema-shield-caution")),
     evaluateVixSpikeReversal(indicators, previousStates.get("vix-spike-reversal")),
+    evaluateClimacticVolumeReversal(indicators),
   ];
 }
 
@@ -603,6 +606,43 @@ function evaluateEmaShieldCaution(ind: Indicators, prev?: PreviousState): SetupR
       : isWatching
       ? `${ind.days_below_ema9}d below D9 EMA, slope ${ind.ema9_slope_5d.toFixed(1)}% - approaching`
       : `Days below D9: ${ind.days_below_ema9}, slope: ${ind.ema9_slope_5d.toFixed(1)}%`,
+  };
+}
+
+function evaluateClimacticVolumeReversal(ind: Indicators): SetupResult {
+  // Climactic Volume Reversal: 200%+ relative volume + RSI < 35
+  // Backtest: N=20, 70% win at 20D (+5.6%), 75% win at 60D (+14.9%)
+  const volumes = ind.volumes || [];
+  const todayVol = ind.volume || 0;
+
+  // Compute 20-day average volume (excluding today)
+  const prior20 = volumes.slice(-21, -1).filter(v => Number.isFinite(v) && v > 0);
+  const avgVol = prior20.length > 0 ? prior20.reduce((s, v) => s + v, 0) / prior20.length : 0;
+  const relativeVolPct = avgVol > 0 ? (todayVol / avgVol) * 100 : 0;
+
+  const climacticVolume = relativeVolPct >= 200;
+  const oversoldRsi = ind.rsi < 35;
+  const isActive = climacticVolume && oversoldRsi;
+
+  // Watching: volume elevated (150%+) with RSI approaching oversold, or climactic volume without RSI confirm
+  const isWatching = !isActive && (
+    (relativeVolPct >= 150 && ind.rsi < 40) ||
+    (climacticVolume && ind.rsi < 45)
+  );
+
+  return {
+    setup_id: "climactic-volume-reversal",
+    is_active: isActive,
+    is_watching: isWatching,
+    conditions_met: {
+      climactic_volume_200pct: climacticVolume,
+      rsi_below_35: oversoldRsi,
+    },
+    reason: isActive
+      ? `Climactic volume (${relativeVolPct.toFixed(0)}% rel vol) + RSI ${ind.rsi.toFixed(1)} < 35`
+      : isWatching
+      ? `Watching: rel vol ${relativeVolPct.toFixed(0)}%, RSI ${ind.rsi.toFixed(1)}`
+      : `Rel vol ${relativeVolPct.toFixed(0)}%, RSI ${ind.rsi.toFixed(1)}`,
   };
 }
 

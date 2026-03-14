@@ -20,12 +20,13 @@ export const SETUP_TYPES: Record<string, "buy" | "avoid"> = {
   "deep-value": "buy", "green-shoots": "buy", "momentum-flip": "buy",
   "trend-confirm": "buy", "trend-ride": "buy", "trend-continuation": "buy",
   "goldilocks": "buy", "capitulation": "buy", "vix-spike-reversal": "buy",
+  "climactic-volume-reversal": "buy",
   "smi-overbought": "avoid", "dual-ll": "avoid", "overextended": "avoid",
   "momentum-crack": "avoid", "ema-shield-caution": "avoid", "ema-shield-break": "avoid",
 };
 
 export const WEIGHTS: Record<string, number> = {
-  "oversold-extreme": 0.60, "capitulation": 0.51, "momentum-crack": 0.22,
+  "oversold-extreme": 0.60, "climactic-volume-reversal": 0.48, "capitulation": 0.51, "momentum-crack": 0.22,
   "overextended": 0.49, "deep-value": 0.47, "goldilocks": 0.44,
   "smi-overbought": 0.44, "trend-confirm": 0.43, "regime-shift": 0.28,
   "ema-shield-caution": 0.39, "dual-ll": 0.39, "trend-ride": 0.35,
