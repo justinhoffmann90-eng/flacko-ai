@@ -1,0 +1,1117 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import {
+  evaluateAllSetups,
+  type Indicators,
+  type PreviousState,
+  type SetupResult,
+  suggestMode,
+} from "@/lib/orb/evaluate-setups";
+import { computeIndicators } from "@/lib/orb/compute-indicators";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
+const PEER_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"] as const;
+const BACKTEST_DATA_TICKER = "TSLA";
+
+type ScanStatus = "active" | "watching" | "inactive";
+type ReturnColumn = "ret_5d" | "ret_10d" | "ret_20d" | "ret_60d";
+type BxtState = "HH" | "LH" | "HL" | "LL";
+
+interface DefinitionRow {
+  id: string;
+  name: string | null;
+  public_name: string | null;
+  number: number | null;
+  type: "buy" | "avoid" | null;
+  one_liner: string | null;
+  public_description: string | null;
+  description: string | null;
+}
+
+interface StateRow {
+  setup_id: string;
+  status: "active" | "watching" | "inactive";
+  active_since: string | null;
+  active_day: number | null;
+  entry_price: number | null;
+  gauge_entry_value: number | null;
+}
+
+interface BacktestRow {
+  setup_id: string;
+  signal_date: string;
+  signal_price: number;
+  ret_5d: number | null;
+  ret_10d: number | null;
+  ret_20d: number | null;
+  ret_60d: number | null;
+  is_win_5d: boolean | null;
+  is_win_10d: boolean | null;
+  is_win_20d: boolean | null;
+  is_win_60d: boolean | null;
+}
+
+interface OhlcvRow {
+  bar_date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  rsi: number | null;
+  bxt: number | null;
+  bxt_state: string | null;
+  ema_9: number | null;
+  ema_13: number | null;
+  ema_21: number | null;
+  sma_200: number | null;
+}
+
+interface SummaryPeriod {
+  n: number;
+  wins: number;
+  win_rate_pct: string;
+  avg_return: number;
+  median_return: number;
+  best: number;
+  worst: number;
+  avg_max_upside: number | null;
+  avg_max_downside: number | null;
+}
+
+interface FallbackSetupMeta {
+  name: string;
+  public_name: string;
+  type: "buy" | "avoid";
+  one_liner: string;
+  number: number;
+}
+
+const FALLBACK_SETUP_META: Record<string, FallbackSetupMeta> = {
+  "smi-oversold-gauge": {
+    name: "SMI Oversold Gauge",
+    public_name: "Oversold Gauge",
+    type: "buy",
+    one_liner: "SMI crosses below -60 and tracks recovery toward +30.",
+    number: 1,
+  },
+  "oversold-extreme": {
+    name: "Oversold Extreme",
+    public_name: "Generational Oversold",
+    type: "buy",
+    one_liner: "Price deeply below the 200 SMA with stabilization.",
+    number: 2,
+  },
+  "regime-shift": {
+    name: "Regime Shift",
+    public_name: "Regime Shift",
+    type: "buy",
+    one_liner: "Weekly momentum turns while structure gets reclaimed.",
+    number: 3,
+  },
+  "deep-value": {
+    name: "Deep Value",
+    public_name: "Deep Value",
+    type: "buy",
+    one_liner: "200 SMA dislocation zone with improving momentum.",
+    number: 4,
+  },
+  "green-shoots": {
+    name: "Green Shoots",
+    public_name: "Green Shoots",
+    type: "buy",
+    one_liner: "Daily BX flips LL→HL below long-term trend.",
+    number: 5,
+  },
+  "momentum-flip": {
+    name: "Momentum Flip",
+    public_name: "Momentum Flip",
+    type: "buy",
+    one_liner: "Daily BX flips HL→HH with RSI runway.",
+    number: 6,
+  },
+  "trend-confirm": {
+    name: "Trend Confirmation",
+    public_name: "Trend Confirmation",
+    type: "buy",
+    one_liner: "SMI bull cross with BX HH confirmation.",
+    number: 7,
+  },
+  "trend-ride": {
+    name: "Trend Ride",
+    public_name: "Trend Ride",
+    type: "buy",
+    one_liner: "Daily and weekly structure aligned for continuation.",
+    number: 8,
+  },
+  "trend-continuation": {
+    name: "Trend Continuation",
+    public_name: "Trend Continuation",
+    type: "buy",
+    one_liner: "Weekly EMAs stacked and daily momentum positive.",
+    number: 9,
+  },
+  goldilocks: {
+    name: "Goldilocks",
+    public_name: "Goldilocks Zone",
+    type: "buy",
+    one_liner: "Trend confirmed, positive momentum, not overheated.",
+    number: 10,
+  },
+  capitulation: {
+    name: "Capitulation Bounce",
+    public_name: "Capitulation Bounce",
+    type: "buy",
+    one_liner: "Extended selloff and oversold momentum snapback setup.",
+    number: 11,
+  },
+  "vix-spike-reversal": {
+    name: "VIX Spike Reversal",
+    public_name: "VIX Spike Reversal",
+    type: "buy",
+    one_liner: "Fear spike regime where historical reversals appear.",
+    number: 12,
+  },
+  "smi-overbought": {
+    name: "SMI Overbought Gauge",
+    public_name: "Overbought Gauge",
+    type: "avoid",
+    one_liner: "SMI crosses above +75 and tracks reset risk.",
+    number: 1,
+  },
+  "dual-ll": {
+    name: "Dual Timeframe Downtrend",
+    public_name: "Dual LL",
+    type: "avoid",
+    one_liner: "Daily and weekly BX both in LL state.",
+    number: 2,
+  },
+  overextended: {
+    name: "Overextended",
+    public_name: "Overextended",
+    type: "avoid",
+    one_liner: "Price stretched far above long-term trend.",
+    number: 3,
+  },
+  "momentum-crack": {
+    name: "Momentum Crack",
+    public_name: "Momentum Crack",
+    type: "avoid",
+    one_liner: "Momentum deterioration from previously strong levels.",
+    number: 4,
+  },
+  "ema-shield-caution": {
+    name: "EMA Shield Caution",
+    public_name: "EMA Shield Caution",
+    type: "avoid",
+    one_liner: "Early warning that short-term trend support is weakening.",
+    number: 5,
+  },
+  "ema-shield-break": {
+    name: "EMA Shield Break",
+    public_name: "EMA Shield Break",
+    type: "avoid",
+    one_liner: "Sustained break below D9 EMA with negative slope.",
+    number: 6,
+  },
+};
+
+const PERIOD_TO_COLUMN: Record<"5" | "10" | "20" | "60", ReturnColumn> = {
+  "5": "ret_5d",
+  "10": "ret_10d",
+  "20": "ret_20d",
+  "60": "ret_60d",
+};
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function round(value: number, decimals: number = 2): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  }
+  return sorted[middle];
+}
+
+function normalizeBxtState(value: string | null): BxtState | null {
+  if (!value) return null;
+  const upper = value.toUpperCase();
+  if (upper === "HH" || upper === "LH" || upper === "HL" || upper === "LL") {
+    return upper;
+  }
+  return null;
+}
+
+function deriveBxtState(curr: number, prev: number, prevState: BxtState): BxtState {
+  const currentHigh = curr > prev;
+  const previousWasHigh = prevState[0] === "H";
+  if (currentHigh && previousWasHigh) return "HH";
+  if (!currentHigh && previousWasHigh) return "LH";
+  if (currentHigh && !previousWasHigh) return "HL";
+  return "LL";
+}
+
+function inferBxtStates(values: number[]): BxtState[] {
+  const states: BxtState[] = new Array(values.length).fill("LL") as BxtState[];
+  let firstValidIndex = -1;
+
+  for (let i = 0; i < values.length; i++) {
+    if (Number.isFinite(values[i])) {
+      firstValidIndex = i;
+      break;
+    }
+  }
+
+  if (firstValidIndex < 0) return states;
+
+  states[firstValidIndex] = values[firstValidIndex] > 0 ? "HH" : "LL";
+
+  for (let i = firstValidIndex + 1; i < values.length; i++) {
+    if (!Number.isFinite(values[i])) {
+      states[i] = states[i - 1];
+      continue;
+    }
+    const prev = Number.isFinite(values[i - 1]) ? values[i - 1] : values[i];
+    states[i] = deriveBxtState(values[i], prev, states[i - 1]);
+  }
+
+  return states;
+}
+
+function ema(values: number[], period: number): number[] {
+  if (values.length < period) return new Array(values.length).fill(Number.NaN);
+
+  const k = 2 / (period + 1);
+  const result = new Array(values.length).fill(Number.NaN);
+
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += values[i];
+  result[period - 1] = sum / period;
+
+  for (let i = period; i < values.length; i++) {
+    result[i] = values[i] * k + result[i - 1] * (1 - k);
+  }
+
+  return result;
+}
+
+function highest(values: number[], period: number): number[] {
+  const result = new Array(values.length).fill(Number.NaN);
+  for (let i = period - 1; i < values.length; i++) {
+    let max = -Infinity;
+    for (let j = i - period + 1; j <= i; j++) {
+      if (values[j] > max) max = values[j];
+    }
+    result[i] = max;
+  }
+  return result;
+}
+
+function lowest(values: number[], period: number): number[] {
+  const result = new Array(values.length).fill(Number.NaN);
+  for (let i = period - 1; i < values.length; i++) {
+    let min = Infinity;
+    for (let j = i - period + 1; j <= i; j++) {
+      if (values[j] < min) min = values[j];
+    }
+    result[i] = min;
+  }
+  return result;
+}
+
+function computeSmi(
+  highs: number[],
+  lows: number[],
+  closes: number[],
+  kPeriod: number = 10,
+  dPeriod: number = 3,
+  emaPeriod: number = 3,
+): { smi: number[]; signal: number[] } {
+  const upper = highest(highs, kPeriod);
+  const lower = lowest(lows, kPeriod);
+
+  const midpointDiff = closes.map((close, index) => {
+    if (!Number.isFinite(upper[index]) || !Number.isFinite(lower[index])) return Number.NaN;
+    return close - (upper[index] + lower[index]) / 2;
+  });
+
+  const fullRange = highs.map((_, index) => {
+    if (!Number.isFinite(upper[index]) || !Number.isFinite(lower[index])) return Number.NaN;
+    return upper[index] - lower[index];
+  });
+
+  const diffSmooth1 = ema(midpointDiff.map((value) => (Number.isFinite(value) ? value : 0)), dPeriod);
+  const diffSmooth2 = ema(diffSmooth1.map((value) => (Number.isFinite(value) ? value : 0)), emaPeriod);
+
+  const rangeSmooth1 = ema(fullRange.map((value) => (Number.isFinite(value) ? value : 0)), dPeriod);
+  const rangeSmooth2 = ema(rangeSmooth1.map((value) => (Number.isFinite(value) ? value : 0)), emaPeriod);
+
+  const smiValues = new Array(closes.length).fill(Number.NaN);
+  for (let i = 0; i < closes.length; i++) {
+    if (!Number.isFinite(diffSmooth2[i]) || !Number.isFinite(rangeSmooth2[i])) continue;
+    if (Math.abs(rangeSmooth2[i]) < 1e-10) {
+      smiValues[i] = 0;
+    } else {
+      smiValues[i] = (diffSmooth2[i] / (rangeSmooth2[i] / 2)) * 100;
+    }
+  }
+
+  const signal = ema(smiValues.map((value) => (Number.isFinite(value) ? value : 0)), emaPeriod);
+  return { smi: smiValues, signal };
+}
+
+function computeForwardSummary(rows: BacktestRow[]): Record<string, SummaryPeriod> {
+  const summary: Record<string, SummaryPeriod> = {};
+
+  for (const [period, column] of Object.entries(PERIOD_TO_COLUMN) as ["5" | "10" | "20" | "60", ReturnColumn][]) {
+    const returns = rows
+      .map((row) => toNumber(row[column]))
+      .filter((value): value is number => value !== null);
+
+    if (returns.length === 0) {
+      summary[period] = {
+        n: 0,
+        wins: 0,
+        win_rate_pct: "0%",
+        avg_return: 0,
+        median_return: 0,
+        best: 0,
+        worst: 0,
+        avg_max_upside: null,
+        avg_max_downside: null,
+      };
+      continue;
+    }
+
+    const wins = returns.filter((value) => value > 0).length;
+    const avgReturn = returns.reduce((sum, value) => sum + value, 0) / returns.length;
+
+    summary[period] = {
+      n: returns.length,
+      wins,
+      win_rate_pct: `${Math.round((wins / returns.length) * 100)}%`,
+      avg_return: round(avgReturn),
+      median_return: round(median(returns)),
+      best: round(Math.max(...returns)),
+      worst: round(Math.min(...returns)),
+      avg_max_upside: null,
+      avg_max_downside: null,
+    };
+  }
+
+  return summary;
+}
+
+function buildRelevantIndicators(setupId: string, indicators: Indicators) {
+  const base = {
+    close: round(indicators.close),
+    rsi: round(indicators.rsi),
+    smi: round(indicators.smi),
+    bx_daily_state: indicators.bx_daily_state,
+    bx_weekly_state: indicators.bx_weekly_state,
+    sma200_dist: round(indicators.sma200_dist),
+    ema9: round(indicators.ema9),
+    ema21: round(indicators.ema21),
+    price_vs_ema9: round(indicators.price_vs_ema9),
+    vix_weekly_change_pct: round(indicators.vix_weekly_change_pct),
+    days_below_ema9: indicators.days_below_ema9,
+    ema9_slope_5d: round(indicators.ema9_slope_5d),
+  };
+
+  switch (setupId) {
+    case "smi-oversold-gauge":
+    case "smi-overbought":
+      return {
+        smi: base.smi,
+        smi_signal: round(indicators.smi_signal),
+        smi_prev: round(indicators.smi_prev),
+      };
+    case "dual-ll":
+      return {
+        bx_daily_state: base.bx_daily_state,
+        bx_weekly_state: base.bx_weekly_state,
+        bx_daily: round(indicators.bx_daily),
+        bx_weekly: round(indicators.bx_weekly),
+      };
+    case "overextended":
+    case "oversold-extreme":
+    case "deep-value":
+      return {
+        close: base.close,
+        sma200_dist: base.sma200_dist,
+        bx_daily_state: base.bx_daily_state,
+      };
+    case "regime-shift":
+      return {
+        bx_weekly_state: base.bx_weekly_state,
+        bx_weekly_transition: indicators.bx_weekly_transition,
+        daily_hh_streak: indicators.daily_hh_streak,
+        price_above_weekly_13: indicators.price_above_weekly_13,
+      };
+    case "trend-ride":
+    case "trend-continuation":
+      return {
+        bx_daily_state: base.bx_daily_state,
+        weekly_emas_stacked: indicators.weekly_emas_stacked,
+        price_above_weekly_all: indicators.price_above_weekly_all,
+        price_above_weekly_21: indicators.price_above_weekly_21,
+      };
+    case "trend-confirm":
+      return {
+        smi: base.smi,
+        smi_signal: round(indicators.smi_signal),
+        smi_bull_cross: indicators.smi_bull_cross,
+        bx_daily_state: base.bx_daily_state,
+      };
+    case "momentum-crack":
+      return {
+        smi: base.smi,
+        smi_change_3d: round(indicators.smi_change_3d),
+        was_full_bull_5d: indicators.was_full_bull_5d,
+      };
+    case "ema-shield-caution":
+    case "ema-shield-break":
+      return {
+        days_below_ema9: base.days_below_ema9,
+        ema9_slope_5d: base.ema9_slope_5d,
+        price_vs_ema9: base.price_vs_ema9,
+      };
+    case "vix-spike-reversal":
+      return {
+        vix_weekly_change_pct: base.vix_weekly_change_pct,
+        sma200_dist: base.sma200_dist,
+        bx_daily_state: base.bx_daily_state,
+      };
+    default:
+      return {
+        close: base.close,
+        rsi: base.rsi,
+        smi: base.smi,
+        bx_daily_state: base.bx_daily_state,
+      };
+  }
+}
+
+function buildCurrentSummarySentence(params: {
+  ticker: string;
+  modeSuggestion: ReturnType<typeof suggestMode>;
+  buyActiveCount: number;
+  avoidActiveCount: number;
+  watchingCount: number;
+  average20d: number | null;
+  hasTslaHistory: boolean;
+}) {
+  const {
+    ticker,
+    modeSuggestion,
+    buyActiveCount,
+    avoidActiveCount,
+    watchingCount,
+    average20d,
+    hasTslaHistory,
+  } = params;
+
+  const expectancy = hasTslaHistory && average20d != null
+    ? `${average20d >= 0 ? "+" : ""}${average20d.toFixed(2)}% at 20d`
+    : "not available yet (TSLA-only backtests)";
+
+  return `${ticker} is currently ${modeSuggestion.suggestion} (${modeSuggestion.confidence} confidence) with ${buyActiveCount} buy active, ${avoidActiveCount} avoid active, and ${watchingCount} watching; historical expectancy from similar active setups is ${expectancy}.`;
+}
+
+function derivePeerState(buyActive: number, avoidActive: number, watching: number): "BULLISH" | "RISK" | "WATCH" | "NEUTRAL" {
+  if (avoidActive > 0) return "RISK";
+  if (buyActive >= 3) return "BULLISH";
+  if (buyActive > 0 || watching > 0) return "WATCH";
+  return "NEUTRAL";
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  };
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+async function fetchOhlcvRows(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+  timeframe: "daily" | "weekly",
+  limit: number,
+): Promise<OhlcvRow[] | null> {
+  const { data, error } = await supabase
+    .from("ohlcv_bars")
+    .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
+    .eq("ticker", ticker)
+    .eq("timeframe", timeframe)
+    .order("bar_date", { ascending: false })
+    .limit(limit);
+
+  if (error || !data || data.length === 0) return null;
+  return [...(data as OhlcvRow[])].reverse();
+}
+
+async function computeIndicatorsFromOhlcv(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+): Promise<(Indicators & { open: number; volume: number; volumes: number[] }) | null> {
+  const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows] = await Promise.all([
+    fetchOhlcvRows(supabase, ticker, "daily", 450),
+    fetchOhlcvRows(supabase, ticker, "weekly", 150),
+    fetchOhlcvRows(supabase, "^VIX", "daily", 120),
+    fetchOhlcvRows(supabase, "^VIX", "weekly", 30),
+  ]);
+
+  if (!dailyRows || !weeklyRows || dailyRows.length < 30 || weeklyRows.length < 10) {
+    return null;
+  }
+
+  const latest = dailyRows[dailyRows.length - 1];
+  const prev = dailyRows[dailyRows.length - 2];
+  const prev3 = dailyRows[Math.max(0, dailyRows.length - 4)];
+
+  const weeklyLatest = weeklyRows[weeklyRows.length - 1];
+  const weeklyPrev = weeklyRows[weeklyRows.length - 2];
+
+  const close = toNumber(latest.close);
+  const rsi = toNumber(latest.rsi);
+  const rsiPrev = toNumber(prev?.rsi);
+  const bxtDaily = toNumber(latest.bxt);
+  const bxtDailyPrev = toNumber(prev?.bxt);
+  const ema9 = toNumber(latest.ema_9);
+  const ema21 = toNumber(latest.ema_21);
+  const sma200 = toNumber(latest.sma_200);
+
+  const weeklyEma9 = toNumber(weeklyLatest.ema_9);
+  const weeklyEma13 = toNumber(weeklyLatest.ema_13);
+  const weeklyEma21 = toNumber(weeklyLatest.ema_21);
+  const bxtWeekly = toNumber(weeklyLatest.bxt);
+  const bxtWeeklyPrev = toNumber(weeklyPrev?.bxt);
+
+  if (
+    close == null ||
+    rsi == null ||
+    rsiPrev == null ||
+    bxtDaily == null ||
+    bxtDailyPrev == null ||
+    ema9 == null ||
+    ema21 == null ||
+    sma200 == null ||
+    weeklyEma9 == null ||
+    weeklyEma13 == null ||
+    weeklyEma21 == null ||
+    bxtWeekly == null ||
+    bxtWeeklyPrev == null
+  ) {
+    return null;
+  }
+
+  const closes = dailyRows.map((row) => row.close);
+  const highs = dailyRows.map((row) => row.high);
+  const lows = dailyRows.map((row) => row.low);
+  const volumes = dailyRows.map((row) => row.volume);
+
+  const smiResult = computeSmi(highs, lows, closes);
+  const smiCurr = smiResult.smi[smiResult.smi.length - 1];
+  const smiSignalCurr = smiResult.signal[smiResult.signal.length - 1];
+  const smiPrev = smiResult.smi[Math.max(0, smiResult.smi.length - 2)];
+  const smiSignalPrev = smiResult.signal[Math.max(0, smiResult.signal.length - 2)];
+  const smiPrev3 = smiResult.smi[Math.max(0, smiResult.smi.length - 4)];
+
+  if (
+    !Number.isFinite(smiCurr) ||
+    !Number.isFinite(smiSignalCurr) ||
+    !Number.isFinite(smiPrev) ||
+    !Number.isFinite(smiSignalPrev) ||
+    !Number.isFinite(smiPrev3)
+  ) {
+    return null;
+  }
+
+  const dailyBxtSeries = dailyRows.map((row) => toNumber(row.bxt) ?? Number.NaN);
+  const dailyInferredStates = inferBxtStates(dailyBxtSeries);
+  const bxDailyState = normalizeBxtState(latest.bxt_state) ?? dailyInferredStates[dailyInferredStates.length - 1] ?? "LL";
+  const bxDailyStatePrev = normalizeBxtState(prev?.bxt_state ?? null) ?? dailyInferredStates[Math.max(0, dailyInferredStates.length - 2)] ?? "LL";
+
+  const weeklyBxtSeries = weeklyRows.map((row) => toNumber(row.bxt) ?? Number.NaN);
+  const weeklyInferredStates = inferBxtStates(weeklyBxtSeries);
+  const bxWeeklyState = normalizeBxtState(weeklyLatest.bxt_state) ?? weeklyInferredStates[weeklyInferredStates.length - 1] ?? "LL";
+  const bxWeeklyStatePrev = normalizeBxtState(weeklyPrev?.bxt_state ?? null) ?? weeklyInferredStates[Math.max(0, weeklyInferredStates.length - 2)] ?? "LL";
+
+  let consecutiveDown = 0;
+  let consecutiveUp = 0;
+  for (let i = closes.length - 1; i > 0; i--) {
+    if (closes[i] < closes[i - 1]) consecutiveDown += 1;
+    else break;
+  }
+  for (let i = closes.length - 1; i > 0; i--) {
+    if (closes[i] > closes[i - 1]) consecutiveUp += 1;
+    else break;
+  }
+
+  let stabilizationDays = 0;
+  for (let i = lows.length - 1; i > 0; i--) {
+    if (lows[i] >= lows[i - 1]) stabilizationDays += 1;
+    else break;
+  }
+
+  let dailyHhStreak = 0;
+  for (let i = dailyRows.length - 1; i >= 0; i--) {
+    const state = normalizeBxtState(dailyRows[i].bxt_state) ?? dailyInferredStates[i] ?? "LL";
+    if (state === "HH") dailyHhStreak += 1;
+    else break;
+  }
+
+  const ema9FiveDaysAgo = toNumber(dailyRows[Math.max(0, dailyRows.length - 6)]?.ema_9);
+  const ema9Slope5d =
+    ema9FiveDaysAgo != null && ema9FiveDaysAgo !== 0
+      ? ((ema9 - ema9FiveDaysAgo) / ema9FiveDaysAgo) * 100
+      : 0;
+
+  let daysBelowEma9 = 0;
+  for (let i = dailyRows.length - 1; i >= 0; i--) {
+    const barEma9 = toNumber(dailyRows[i].ema_9);
+    if (barEma9 == null) break;
+    if (dailyRows[i].close < barEma9) daysBelowEma9 += 1;
+    else break;
+  }
+
+  let wasFullBull5d = false;
+  for (let i = Math.max(0, dailyRows.length - 5); i < dailyRows.length; i++) {
+    const bar = dailyRows[i];
+    const barEma9 = toNumber(bar.ema_9);
+    const barEma21 = toNumber(bar.ema_21);
+    if (barEma9 == null || barEma21 == null) continue;
+    if (bar.close > barEma9 && barEma9 > barEma21) {
+      wasFullBull5d = true;
+      break;
+    }
+  }
+
+  const vixClose = vixDailyRows && vixDailyRows.length > 0
+    ? toNumber(vixDailyRows[vixDailyRows.length - 1].close) ?? 0
+    : 0;
+
+  let vixWeeklyChangePct = 0;
+  if (vixWeeklyRows && vixWeeklyRows.length >= 2) {
+    const latestVixWeek = toNumber(vixWeeklyRows[vixWeeklyRows.length - 1].close);
+    const prevVixWeek = toNumber(vixWeeklyRows[vixWeeklyRows.length - 2].close);
+    if (latestVixWeek != null && prevVixWeek != null && prevVixWeek !== 0) {
+      vixWeeklyChangePct = ((latestVixWeek - prevVixWeek) / prevVixWeek) * 100;
+    }
+  }
+
+  return {
+    date: latest.bar_date,
+    close,
+    open: latest.open,
+    volume: latest.volume,
+    volumes: volumes.slice(-30),
+    vix_close: vixClose,
+    vix_weekly_change_pct: vixWeeklyChangePct,
+    bx_daily: bxtDaily,
+    bx_daily_prev: bxtDailyPrev,
+    bx_daily_state: bxDailyState,
+    bx_daily_state_prev: bxDailyStatePrev,
+    bx_weekly: bxtWeekly,
+    bx_weekly_prev: bxtWeeklyPrev,
+    bx_weekly_state: bxWeeklyState,
+    bx_weekly_state_prev: bxWeeklyStatePrev,
+    bx_weekly_transition: bxWeeklyStatePrev !== bxWeeklyState ? `${bxWeeklyStatePrev}_to_${bxWeeklyState}` : null,
+    rsi,
+    rsi_prev: rsiPrev,
+    rsi_change_3d: rsi - (toNumber(prev3?.rsi) ?? rsiPrev),
+    smi: smiCurr,
+    smi_signal: smiSignalCurr,
+    smi_prev: smiPrev,
+    smi_signal_prev: smiSignalPrev,
+    smi_change_3d: smiCurr - smiPrev3,
+    smi_bull_cross: smiPrev <= smiSignalPrev && smiCurr > smiSignalCurr,
+    smi_bear_cross: smiPrev >= smiSignalPrev && smiCurr < smiSignalCurr,
+    ema9,
+    ema21,
+    sma200,
+    sma200_dist: ((close - sma200) / sma200) * 100,
+    price_vs_ema9: ((close - ema9) / ema9) * 100,
+    price_vs_ema21: ((close - ema21) / ema21) * 100,
+    consecutive_down: consecutiveDown,
+    consecutive_up: consecutiveUp,
+    stabilization_days: stabilizationDays,
+    weekly_ema9: weeklyEma9,
+    weekly_ema13: weeklyEma13,
+    weekly_ema21: weeklyEma21,
+    weekly_emas_stacked: weeklyEma9 > weeklyEma13 && weeklyEma13 > weeklyEma21,
+    price_above_weekly_all: close > weeklyEma9 && close > weeklyEma13 && close > weeklyEma21,
+    price_above_weekly_13: close > weeklyEma13,
+    price_above_weekly_21: close > weeklyEma21,
+    daily_hh_streak: dailyHhStreak,
+    ema9_slope_5d: ema9Slope5d,
+    days_below_ema9: daysBelowEma9,
+    was_full_bull_5d: wasFullBull5d,
+  };
+}
+
+async function resolveIndicators(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+): Promise<{ indicators: Indicators & { open: number; volume: number; volumes: number[] }; source: "ohlcv_bars" | "yahoo" }> {
+  const fromDb = await computeIndicatorsFromOhlcv(supabase, ticker);
+  if (fromDb) {
+    return { indicators: fromDb, source: "ohlcv_bars" };
+  }
+
+  const fromYahoo = await computeIndicators(ticker);
+  return { indicators: fromYahoo, source: "yahoo" };
+}
+
+async function evaluateTickerNow(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+  tslaPrevMap: Map<string, PreviousState>,
+): Promise<{
+  indicators: Indicators & { open: number; volume: number; volumes: number[] };
+  setupResults: SetupResult[];
+  mode: ReturnType<typeof suggestMode>;
+  source: "ohlcv_bars" | "yahoo";
+}> {
+  const { indicators, source } = await resolveIndicators(supabase, ticker);
+  const prevMap = ticker === BACKTEST_DATA_TICKER ? tslaPrevMap : new Map<string, PreviousState>();
+  const setupResults = evaluateAllSetups(indicators, prevMap);
+  const mode = suggestMode(indicators, setupResults.filter((setup) => setup.is_active));
+  return { indicators, setupResults, mode, source };
+}
+
+export async function GET(request: NextRequest) {
+  const tickerRaw = request.nextUrl.searchParams.get("ticker") ?? "TSLA";
+  const ticker = tickerRaw.trim().toUpperCase();
+
+  if (!ticker || !/^[A-Z.^-]{1,10}$/.test(ticker)) {
+    return NextResponse.json(
+      { error: `Invalid ticker symbol: "${tickerRaw}"` },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const supabase = await createServiceClient();
+
+    const [{ data: definitions, error: definitionsError }, { data: stateRows, error: statesError }] = await Promise.all([
+      supabase
+        .from("orb_setup_definitions")
+        .select("id, name, public_name, number, type, one_liner, public_description, description"),
+      supabase
+        .from("orb_setup_states")
+        .select("setup_id, status, active_since, active_day, entry_price, gauge_entry_value"),
+    ]);
+
+    if (definitionsError) {
+      return NextResponse.json({ error: definitionsError.message }, { status: 500 });
+    }
+
+    if (statesError) {
+      return NextResponse.json({ error: statesError.message }, { status: 500 });
+    }
+
+    const tslaPrevMap = new Map<string, PreviousState>(
+      ((stateRows as StateRow[]) || []).map((row) => [
+        row.setup_id,
+        {
+          setup_id: row.setup_id,
+          status: row.status,
+          gauge_entry_value: row.gauge_entry_value ?? undefined,
+          entry_price: row.entry_price ?? undefined,
+          active_since: row.active_since ?? undefined,
+          active_day: row.active_day ?? undefined,
+        },
+      ]),
+    );
+
+    let evaluatedTicker: Awaited<ReturnType<typeof evaluateTickerNow>>;
+    try {
+      evaluatedTicker = await evaluateTickerNow(supabase, ticker, tslaPrevMap);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const status = message.includes("Too Many Requests") || message.includes("429") ? 429 : 500;
+      return NextResponse.json(
+        {
+          error:
+            status === 429
+              ? "Rate limit reached while fetching market data. Please retry in a moment."
+              : `Failed to compute indicators for ${ticker}: ${message}`,
+        },
+        { status },
+      );
+    }
+
+    const definitionsMap = new Map<string, DefinitionRow>();
+    for (const definition of (definitions as DefinitionRow[]) || []) {
+      definitionsMap.set(definition.id, definition);
+    }
+
+    const stateMap = new Map<string, StateRow>();
+    for (const row of (stateRows as StateRow[]) || []) {
+      stateMap.set(row.setup_id, row);
+    }
+
+    const setupPayload = evaluatedTicker.setupResults.map((result) => {
+      const definition = definitionsMap.get(result.setup_id);
+      const fallback = FALLBACK_SETUP_META[result.setup_id];
+
+      const status: ScanStatus = result.is_active ? "active" : result.is_watching ? "watching" : "inactive";
+
+      const setupName = definition?.name || fallback?.name || result.setup_id;
+      const publicName = definition?.public_name || fallback?.public_name || setupName;
+      const type: "buy" | "avoid" =
+        (definition?.type as "buy" | "avoid" | null) ||
+        fallback?.type ||
+        (result.setup_id.includes("over") || result.setup_id.includes("crack") || result.setup_id.includes("shield") || result.setup_id.includes("dual") ? "avoid" : "buy");
+
+      const state = stateMap.get(result.setup_id);
+
+      return {
+        id: result.setup_id,
+        name: setupName,
+        public_name: publicName,
+        number: definition?.number ?? fallback?.number ?? 999,
+        type,
+        status,
+        one_liner: definition?.one_liner || fallback?.one_liner || null,
+        public_description: definition?.public_description || definition?.description || null,
+        reason: result.reason,
+        conditions_met: result.conditions_met,
+        relevant_indicators: buildRelevantIndicators(result.setup_id, evaluatedTicker.indicators),
+        current_signal: status === "active"
+          ? {
+              date: evaluatedTicker.indicators.date,
+              close: round(evaluatedTicker.indicators.close),
+            }
+          : null,
+        active_streak: status === "active"
+          ? {
+              active_since: state?.active_since ?? evaluatedTicker.indicators.date,
+              active_day: state?.active_day ?? null,
+              entry_price: state?.entry_price != null ? round(state.entry_price) : null,
+            }
+          : null,
+        backtest: {
+          n: 0,
+          instances: [] as Array<{
+            date: string;
+            price: number;
+            status: "completed" | "open";
+            ret_5d: number | null;
+            ret_10d: number | null;
+            ret_20d: number | null;
+            ret_60d: number | null;
+          }>,
+          summary: {} as Record<string, SummaryPeriod>,
+          message:
+            ticker !== BACKTEST_DATA_TICKER
+              ? "No historical data for this ticker yet. Backtest instances currently exist for TSLA only."
+              : "No historical instances found.",
+        },
+      };
+    });
+
+    const activeOrWatchingIds = setupPayload
+      .filter((setup) => setup.status === "active" || setup.status === "watching")
+      .map((setup) => setup.id);
+
+    if (ticker === BACKTEST_DATA_TICKER && activeOrWatchingIds.length > 0) {
+      const { data: backtestRows, error: backtestError } = await supabase
+        .from("orb_backtest_instances")
+        .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
+        .in("setup_id", activeOrWatchingIds)
+        .order("signal_date", { ascending: false });
+
+      if (backtestError) {
+        return NextResponse.json({ error: backtestError.message }, { status: 500 });
+      }
+
+      const rowsBySetup = new Map<string, BacktestRow[]>();
+      for (const row of (backtestRows as BacktestRow[]) || []) {
+        const list = rowsBySetup.get(row.setup_id) ?? [];
+        list.push(row);
+        rowsBySetup.set(row.setup_id, list);
+      }
+
+      for (const setup of setupPayload) {
+        if (setup.status === "inactive") continue;
+
+        const rows = rowsBySetup.get(setup.id) ?? [];
+        const instances = rows.map((row) => ({
+          date: row.signal_date,
+          price: round(toNumber(row.signal_price) ?? 0),
+          status: toNumber(row.ret_60d) == null ? "open" as const : "completed" as const,
+          ret_5d: toNumber(row.ret_5d),
+          ret_10d: toNumber(row.ret_10d),
+          ret_20d: toNumber(row.ret_20d),
+          ret_60d: toNumber(row.ret_60d),
+        }));
+
+        setup.backtest = {
+          n: rows.length,
+          instances,
+          summary: computeForwardSummary(rows),
+          message: rows.length === 0 ? "No historical instances found." : null,
+        };
+      }
+    }
+
+    const activeBuy = setupPayload.filter((setup) => setup.status === "active" && setup.type === "buy").length;
+    const activeAvoid = setupPayload.filter((setup) => setup.status === "active" && setup.type === "avoid").length;
+    const watchingCount = setupPayload.filter((setup) => setup.status === "watching").length;
+
+    const activeSetupsWith20d = setupPayload
+      .filter((setup) => setup.status === "active")
+      .map((setup) => setup.backtest.summary?.["20"]?.avg_return)
+      .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+    const average20d = activeSetupsWith20d.length > 0
+      ? activeSetupsWith20d.reduce((sum, value) => sum + value, 0) / activeSetupsWith20d.length
+      : null;
+
+    const sortedSetups = [...setupPayload].sort((a, b) => {
+      const statusRank: Record<ScanStatus, number> = { active: 0, watching: 1, inactive: 2 };
+      const byStatus = statusRank[a.status] - statusRank[b.status];
+      if (byStatus !== 0) return byStatus;
+
+      const byType = a.type === b.type ? 0 : a.type === "buy" ? -1 : 1;
+      if (byType !== 0) return byType;
+
+      return (a.number ?? 999) - (b.number ?? 999);
+    });
+
+    const scenarioComparisons = sortedSetups
+      .filter((setup) => (setup.status === "active" || setup.status === "watching") && setup.backtest.instances.length > 0)
+      .flatMap((setup) =>
+        setup.backtest.instances.map((instance) => ({
+          setup_id: setup.id,
+          setup_name: setup.public_name || setup.name,
+          date: instance.date,
+          entry_price: instance.price,
+          distance_pct: round(((instance.price - evaluatedTicker.indicators.close) / evaluatedTicker.indicators.close) * 100, 2),
+          ret_5d: instance.ret_5d,
+          ret_10d: instance.ret_10d,
+          ret_20d: instance.ret_20d,
+          ret_60d: instance.ret_60d,
+        })),
+      )
+      .sort((a, b) => Math.abs(a.distance_pct) - Math.abs(b.distance_pct))
+      .slice(0, 8);
+
+    const peerComparison = await mapWithConcurrency(PEER_TICKERS, 3, async (peerTicker) => {
+      try {
+        const peer = await evaluateTickerNow(supabase, peerTicker, tslaPrevMap);
+        const buyActiveCount = peer.setupResults.filter((setup) => setup.is_active && !setup.setup_id.includes("over") && !setup.setup_id.includes("crack") && !setup.setup_id.includes("shield") && setup.setup_id !== "dual-ll").length;
+        const avoidActiveCount = peer.setupResults.filter((setup) => setup.is_active && (setup.setup_id.includes("over") || setup.setup_id.includes("crack") || setup.setup_id.includes("shield") || setup.setup_id === "dual-ll")).length;
+        const watching = peer.setupResults.filter((setup) => setup.is_watching).length;
+
+        return {
+          ticker: peerTicker,
+          state: derivePeerState(buyActiveCount, avoidActiveCount, watching),
+          buy_active: buyActiveCount,
+          avoid_active: avoidActiveCount,
+          watching,
+          date: peer.indicators.date,
+          source: peer.source,
+        };
+      } catch (error) {
+        return {
+          ticker: peerTicker,
+          state: "NEUTRAL",
+          buy_active: 0,
+          avoid_active: 0,
+          watching: 0,
+          date: null,
+          source: "unavailable",
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    });
+
+    const rightNowSentence = buildCurrentSummarySentence({
+      ticker,
+      modeSuggestion: evaluatedTicker.mode,
+      buyActiveCount: activeBuy,
+      avoidActiveCount: activeAvoid,
+      watchingCount,
+      average20d,
+      hasTslaHistory: ticker === BACKTEST_DATA_TICKER,
+    });
+
+    return NextResponse.json({
+      ticker,
+      date: evaluatedTicker.indicators.date,
+      source: evaluatedTicker.source,
+      indicators: {
+        close: round(evaluatedTicker.indicators.close),
+        rsi: round(evaluatedTicker.indicators.rsi),
+        bxt: round(evaluatedTicker.indicators.bx_daily),
+        bxt_state: evaluatedTicker.indicators.bx_daily_state,
+        smi: round(evaluatedTicker.indicators.smi),
+        sma200_dist: round(evaluatedTicker.indicators.sma200_dist),
+        ema9: round(evaluatedTicker.indicators.ema9),
+        ema21: round(evaluatedTicker.indicators.ema21),
+        bx_daily: round(evaluatedTicker.indicators.bx_daily),
+        bx_daily_prev: round(evaluatedTicker.indicators.bx_daily_prev),
+        bx_daily_state: evaluatedTicker.indicators.bx_daily_state,
+        bx_weekly: round(evaluatedTicker.indicators.bx_weekly),
+        bx_weekly_prev: round(evaluatedTicker.indicators.bx_weekly_prev),
+        bx_weekly_state: evaluatedTicker.indicators.bx_weekly_state,
+        bx_weekly_transition: evaluatedTicker.indicators.bx_weekly_transition,
+        smi_signal: round(evaluatedTicker.indicators.smi_signal),
+        vix_close: round(evaluatedTicker.indicators.vix_close),
+        vix_weekly_change_pct: round(evaluatedTicker.indicators.vix_weekly_change_pct),
+      },
+      right_now: {
+        summary: rightNowSentence,
+        suggestion: evaluatedTicker.mode.suggestion,
+        confidence: evaluatedTicker.mode.confidence,
+        reasoning: evaluatedTicker.mode.reasoning,
+      },
+      peer_comparison: peerComparison,
+      scenarios: scenarioComparisons,
+      setups: sortedSetups,
+      meta: {
+        backtest_data_ticker: BACKTEST_DATA_TICKER,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
