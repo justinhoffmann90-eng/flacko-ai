@@ -389,7 +389,7 @@ export default function BacktestClient() {
             <div className="h-10 w-10 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-center text-xl leading-10">📊</div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ORB Backtest Explorer</h1>
-              <p className="text-sm text-zinc-400">Auto-scan all 18 setups, compare peers, and run custom condition backtests.</p>
+              <p className="text-sm text-zinc-400">Auto-scan all 18 setups, compare peers, and run custom condition backtests. All times Eastern.</p>
             </div>
           </div>
         </header>
@@ -456,7 +456,7 @@ export default function BacktestClient() {
             <div className="space-y-5">
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
                 <p className="mb-2 text-[10px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  RIGHT NOW · {data.ticker} · {data.date}
+                  RIGHT NOW · {data.ticker} · {data.date} ET
                 </p>
                 <p className="text-sm leading-relaxed text-zinc-100">{data.right_now.summary}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
