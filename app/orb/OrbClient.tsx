@@ -2,13 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { IndicatorSnapshot } from "./components/IndicatorSnapshot";
-import { PeerComparison } from "./components/PeerComparison";
 import { OrbScoreWidget } from "./components/OrbScoreWidget";
 import { SetupCard } from "./components/SetupCard";
 import { SetupSection } from "./components/SetupSection";
 import type {
-  IndicatorSnapshotData,
   OrbRow,
   OrbScoreData,
   PeerComparisonData,
@@ -19,7 +16,6 @@ import type {
 export default function OrbClient() {
   const [rows, setRows] = useState<OrbRow[]>([]);
   const [orbScore, setOrbScore] = useState<OrbScoreData | null>(null);
-  const [indicatorSnapshot, setIndicatorSnapshot] = useState<IndicatorSnapshotData | null>(null);
   const [peerComparison, setPeerComparison] = useState<PeerComparisonData | null>(null);
   const [scoreExpanded, setScoreExpanded] = useState(false);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
@@ -78,7 +74,6 @@ export default function OrbClient() {
       setRows(data as OrbRow[]);
       setOrbScore(null);
       setTrackingTrades([]);
-      setIndicatorSnapshot(null);
       setPeerComparison(null);
       return;
     }
@@ -86,7 +81,6 @@ export default function OrbClient() {
     setRows(Array.isArray(data?.setups) ? data.setups : []);
     setOrbScore(data?.score ?? null);
     setTrackingTrades(Array.isArray(data?.trackingTrades) ? data.trackingTrades : []);
-    setIndicatorSnapshot(data?.indicatorSnapshot ?? null);
     setPeerComparison(data?.peerComparison ?? null);
   }, []);
 
@@ -283,7 +277,7 @@ export default function OrbClient() {
             </h1>
             <span className="ml-auto" style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
           </div>
-          <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>11 buy setups + 6 avoid signals • TSLA</p>
+          <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>13 buy setups + 6 avoid signals • TSLA</p>
         </div>
 
         {orbScore && (
@@ -295,11 +289,11 @@ export default function OrbClient() {
             onToggleExpanded={() => setScoreExpanded((prev) => !prev)}
             isDesktop={isDesktop}
             desktopFont={desktopFont}
+            peerComparison={peerComparison}
           />
         )}
 
-        <IndicatorSnapshot snapshot={indicatorSnapshot} isDesktop={isDesktop} desktopFont={desktopFont} />
-        <PeerComparison peerComparison={peerComparison} isDesktop={isDesktop} desktopFont={desktopFont} />
+
 
         <div className={isDesktop ? "space-y-3" : "space-y-2"}>
           <SetupSection
