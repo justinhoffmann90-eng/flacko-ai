@@ -4,6 +4,67 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { BacktestExplorer } from "@/components/orb/BacktestExplorer";
 
 const FAVORITE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"];
+const SUBSCRIBE_URL = "/signup";
+const MAX_FREE_SCANS_PER_DAY = 1;
+const MAX_PUBLIC_PEERS = 3;
+
+function getScansToday(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const stored = localStorage.getItem("flacko_backtest_scans");
+    if (!stored) return 0;
+    const { date, count } = JSON.parse(stored);
+    const today = new Date().toISOString().split("T")[0];
+    return date === today ? count : 0;
+  } catch { return 0; }
+}
+
+function incrementScans(): number {
+  if (typeof window === "undefined") return 0;
+  const today = new Date().toISOString().split("T")[0];
+  const current = getScansToday();
+  const next = current + 1;
+  localStorage.setItem("flacko_backtest_scans", JSON.stringify({ date: today, count: next }));
+  return next;
+}
+
+function SubscribeCTA({ message, compact = false }: { message: string; compact?: boolean }) {
+  return (
+    <div className={`rounded-xl border border-amber-500/30 bg-amber-500/5 ${compact ? "p-3" : "p-5"} text-center`}>
+      <div className={`flex items-center justify-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
+        <span className="text-lg">🔒</span>
+        <p className={`${compact ? "text-xs" : "text-sm"} text-amber-200`}>{message}</p>
+      </div>
+      <a
+        href={SUBSCRIBE_URL}
+        className={`inline-block rounded-lg border border-amber-500/40 bg-amber-500/20 ${compact ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm"} font-semibold text-amber-100 transition hover:bg-amber-500/30`}
+      >
+        Subscribe to Flacko AI →
+      </a>
+    </div>
+  );
+}
+
+function RateLimitOverlay() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="max-w-md rounded-2xl border border-amber-500/30 bg-zinc-900 p-8 text-center">
+        <div className="text-4xl mb-4">⚡</div>
+        <h2 className="text-2xl font-bold mb-3">You&apos;ve used your free scan today</h2>
+        <p className="text-sm text-zinc-400 mb-6">
+          Subscribe for unlimited scans, real-time alerts when setups activate, custom condition backtests, and the full setup library.
+        </p>
+        <a
+          href={SUBSCRIBE_URL}
+          className="inline-block rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-6 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
+        >
+          Get Unlimited Access →
+        </a>
+        <p className="mt-4 text-xs text-zinc-500">Or come back tomorrow for another free scan.</p>
+      </div>
+    </div>
+  );
+}
 
 type SetupStatus = "active" | "watching" | "inactive";
 
@@ -197,7 +258,7 @@ function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPerio
   );
 }
 
-function SetupCard({ setup, defaultOpen = false }: { setup: ScanSetup; defaultOpen?: boolean }) {
+function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: ScanSetup; defaultOpen?: boolean; limited?: boolean }) {
   const [expanded, setExpanded] = useState(defaultOpen);
   const badge = statusBadge(setup.status);
   const trueConditions = Object.entries(setup.conditions_met || {}).filter(([, value]) => Boolean(value));
@@ -244,7 +305,7 @@ function SetupCard({ setup, defaultOpen = false }: { setup: ScanSetup; defaultOp
       {/* Expandable details */}
       {expanded && (
         <div className="px-4 pb-5 sm:px-5 space-y-4 border-t border-zinc-800/50">
-          {setup.active_streak && (
+          {!limited && setup.active_streak && (
             <div
               className="mt-3 grid gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[11px] text-sky-100 sm:grid-cols-3"
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
@@ -255,90 +316,110 @@ function SetupCard({ setup, defaultOpen = false }: { setup: ScanSetup; defaultOp
             </div>
           )}
 
-          <div>
-            <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              CONDITIONS MET ({trueConditions.length}/{Object.keys(setup.conditions_met || {}).length})
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(setup.conditions_met || {}).map(([key, value]) => (
-                <span
-                  key={key}
-                  className={`rounded-full border px-2 py-1 text-[10px] ${
-                    value
-                      ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-400"
-                  }`}
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                >
-                  {key.replace(/_/g, " ")}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              RELEVANT INDICATORS
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {Object.entries(setup.relevant_indicators || {}).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[11px]"
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                >
-                  <span className="text-zinc-500">{key.replace(/_/g, " ")}</span>
-                  <span className="text-zinc-200">
-                    {typeof value === "number" ? value.toFixed(2) : String(value)}
+          {limited ? (
+            /* PUBLIC VIEW: only show 20D summary line + CTA */
+            <div className="space-y-3 mt-3">
+              {setup.backtest.summary?.["20"] && (
+                <div className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 text-[12px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span className="text-zinc-400">20D:</span>
+                  <span className="text-zinc-200">n={setup.backtest.summary["20"].n}</span>
+                  <span className="text-zinc-200">Win: {setup.backtest.summary["20"].win_rate_pct}</span>
+                  <span className={setup.backtest.summary["20"].avg_return >= 0 ? "text-emerald-300" : "text-red-300"}>
+                    Avg: {fmtPct(setup.backtest.summary["20"].avg_return)}
                   </span>
                 </div>
-              ))}
+              )}
+              <SubscribeCTA message="Subscribe for full backtest history, all forward periods, and conditions breakdown." compact />
             </div>
-          </div>
-
-          <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-            <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              FORWARD RETURN SUMMARY
-            </p>
-            {setup.backtest.message && !showInstances ? (
-              <p className="text-sm text-zinc-400">{setup.backtest.message}</p>
-            ) : (
-              <ForwardSummaryTable summary={setup.backtest.summary} />
-            )}
-          </div>
-
-          {showInstances && (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-              <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                HISTORICAL INSTANCES ({setup.backtest.n})
-              </p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  <thead>
-                    <tr className="border-b border-zinc-800 text-zinc-500">
-                      <th className="px-2 py-2 text-left">Date</th>
-                      <th className="px-2 py-2 text-right">Entry</th>
-                      <th className="px-2 py-2 text-right">5d</th>
-                      <th className="px-2 py-2 text-right">10d</th>
-                      <th className="px-2 py-2 text-right">20d</th>
-                      <th className="px-2 py-2 text-right">60d</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {setup.backtest.instances.slice(0, 12).map((instance) => (
-                      <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
-                        <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
-                        <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
-                        <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
-                        <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
-                        <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
-                        <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          ) : (
+            /* SUBSCRIBER VIEW: full details */
+            <>
+              <div>
+                <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  CONDITIONS MET ({trueConditions.length}/{Object.keys(setup.conditions_met || {}).length})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(setup.conditions_met || {}).map(([key, value]) => (
+                    <span
+                      key={key}
+                      className={`rounded-full border px-2 py-1 text-[10px] ${
+                        value
+                          ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
+                          : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                      }`}
+                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    >
+                      {key.replace(/_/g, " ")}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+
+              <div>
+                <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  RELEVANT INDICATORS
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {Object.entries(setup.relevant_indicators || {}).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[11px]"
+                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    >
+                      <span className="text-zinc-500">{key.replace(/_/g, " ")}</span>
+                      <span className="text-zinc-200">
+                        {typeof value === "number" ? value.toFixed(2) : String(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  FORWARD RETURN SUMMARY
+                </p>
+                {setup.backtest.message && !showInstances ? (
+                  <p className="text-sm text-zinc-400">{setup.backtest.message}</p>
+                ) : (
+                  <ForwardSummaryTable summary={setup.backtest.summary} />
+                )}
+              </div>
+
+              {showInstances && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+                  <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    HISTORICAL INSTANCES ({setup.backtest.n})
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <thead>
+                        <tr className="border-b border-zinc-800 text-zinc-500">
+                          <th className="px-2 py-2 text-left">Date</th>
+                          <th className="px-2 py-2 text-right">Entry</th>
+                          <th className="px-2 py-2 text-right">5d</th>
+                          <th className="px-2 py-2 text-right">10d</th>
+                          <th className="px-2 py-2 text-right">20d</th>
+                          <th className="px-2 py-2 text-right">60d</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {setup.backtest.instances.slice(0, 12).map((instance) => (
+                          <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
+                            <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
+                            <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
+                            <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -352,9 +433,22 @@ export default function BacktestClient() {
   const [data, setData] = useState<ScanResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showExplorer, setShowExplorer] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [scansUsed, setScansUsed] = useState(0);
+
+  // Check scans on mount
+  useEffect(() => {
+    setScansUsed(getScansToday());
+  }, []);
 
   const runScan = useCallback(async (ticker: string) => {
+    // Check rate limit before scanning (first scan is free)
+    const currentScans = getScansToday();
+    if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
+      setRateLimited(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -369,6 +463,8 @@ export default function BacktestClient() {
       }
 
       setData(body as ScanResponse);
+      const newCount = incrementScans();
+      setScansUsed(newCount);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setData(null);
@@ -379,7 +475,8 @@ export default function BacktestClient() {
 
   useEffect(() => {
     runScan(selectedTicker);
-  }, [selectedTicker, runScan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTicker]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -411,13 +508,14 @@ export default function BacktestClient() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
       `}</style>
 
+      {rateLimited && <RateLimitOverlay />}
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <header className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="flex flex-wrap items-center gap-3">
             <div className="h-10 w-10 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-center text-xl leading-10">📊</div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ORB Backtest Explorer</h1>
-              <p className="text-sm text-zinc-400">Auto-scan all 18 setups, compare peers, and run custom condition backtests. All times Eastern.</p>
+              <p className="text-sm text-zinc-400">Auto-scan all 19 setups against current conditions. All times Eastern.</p>
             </div>
           </div>
         </header>
@@ -495,10 +593,10 @@ export default function BacktestClient() {
                 </div>
               </div>
 
-              {/* PEER COMPARISON — collapsible, default open */}
-              <CollapsibleSection title="PEER COMPARISON" badge={`${data.peer_comparison.length} TICKERS`} defaultOpen={true}>
+              {/* PEER COMPARISON — collapsible, limited to 3 for public */}
+              <CollapsibleSection title="PEER COMPARISON" badge={`${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={true}>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                  {data.peer_comparison.map((peer) => (
+                  {data.peer_comparison.slice(0, MAX_PUBLIC_PEERS).map((peer) => (
                     <div
                       key={peer.ticker}
                       className={`rounded-lg border p-2 ${peerStateStyle(peer.state)}`}
@@ -512,6 +610,11 @@ export default function BacktestClient() {
                     </div>
                   ))}
                 </div>
+                {data.peer_comparison.length > MAX_PUBLIC_PEERS && (
+                  <div className="mt-3">
+                    <SubscribeCTA message={`Subscribe to see all ${data.peer_comparison.length} tickers in the peer comparison.`} compact />
+                  </div>
+                )}
               </CollapsibleSection>
 
               {/* SCENARIO COMPARISON — collapsible, default open only if <5 scenarios */}
@@ -547,73 +650,73 @@ export default function BacktestClient() {
                 </CollapsibleSection>
               )}
 
-              {/* INDICATOR SNAPSHOT — collapsible, default closed */}
-              <CollapsibleSection title="INDICATOR SNAPSHOT" badge={`${Object.keys(data.indicators).length}`}>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                  {Object.entries(data.indicators).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/70 px-2 py-1 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <span className="text-zinc-500">{key.replace(/_/g, " ")}</span>
-                      <span className="text-zinc-200">{typeof value === "number" ? value.toFixed(2) : String(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </CollapsibleSection>
-
               {/* ACTIVE SETUPS — cards default expanded */}
               {groupedSetups.active.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-emerald-300">Active Setups ({groupedSetups.active.length})</h3>
                   <div className="grid gap-4 lg:grid-cols-2">
                     {groupedSetups.active.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* WATCHING SETUPS — cards default collapsed */}
+              {/* WATCHING SETUPS — limited view */}
               {groupedSetups.watching.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-amber-300">Watching Setups ({groupedSetups.watching.length})</h3>
                   <div className="grid gap-4 lg:grid-cols-2">
                     {groupedSetups.watching.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} limited />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* INACTIVE — collapsed summary */}
-              <CollapsibleSection title="INACTIVE SETUPS" badge={`${groupedSetups.inactive.length}`}>
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {groupedSetups.inactive.map((setup) => (
-                    <SetupCard key={setup.id} setup={setup} defaultOpen={false} />
-                  ))}
+              {/* Inline CTA after setups */}
+              {(groupedSetups.active.length > 0 || groupedSetups.watching.length > 0) && (
+                <SubscribeCTA message="Seeing value? Get the full picture — all forward periods, condition breakdowns, and historical instances." />
+              )}
+
+              {/* INACTIVE — gated for subscribers */}
+              {groupedSetups.inactive.length > 0 && (
+                <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-5 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <span className="text-lg">🔒</span>
+                    <p className="text-sm text-zinc-400">
+                      {groupedSetups.inactive.length} more setups available for subscribers
+                    </p>
+                  </div>
+                  <a
+                    href={SUBSCRIBE_URL}
+                    className="inline-block rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-5 py-2.5 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+                  >
+                    Unlock All Setups →
+                  </a>
                 </div>
-              </CollapsibleSection>
+              )}
             </div>
           )}
         </section>
 
-        {/* CUSTOM EXPLORER — collapsible section */}
-        <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 overflow-hidden">
-          <button
-            onClick={() => setShowExplorer(!showExplorer)}
-            className="w-full flex items-center justify-between p-4 sm:p-6 text-left hover:bg-zinc-800/20 transition"
-          >
-            <div>
-              <h2 className="text-xl font-semibold">Custom Explorer</h2>
-              <p className="mt-1 text-sm text-zinc-400">
-                Run ad-hoc conditions with indicator chips, timeframe controls, and forward periods.
-              </p>
+        {/* CUSTOM EXPLORER — gated for subscribers */}
+        <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-2xl">🔬</span>
+              <h2 className="text-xl font-semibold">Custom Backtest Explorer</h2>
             </div>
-            <span className="text-zinc-500 text-lg">{showExplorer ? "▲" : "▼"}</span>
-          </button>
-          {showExplorer && (
-            <div className="px-4 pb-6 sm:px-6">
-              <BacktestExplorer onSaved={() => {}} />
-            </div>
-          )}
+            <p className="text-sm text-zinc-400 max-w-lg mx-auto">
+              Build your own conditions with indicator chips, test any combination on any ticker, and see exactly how your strategy would have performed historically.
+            </p>
+            <a
+              href={SUBSCRIBE_URL}
+              className="inline-block rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-6 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+            >
+              Unlock Custom Explorer →
+            </a>
+          </div>
         </section>
       </div>
     </div>
