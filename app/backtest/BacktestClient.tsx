@@ -735,7 +735,19 @@ export default function BacktestClient() {
 
                           return (
                             <div key={m.month} className="flex flex-1 flex-col items-center justify-end h-full relative">
-                              {/* Value label */}
+                              {/* Win rate — above bar, clearly labeled */}
+                              {isFree ? (
+                                <div className="mb-1 flex flex-col items-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-300">
+                                    {m.win_rate.toFixed(0)}%
+                                  </span>
+                                  <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                </div>
+                              ) : (
+                                <div className="mb-1 h-6" />
+                              )}
+
+                              {/* Avg return label */}
                               <div className={`mb-1 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                                 <span className={isPositive ? "text-emerald-300" : "text-red-300"}>
                                   {isPositive ? "+" : ""}{m.avg_return.toFixed(1)}%
@@ -754,15 +766,8 @@ export default function BacktestClient() {
                                 style={{ height: `${barHeight}%`, minHeight: "4px" }}
                               />
 
-                              {/* Win rate dot */}
-                              {isFree && (
-                                <div className="mt-1.5 text-[8px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                                  {m.win_rate.toFixed(0)}%
-                                </div>
-                              )}
-
                               {/* Month label */}
-                              <div className={`mt-0.5 text-[9px] sm:text-[10px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                              <div className={`mt-1 text-[9px] sm:text-[10px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                                 {m.name}
                               </div>
                             </div>
@@ -771,11 +776,12 @@ export default function BacktestClient() {
                       </div>
 
                       {/* Legend */}
-                      <div className="mt-4 flex items-center gap-4 text-[9px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked</span>
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[9px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive avg return</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative avg return</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked (subscribe)</span>
+                        <span className="flex items-center gap-1 text-zinc-400">· % above bar = win rate (how often that month was positive)</span>
                       </div>
 
                       <div className="mt-3">
@@ -788,17 +794,22 @@ export default function BacktestClient() {
 
               {/* PEER COMPARISON — collapsible, after setups */}
               <CollapsibleSection title="PEER COMPARISON" badge={`${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>
+                <p className="mb-3 text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  How related tickers look right now using the same setup engine. Useful for reading the broader market environment — if peers are also in RISK, the headwind is systemic, not just {data.ticker}-specific.
+                </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   {data.peer_comparison.slice(0, MAX_PUBLIC_PEERS).map((peer) => (
                     <div
                       key={peer.ticker}
-                      className={`rounded-lg border p-2 ${peerStateStyle(peer.state)}`}
+                      className={`rounded-lg border p-3 ${peerStateStyle(peer.state)}`}
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     >
                       <div className="text-sm font-bold">{peer.ticker}</div>
-                      <div className="mt-1 text-[11px]">{peer.state}</div>
-                      <div className="mt-1 text-[10px] text-zinc-300/90">
-                        B {peer.buy_active} · A {peer.avoid_active} · W {peer.watching}
+                      <div className="mt-1 text-[11px] font-semibold tracking-wide">{peer.state}</div>
+                      <div className="mt-2 space-y-0.5 text-[10px] text-zinc-400">
+                        <div>{peer.buy_active} buy signal{peer.buy_active !== 1 ? "s" : ""} active</div>
+                        <div>{peer.avoid_active} avoid signal{peer.avoid_active !== 1 ? "s" : ""} active</div>
+                        <div>{peer.watching} watching</div>
                       </div>
                     </div>
                   ))}
@@ -817,23 +828,32 @@ export default function BacktestClient() {
                   badge={`${data.scenarios.length}`}
                   defaultOpen={false}
                 >
+                  <p className="mb-3 text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    Each card shows a past instance when the same setup triggered on {data.ticker}. These are real historical occurrences — the date it fired, the entry price, and what the stock actually returned over the next 5, 10, 20, and 60 days. Use these to calibrate your expectations for the current trigger.
+                  </p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {data.scenarios.map((scenario) => (
                       <div key={`${scenario.setup_id}-${scenario.date}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-                        <p className="text-sm font-semibold text-zinc-100">{scenario.setup_name}</p>
-                        <p className="text-[11px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          {scenario.date} · Entry ${scenario.entry_price.toFixed(2)} · Δ {fmtPct(scenario.distance_pct)}
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="text-sm font-semibold text-zinc-100">{scenario.setup_name}</p>
+                          <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            PAST TRIGGER
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          Triggered {scenario.date} · Entry ${scenario.entry_price.toFixed(2)}{scenario.distance_pct != null ? ` · ${Math.abs(scenario.distance_pct).toFixed(1)}% ${scenario.distance_pct >= 0 ? "above" : "below"} current price` : ""}
                         </p>
-                        <div className="mt-2 grid grid-cols-4 gap-2 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <div className="grid grid-cols-4 gap-2 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                           {([
-                            ["5d", scenario.ret_5d],
-                            ["10d", scenario.ret_10d],
-                            ["20d", scenario.ret_20d],
-                            ["60d", scenario.ret_60d],
+                            ["5 days", scenario.ret_5d],
+                            ["10 days", scenario.ret_10d],
+                            ["20 days", scenario.ret_20d],
+                            ["60 days", scenario.ret_60d],
                           ] as const).map(([label, value]) => (
-                            <div key={label} className="rounded border border-zinc-800 bg-zinc-950/70 px-2 py-1 text-center">
-                              <div className="text-zinc-500">{label}</div>
-                              <div className={value != null && value >= 0 ? "text-emerald-300" : "text-red-300"}>{fmtPct(value)}</div>
+                            <div key={label} className="rounded border border-zinc-800 bg-zinc-950/70 px-2 py-1.5 text-center">
+                              <div className="text-zinc-500 text-[9px] mb-0.5">{label}</div>
+                              <div className={`font-semibold ${value != null && value >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(value)}</div>
+                              <div className="text-zinc-600 text-[8px] mt-0.5">return</div>
                             </div>
                           ))}
                         </div>
