@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { assignZone, getZoneDisplay } from "@/lib/orb/score";
 
 interface OrbSignal {
   id: string;
@@ -63,7 +64,9 @@ export function OrbSignalsCard() {
     );
   }
 
-  const zone = score ? ZONE_CONFIG[score.zone] || ZONE_CONFIG.NEUTRAL : null;
+  const liveZone = score ? assignZone(Number(score.value ?? 0)) : null;
+  const liveDisplay = score ? getZoneDisplay(Number(score.value ?? 0)) : null;
+  const zone = liveZone ? ZONE_CONFIG[liveZone] || ZONE_CONFIG.NEUTRAL : null;
   const buySignals = signals.filter((s) => s.type === "buy");
   const avoidSignals = signals.filter((s) => s.type === "avoid");
 
@@ -89,7 +92,7 @@ export function OrbSignalsCard() {
         {zone && score && (
           <div className="flex items-center gap-3 mb-3">
             <span className={`text-lg md:text-xl font-bold font-mono ${zone.color}`}>
-              {zone.label}
+              {liveDisplay?.label || zone.label}
             </span>
             <span className="text-xs text-muted-foreground font-mono">
               {score.value.toFixed(2)}
