@@ -1,6 +1,6 @@
 "use client";
 
-import { getZoneDisplay } from "@/lib/orb/score";
+import { getZoneDisplay, SETUP_TYPES, THRESHOLDS, WEIGHTS } from "@/lib/orb/score";
 import type { OrbRow, OrbScoreData, PeerComparisonData, Trade } from "./types";
 
 type OrbScoreWidgetProps = {
@@ -106,6 +106,38 @@ const playbooks: Record<string, { setup: string; calls: string; leveraged: strin
   },
 };
 
+type OrbZoneName = "FULL_SEND" | "NEUTRAL" | "CAUTION" | "DEFENSIVE";
+
+const zoneColors: Record<OrbZoneName, string> = {
+  FULL_SEND: "#22c55e",
+  NEUTRAL: "#d4d4d8",
+  CAUTION: "#eab308",
+  DEFENSIVE: "#ef4444",
+};
+
+let spectrumMin = 0;
+let spectrumMax = 0;
+
+for (const setupId in SETUP_TYPES) {
+  const setupType = SETUP_TYPES[setupId];
+  const weight = WEIGHTS[setupId] ?? 0.3;
+  if (setupType === "buy") {
+    spectrumMax += weight;
+  } else {
+    spectrumMin -= weight;
+  }
+}
+
+const SCORE_RANGE_MIN = Number(spectrumMin.toFixed(3));
+const SCORE_RANGE_MAX = Number(spectrumMax.toFixed(3));
+
+function normalizeZone(zone: string): OrbZoneName {
+  if (zone === "FULL_SEND" || zone === "NEUTRAL" || zone === "CAUTION" || zone === "DEFENSIVE") {
+    return zone;
+  }
+  return "NEUTRAL";
+}
+
 export function OrbScoreWidget({
   orbScore,
   rows,
@@ -116,11 +148,12 @@ export function OrbScoreWidget({
   desktopFont,
   peerComparison,
 }: OrbScoreWidgetProps) {
-  const zc = zoneConfig[orbScore.zone] || zoneConfig.NEUTRAL;
+  const currentZone = normalizeZone(orbScore.zone);
+  const zc = zoneConfig[currentZone] || zoneConfig.NEUTRAL;
   const zoneDisplay = orbScore.zone_display || getZoneDisplay(orbScore.value);
   const activeSetups = rows.filter((row) => row.state?.status === "active");
   const watchingSetups = rows.filter((row) => row.state?.status === "watching");
-  const pb = playbooks[orbScore.zone];
+  const pb = playbooks[currentZone];
 
   return (
     <>
@@ -227,84 +260,170 @@ export function OrbScoreWidget({
       </button>
 
       {(() => {
-        const THRESHOLDS = { FULL_SEND: 0.686, NEUTRAL: -0.117, CAUTION: -0.729 };
         const score = orbScore.value;
-        const zone = orbScore.zone;
+        const zone = currentZone;
 
         let upLabel = "";
         let upDist = 0;
         let downLabel = "";
         let downDist = 0;
-        let barMin = 0;
-        let barMax = 0;
 
         if (zone === "FULL_SEND") {
           downLabel = "NEUTRAL";
-          downDist = score - THRESHOLDS.FULL_SEND;
-          barMin = THRESHOLDS.NEUTRAL;
-          barMax = Math.max(score + 0.3, 1.2);
+          downDist = Math.max(0, score - THRESHOLDS.FULL_SEND);
         } else if (zone === "NEUTRAL") {
           upLabel = "FULL SEND";
-          upDist = THRESHOLDS.FULL_SEND - score;
+          upDist = Math.max(0, THRESHOLDS.FULL_SEND - score);
           downLabel = "CAUTION";
-          downDist = score - THRESHOLDS.NEUTRAL;
-          barMin = THRESHOLDS.NEUTRAL;
-          barMax = THRESHOLDS.FULL_SEND;
+          downDist = Math.max(0, score - THRESHOLDS.NEUTRAL);
         } else if (zone === "CAUTION") {
           upLabel = "NEUTRAL";
-          upDist = THRESHOLDS.NEUTRAL - score;
+          upDist = Math.max(0, THRESHOLDS.NEUTRAL - score);
           downLabel = "DEFENSIVE";
-          downDist = score - THRESHOLDS.CAUTION;
-          barMin = THRESHOLDS.CAUTION;
-          barMax = THRESHOLDS.NEUTRAL;
+          downDist = Math.max(0, score - THRESHOLDS.CAUTION);
         } else {
           upLabel = "CAUTION";
-          upDist = THRESHOLDS.CAUTION - score;
-          barMin = Math.min(score - 0.3, -1.5);
-          barMax = THRESHOLDS.CAUTION;
+          upDist = Math.max(0, THRESHOLDS.CAUTION - score);
         }
 
-        const range = barMax - barMin;
-        const pct = range > 0 ? Math.max(0, Math.min(100, ((score - barMin) / range) * 100)) : 50;
+        const spectrumMinValue = SCORE_RANGE_MIN;
+        const spectrumMaxValue = SCORE_RANGE_MAX;
+        const spectrumRange = Math.max(0.001, spectrumMaxValue - spectrumMinValue);
 
-        const zoneColors: Record<string, string> = {
-          FULL_SEND: "#22c55e",
-          NEUTRAL: "#d4d4d8",
-          CAUTION: "#eab308",
-          DEFENSIVE: "#ef4444",
-        };
-        const currentColor = zoneColors[zone] || "#d4d4d8";
+        const clampToSpectrum = (value: number) => Math.max(spectrumMinValue, Math.min(spectrumMaxValue, value));
+        const toPercent = (value: number) => ((clampToSpectrum(value) - spectrumMinValue) / spectrumRange) * 100;
+
+        const scorePct = toPercent(score);
+
+        const segments: Array<{ zone: OrbZoneName; start: number; end: number }> = [
+          { zone: "DEFENSIVE", start: spectrumMinValue, end: THRESHOLDS.CAUTION },
+          { zone: "CAUTION", start: THRESHOLDS.CAUTION, end: THRESHOLDS.NEUTRAL },
+          { zone: "NEUTRAL", start: THRESHOLDS.NEUTRAL, end: THRESHOLDS.FULL_SEND },
+          { zone: "FULL_SEND", start: THRESHOLDS.FULL_SEND, end: spectrumMaxValue },
+        ];
+
+        const boundaryLabels: Array<{ zone: "CAUTION" | "NEUTRAL" | "FULL_SEND"; value: number }> = [
+          { zone: "CAUTION", value: THRESHOLDS.CAUTION },
+          { zone: "NEUTRAL", value: THRESHOLDS.NEUTRAL },
+          { zone: "FULL_SEND", value: THRESHOLDS.FULL_SEND },
+        ];
+
+        const currentColor = zoneColors[zone] || zoneColors.NEUTRAL;
 
         return (
-          <div style={{ margin: "12px 0 8px", padding: "0 2px" }}>
-            <div style={{ position: "relative", height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "visible" }}>
+          <div style={{ margin: "14px 0 8px", padding: "0 2px" }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
+              <span style={{ fontSize: desktopFont(9), color: "rgba(239,68,68,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
+                DEFENSIVE {spectrumMinValue.toFixed(2)}
+              </span>
+              <span style={{ fontSize: desktopFont(9), color: "rgba(34,197,94,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
+                FULL SEND {spectrumMaxValue.toFixed(2)}
+              </span>
+            </div>
+
+            <div style={{ position: "relative", paddingTop: isDesktop ? 20 : 18 }}>
               <div
                 style={{
                   position: "absolute",
-                  left: 0,
                   top: 0,
-                  height: "100%",
-                  borderRadius: 3,
-                  width: `${pct}%`,
-                  background: `linear-gradient(90deg, rgba(255,255,255,0.05), ${currentColor}40)`,
-                  transition: "width 0.5s ease",
+                  left: `${scorePct}%`,
+                  transform: "translateX(-50%)",
+                  fontSize: desktopFont(8),
+                  color: currentColor,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: "0.08em",
+                  fontWeight: 700,
+                  whiteSpace: "nowrap",
+                  textShadow: `0 0 8px ${currentColor}55`,
                 }}
-              />
+              >
+                YOU ARE HERE
+              </div>
+
               <div
                 style={{
-                  position: "absolute",
-                  top: -3,
-                  left: `${pct}%`,
-                  transform: "translateX(-50%)",
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  background: currentColor,
-                  border: "2px solid #0a0a0c",
-                  boxShadow: `0 0 8px ${currentColor}60`,
-                  transition: "left 0.5s ease",
+                  position: "relative",
+                  height: isDesktop ? 20 : 18,
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                {segments.map((segment) => {
+                  const leftPct = toPercent(segment.start);
+                  const rightPct = toPercent(segment.end);
+                  const widthPct = Math.max(0, rightPct - leftPct);
+                  const isCurrent = segment.zone === zone;
+                  const segmentColor = zoneColors[segment.zone];
+
+                  return (
+                    <div
+                      key={segment.zone}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        bottom: 0,
+                        left: `${leftPct}%`,
+                        width: `${widthPct}%`,
+                        background: `linear-gradient(90deg, ${segmentColor}bf, ${segmentColor}66)`,
+                        opacity: isCurrent ? 1 : 0.72,
+                        boxShadow: isCurrent ? `inset 0 0 16px ${segmentColor}99, 0 0 18px ${segmentColor}40` : "none",
+                        transition: "all .35s ease",
+                      }}
+                    />
+                  );
+                })}
+
+                {boundaryLabels.map((boundary) => (
+                  <div
+                    key={`tick-${boundary.zone}`}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: `${toPercent(boundary.value)}%`,
+                      width: 1,
+                      background: "rgba(10,10,12,0.45)",
+                    }}
+                  />
+                ))}
+
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: `${scorePct}%`,
+                    transform: "translate(-50%, -50%)",
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: currentColor,
+                    border: "2px solid #0a0a0c",
+                    boxShadow: `0 0 12px ${currentColor}90`,
+                    transition: "left .5s ease",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ position: "relative", height: isDesktop ? 24 : 28, marginTop: 8 }}>
+              {boundaryLabels.map((boundary) => (
+                <div
+                  key={`label-${boundary.zone}`}
+                  style={{
+                    position: "absolute",
+                    left: `${toPercent(boundary.value)}%`,
+                    transform: "translateX(-50%)",
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ fontSize: desktopFont(8), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
+                    {isDesktop ? `${boundary.zone} ≥ ${boundary.value.toFixed(3)}` : `${boundary.zone.slice(0, 3)} ${boundary.value.toFixed(2)}`}
+                  </span>
+                </div>
+              ))}
             </div>
 
             <div className="flex justify-between" style={{ marginTop: 8 }}>
@@ -498,7 +617,7 @@ export function OrbScoreWidget({
           { zone: "CAUTION", emoji: "🟡", label: "CAUTION", ret: "-1.37%", win: "43%", days: "24%", hex: "#eab308", horizon: "10D" },
           { zone: "DEFENSIVE", emoji: "🔴", label: "DEFENSIVE", ret: "-6.73%", win: "31%", days: "10%", hex: "#ef4444", horizon: "60D" },
         ] as const).map((zone, index) => {
-          const isCurrentZone = orbScore.zone === zone.zone;
+          const isCurrentZone = currentZone === zone.zone;
           return (
             <div
               key={zone.zone}
@@ -546,4 +665,3 @@ export function OrbScoreWidget({
     </>
   );
 }
-

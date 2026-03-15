@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { getZoneDisplay } from "@/lib/orb/score";
+import { assignZone, getZoneDisplay } from "@/lib/orb/score";
 import { computeRSI, computeSMA } from "@/lib/indicators";
 
 type DailyBarRow = {
@@ -323,7 +323,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       score: latestIndicator ? {
         value: latestIndicator.orb_score,
-        zone: latestIndicator.orb_zone,
+        zone: assignZone(Number(latestIndicator.orb_score ?? 0)),
         zone_display: zoneDisplay,
         prevZone: latestIndicator.orb_zone_prev,
         date: latestIndicator.date,
