@@ -11,6 +11,7 @@ type OrbScoreWidgetProps = {
   onToggleExpanded: () => void;
   isDesktop: boolean;
   desktopFont: (n: number) => number;
+  /** @deprecated removed — peer data doesn't belong in Orb widget */
   peerComparison?: PeerComparisonData | null;
 };
 
@@ -566,40 +567,6 @@ export function OrbScoreWidget({
           </a>
         </div>
       )}
-
-      {peerComparison && (() => {
-        const qqq1d = peerComparison.qqq?.change1dPct;
-        const spy1d = peerComparison.spy?.change1dPct;
-        const fmtPct = (v: number | null) => {
-          if (v == null || !Number.isFinite(v)) return "—";
-          return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
-        };
-        const pctColor = (v: number | null) => {
-          if (v == null || !Number.isFinite(v)) return "rgba(255,255,255,0.3)";
-          return v > 0 ? "rgba(34,197,94,0.7)" : v < 0 ? "rgba(239,68,68,0.7)" : "rgba(255,255,255,0.4)";
-        };
-        return (
-          <div style={{
-            display: "flex",
-            gap: isDesktop ? 16 : 10,
-            marginBottom: 10,
-            padding: "6px 8px",
-            background: "rgba(255,255,255,0.02)",
-            borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.04)",
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: desktopFont(10),
-          }}>
-            <span style={{ color: "rgba(255,255,255,0.3)" }}>QQQ <span style={{ color: pctColor(qqq1d), fontWeight: 600 }}>{fmtPct(qqq1d)}</span></span>
-            <span style={{ color: "rgba(255,255,255,0.3)" }}>SPY <span style={{ color: pctColor(spy1d), fontWeight: 600 }}>{fmtPct(spy1d)}</span></span>
-            {peerComparison.correlation?.tsla_qqq_20d != null && (
-              <span style={{ color: "rgba(255,255,255,0.2)", marginLeft: "auto" }}>
-                ρ {peerComparison.correlation.tsla_qqq_20d.toFixed(2)}
-              </span>
-            )}
-          </div>
-        );
-      })()}
 
       <div
         className="mb-4"

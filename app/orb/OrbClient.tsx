@@ -289,7 +289,7 @@ export default function OrbClient() {
             onToggleExpanded={() => setScoreExpanded((prev) => !prev)}
             isDesktop={isDesktop}
             desktopFont={desktopFont}
-            peerComparison={peerComparison}
+            
           />
         )}
 
