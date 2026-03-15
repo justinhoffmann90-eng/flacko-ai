@@ -275,7 +275,7 @@ export default function OrbClient() {
               <span>🔮</span>
               <span style={{ background: "linear-gradient(135deg,#f0f0f0 0%, rgba(255,255,255,0.6) 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}> Orb</span>
             </h1>
-            <span className="ml-auto" style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
+            <span className="ml-auto hidden sm:inline" style={{ fontSize: desktopFont(10), color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", fontFamily: "'JetBrains Mono', monospace" }}>LIVE SIGNAL TRACKER</span>
           </div>
           <p style={{ fontSize: desktopFont(13), color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>13 buy setups + 6 avoid signals • TSLA</p>
         </div>

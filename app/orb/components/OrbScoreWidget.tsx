@@ -132,6 +132,14 @@ for (const setupId in SETUP_TYPES) {
 const SCORE_RANGE_MIN = Number(spectrumMin.toFixed(3));
 const SCORE_RANGE_MAX = Number(spectrumMax.toFixed(3));
 
+// Short zone labels — avoids wrapping on mobile (no qualifier in headline)
+const ZONE_CONFIG_LABELS: Record<string, string> = {
+  FULL_SEND: "FULL SEND",
+  NEUTRAL: "NEUTRAL",
+  CAUTION: "CAUTION",
+  DEFENSIVE: "DEFENSIVE",
+};
+
 function normalizeZone(zone: string): OrbZoneName {
   if (zone === "FULL_SEND" || zone === "NEUTRAL" || zone === "CAUTION" || zone === "DEFENSIVE") {
     return zone;
@@ -186,25 +194,27 @@ export function OrbScoreWidget({
             <div style={{ marginBottom: 6 }}>
               <div
                 style={{
-                  fontSize: desktopFont(26),
+                  fontSize: isDesktop ? desktopFont(26) : 20,
                   fontWeight: 800,
                   fontFamily: "'JetBrains Mono', monospace",
                   color: zc.hex,
-                  lineHeight: 1,
+                  lineHeight: 1.15,
                 }}
               >
-                {zc.emoji} {zoneDisplay.label}
+                {zc.emoji} {zoneDisplay.zone === zoneDisplay.zone ? ZONE_CONFIG_LABELS[zoneDisplay.zone] || zoneDisplay.label : zoneDisplay.label}
               </div>
               {zoneDisplay.qualifier && (
                 <div
                   style={{
-                    fontSize: desktopFont(10),
-                    color: "rgba(255,255,255,0.45)",
+                    fontSize: isDesktop ? desktopFont(11) : 11,
+                    color: zc.hex,
+                    opacity: 0.7,
                     fontFamily: "'JetBrains Mono', monospace",
-                    marginTop: 3,
+                    marginTop: 4,
+                    fontWeight: 600,
                   }}
                 >
-                  transition: {zoneDisplay.qualifier}
+                  {zoneDisplay.qualifier}
                 </div>
               )}
             </div>
@@ -245,16 +255,21 @@ export function OrbScoreWidget({
             </div>
             <div
               style={{
-                fontSize: desktopFont(12),
-                color: "rgba(255,255,255,0.45)",
-                marginTop: 8,
+                fontSize: isDesktop ? desktopFont(12) : 13,
+                color: zc.hex,
+                opacity: 0.65,
+                marginTop: 10,
                 fontFamily: "'JetBrains Mono', monospace",
                 letterSpacing: "0.05em",
-                transform: scoreExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform .2s ease",
+                padding: "6px 12px",
+                borderRadius: 8,
+                background: `${zc.hex}12`,
+                border: `1px solid ${zc.hex}25`,
+                display: "inline-block",
+                fontWeight: 600,
               }}
             >
-              &#x25BE; details
+              {scoreExpanded ? "▲ hide" : "▼ details"}
             </div>
           </div>
         </div>
@@ -313,23 +328,26 @@ export function OrbScoreWidget({
 
         return (
           <div style={{ margin: "14px 0 8px", padding: "0 2px" }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
-              <span style={{ fontSize: desktopFont(9), color: "rgba(239,68,68,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
-                DEFENSIVE {spectrumMinValue.toFixed(2)}
+            <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+              <span style={{ fontSize: isDesktop ? 10 : 9, color: "rgba(239,68,68,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
+                🔴 {isDesktop ? "DEFENSIVE" : "DEF"}
               </span>
-              <span style={{ fontSize: desktopFont(9), color: "rgba(34,197,94,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
-                FULL SEND {spectrumMaxValue.toFixed(2)}
+              <span style={{ fontSize: isDesktop ? 10 : 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>
+                SCORE SPECTRUM
+              </span>
+              <span style={{ fontSize: isDesktop ? 10 : 9, color: "rgba(34,197,94,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
+                {isDesktop ? "FULL SEND" : "SEND"} 🟢
               </span>
             </div>
 
-            <div style={{ position: "relative", paddingTop: isDesktop ? 20 : 18 }}>
+            <div style={{ position: "relative", paddingTop: isDesktop ? 20 : 16 }}>
               <div
                 style={{
                   position: "absolute",
                   top: 0,
-                  left: `${scorePct}%`,
+                  left: `clamp(10%, ${scorePct}%, 90%)`,
                   transform: "translateX(-50%)",
-                  fontSize: desktopFont(8),
+                  fontSize: isDesktop ? 9 : 8,
                   color: currentColor,
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: "0.08em",
@@ -338,7 +356,7 @@ export function OrbScoreWidget({
                   textShadow: `0 0 8px ${currentColor}55`,
                 }}
               >
-                YOU ARE HERE
+                ▼
               </div>
 
               <div
@@ -408,24 +426,26 @@ export function OrbScoreWidget({
               </div>
             </div>
 
-            <div style={{ position: "relative", height: isDesktop ? 24 : 28, marginTop: 8 }}>
-              {boundaryLabels.map((boundary) => (
-                <div
-                  key={`label-${boundary.zone}`}
-                  style={{
-                    position: "absolute",
-                    left: `${toPercent(boundary.value)}%`,
-                    transform: "translateX(-50%)",
-                    textAlign: "center",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span style={{ fontSize: desktopFont(8), color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
-                    {isDesktop ? `${boundary.zone} ≥ ${boundary.value.toFixed(3)}` : `${boundary.zone.slice(0, 3)} ${boundary.value.toFixed(2)}`}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {isDesktop && (
+              <div style={{ position: "relative", height: 20, marginTop: 6 }}>
+                {boundaryLabels.map((boundary) => (
+                  <div
+                    key={`label-${boundary.zone}`}
+                    style={{
+                      position: "absolute",
+                      left: `${toPercent(boundary.value)}%`,
+                      transform: "translateX(-50%)",
+                      textAlign: "center",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
+                      {boundary.value.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="flex justify-between" style={{ marginTop: 8 }}>
               {downLabel ? (
