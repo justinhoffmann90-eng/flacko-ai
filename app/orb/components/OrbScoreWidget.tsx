@@ -189,7 +189,7 @@ export function OrbScoreWidget({
         >
           ORB SCORE
         </div>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start justify-between" style={{ gap: isDesktop ? 16 : 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ marginBottom: 6 }}>
               <div
@@ -230,10 +230,10 @@ export function OrbScoreWidget({
               {zc.statsLine}
             </div>
           </div>
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ textAlign: "right", flexShrink: 0, minWidth: isDesktop ? 90 : 70 }}>
             <div
               style={{
-                fontSize: desktopFont(24),
+                fontSize: isDesktop ? desktopFont(24) : 20,
                 fontWeight: 800,
                 fontFamily: "'JetBrains Mono', monospace",
                 color: zc.hex,
@@ -330,13 +330,13 @@ export function OrbScoreWidget({
           <div style={{ margin: "14px 0 8px", padding: "0 2px" }}>
             <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
               <span style={{ fontSize: isDesktop ? 10 : 9, color: "rgba(239,68,68,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
-                🔴 {isDesktop ? "DEFENSIVE" : "DEF"}
+                🔴 DEFENSIVE
               </span>
               <span style={{ fontSize: isDesktop ? 10 : 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace" }}>
                 SCORE SPECTRUM
               </span>
               <span style={{ fontSize: isDesktop ? 10 : 9, color: "rgba(34,197,94,0.5)", fontFamily: "'JetBrains Mono', monospace" }}>
-                {isDesktop ? "FULL SEND" : "SEND"} 🟢
+                FULL SEND 🟢
               </span>
             </div>
 
