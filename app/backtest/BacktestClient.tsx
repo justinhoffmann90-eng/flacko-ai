@@ -701,9 +701,9 @@ export default function BacktestClient() {
                     {data.seasonality.next_30d && (
                       <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
                         <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          NEXT 30 DAYS · BASED ON {data.seasonality.next_30d.n} YEARS
+                          NEXT 30 DAYS · TIME-WEIGHTED BLEND OF {data.seasonality.next_30d.n} YEARS
                         </p>
-                        <div className="flex items-center gap-8">
+                        <div className="flex items-center gap-8 mb-3">
                           <div>
                             <p className={`text-3xl font-bold ${data.seasonality.next_30d.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                               {data.seasonality.next_30d.avg_return >= 0 ? "+" : ""}{data.seasonality.next_30d.avg_return.toFixed(2)}%
@@ -717,13 +717,16 @@ export default function BacktestClient() {
                             <p className="text-[10px] text-purple-300/70 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>WIN RATE</p>
                           </div>
                         </div>
+                        <p className="text-[10px] text-purple-300/50" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          This differs from the monthly bar because it is a time-weighted blend of the remaining days in the current month + the start of the next month — not a single month's average.
+                        </p>
                       </div>
                     )}
 
                     {/* Bar chart — all 12 months */}
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                       <p className="mb-4 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                        MONTHLY AVG RETURN · {months[0]?.n || 0} YEARS OF DATA
+                        MONTHLY AVG RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
                       <div className="flex items-end gap-1.5 sm:gap-2" style={{ height: "180px" }}>
