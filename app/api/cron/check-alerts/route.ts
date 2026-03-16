@@ -446,37 +446,43 @@ export async function GET(request: Request) {
         };
       });
 
-      // Send all emails in a single batch request
+      // Send emails in batches of 100 (Resend batch limit)
       if (emailBatch.length > 0) {
-        try {
-          const batchResult = await resend.batch.send(emailBatch);
-          
-          // Resend SDK returns { data: { data: [...] }, error } — handle both nesting levels
-          const batchData = Array.isArray(batchResult.data)
-            ? batchResult.data
-            : (batchResult.data as any)?.data;
-          
-          if (batchData && Array.isArray(batchData)) {
-            emailsSent = batchData.length;
-            console.log(`📧 Batch sent ${emailsSent} email alerts`);
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < emailBatch.length; i += BATCH_SIZE) {
+          const chunk = emailBatch.slice(i, i + BATCH_SIZE);
+          try {
+            const batchResult = await resend.batch.send(chunk);
             
-            // Bulk update email_sent_at for all triggered alerts
-            const allTriggeredAlertIds = triggeredAlerts.map((a) => a.id);
-            if (allTriggeredAlertIds.length > 0) {
-              await supabase
-                .from("report_alerts")
-                .update({
-                  email_sent_at: new Date().toISOString(),
-                })
-                .in("id", allTriggeredAlertIds);
+            // Resend SDK returns { data: { data: [...] }, error }
+            const batchData = Array.isArray(batchResult.data)
+              ? batchResult.data
+              : (batchResult.data as any)?.data;
+            
+            if (batchData && Array.isArray(batchData)) {
+              emailsSent += batchData.length;
+              console.log(`📧 Batch ${Math.floor(i / BATCH_SIZE) + 1}: sent ${batchData.length} emails`);
+            } else {
+              emailsFailed += chunk.length;
+              console.error(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: returned no data`, JSON.stringify(batchResult).slice(0, 200));
             }
-          } else {
-            emailsFailed = emailBatch.length;
-            console.error("Batch email send returned no data");
+          } catch (batchError) {
+            emailsFailed += chunk.length;
+            console.error(`Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, batchError);
           }
-        } catch (batchError) {
-          emailsFailed = emailBatch.length;
-          console.error("Batch email send failed:", batchError);
+        }
+
+        // Bulk update email_sent_at for all triggered alerts if any sent
+        if (emailsSent > 0) {
+          const allTriggeredAlertIds = triggeredAlerts.map((a) => a.id);
+          if (allTriggeredAlertIds.length > 0) {
+            await supabase
+              .from("report_alerts")
+              .update({
+                email_sent_at: new Date().toISOString(),
+              })
+              .in("id", allTriggeredAlertIds);
+          }
         }
       }
 
