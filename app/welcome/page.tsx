@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Mail } from "lucide-react";
+import { track } from "@vercel/analytics";
 
 export default function WelcomePage() {
   const [email, setEmail] = useState<string | null>(null);
@@ -13,6 +14,7 @@ export default function WelcomePage() {
     // Get email from URL params if present
     const params = new URLSearchParams(window.location.search);
     setEmail(params.get("email"));
+    track("subscription_completed");
   }, []);
 
   return (

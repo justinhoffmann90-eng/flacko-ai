@@ -15,6 +15,7 @@ import type {
   OrbData,
   OrbZone,
   Instrument,
+  WeeklyPerformanceData,
 } from './types';
 import { getMarketStatus } from './data-feed';
 
@@ -742,43 +743,111 @@ export async function postMarketClose(
 }
 
 /**
- * Post weekly performance report
+ * Post weekly performance report (full breakdown)
  */
 export async function postWeeklyReport(
-  metrics: {
-    startValue: number;
-    endValue: number;
-    totalReturn: number;
-    tradesCount: number;
-    winRate: number;
-    avgWinner: number;
-    avgLoser: number;
-    maxDrawdown: number;
-    bestTrade: number;
-    worstTrade: number;
-  },
-  weekRange: string
+  data: WeeklyPerformanceData
 ): Promise<void> {
   if (!webhookClient) return;
   
+  const isPositive = data.weeklyReturnPct >= 0;
+  const winCount = data.winCount;
+  const lossCount = data.lossCount;
+  
+  // Headline
+  let headline: string;
+  if (data.tradesCount === 0) {
+    headline = `flat week — no trades. cash gang.`;
+  } else if (isPositive) {
+    headline = `up ${withSignPercent(data.weeklyReturnPct)} on ${data.tradesCount} trades (${winCount}w/${lossCount}l)`;
+  } else {
+    headline = `down ${data.weeklyReturnPct.toFixed(1)}% on ${data.tradesCount} trades (${winCount}w/${lossCount}l)`;
+  }
+  
+  // Capital line
+  const capitalLine = `$${fmtDollar(data.startValue)} → $${fmtDollar(data.endValue)} (${withSign(data.weeklyReturn)} / ${withSignPercent(data.weeklyReturnPct)})`;
+  
+  // Daily breakdown
+  let dailyLines: string[] = [];
+  for (const day of data.dailyBreakdown) {
+    let line = `**${day.dayLabel}**`;
+    if (day.trades.length === 0) {
+      line += ` — held`;
+    } else {
+      const actions = day.trades.map(t => {
+        const verb = t.action === 'buy' ? '🟢 bought' : '🔴 sold';
+        let desc = `${verb} ${t.shares} ${t.instrument} @ $${t.price.toFixed(2)}`;
+        if (t.pnl && t.action === 'sell') {
+          desc += ` (${withSign(t.pnl)})`;
+        }
+        return desc;
+      });
+      line += ` — ${actions.join(' | ')}`;
+    }
+    if (day.portfolioValue) {
+      const changeStr = day.dailyChange !== null ? ` (${withSignPercent(day.dailyChange)})` : '';
+      line += `\nportfolio: $${fmtDollar(day.portfolioValue)}${changeStr}`;
+    } else {
+      line += `\n*no snapshot*`;
+    }
+    dailyLines.push(line);
+  }
+  
+  // Position going into next week
+  let positionLine = 'all cash — no positions';
+  if (data.currentPosition) {
+    const parts: string[] = [];
+    if (data.currentPosition.tslaShares > 0) {
+      parts.push(`TSLA: ${data.currentPosition.tslaShares} shares @ $${fmtDollar(data.currentPosition.tslaAvgCost, 2)} avg`);
+    }
+    if (data.currentPosition.tsllShares > 0) {
+      parts.push(`TSLL: ${data.currentPosition.tsllShares} shares @ $${fmtDollar(data.currentPosition.tsllAvgCost, 2)} avg`);
+    }
+    if (parts.length > 0) {
+      positionLine = parts.join('\n');
+    }
+  }
+  
+  // Metrics (only show non-zero)
+  let metricsLines: string[] = [];
+  if (data.bestTrade !== 0) metricsLines.push(`best trade: ${withSign(data.bestTrade)}`);
+  if (data.worstTrade !== 0) metricsLines.push(`worst trade: ${withSign(data.worstTrade)}`);
+  if (data.avgWinner !== 0) metricsLines.push(`avg winner: ${withSign(data.avgWinner)}`);
+  if (data.avgLoser !== 0) metricsLines.push(`avg loser: ${withSign(data.avgLoser)}`);
+  if (data.maxDrawdown > 0) metricsLines.push(`max drawdown: $${fmtDollar(data.maxDrawdown)}`);
+  
+  // All-time footer
+  const allTimeWinRate = (data.allTime.winRate * 100).toFixed(0);
+  const allTimeFooter = `all-time: ${data.allTime.totalTrades} trades | ${allTimeWinRate}% win rate | ${withSign(data.allTime.totalReturn)} (${withSignPercent(data.allTime.totalReturnPercent)})`;
+  
+  // Build embed
   const embed = new EmbedBuilder()
     .setTitle(`⚔️ TAYLOR — WEEKLY PERFORMANCE`)
-    .setDescription(`(${weekRange})`)
-    .setColor(metrics.totalReturn >= 0 ? 0x00ff00 : 0xff0000)
+    .setDescription(`${headline}\n\n**capital**\n${capitalLine}`)
+    .setColor(isPositive ? 0x00c853 : 0xff1744)
     .addFields(
-      { 
-        name: 'capital', 
-        value: `$${metrics.startValue.toLocaleString()} → $${metrics.endValue.toLocaleString()} (${withSignPercent(metrics.totalReturn)})`,
-        inline: false 
+      {
+        name: '📅 daily breakdown',
+        value: dailyLines.join('\n\n') || 'no data',
+        inline: false,
       },
-      { name: 'trades', value: metrics.tradesCount.toString(), inline: true },
-      { name: 'win rate', value: `${(metrics.winRate * 100).toFixed(0)}%`, inline: true },
-      { name: 'max dd', value: `$${metrics.maxDrawdown.toFixed(0)}`, inline: true },
-      { name: 'avg winner', value: `$${metrics.avgWinner.toFixed(0)}`, inline: true },
-      { name: 'avg loser', value: `$${metrics.avgLoser.toFixed(0)}`, inline: true },
-      { name: 'best trade', value: `$${metrics.bestTrade.toFixed(0)}`, inline: true },
-      { name: 'worst trade', value: `$${metrics.worstTrade.toFixed(0)}`, inline: true }
-    )
+      {
+        name: '📦 carrying into next week',
+        value: positionLine,
+        inline: false,
+      },
+    );
+  
+  if (metricsLines.length > 0) {
+    embed.addFields({
+      name: '📊 metrics',
+      value: metricsLines.join('\n'),
+      inline: false,
+    });
+  }
+  
+  embed
+    .setFooter({ text: allTimeFooter })
     .setTimestamp();
   
   try {

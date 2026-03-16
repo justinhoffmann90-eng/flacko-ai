@@ -128,6 +128,44 @@ export interface PerformanceMetrics {
   period: string;
 }
 
+export interface WeeklyDayBreakdown {
+  date: string;         // YYYY-MM-DD
+  dayLabel: string;     // "Mon", "Tue", etc.
+  trades: { action: string; instrument: string; shares: number; price: number; pnl?: number }[];
+  portfolioValue: number | null;
+  dailyChange: number | null;  // % change from previous day
+}
+
+export interface WeeklyPerformanceData {
+  weekRange: string;        // "3/10 - 3/14"
+  startValue: number;
+  endValue: number;
+  weeklyReturn: number;     // $ change
+  weeklyReturnPct: number;  // % change
+  tradesCount: number;
+  winCount: number;
+  lossCount: number;
+  avgWinner: number;
+  avgLoser: number;
+  maxDrawdown: number;
+  bestTrade: number;
+  worstTrade: number;
+  dailyBreakdown: WeeklyDayBreakdown[];
+  currentPosition: {
+    tslaShares: number;
+    tslaAvgCost: number;
+    tsllShares: number;
+    tsllAvgCost: number;
+    unrealizedPnl: number;
+  } | null;
+  allTime: {
+    totalTrades: number;
+    winRate: number;
+    totalReturn: number;
+    totalReturnPercent: number;
+  };
+}
+
 export interface TradeSignal {
   action: 'buy' | 'sell' | 'hold';
   instrument?: Instrument;

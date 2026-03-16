@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, ChevronDown } from "lucide-react";
+import { track } from "@vercel/analytics";
 
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
 
+  useEffect(() => {
+    track("signup_page_viewed");
+  }, []);
+
   const handleJoin = async () => {
     setLoading(true);
+    track("checkout_started");
     try {
       const response = await fetch("/api/create-checkout", {
         method: "POST",
@@ -18,6 +24,7 @@ export default function SignupPage() {
       const data = await response.json();
       
       if (data.url) {
+        track("checkout_redirected");
         window.location.href = data.url;
       } else {
         setLoading(false);

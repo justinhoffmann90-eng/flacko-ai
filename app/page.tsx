@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X, ChevronDown, FileText, Bell, Radio, Users, Calendar, Lightbulb, Loader2, BookOpen, ChevronRight } from "lucide-react";
 import { NeuralBackground } from "@/components/neural-background";
 import { useState, useEffect } from "react";
+import { track } from "@vercel/analytics";
 
 // FAQ Accordion Item
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -39,6 +40,7 @@ export default function LandingPage() {
 
   const handleDirectCheckout = async () => {
     setCheckoutLoading(true);
+    track("landing_checkout_clicked");
     try {
       const response = await fetch("/api/create-checkout", { method: "POST" });
       const data = await response.json();

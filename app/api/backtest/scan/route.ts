@@ -1007,31 +1007,18 @@ async function fetchOhlcvRows(
   timeframe: "daily" | "weekly",
   limit: number,
 ): Promise<OhlcvRow[] | null> {
-  // Supabase REST caps at 1000 rows per request — paginate for larger fetches
-  const PAGE_SIZE = 1000;
-  const allRows: OhlcvRow[] = [];
-  let offset = 0;
+  const today = new Date().toISOString().split("T")[0];
+  const { data, error } = await supabase
+    .from("ohlcv_bars")
+    .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
+    .eq("ticker", ticker)
+    .eq("timeframe", timeframe)
+    .lte("bar_date", today)
+    .order("bar_date", { ascending: false })
+    .limit(limit);
 
-  while (allRows.length < limit) {
-    const pageLimit = Math.min(PAGE_SIZE, limit - allRows.length);
-    const today = new Date().toISOString().split("T")[0];
-    const { data, error } = await supabase
-      .from("ohlcv_bars")
-      .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
-      .eq("ticker", ticker)
-      .eq("timeframe", timeframe)
-      .lte("bar_date", today)
-      .order("bar_date", { ascending: true })
-      .range(offset, offset + pageLimit - 1);
-
-    if (error || !data || data.length === 0) break;
-    allRows.push(...(data as OhlcvRow[]));
-    if (data.length < pageLimit) break; // No more rows
-    offset += data.length;
-  }
-
-  if (allRows.length === 0) return null;
-  return allRows; // Already ascending
+  if (error || !data || data.length === 0) return null;
+  return (data as OhlcvRow[]).reverse(); // Return chronological (oldest first, newest last)
 }
 
 async function computeIndicatorsFromOhlcv(
@@ -1302,8 +1289,9 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // One-time cleanup: delete known bad future rows
-    await supabase.from("ohlcv_bars").delete().eq("ticker", "NVDA").eq("bar_date", "2026-03-31");
+    // One-time cleanup: delete known bad future row
+    await supabase.from("ohlcv_bars").delete()
+      .eq("ticker", "NVDA").eq("bar_date", "2026-03-31").eq("timeframe", "daily");
 
     const [{ data: definitions, error: definitionsError }, { data: stateRows, error: statesError }] = await Promise.all([
       supabase

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Mail, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { track } from "@vercel/analytics";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,6 +27,7 @@ export default function LoginPage() {
 
   // Auto-redirect if already logged in
   useEffect(() => {
+    track("login_page_viewed");
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {

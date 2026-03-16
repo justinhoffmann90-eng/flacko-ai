@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Trade, DailyPerformance, PerformanceMetrics, Portfolio, Position, MultiPortfolio, Instrument } from './types';
+import type { Trade, DailyPerformance, PerformanceMetrics, Portfolio, Position, MultiPortfolio, Instrument, WeeklyPerformanceData, WeeklyDayBreakdown } from './types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
@@ -462,48 +462,166 @@ export async function recordDailyPortfolio(
 }
 
 /**
- * Get weekly performance data for report
+ * Calculate previous trading week Mon-Fri date range
+ * Called on Sunday evening — returns the Mon-Fri that just ended.
  */
-export async function getWeeklyPerformance(): Promise<{
-  startValue: number;
-  endValue: number;
-  totalReturn: number;
-  tradesCount: number;
-  winRate: number;
-  avgWinner: number;
-  avgLoser: number;
-  maxDrawdown: number;
-  bestTrade: number;
-  worstTrade: number;
-} | null> {
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay()); // Sunday
-  weekStart.setHours(0, 0, 0, 0);
+function getPreviousTradingWeek(): { monday: string; friday: string; weekRange: string } {
+  // Get current date in CT as plain string to avoid timezone math issues
+  const ctDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }); // YYYY-MM-DD
+  const ctDayStr = new Date().toLocaleDateString('en-US', { timeZone: 'America/Chicago', weekday: 'short' }); // "Sun", "Mon", etc.
   
+  const [year, month, day] = ctDateStr.split('-').map(Number);
+  const ctDate = new Date(year, month - 1, day); // local date, no TZ issues
+  const dayOfWeek = ctDate.getDay(); // 0=Sun, 1=Mon, ...
+  
+  // Find the most recent Friday
+  // Sun(0)→2, Mon(1)→3, Tue(2)→4, Wed(3)→5, Thu(4)→6, Fri(5)→7(last Fri), Sat(6)→1
+  const daysToFriday = dayOfWeek === 0 ? 2 : dayOfWeek === 6 ? 1 : dayOfWeek + 2;
+  const friday = new Date(ctDate);
+  friday.setDate(ctDate.getDate() - daysToFriday);
+  
+  // Monday of that same week = Friday - 4
+  const monday = new Date(friday);
+  monday.setDate(friday.getDate() - 4);
+  
+  const fmt = (d: Date) => d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const fmtShort = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+  
+  return {
+    monday: fmt(monday),
+    friday: fmt(friday),
+    weekRange: `${fmtShort(monday)} - ${fmtShort(friday)}`,
+  };
+}
+
+/**
+ * Get weekly performance data for report (previous Mon-Fri trading week)
+ */
+export async function getWeeklyPerformance(): Promise<WeeklyPerformanceData | null> {
   try {
-    const metrics = await getPerformanceMetrics('1w');
+    const { monday, friday, weekRange } = getPreviousTradingWeek();
     
-    // Get best/worst trades
-    const { data: trades } = await supabase
+    // Get portfolio snapshots for the week
+    const { data: portfolios } = await supabase
+      .from('paper_portfolio')
+      .select('*')
+      .gte('date', monday)
+      .lte('date', friday)
+      .order('date', { ascending: true });
+    
+    const portfolioData = portfolios || [];
+    
+    // Get the portfolio value BEFORE Monday (previous Friday or last available)
+    const { data: priorPortfolio } = await supabase
+      .from('paper_portfolio')
+      .select('total_value')
+      .lt('date', monday)
+      .order('date', { ascending: false })
+      .limit(1);
+    
+    const startValue = priorPortfolio?.[0]?.total_value || portfolioData[0]?.total_value || 1000000;
+    const endValue = portfolioData.length > 0 ? portfolioData[portfolioData.length - 1].total_value : startValue;
+    
+    const weeklyReturn = endValue - startValue;
+    const weeklyReturnPct = startValue > 0 ? (weeklyReturn / startValue) * 100 : 0;
+    
+    // Get all trades Mon-Fri
+    const { data: allTrades } = await supabase
       .from('paper_trades')
-      .select('realized_pnl')
-      .gte('timestamp', weekStart.toISOString())
-      .eq('action', 'sell');
+      .select('*')
+      .gte('timestamp', `${monday}T00:00:00`)
+      .lte('timestamp', `${friday}T23:59:59`)
+      .order('timestamp', { ascending: true });
     
-    const pnls = (trades || []).map(t => t.realized_pnl || 0);
+    const trades = allTrades || [];
+    const sells = trades.filter(t => t.action === 'sell');
+    const winners = sells.filter(t => (t.realized_pnl || 0) > 0);
+    const losers = sells.filter(t => (t.realized_pnl || 0) < 0);
+    const pnls = sells.map(t => t.realized_pnl || 0);
+    
+    const avgWinner = winners.length > 0
+      ? winners.reduce((sum, t) => sum + (t.realized_pnl || 0), 0) / winners.length
+      : 0;
+    const avgLoser = losers.length > 0
+      ? losers.reduce((sum, t) => sum + (t.realized_pnl || 0), 0) / losers.length
+      : 0;
+    
+    // Max drawdown within the week
+    let maxDrawdown = 0;
+    let peak = startValue;
+    portfolioData.forEach(p => {
+      if (p.total_value > peak) peak = p.total_value;
+      const dd = peak - p.total_value;
+      if (dd > maxDrawdown) maxDrawdown = dd;
+    });
+    
+    // Build daily breakdown (Mon-Fri)
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const dailyBreakdown: WeeklyDayBreakdown[] = [];
+    let prevValue = startValue;
+    
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toLocaleDateString('en-CA');
+      
+      const dayTrades = trades.filter(t => {
+        const tDate = new Date(t.timestamp).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+        return tDate === dateStr;
+      });
+      
+      const dayPortfolio = portfolioData.find(p => p.date === dateStr);
+      const portfolioValue = dayPortfolio?.total_value || null;
+      const dailyChange = portfolioValue && prevValue ? ((portfolioValue - prevValue) / prevValue) * 100 : null;
+      if (portfolioValue) prevValue = portfolioValue;
+      
+      dailyBreakdown.push({
+        date: dateStr,
+        dayLabel: dayNames[i],
+        trades: dayTrades.map(t => ({
+          action: t.action,
+          instrument: t.instrument || 'TSLA',
+          shares: t.shares,
+          price: t.price,
+          pnl: t.realized_pnl || undefined,
+        })),
+        portfolioValue,
+        dailyChange,
+      });
+    }
+    
+    // Current position (from bot state)
+    const botState = await getBotState();
+    const currentPosition = botState && (botState.sharesHeld > 0 || botState.tsllShares > 0)
+      ? {
+          tslaShares: botState.sharesHeld,
+          tslaAvgCost: botState.avgCost,
+          tsllShares: botState.tsllShares,
+          tsllAvgCost: botState.tsllAvgCost,
+          unrealizedPnl: 0, // will be calculated at post time with live price
+        }
+      : null;
+    
+    // All-time stats
+    const allTime = await getAllTimeStats();
     
     return {
-      startValue: 1000000,
-      endValue: metrics.capital,
-      totalReturn: metrics.totalReturnPercent,
-      tradesCount: metrics.tradesCount,
-      winRate: metrics.winRate,
-      avgWinner: metrics.avgWinner,
-      avgLoser: metrics.avgLoser,
-      maxDrawdown: metrics.maxDrawdown,
+      weekRange,
+      startValue,
+      endValue,
+      weeklyReturn,
+      weeklyReturnPct,
+      tradesCount: trades.length,
+      winCount: winners.length,
+      lossCount: losers.length,
+      avgWinner,
+      avgLoser,
+      maxDrawdown,
       bestTrade: pnls.length > 0 ? Math.max(...pnls) : 0,
       worstTrade: pnls.length > 0 ? Math.min(...pnls) : 0,
+      dailyBreakdown,
+      currentPosition,
+      allTime,
     };
   } catch (error) {
     console.error('Error getting weekly performance:', error);

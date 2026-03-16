@@ -668,7 +668,7 @@ export default function BacktestClient() {
                 </p>
                 <p className="text-sm leading-relaxed text-zinc-100">{data.right_now.summary}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  <span className="rounded bg-zinc-900/60 px-2 py-1">Trend: {data.indicators?.bxt_state || "—"}</span>
+                  <span className="rounded bg-zinc-900/60 px-2 py-1">BXT: {data.indicators?.bxt_state || "—"} {data.indicators?.bxt_state === "HH" ? "↑" : data.indicators?.bxt_state === "LL" ? "↓" : data.indicators?.bxt_state === "HL" ? "↗" : data.indicators?.bxt_state === "LH" ? "↘" : ""}</span>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Signal: {data.right_now.confidence.toUpperCase()}</span>
                   {data.meta?.data_range?.years && (
                     <span className="rounded bg-zinc-900/60 px-2 py-1">{data.meta.data_range.earliest?.split("-")[0]}–{data.meta.data_range.latest?.split("-")[0]} · {Math.round(Number(data.meta.data_range.years))}y data</span>
@@ -791,7 +791,10 @@ export default function BacktestClient() {
                                   <span className="text-[7px] text-zinc-600 leading-tight">win</span>
                                 </div>
                               ) : (
-                                <div className="mb-1 h-6" />
+                                <div className="mb-1 flex flex-col items-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500">—</span>
+                                  <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                </div>
                               )}
 
                               {/* Avg return label */}

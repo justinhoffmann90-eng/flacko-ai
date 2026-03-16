@@ -276,17 +276,13 @@ async function tradingLoop(): Promise<void> {
       await logBot('info', 'market close posted', { todayPnl, orbZone: orb.zone });
     }
     
-    // Post weekly report on Sunday evening
+    // Post weekly report on Sunday evening (covers previous Mon-Fri)
     const dayOfWeek = new Date().getDay();
     const hour = new Date().getHours();
     if (dayOfWeek === 0 && hour >= 18 && !weeklyReportPosted) {
       const weekly = await getWeeklyPerformance();
       if (weekly) {
-        const now = new Date();
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        const weekRange = `${weekStart.toLocaleDateString()} - ${now.toLocaleDateString()}`;
-        await postWeeklyReport(weekly, weekRange);
+        await postWeeklyReport(weekly);
         weeklyReportPosted = true;
       }
     }
