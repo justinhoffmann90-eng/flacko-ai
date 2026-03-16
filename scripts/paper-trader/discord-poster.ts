@@ -351,49 +351,80 @@ function generateEntryCommentary(
   reasoning: string[]
 ): string {
   const lines: string[] = [];
+  const fullReasoning = reasoning.join('\n');
   
-  // Instrument selection reasoning
-  if (trade.instrument === 'TSLL') {
-    lines.push(`Orb is in FULL_SEND — multiple buy signals converging. Taking the 2x leveraged position.`);
-  } else if (orb.zone === 'NEUTRAL') {
-    lines.push(`Orb is neutral — conditions are fine but not screaming. Going with shares, no leverage.`);
-  } else if (orb.zone === 'CAUTION') {
-    lines.push(`Orb is cautious but I see a setup here. Small size, tight stop.`);
+  // Extract the specific support level from reasoning
+  const supportMatch = fullReasoning.match(/near support:\s*(.+?)\s*\(\$?([\d.]+)\)/);
+  const supportLevel = supportMatch ? supportMatch[1] : null;
+  const supportPrice = supportMatch ? supportMatch[2] : null;
+  
+  // Extract HIRO data from reasoning
+  const hiroMatch = fullReasoning.match(/hiro:?\s*(.+?)\s*\((\d+)%?\)/i);
+  const hiroChar = hiroMatch ? hiroMatch[1].trim() : null;
+  const hiroPctl = hiroMatch ? parseInt(hiroMatch[2]) : null;
+  
+  // Extract target/stop from reasoning
+  const targetMatch = fullReasoning.match(/target:\s*\$([\d.]+)/);
+  const stopMatch = fullReasoning.match(/stop:\s*\$([\d.]+)/);
+  
+  // 1. THE SETUP — what level and why it matters
+  if (supportLevel && supportPrice) {
+    lines.push(`${supportLevel} ($${supportPrice}) is the level from today's report.`);
   }
   
-  // Mode context
-  if (report) {
-    if (report.mode === 'GREEN') {
-      lines.push(`Green mode — full conviction. Market conditions favor longs.`);
-    } else if (report.mode === 'YELLOW') {
-      lines.push(`Yellow mode — conditions are decent but keeping size measured.`);
-    } else if (report.mode === 'ORANGE') {
-      lines.push(`Orange mode — elevated caution. Smaller position, tighter risk management.`);
-    } else if (report.mode === 'RED') {
-      lines.push(`Red mode — this is a nibble only. Defensive conditions but price is at a key level.`);
+  // 2. THE FLOW — what HIRO says about institutional activity at this level
+  if (hiroPctl !== null) {
+    if (hiroPctl >= 70) {
+      lines.push(`HIRO is in the ${hiroPctl}th percentile — dealers are actively buying here. strong flow support.`);
+    } else if (hiroPctl >= 40) {
+      lines.push(`HIRO at ${hiroPctl}th percentile — flow is neutral. no red flags but no tailwind either.`);
+    } else {
+      lines.push(`HIRO at ${hiroPctl}th percentile — flow is weak. sizing accordingly.`);
     }
   }
   
-  // Level context
-  const nearSupport = reasoning.find(r => r.includes('near support'));
-  const nearResistance = reasoning.find(r => r.includes('near resistance'));
-  if (nearSupport) {
-    lines.push(`Price is sitting near a support level — that's my entry zone.`);
-  }
-  if (nearResistance) {
-    lines.push(`Resistance nearby — watching for a clean break before adding.`);
+  // 3. THE CONTEXT — mode + what it means for sizing/conviction
+  if (report) {
+    const mode = report.mode;
+    if (mode === 'RED') {
+      lines.push(`RED mode means we're defensive — this is a controlled nibble, not a swing. capped at 5% exposure.`);
+    } else if (mode === 'ORANGE') {
+      lines.push(`ORANGE mode — cautious lean. smaller size, quick to cut if the level doesn't hold.`);
+    } else if (mode === 'YELLOW' || mode === 'YELLOW_IMPROVING') {
+      lines.push(`YELLOW mode — constructive but not yet confirmed. measured sizing.`);
+    } else if (mode === 'GREEN') {
+      lines.push(`GREEN mode — full conviction. system says go.`);
+    }
   }
   
-  // Active setup context
+  // 4. THE INSTRUMENT — why shares vs leverage
+  if (trade.instrument === 'TSLL') {
+    const overrideSetups = orb.activeSetups.filter(s => s.status === 'active' && ['oversold-extreme', 'deep-value', 'capitulation'].includes(s.setup_id));
+    if (overrideSetups.length > 0) {
+      const names = overrideSetups.map(s => s.setup_id.replace(/-/g, ' ')).join(' + ');
+      lines.push(`taking TSLL because ${names} is active — historically these setups produce outsized returns.`);
+    } else if (orb.zone === 'FULL_SEND') {
+      lines.push(`FULL SEND zone — multiple signals converging. 2x leveraged.`);
+    }
+  } else if (orb.zone === 'CAUTION') {
+    lines.push(`CAUTION zone — shares only, tight leash.`);
+  }
+  
+  // 5. THE TRADE — defined risk
+  if (targetMatch && stopMatch) {
+    lines.push(`defined trade: out at $${targetMatch[1]} if it works, $${stopMatch[1]} if it doesn't.`);
+  }
+  
+  // 6. KILL LEVERAGE proximity warning
+  if (report && report.masterEject > 0 && Math.abs(trade.price - report.masterEject) / trade.price < 0.03) {
+    lines.push(`⚠️ close to kill leverage ($${report.masterEject.toFixed(2)}) — if this breaks, all leverage gets cut immediately.`);
+  }
+  
+  // 7. ACTIVE SETUPS — only mention if they add real context
   const activeSetups = orb.activeSetups.filter(s => s.status === 'active');
-  if (activeSetups.length > 0) {
+  if (activeSetups.length > 0 && trade.instrument !== 'TSLL') {
     const names = activeSetups.map(s => s.setup_id.replace(/-/g, ' ')).join(', ');
-    lines.push(`Active Orb setups: ${names}. These have historically led to positive forward returns.`);
-  }
-  
-  // Kill Leverage context
-  if (report && Math.abs(trade.price - report.masterEject) < 5) {
-    lines.push(`Close to kill leverage ($${report.masterEject.toFixed(2)}) — tight leash. If this breaks, I'm cutting leverage immediately.`);
+    lines.push(`active orb setups: ${names}.`);
   }
   
   return lines.join(' ');
