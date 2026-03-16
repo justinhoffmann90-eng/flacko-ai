@@ -1,0 +1,6 @@
+# Prevent deploying non-essential files
+scripts/paper-trader/
+scripts/pattern-backtest.py
+scripts/bx_trender_engine.py
+*.test.ts
+*.test.tsx
