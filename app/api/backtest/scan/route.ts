@@ -945,11 +945,30 @@ function buildCurrentSummarySentence(params: {
 }) {
   const { ticker, modeSuggestion, buyActiveCount, avoidActiveCount, watchingCount, average20d } = params;
 
-  const expectancy = average20d != null
-    ? `${average20d >= 0 ? "+" : ""}${average20d.toFixed(2)}% at 20d`
-    : "not yet computed";
+  const conditionMap: Record<string, string> = {
+    "RED / EJECTED": "in a confirmed downtrend (BXT LL, avoid zone)",
+    "RED": "in a bearish trend (BXT declining)",
+    "ORANGE": "in a recovering phase (BXT improving from lows)",
+    "ORANGE (Improving)": "showing early recovery signals",
+    "YELLOW": "in a neutral/consolidation zone",
+    "YELLOW (Improving)": "consolidating with improving momentum",
+    "GREEN (Extended)": "in an uptrend (extended, watch for pullback)",
+    "GREEN": "in a confirmed uptrend (BXT HH)",
+    "GREEN (Recovering)": "recovering toward uptrend",
+  };
 
-  return `${ticker} is currently ${modeSuggestion.suggestion} (${modeSuggestion.confidence} confidence) with ${buyActiveCount} buy active, ${avoidActiveCount} avoid active, and ${watchingCount} watching; historical expectancy from similar active setups is ${expectancy}.`;
+  const condition = conditionMap[modeSuggestion.suggestion] ?? "in a neutral zone";
+  const setupSummary = buyActiveCount > 0
+    ? `${buyActiveCount} setup${buyActiveCount !== 1 ? "s" : ""} active`
+    : watchingCount > 0
+    ? `${watchingCount} setup${watchingCount !== 1 ? "s" : ""} approaching trigger`
+    : "no setups triggering";
+
+  const expectancyPart = average20d != null && Number.isFinite(average20d)
+    ? ` Historical 20-day avg return when setups fire: ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}%.`
+    : "";
+
+  return `${ticker} is currently ${condition}. ${setupSummary} across ${buyActiveCount + avoidActiveCount + watchingCount} setups evaluated.${expectancyPart}`;
 }
 
 function derivePeerState(buyActive: number, avoidActive: number, watching: number): "BULLISH" | "RISK" | "WATCH" | "NEUTRAL" {
@@ -995,11 +1014,13 @@ async function fetchOhlcvRows(
 
   while (allRows.length < limit) {
     const pageLimit = Math.min(PAGE_SIZE, limit - allRows.length);
+    const today = new Date().toISOString().split("T")[0];
     const { data, error } = await supabase
       .from("ohlcv_bars")
       .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
       .eq("ticker", ticker)
       .eq("timeframe", timeframe)
+      .lte("bar_date", today)
       .order("bar_date", { ascending: true })
       .range(offset, offset + pageLimit - 1);
 
@@ -1280,6 +1301,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createServiceClient();
+
+    // One-time cleanup: delete known bad future rows
+    await supabase.from("ohlcv_bars").delete().eq("ticker", "NVDA").eq("bar_date", "2026-03-31");
 
     const [{ data: definitions, error: definitionsError }, { data: stateRows, error: statesError }] = await Promise.all([
       supabase

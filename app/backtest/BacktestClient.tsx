@@ -30,14 +30,14 @@ function incrementScans(): number {
 
 function SubscribeCTA({ message, compact = false }: { message: string; compact?: boolean }) {
   return (
-    <div className={`rounded-xl border border-amber-500/30 bg-amber-500/5 ${compact ? "p-3" : "p-5"} text-center`}>
+    <div className={`rounded-xl border border-zinc-700/50 bg-zinc-800/30 ${compact ? "p-3" : "p-5"} text-center`}>
       <div className={`flex items-center justify-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
         <span className="text-lg">🔒</span>
-        <p className={`${compact ? "text-xs" : "text-sm"} text-amber-200`}>{message}</p>
+        <p className={`${compact ? "text-xs" : "text-sm"} text-zinc-300`}>{message}</p>
       </div>
       <a
         href={SUBSCRIBE_URL}
-        className={`inline-block rounded-lg border border-amber-500/40 bg-amber-500/20 ${compact ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm"} font-semibold text-amber-100 transition hover:bg-amber-500/30`}
+        className={`inline-block rounded-lg bg-white ${compact ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm"} font-semibold text-zinc-900 transition hover:bg-zinc-200`}
       >
         Subscribe to Flacko AI →
       </a>
@@ -349,7 +349,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
                   <button
                     onClick={() => setInstancesExpanded(!instancesExpanded)}
-                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-500 hover:text-zinc-300 transition"
+                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-300 hover:text-white transition"
                     style={{ fontFamily: "'JetBrains Mono', monospace" }}
                   >
                     <span>{instancesExpanded ? "▲" : "▼"} {setup.backtest.n} historical instances</span>
@@ -453,7 +453,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
                   <button
                     onClick={() => setInstancesExpanded(!instancesExpanded)}
-                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-500 hover:text-zinc-300 transition"
+                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-300 hover:text-white transition"
                     style={{ fontFamily: "'JetBrains Mono', monospace" }}
                   >
                     <span>{instancesExpanded ? "▲" : "▼"} {setup.backtest.n} historical instances</span>
@@ -664,20 +664,37 @@ export default function BacktestClient() {
               {/* RIGHT NOW — always open */}
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
                 <p className="mb-2 text-[10px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  RIGHT NOW · {data.ticker} · {data.date} ET
+                  RIGHT NOW · {data.ticker} · {data.date ? new Date(data.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                 </p>
                 <p className="text-sm leading-relaxed text-zinc-100">{data.right_now.summary}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  <span className="rounded bg-zinc-900/60 px-2 py-1">Mode: {data.right_now.suggestion}</span>
-                  <span className="rounded bg-zinc-900/60 px-2 py-1">Confidence: {data.right_now.confidence.toUpperCase()}</span>
+                  <span className="rounded bg-zinc-900/60 px-2 py-1">Trend: {data.indicators?.bxt_state || "—"}</span>
+                  <span className="rounded bg-zinc-900/60 px-2 py-1">Signal: {data.right_now.confidence.toUpperCase()}</span>
                   {data.meta?.data_range?.years && (
-                    <span className="rounded bg-zinc-900/60 px-2 py-1">Data: {data.meta.data_range.years}y ({data.meta.data_range.earliest?.split("-")[0]}–{data.meta.data_range.latest?.split("-")[0]})</span>
+                    <span className="rounded bg-zinc-900/60 px-2 py-1">{data.meta.data_range.earliest?.split("-")[0]}–{data.meta.data_range.latest?.split("-")[0]} · {Math.round(Number(data.meta.data_range.years))}y data</span>
                   )}
                 </div>
-                {data.meta?.data_range?.earliest && data.meta?.data_range?.latest && (
-                  <p className="mt-2 text-[10px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    Backtest data: {data.meta.data_range.earliest.split("-")[0]}–{data.meta.data_range.latest.split("-")[0]} · {data.meta.data_range.years || "?"} years
-                  </p>
+                {data.indicators && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {data.indicators.close != null && (
+                      <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300">Close: ${data.indicators.close}</span>
+                    )}
+                    {data.indicators.rsi != null && (
+                      <span className={`rounded px-2 py-0.5 ${Number(data.indicators.rsi) > 70 ? "bg-red-900/40 text-red-300" : Number(data.indicators.rsi) < 30 ? "bg-emerald-900/40 text-emerald-300" : "bg-zinc-800/80 text-zinc-300"}`}>RSI: {data.indicators.rsi}</span>
+                    )}
+                    {data.indicators.smi != null && (
+                      <span className={`rounded px-2 py-0.5 ${Number(data.indicators.smi) > 40 ? "bg-emerald-900/40 text-emerald-300" : Number(data.indicators.smi) < -40 ? "bg-red-900/40 text-red-300" : "bg-zinc-800/80 text-zinc-300"}`}>SMI: {data.indicators.smi}</span>
+                    )}
+                    {data.indicators.sma200_dist != null && (
+                      <span className={`rounded px-2 py-0.5 ${Number(data.indicators.sma200_dist) < 0 ? "bg-red-900/40 text-red-300" : "bg-zinc-800/80 text-zinc-300"}`}>SMA200: {Number(data.indicators.sma200_dist) >= 0 ? "+" : ""}{data.indicators.sma200_dist}%</span>
+                    )}
+                    {data.indicators.bx_weekly_state && (
+                      <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300">Wkly BXT: {data.indicators.bx_weekly_state}</span>
+                    )}
+                    {data.indicators.vix_close != null && (
+                      <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300">VIX: {data.indicators.vix_close}</span>
+                    )}
+                  </div>
                 )}
               </div>
 
