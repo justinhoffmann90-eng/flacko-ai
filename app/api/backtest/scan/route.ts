@@ -942,33 +942,102 @@ function buildCurrentSummarySentence(params: {
   avoidActiveCount: number;
   watchingCount: number;
   average20d: number | null;
-}) {
-  const { ticker, modeSuggestion, buyActiveCount, avoidActiveCount, watchingCount, average20d } = params;
-
-  const conditionMap: Record<string, string> = {
-    "RED / EJECTED": "in a confirmed downtrend (BXT LL, avoid zone)",
-    "RED": "in a bearish trend (BXT declining)",
-    "ORANGE": "in a recovering phase (BXT improving from lows)",
-    "ORANGE (Improving)": "showing early recovery signals",
-    "YELLOW": "in a neutral/consolidation zone",
-    "YELLOW (Improving)": "consolidating with improving momentum",
-    "GREEN (Extended)": "in an uptrend (extended, watch for pullback)",
-    "GREEN": "in a confirmed uptrend (BXT HH)",
-    "GREEN (Recovering)": "recovering toward uptrend",
+  indicators?: {
+    close?: number | null;
+    rsi?: number | null;
+    smi?: number | null;
+    sma200_dist?: number | null;
+    bx_daily_state?: string | null;
+    bx_weekly_state?: string | null;
+    ema9?: number | null;
+    ema21?: number | null;
+    vix_close?: number | null;
   };
+}) {
+  const { ticker, modeSuggestion, buyActiveCount, avoidActiveCount, watchingCount, average20d, indicators } = params;
 
+  const lines: string[] = [];
+
+  // 1. TREND CONTEXT — what's the structure?
+  const conditionMap: Record<string, string> = {
+    "RED / EJECTED": "in a confirmed downtrend — BX Trender daily is making Lower Lows (LL), meaning each rally is failing at lower highs. This is the weakest structural regime",
+    "RED": "in a bearish trend — BX Trender is declining and momentum hasn't shown signs of bottoming. Rallies are being sold",
+    "ORANGE": "in a recovering phase — BX Trender has started improving from lows, but hasn't confirmed a trend reversal yet. This is where bottoms form, but also where bear traps happen",
+    "ORANGE (Improving)": "showing early recovery signals — momentum is improving but the trend hasn't confirmed. This is the zone where you want to start watching for setups to trigger",
+    "YELLOW": "in a neutral/consolidation zone — the trend is neither strongly bullish nor bearish. Price is building a base or digesting a move. Range-bound behavior is likely",
+    "YELLOW (Improving)": "consolidating with improving momentum — BX Trender is turning up from neutral. If this continues, it signals a potential trend shift to bullish",
+    "GREEN (Extended)": "in a confirmed uptrend but extended — BX Trender is making Higher Highs, which is bullish, but the move is stretched. Pullbacks from here tend to be shallow buying opportunities, not trend reversals",
+    "GREEN": "in a confirmed uptrend — BX Trender is making Higher Highs (HH) on both daily and weekly. This is the strongest structural regime for longs",
+    "GREEN (Recovering)": "recovering toward an uptrend — BX Trender is turning back up after a dip. If the recovery holds, the bullish structure remains intact",
+  };
   const condition = conditionMap[modeSuggestion.suggestion] ?? "in a neutral zone";
-  const setupSummary = buyActiveCount > 0
-    ? `${buyActiveCount} setup${buyActiveCount !== 1 ? "s" : ""} active`
-    : watchingCount > 0
-    ? `${watchingCount} setup${watchingCount !== 1 ? "s" : ""} approaching trigger`
-    : "no setups triggering";
+  lines.push(`${ticker} is currently ${condition}.`);
 
-  const expectancyPart = average20d != null && Number.isFinite(average20d)
-    ? ` Historical 20-day avg return when setups fire: ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}%.`
-    : "";
+  // 2. INDICATOR CONTEXT — what do the numbers mean?
+  if (indicators) {
+    const contextParts: string[] = [];
+    if (indicators.rsi != null) {
+      const rsi = Number(indicators.rsi);
+      if (rsi < 30) contextParts.push(`RSI at ${rsi.toFixed(1)} is in oversold territory — historically, readings this low have preceded short-term bounces`);
+      else if (rsi < 40) contextParts.push(`RSI at ${rsi.toFixed(1)} is below neutral — momentum is weak but not yet washed out`);
+      else if (rsi > 70) contextParts.push(`RSI at ${rsi.toFixed(1)} is overbought — the trend is strong but getting stretched`);
+      else if (rsi > 60) contextParts.push(`RSI at ${rsi.toFixed(1)} shows healthy bullish momentum`);
+      else contextParts.push(`RSI at ${rsi.toFixed(1)} is neutral — no momentum extreme in either direction`);
+    }
+    if (indicators.smi != null) {
+      const smi = Number(indicators.smi);
+      if (smi < -40) contextParts.push(`SMI at ${smi.toFixed(2)} is deeply negative — this is where mean-reversion setups historically trigger`);
+      else if (smi > 40) contextParts.push(`SMI at ${smi.toFixed(2)} is strongly positive — momentum is extended`);
+    }
+    if (indicators.sma200_dist != null) {
+      const dist = Number(indicators.sma200_dist);
+      if (dist < -10) contextParts.push(`trading ${Math.abs(dist).toFixed(1)}% below the 200-day SMA — deeply discounted relative to long-term trend`);
+      else if (dist < 0) contextParts.push(`trading ${Math.abs(dist).toFixed(1)}% below the 200-day SMA`);
+      else if (dist > 15) contextParts.push(`${dist.toFixed(1)}% above the 200-day SMA — extended from long-term mean`);
+    }
+    if (indicators.vix_close != null) {
+      const vix = Number(indicators.vix_close);
+      if (vix > 30) contextParts.push(`VIX at ${vix.toFixed(1)} signals elevated fear — options are pricing in big moves`);
+      else if (vix > 25) contextParts.push(`VIX at ${vix.toFixed(1)} is above average — the market is nervous`);
+      else if (vix < 15) contextParts.push(`VIX at ${vix.toFixed(1)} shows complacency — low volatility can precede sharp moves`);
+    }
+    if (contextParts.length > 0) {
+      lines.push(contextParts.join(". ") + ".");
+    }
+  }
 
-  return `${ticker} is currently ${condition}. ${setupSummary} across ${buyActiveCount + avoidActiveCount + watchingCount} setups evaluated.${expectancyPart}`;
+  // 3. SETUP STATUS — what's firing or approaching?
+  if (buyActiveCount > 0) {
+    lines.push(`${buyActiveCount} buy setup${buyActiveCount !== 1 ? "s" : ""} currently active — conditions have been met and historical backtests show these patterns have preceded positive forward returns.`);
+  } else if (avoidActiveCount > 0) {
+    lines.push(`${avoidActiveCount} caution setup${avoidActiveCount !== 1 ? "s" : ""} active — these historically signal elevated downside risk. Defensive positioning is warranted.`);
+  } else if (watchingCount > 0) {
+    lines.push(`No setups have triggered yet, but ${watchingCount} ${watchingCount !== 1 ? "are" : "is"} approaching — conditions are close to aligning. These are the patterns we're monitoring for entry signals.`);
+  } else {
+    lines.push(`No setups are active or approaching trigger. The ORB system is in standby — conditions don't match any known edge right now.`);
+  }
+
+  // 4. HISTORICAL EDGE — what happened before?
+  if (average20d != null && Number.isFinite(average20d)) {
+    const direction = average20d >= 0 ? "positive" : "negative";
+    lines.push(`When similar setups have fired historically, the average 20-day forward return was ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}% — that's the statistical edge the system is built on.`);
+  }
+
+  // 5. WHAT I'D DO — actionable takeaway based on the state
+  const mode = modeSuggestion.suggestion;
+  if (mode.includes("GREEN")) {
+    lines.push(`📌 Positioning: This is a buy-the-dip environment. Active setups confirm the trend — pullbacks to support are opportunities, not exits. Size with confidence but respect your stops.`);
+  } else if (mode.includes("YELLOW") && mode.includes("Improving")) {
+    lines.push(`📌 Positioning: Conditions are improving but not confirmed. Start building a watchlist, size small on initial entries, and wait for BX Trender to confirm the trend shift before scaling in.`);
+  } else if (mode.includes("YELLOW")) {
+    lines.push(`📌 Positioning: Neutral zone — no strong edge in either direction. Keep positions light, avoid chasing, and wait for a setup to trigger before committing capital. Patience pays here.`);
+  } else if (mode.includes("ORANGE")) {
+    lines.push(`📌 Positioning: Early recovery territory — this is where the best risk/reward setups form, but confirmation is still pending. If you're entering, keep size small and have a clear stop. The trend hasn't proven itself yet.`);
+  } else if (mode === "RED" || mode === "RED / EJECTED") {
+    lines.push(`📌 Positioning: Defensive. The trend is against you — this is not the time to be a hero. If you're holding, tighten stops. If you're flat, stay flat until the structure improves. Capital preservation > opportunity cost.`);
+  }
+
+  return lines.join("\n\n");
 }
 
 function derivePeerState(buyActive: number, avoidActive: number, watching: number): "BULLISH" | "RISK" | "WATCH" | "NEUTRAL" {
@@ -1542,6 +1611,17 @@ export async function GET(request: NextRequest) {
       avoidActiveCount: activeAvoid,
       watchingCount,
       average20d,
+      indicators: {
+        close: evaluatedTicker.indicators.close,
+        rsi: evaluatedTicker.indicators.rsi,
+        smi: evaluatedTicker.indicators.smi,
+        sma200_dist: evaluatedTicker.indicators.sma200_dist,
+        bx_daily_state: evaluatedTicker.indicators.bx_daily_state,
+        bx_weekly_state: evaluatedTicker.indicators.bx_weekly_state,
+        ema9: evaluatedTicker.indicators.ema9,
+        ema21: evaluatedTicker.indicators.ema21,
+        vix_close: evaluatedTicker.indicators.vix_close,
+      },
     });
 
     return NextResponse.json({

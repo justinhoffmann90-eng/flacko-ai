@@ -666,7 +666,13 @@ export default function BacktestClient() {
                 <p className="mb-2 text-[10px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   RIGHT NOW · {data.ticker} · {data.date ? new Date(data.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                 </p>
-                <p className="text-sm leading-relaxed text-zinc-100">{data.right_now.summary}</p>
+                <div className="space-y-2.5 text-sm leading-relaxed text-zinc-100">
+                  {data.right_now.summary.split("\n\n").map((paragraph: string, i: number) => (
+                    <p key={i} className={paragraph.startsWith("📌") ? "text-emerald-200/90 font-medium border-l-2 border-emerald-500/40 pl-3" : ""}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">BXT: {data.indicators?.bxt_state || "—"} {data.indicators?.bxt_state === "HH" ? "↑" : data.indicators?.bxt_state === "LL" ? "↓" : data.indicators?.bxt_state === "HL" ? "↗" : data.indicators?.bxt_state === "LH" ? "↘" : ""}</span>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Signal: {data.right_now.confidence.toUpperCase()}</span>
