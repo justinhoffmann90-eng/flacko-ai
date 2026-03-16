@@ -15,7 +15,7 @@
     },
     {
       "path": "/api/cron/sync-discord-roles",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }
