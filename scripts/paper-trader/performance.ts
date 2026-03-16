@@ -56,7 +56,9 @@ export async function updateBotState(
   try {
     const isMulti = 'tsla' in portfolio;
     
-    const { error } = await supabase.from('paper_bot_state').upsert({
+    // Build update payload — NEVER overwrite levels_hit_today here
+    // levels_hit_today is managed exclusively by saveLevelsHitToday()
+    const payload: Record<string, any> = {
       id: 1,
       cash: portfolio.cash,
       shares_held: isMulti ? (portfolio as MultiPortfolio).tsla?.shares || 0 : (portfolio as Portfolio).position?.shares || 0,
@@ -69,8 +71,13 @@ export async function updateBotState(
       bot_date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }),
       current_orb_zone: orbZone || null,
       current_orb_score: orbScore || null,
-      levels_hit_today: levelsHitToday || [],
-    }, { onConflict: 'id' });
+    };
+    // Only include levels_hit_today if explicitly provided and non-empty
+    // This prevents the main loop from wiping levels on restart
+    if (levelsHitToday && levelsHitToday.length > 0) {
+      payload.levels_hit_today = levelsHitToday;
+    }
+    const { error } = await supabase.from('paper_bot_state').upsert(payload, { onConflict: 'id' });
 
     if (error) throw error;
   } catch (error) {
