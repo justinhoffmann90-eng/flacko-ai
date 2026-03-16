@@ -1553,12 +1553,28 @@ export async function GET(request: NextRequest) {
       return (a.number ?? 999) - (b.number ?? 999);
     });
 
-    const scenarioComparisons = sortedSetups
-      .filter((setup) => (setup.status === "active" || setup.status === "watching") && setup.backtest.instances.length > 0)
-      .flatMap((setup) =>
-        setup.backtest.instances.map((instance) => ({
-          setup_id: setup.id,
-          setup_name: setup.public_name || setup.name,
+    // Build scenario comparisons — distribute across setups, don't let one dominate
+    const relevantSetups = sortedSetups
+      .filter((setup) => (setup.status === "active" || setup.status === "watching") && setup.backtest.instances.length > 0);
+
+    let scenarioComparisons: Array<{
+      setup_id: string;
+      setup_name: string;
+      date: string;
+      entry_price: number;
+      distance_pct: number;
+      ret_5d: number | null;
+      ret_10d: number | null;
+      ret_20d: number | null;
+      ret_60d: number | null;
+    }> = [];
+
+    if (relevantSetups.length === 1) {
+      // Only one setup — show its most price-similar instances
+      scenarioComparisons = relevantSetups[0].backtest.instances
+        .map((instance) => ({
+          setup_id: relevantSetups[0].id,
+          setup_name: relevantSetups[0].public_name || relevantSetups[0].name,
           date: instance.date,
           entry_price: instance.price,
           distance_pct: round(((instance.price - evaluatedTicker.indicators.close) / evaluatedTicker.indicators.close) * 100, 2),
@@ -1566,10 +1582,39 @@ export async function GET(request: NextRequest) {
           ret_10d: instance.ret_10d,
           ret_20d: instance.ret_20d,
           ret_60d: instance.ret_60d,
-        })),
-      )
-      .sort((a, b) => Math.abs(a.distance_pct) - Math.abs(b.distance_pct))
-      .slice(0, 8);
+        }))
+        .sort((a, b) => Math.abs(a.distance_pct) - Math.abs(b.distance_pct))
+        .slice(0, 6);
+    } else {
+      // Multiple setups — round-robin to show variety (3 per setup max, 8 total)
+      const maxPerSetup = Math.max(2, Math.ceil(8 / relevantSetups.length));
+      for (const setup of relevantSetups) {
+        const instances = setup.backtest.instances
+          .map((instance) => ({
+            setup_id: setup.id,
+            setup_name: setup.public_name || setup.name,
+            date: instance.date,
+            entry_price: instance.price,
+            distance_pct: round(((instance.price - evaluatedTicker.indicators.close) / evaluatedTicker.indicators.close) * 100, 2),
+            ret_5d: instance.ret_5d,
+            ret_10d: instance.ret_10d,
+            ret_20d: instance.ret_20d,
+            ret_60d: instance.ret_60d,
+          }))
+          .sort((a, b) => Math.abs(a.distance_pct) - Math.abs(b.distance_pct))
+          .slice(0, maxPerSetup);
+        scenarioComparisons.push(...instances);
+      }
+      scenarioComparisons = scenarioComparisons
+        .sort((a, b) => Math.abs(a.distance_pct) - Math.abs(b.distance_pct))
+        .slice(0, 8);
+    }
+
+    // Build the scenario context label for the frontend
+    const scenarioSetupNames = [...new Set(scenarioComparisons.map(s => s.setup_name))];
+    const scenarioContext = scenarioSetupNames.length === 1
+      ? `Showing the ${scenarioComparisons.length} most similar past instances of "${scenarioSetupNames[0]}" — the setup currently ${relevantSetups[0]?.status === "active" ? "active" : "approaching trigger"} on ${ticker}.`
+      : `Showing past instances across ${scenarioSetupNames.length} setups: ${scenarioSetupNames.join(", ")}. Each card is a real historical occurrence where conditions matched.`;
 
     const peerComparison = await mapWithConcurrency(PEER_TICKERS, 3, async (peerTicker) => {
       try {
@@ -1657,6 +1702,7 @@ export async function GET(request: NextRequest) {
       seasonality,
       peer_comparison: peerComparison,
       scenarios: scenarioComparisons,
+      scenario_context: scenarioContext,
       setups: sortedSetups,
       meta: {
         backtest_source: ticker === VALIDATED_BACKTEST_TICKER ? "orb_backtest_instances" : "ohlcv_scan",

@@ -918,8 +918,8 @@ export default function BacktestClient() {
                   badge={`${data.scenarios.length}`}
                   defaultOpen={false}
                 >
-                  <p className="mb-3 text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    Each card shows a past instance when the same setup triggered on {data.ticker}. These are real historical occurrences — the date it fired, the entry price, and what the stock actually returned over the next 5, 10, 20, and 60 days. Use these to calibrate your expectations for the current trigger.
+                  <p className="mb-3 text-[11px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {data.scenario_context || `Each card shows a past instance when the same setup triggered on ${data.ticker}.`} The date it fired, the entry price, and what the stock actually returned over the next 5, 10, 20, and 60 days. Use these to calibrate your expectations for the current setup.
                   </p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {data.scenarios.map((scenario) => (
