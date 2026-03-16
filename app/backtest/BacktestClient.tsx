@@ -773,51 +773,85 @@ export default function BacktestClient() {
                         MONTHLY AVG RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
-                      <div className="flex items-end gap-1.5 sm:gap-2" style={{ height: "180px" }}>
+                      <div className="flex gap-1.5 sm:gap-2" style={{ height: "220px" }}>
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          const barHeight = Math.max((Math.abs(m.avg_return) / maxAbs) * 70, 4); // 4-70% height
+                          const barPct = Math.max((Math.abs(m.avg_return) / maxAbs) * 80, 5); // 5-80% of half
                           const isPositive = m.avg_return >= 0;
 
                           return (
-                            <div key={m.month} className="flex flex-1 flex-col items-center justify-end h-full relative">
-                              {/* Win rate — above bar, clearly labeled */}
-                              {isFree ? (
-                                <div className="mb-1 flex flex-col items-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                                  <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-300">
-                                    {m.win_rate.toFixed(0)}%
-                                  </span>
-                                  <span className="text-[7px] text-zinc-600 leading-tight">win</span>
-                                </div>
-                              ) : (
-                                <div className="mb-1 flex flex-col items-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                                  <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500">—</span>
-                                  <span className="text-[7px] text-zinc-600 leading-tight">win</span>
-                                </div>
-                              )}
-
-                              {/* Avg return label */}
-                              <div className={`mb-1 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                                <span className={isPositive ? "text-emerald-300" : "text-red-300"}>
-                                  {isPositive ? "+" : ""}{m.avg_return.toFixed(1)}%
-                                </span>
+                            <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                              {/* TOP HALF — positive bars grow up from center */}
+                              <div className="flex flex-col items-center justify-end w-full" style={{ height: "45%" }}>
+                                {/* Win rate + return label above positive bars */}
+                                {isPositive && (
+                                  <>
+                                    {isFree ? (
+                                      <div className="mb-0.5 flex flex-col items-center">
+                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-300">
+                                          {m.win_rate.toFixed(0)}%
+                                        </span>
+                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                      </div>
+                                    ) : (
+                                      <div className="mb-0.5 flex flex-col items-center">
+                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500">—</span>
+                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                      </div>
+                                    )}
+                                    <div className={`mb-0.5 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
+                                      <span className="text-emerald-300">+{m.avg_return.toFixed(1)}%</span>
+                                    </div>
+                                    <div
+                                      className={`w-full rounded-t-sm transition-all ${
+                                        !isFree
+                                          ? "bg-zinc-700/40 blur-[2px]"
+                                          : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
+                                      } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                      style={{ height: `${barPct}%`, minHeight: "4px" }}
+                                    />
+                                  </>
+                                )}
                               </div>
 
-                              {/* Bar */}
-                              <div
-                                className={`w-full rounded-t-sm transition-all ${
-                                  !isFree
-                                    ? "bg-zinc-700/40 blur-[2px]"
-                                    : isPositive
-                                      ? isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
-                                      : isCurrent ? "bg-red-400" : "bg-red-500/70"
-                                } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
-                                style={{ height: `${barHeight}%`, minHeight: "4px" }}
-                              />
+                              {/* X-AXIS LINE */}
+                              <div className="w-full h-px bg-zinc-700 flex-shrink-0" />
 
-                              {/* Month label */}
-                              <div className={`mt-1 text-[9px] sm:text-[10px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                              {/* BOTTOM HALF — negative bars grow down from center */}
+                              <div className="flex flex-col items-center justify-start w-full" style={{ height: "45%" }}>
+                                {!isPositive && (
+                                  <>
+                                    <div
+                                      className={`w-full rounded-b-sm transition-all ${
+                                        !isFree
+                                          ? "bg-zinc-700/40 blur-[2px]"
+                                          : isCurrent ? "bg-red-400" : "bg-red-500/70"
+                                      } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                      style={{ height: `${barPct}%`, minHeight: "4px" }}
+                                    />
+                                    <div className={`mt-0.5 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
+                                      <span className="text-red-300">{m.avg_return.toFixed(1)}%</span>
+                                    </div>
+                                    {isFree ? (
+                                      <div className="mt-0.5 flex flex-col items-center">
+                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-300">
+                                          {m.win_rate.toFixed(0)}%
+                                        </span>
+                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                      </div>
+                                    ) : (
+                                      <div className="mt-0.5 flex flex-col items-center">
+                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500">—</span>
+                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Month label — always at bottom */}
+                              <div className={`mt-auto text-[9px] sm:text-[10px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
                                 {m.name}
                               </div>
                             </div>
