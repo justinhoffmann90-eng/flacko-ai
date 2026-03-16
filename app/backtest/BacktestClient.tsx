@@ -274,6 +274,7 @@ function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPerio
 
 function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: ScanSetup; defaultOpen?: boolean; limited?: boolean }) {
   const [expanded, setExpanded] = useState(defaultOpen);
+  const [instancesExpanded, setInstancesExpanded] = useState(false);
   const badge = statusBadge(setup.status);
   const trueConditions = Object.entries(setup.conditions_met || {}).filter(([, value]) => Boolean(value));
   const showInstances = setup.backtest.instances.length > 0;
@@ -300,7 +301,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
             }`}
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           >
-            {setup.type.toUpperCase()} #{setup.number}
+            {setup.type.toUpperCase()}
           </span>
           <span className="ml-auto text-zinc-500 text-sm">{expanded ? "▲" : "▼"}</span>
         </div>
@@ -340,45 +341,53 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                 {setup.backtest.n > 0 ? (
                   <ForwardSummaryTable summary={setup.backtest.summary} />
                 ) : (
-                  <p className="text-sm text-zinc-400">{setup.backtest.message || "No historical instances found."}</p>
+                  <p className="text-sm text-zinc-400">{setup.backtest.message || "This setup has not triggered historically on this ticker. It may be too rare or the ticker lacks sufficient data."}</p>
                 )}
               </div>
 
               {showInstances && (
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-                  <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    HISTORICAL INSTANCES ({setup.backtest.n})
-                  </p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <thead>
-                        <tr className="border-b border-zinc-800 text-zinc-500">
-                          <th className="px-2 py-2 text-left">Date</th>
-                          <th className="px-2 py-2 text-right">Entry</th>
-                          <th className="px-2 py-2 text-right">5d</th>
-                          <th className="px-2 py-2 text-right">10d</th>
-                          <th className="px-2 py-2 text-right">20d</th>
-                          <th className="px-2 py-2 text-right">60d</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {setup.backtest.instances.slice(0, 8).map((instance) => (
-                          <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
-                            <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
-                            <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {setup.backtest.instances.length > 8 && (
-                    <p className="mt-2 text-[10px] text-zinc-500 text-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      Showing 8 of {setup.backtest.instances.length} instances
-                    </p>
+                  <button
+                    onClick={() => setInstancesExpanded(!instancesExpanded)}
+                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-500 hover:text-zinc-300 transition"
+                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  >
+                    <span>{instancesExpanded ? "▲" : "▼"} {setup.backtest.n} historical instances</span>
+                  </button>
+                  {instancesExpanded && (
+                    <>
+                      <div className="overflow-x-auto mt-2">
+                        <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          <thead>
+                            <tr className="border-b border-zinc-800 text-zinc-500">
+                              <th className="px-2 py-2 text-left">Date</th>
+                              <th className="px-2 py-2 text-right">Entry</th>
+                              <th className="px-2 py-2 text-right">5d</th>
+                              <th className="px-2 py-2 text-right">10d</th>
+                              <th className="px-2 py-2 text-right">20d</th>
+                              <th className="px-2 py-2 text-right">60d</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {setup.backtest.instances.slice(0, 8).map((instance) => (
+                              <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
+                                <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
+                                <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
+                                <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
+                                <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
+                                <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
+                                <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {setup.backtest.instances.length > 8 && (
+                        <p className="mt-2 text-[10px] text-zinc-500 text-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          Showing 8 of {setup.backtest.instances.length} instances
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -442,35 +451,41 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
 
               {showInstances && (
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-                  <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                    HISTORICAL INSTANCES ({setup.backtest.n})
-                  </p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <thead>
-                        <tr className="border-b border-zinc-800 text-zinc-500">
-                          <th className="px-2 py-2 text-left">Date</th>
-                          <th className="px-2 py-2 text-right">Entry</th>
-                          <th className="px-2 py-2 text-right">5d</th>
-                          <th className="px-2 py-2 text-right">10d</th>
-                          <th className="px-2 py-2 text-right">20d</th>
-                          <th className="px-2 py-2 text-right">60d</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {setup.backtest.instances.slice(0, 12).map((instance) => (
-                          <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
-                            <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
-                            <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
-                            <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
+                  <button
+                    onClick={() => setInstancesExpanded(!instancesExpanded)}
+                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-500 hover:text-zinc-300 transition"
+                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  >
+                    <span>{instancesExpanded ? "▲" : "▼"} {setup.backtest.n} historical instances</span>
+                  </button>
+                  {instancesExpanded && (
+                    <div className="overflow-x-auto mt-2">
+                      <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <thead>
+                          <tr className="border-b border-zinc-800 text-zinc-500">
+                            <th className="px-2 py-2 text-left">Date</th>
+                            <th className="px-2 py-2 text-right">Entry</th>
+                            <th className="px-2 py-2 text-right">5d</th>
+                            <th className="px-2 py-2 text-right">10d</th>
+                            <th className="px-2 py-2 text-right">20d</th>
+                            <th className="px-2 py-2 text-right">60d</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {setup.backtest.instances.slice(0, 12).map((instance) => (
+                            <tr key={`${setup.id}-${instance.date}`} className="border-b border-zinc-900/80">
+                              <td className="px-2 py-2 text-zinc-300">{instance.date}</td>
+                              <td className="px-2 py-2 text-right text-zinc-200">${instance.price.toFixed(2)}</td>
+                              <td className={`px-2 py-2 text-right ${instance.ret_5d != null && instance.ret_5d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_5d)}</td>
+                              <td className={`px-2 py-2 text-right ${instance.ret_10d != null && instance.ret_10d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_10d)}</td>
+                              <td className={`px-2 py-2 text-right ${instance.ret_20d != null && instance.ret_20d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_20d)}</td>
+                              <td className={`px-2 py-2 text-right ${instance.ret_60d != null && instance.ret_60d >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(instance.ret_60d)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -659,6 +674,11 @@ export default function BacktestClient() {
                     <span className="rounded bg-zinc-900/60 px-2 py-1">Data: {data.meta.data_range.years}y ({data.meta.data_range.earliest?.split("-")[0]}–{data.meta.data_range.latest?.split("-")[0]})</span>
                   )}
                 </div>
+                {data.meta?.data_range?.earliest && data.meta?.data_range?.latest && (
+                  <p className="mt-2 text-[10px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    Backtest data: {data.meta.data_range.earliest.split("-")[0]}–{data.meta.data_range.latest.split("-")[0]} · {data.meta.data_range.years || "?"} years
+                  </p>
+                )}
               </div>
 
               {/* ACTIVE SETUPS — full width, default expanded */}
@@ -670,6 +690,13 @@ export default function BacktestClient() {
                       <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited />
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* No active banner */}
+              {groupedSetups.active.length === 0 && groupedSetups.watching.length > 0 && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[12px] text-amber-200/70" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  No setups are active right now — {groupedSetups.watching.length} setup{groupedSetups.watching.length !== 1 ? "s are" : " is"} approaching trigger. Conditions are being monitored.
                 </div>
               )}
 
@@ -864,11 +891,6 @@ export default function BacktestClient() {
                     ))}
                   </div>
                 </CollapsibleSection>
-              )}
-
-              {/* Inline CTA */}
-              {(groupedSetups.active.length > 0 || groupedSetups.watching.length > 0) && (
-                <SubscribeCTA message="Subscribe for condition breakdowns, real-time alerts, and unlimited scans." />
               )}
 
               {/* INACTIVE — gated for subscribers */}
