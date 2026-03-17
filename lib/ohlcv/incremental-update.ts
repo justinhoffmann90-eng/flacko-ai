@@ -46,6 +46,10 @@ const YAHOO_INTERVAL: Record<Timeframe, string> = {
 const BATCH_SIZE = 500;
 const LOOKBACK_CONTEXT = 300; // How many existing bars to load for indicator warmup
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 // ─── Yahoo Finance fetch (new bars only) ──────────────────────────────────────
 
 async function fetchNewBars(
@@ -64,15 +68,31 @@ async function fetchNewBars(
 
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&period1=${p1}&period2=${p2}`;
 
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    },
-  });
+  // Retry with exponential backoff on 429
+  const RETRY_DELAYS = [2000, 5000, 10000];
+  let res: Response | null = null;
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      },
+    });
+
+    if (res.status !== 429) break;
+
+    if (attempt < RETRY_DELAYS.length) {
+      const delay = RETRY_DELAYS[attempt] + Math.floor(Math.random() * 1000);
+      console.warn(`[ohlcv] Yahoo 429 for ${ticker}/${timeframe} — retry ${attempt + 1} in ${delay}ms`);
+      await sleep(delay);
+    }
+  }
+
+  if (!res) throw new Error(`Yahoo fetch failed for ${ticker}/${timeframe}`);
 
   if (!res.ok) {
-    if (res.status === 429) throw new Error(`Yahoo rate limit for ${ticker}/${timeframe}`);
+    if (res.status === 429) throw new Error(`Yahoo rate limit for ${ticker}/${timeframe} (all retries exhausted)`);
     throw new Error(`Yahoo HTTP ${res.status} for ${ticker}/${timeframe}`);
   }
 
@@ -242,11 +262,9 @@ export async function incrementalUpdateOHLCV(
           continue;
         }
 
-        // Check if already current (today's date or yesterday for market hours)
-        const latestMs = new Date(latestDate).getTime();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        if (Date.now() - latestMs < oneDayMs * 2) {
-          // Updated within last 2 days — skip
+        // Check if already current — skip only if bar_date is today (UTC)
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        if (latestDate >= todayUtc) {
           results.push({ ticker, timeframe, newBars: 0, skipped: true });
           continue;
         }
@@ -273,7 +291,7 @@ export async function incrementalUpdateOHLCV(
         results.push({ ticker, timeframe, newBars: rows.length, skipped: false });
 
         // Polite delay between Yahoo requests
-        await new Promise((r) => setTimeout(r, delayMs));
+        await sleep(delayMs);
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
         console.error(`[ohlcv] ${ticker}/${timeframe} error: ${errMsg}`);
