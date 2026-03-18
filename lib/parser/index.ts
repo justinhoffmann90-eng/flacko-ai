@@ -560,11 +560,15 @@ function extractFromFrontmatter(
   // v3.0 used 'posture' field
   const posture = fm.positioning || fm.posture || '';
 
-  const positioning: Positioning | undefined = (dailyCapStr || fm.vehicle || posture) ? {
+  // Build positioning from frontmatter fields; fall back to markdown body parsing
+  const fmPositioning: Positioning | undefined = (dailyCapStr || fm.vehicle || posture) ? {
     daily_cap: dailyCapStr,
     vehicle: fm.vehicle || '',
     posture: posture,
   } : undefined;
+
+  // If frontmatter didn't provide positioning, try extracting from markdown body (bullet format)
+  const positioning: Positioning | undefined = fmPositioning || extractPositioning(markdown);
 
   // Position guidance derived from frontmatter
   const position: ExtractedReportData["position"] = {
@@ -1361,17 +1365,17 @@ function extractPositioning(markdown: string): Positioning | undefined {
   const vehicleMatch = markdown.match(vehicleTablePattern) || markdown.match(vehicleBulletPattern);
   const postureMatch = markdown.match(postureTablePattern) || markdown.match(leanBulletPattern);
 
+  // Strip bold markers (**) from captured values
+  const stripBold = (s: string) => s.replace(/\*\*/g, '').trim();
+
   // Clean up posture - remove leading emoji and extract just the stance
-  let posture = postureMatch ? postureMatch[1].trim() : '';
+  let posture = postureMatch ? stripBold(postureMatch[1]) : '';
   if (posture) {
     // Remove emoji prefix and extract stance like "Lean Bullish" from "Lean Bullish — explanation"
     posture = posture.replace(/^[🟢🟡🔴]\s*/, '').split('—')[0].trim();
   }
 
   if (!dailyCapMatch && !vehicleMatch && !posture) return undefined;
-
-  // Strip bold markers (**) from captured values
-  const stripBold = (s: string) => s.replace(/\*\*/g, '').trim();
 
   const dailyCapRaw = dailyCapMatch ? stripBold(dailyCapMatch[1]) : '';
   // Normalize: "5%" → "5% of target position" for display consistency
