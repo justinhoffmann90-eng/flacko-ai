@@ -1339,19 +1339,27 @@ function extractTiers(markdown: string): TierSignals | undefined {
 }
 
 function extractPositioning(markdown: string): Positioning | undefined {
-  // Look for positioning table with format:
-  // | **Daily Cap** | 15-25% of target position |
-  // | **Vehicle** | TSLL / Shares |
-  // | **Posture** | Building into recovery |
-  // OR: | **Positioning** | Lean Bullish |
+  // Supports two formats:
+  // Table format: | **Daily Cap** | 15-25% of target position |
+  // Bullet format: - **Daily Buy Cap:** **5%**  (newer report style)
 
-  const dailyCapPattern = /\|\s*\*?\*?Daily\s*Cap\*?\*?\s*\|\s*([^|]+)\s*\|/i;
-  const vehiclePattern = /\|\s*\*?\*?Vehicle\*?\*?\s*\|\s*([^|]+)\s*\|/i;
-  const posturePattern = /\|\s*\*?\*?(?:Posture|Positioning)\*?\*?\s*\|\s*([^|]+)\s*\|/i;
+  // --- Table format patterns ---
+  const dailyCapTablePattern = /\|\s*\*?\*?Daily\s*(?:Buy\s*)?Cap\*?\*?\s*\|\s*([^|]+)\s*\|/i;
+  const vehicleTablePattern = /\|\s*\*?\*?Vehicle\*?\*?\s*\|\s*([^|]+)\s*\|/i;
+  const postureTablePattern = /\|\s*\*?\*?(?:Posture|Positioning|Lean)\*?\*?\s*\|\s*([^|]+)\s*\|/i;
 
-  const dailyCapMatch = markdown.match(dailyCapPattern);
-  const vehicleMatch = markdown.match(vehiclePattern);
-  const postureMatch = markdown.match(posturePattern);
+  // --- Bullet format patterns (newer style) ---
+  // Handles: - **Daily Buy Cap:** **5%**  or  - **Daily Buy Cap:** 5%
+  // Strip surrounding ** from value after matching
+  const dailyCapBulletPattern = /[-*]\s+\*?\*?Daily\s+(?:Buy\s+)?Cap\*?\*?:?\s*([\s\S]+?)(?:\n|$)/i;
+  // - **Lean:** Improving tape, still defensive macro
+  const leanBulletPattern = /[-*]\s+\*?\*?Lean\*?\*?:?\s*([\s\S]+?)(?:\n|$)/i;
+  // - **Vehicle:** Shares / TSLL
+  const vehicleBulletPattern = /[-*]\s+\*?\*?Vehicle\*?\*?:?\s*([\s\S]+?)(?:\n|$)/i;
+
+  const dailyCapMatch = markdown.match(dailyCapTablePattern) || markdown.match(dailyCapBulletPattern);
+  const vehicleMatch = markdown.match(vehicleTablePattern) || markdown.match(vehicleBulletPattern);
+  const postureMatch = markdown.match(postureTablePattern) || markdown.match(leanBulletPattern);
 
   // Clean up posture - remove leading emoji and extract just the stance
   let posture = postureMatch ? postureMatch[1].trim() : '';
@@ -1362,9 +1370,17 @@ function extractPositioning(markdown: string): Positioning | undefined {
 
   if (!dailyCapMatch && !vehicleMatch && !posture) return undefined;
 
+  // Strip bold markers (**) from captured values
+  const stripBold = (s: string) => s.replace(/\*\*/g, '').trim();
+
+  const dailyCapRaw = dailyCapMatch ? stripBold(dailyCapMatch[1]) : '';
+  // Normalize: "5%" → "5% of target position" for display consistency
+  const daily_cap = dailyCapRaw.includes('of') ? dailyCapRaw :
+    dailyCapRaw ? `${dailyCapRaw} of target position` : '';
+
   return {
-    daily_cap: dailyCapMatch ? dailyCapMatch[1].trim() : '',
-    vehicle: vehicleMatch ? vehicleMatch[1].trim() : '',
+    daily_cap,
+    vehicle: vehicleMatch ? stripBold(vehicleMatch[1]) : '',
     posture: posture,
   };
 }
