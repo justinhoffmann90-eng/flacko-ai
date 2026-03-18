@@ -504,16 +504,23 @@ export default function BacktestClient() {
   const [error, setError] = useState<string | null>(null);
   const [rateLimited, setRateLimited] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
-  // Check scans on mount
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  // Check scans + subscription status on mount
   useEffect(() => {
     setScansUsed(getScansToday());
+    fetch("/api/auth/subscription-status")
+      .then((r) => r.json())
+      .then((d) => { if (d.isSubscriber) setIsSubscriber(true); })
+      .catch(() => {});
   }, []);
 
   const doScan = useCallback(async (ticker: string) => {
-    const currentScans = getScansToday();
-    if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
-      setRateLimited(true);
-      return;
+    if (!isSubscriber) {
+      const currentScans = getScansToday();
+      if (currentScans >= MAX_FREE_SCANS_PER_DAY) {
+        setRateLimited(true);
+        return;
+      }
     }
 
     setLoading(true);
@@ -530,15 +537,17 @@ export default function BacktestClient() {
       }
 
       setData(body as ScanResponse);
-      const newCount = incrementScans();
-      setScansUsed(newCount);
+      if (!isSubscriber) {
+        const newCount = incrementScans();
+        setScansUsed(newCount);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isSubscriber]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -575,7 +584,7 @@ export default function BacktestClient() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
       `}</style>
 
-      {rateLimited && <RateLimitOverlay />}
+      {rateLimited && !isSubscriber && <RateLimitOverlay />}
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <header className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -640,7 +649,7 @@ export default function BacktestClient() {
             )}
 
             <p className="text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              {scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free scans remaining today` : "Select a ticker, then click Scan"}
+              {isSubscriber ? "Unlimited scans" : scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free scans remaining today` : "Select a ticker, then click Scan"}
             </p>
           </div>
 
@@ -710,7 +719,7 @@ export default function BacktestClient() {
                   <h3 className="text-lg font-semibold text-emerald-300">Active Setups ({groupedSetups.active.length})</h3>
                   <div className="space-y-4">
                     {groupedSetups.active.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited={!isSubscriber} />
                     ))}
                   </div>
                 </div>
@@ -729,7 +738,7 @@ export default function BacktestClient() {
                   <h3 className="text-lg font-semibold text-amber-300">Watching Setups ({groupedSetups.watching.length})</h3>
                   <div className="grid gap-4 lg:grid-cols-2">
                     {groupedSetups.watching.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} limited />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={false} limited={!isSubscriber} />
                     ))}
                   </div>
                 </div>
@@ -740,8 +749,10 @@ export default function BacktestClient() {
                 const currentMonth = new Date().getMonth(); // 0-indexed
                 const months = data.seasonality.monthly;
                 const maxAbs = Math.max(...months.map((m) => Math.abs(m.avg_return)), 1);
-                // Free: show current month + next 2 months (3 total)
-                const freeIndices = new Set([currentMonth, (currentMonth + 1) % 12, (currentMonth + 2) % 12]);
+                // Free: show current month + next 2 months (3 total); subscribers see all 12
+                const freeIndices = isSubscriber
+                  ? new Set(Array.from({ length: 12 }, (_, i) => i))
+                  : new Set([currentMonth, (currentMonth + 1) % 12, (currentMonth + 2) % 12]);
 
                 return (
                   <div className="space-y-3">
@@ -874,21 +885,23 @@ export default function BacktestClient() {
                         <span className="flex items-center gap-1 text-zinc-400">· % above bar = win rate (how often that month was positive)</span>
                       </div>
 
-                      <div className="mt-3">
-                        <SubscribeCTA message={`Subscribe to unlock all 12 months of ${data.ticker} seasonality + condition breakdowns.`} compact />
-                      </div>
+                      {!isSubscriber && (
+                        <div className="mt-3">
+                          <SubscribeCTA message={`Subscribe to unlock all 12 months of ${data.ticker} seasonality + condition breakdowns.`} compact />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })()}
 
               {/* PEER COMPARISON — collapsible, after setups */}
-              <CollapsibleSection title="PEER COMPARISON" badge={`${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>
+              <CollapsibleSection title="PEER COMPARISON" badge={isSubscriber ? `${data.peer_comparison.length} TICKERS` : `${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>
                 <p className="mb-3 text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   How related tickers look right now using the same setup engine. Useful for reading the broader market environment — if peers are also in RISK, the headwind is systemic, not just {data.ticker}-specific.
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                  {data.peer_comparison.slice(0, MAX_PUBLIC_PEERS).map((peer) => (
+                  {(isSubscriber ? data.peer_comparison : data.peer_comparison.slice(0, MAX_PUBLIC_PEERS)).map((peer) => (
                     <div
                       key={peer.ticker}
                       className={`rounded-lg border p-3 ${peerStateStyle(peer.state)}`}
@@ -904,7 +917,7 @@ export default function BacktestClient() {
                     </div>
                   ))}
                 </div>
-                {data.peer_comparison.length > MAX_PUBLIC_PEERS && (
+                {!isSubscriber && data.peer_comparison.length > MAX_PUBLIC_PEERS && (
                   <div className="mt-3">
                     <SubscribeCTA message={`Subscribe to see all ${data.peer_comparison.length} tickers.`} compact />
                   </div>
@@ -953,45 +966,58 @@ export default function BacktestClient() {
                 </CollapsibleSection>
               )}
 
-              {/* INACTIVE — gated for subscribers */}
+              {/* INACTIVE — full for subscribers, gated count-badge for free users */}
               {groupedSetups.inactive.length > 0 && (
-                <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-5 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-3">
-                    <span className="text-lg">🔒</span>
-                    <p className="text-sm text-zinc-400">
-                      {groupedSetups.inactive.length} more setups available for subscribers
-                    </p>
+                isSubscriber ? (
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-zinc-400">Inactive Setups ({groupedSetups.inactive.length})</h3>
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {groupedSetups.inactive.map((setup) => (
+                        <SetupCard key={setup.id} setup={setup} defaultOpen={false} limited={false} />
+                      ))}
+                    </div>
                   </div>
-                  <a
-                    href={SUBSCRIBE_URL}
-                    className="inline-block rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-5 py-2.5 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
-                  >
-                    Unlock All Setups →
-                  </a>
-                </div>
+                ) : (
+                  <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/30 p-5 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <span className="text-lg">🔒</span>
+                      <p className="text-sm text-zinc-400">
+                        {groupedSetups.inactive.length} more setups available for subscribers
+                      </p>
+                    </div>
+                    <a
+                      href={SUBSCRIBE_URL}
+                      className="inline-block rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-5 py-2.5 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+                    >
+                      Unlock All Setups →
+                    </a>
+                  </div>
+                )
               )}
             </div>
           )}
         </section>
 
-        {/* CUSTOM EXPLORER — gated for subscribers */}
-        <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6">
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl">🔬</span>
-              <h2 className="text-xl font-semibold">Custom Backtest Explorer</h2>
+        {/* CUSTOM EXPLORER — gated for non-subscribers */}
+        {!isSubscriber && (
+          <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6">
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-2xl">🔬</span>
+                <h2 className="text-xl font-semibold">Custom Backtest Explorer</h2>
+              </div>
+              <p className="text-sm text-zinc-400 max-w-lg mx-auto">
+                Build your own conditions with indicator chips, test any combination on any ticker, and see exactly how your strategy would have performed historically.
+              </p>
+              <a
+                href={SUBSCRIBE_URL}
+                className="inline-block rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-6 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+              >
+                Unlock Custom Explorer →
+              </a>
             </div>
-            <p className="text-sm text-zinc-400 max-w-lg mx-auto">
-              Build your own conditions with indicator chips, test any combination on any ticker, and see exactly how your strategy would have performed historically.
-            </p>
-            <a
-              href={SUBSCRIBE_URL}
-              className="inline-block rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-6 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
-            >
-              Unlock Custom Explorer →
-            </a>
-          </div>
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );

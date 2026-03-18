@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { hasSubscriptionAccess } from "@/lib/subscription";
 import {
   evaluateAllSetups,
   type Indicators,
@@ -1345,6 +1346,25 @@ async function evaluateTickerNow(
 }
 
 export async function GET(request: NextRequest) {
+  // Check if the caller is a paying subscriber
+  let isSubscriber = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("status, trial_ends_at, current_period_end, cancel_at_period_end")
+        .eq("user_id", user.id)
+        .single();
+      isSubscriber = hasSubscriptionAccess(subscription);
+    }
+  } catch {
+    // Gracefully default to non-subscriber
+  }
+  // TODO: add server-side rate limiting for non-subscribers
+  void isSubscriber;
+
   const tickerRaw = request.nextUrl.searchParams.get("ticker") ?? "TSLA";
   const ticker = tickerRaw.trim().toUpperCase();
 
