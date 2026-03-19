@@ -51,8 +51,8 @@ export async function updateSession(request: NextRequest) {
                request.nextUrl.pathname.startsWith("/api/webhooks")
   );
 
-  // Auth callback route should always be accessible
-  if (request.nextUrl.pathname.startsWith("/api/auth")) {
+  // Auth callback routes should always be accessible
+  if (request.nextUrl.pathname.startsWith("/api/auth") || request.nextUrl.pathname.startsWith("/auth/callback")) {
     return supabaseResponse;
   }
 
