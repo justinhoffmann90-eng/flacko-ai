@@ -830,7 +830,8 @@ async function computeSeasonality(
   next_30d: { avg_return: number; win_rate: number; n: number } | null;
 }> {
   // Fetch all monthly bars or compute from daily bars
-  const allDaily = await fetchOhlcvRows(supabase, ticker, "daily", 5100);
+  const rawDaily = await fetchOhlcvRows(supabase, ticker, "daily", 5100);
+  const allDaily = (rawDaily ?? []).filter((bar) => toNumber(bar.close) != null && Number(bar.close) > 0);
   if (!allDaily || allDaily.length < 250) return { monthly: [], next_30d: null };
 
   // Group bars by year-month to get monthly returns
@@ -879,11 +880,14 @@ async function computeSeasonality(
   for (let m = 1; m <= 12; m++) monthReturnsByMonth.set(m, []);
 
   const sortedKeys = [...monthBuckets.keys()].sort();
+  const latestCompleteMonthKey = sortedKeys.length >= 2 ? sortedKeys[sortedKeys.length - 2] : null;
   for (let i = 1; i < sortedKeys.length; i++) {
     const prevKey = sortedKeys[i - 1];
     const currKey = sortedKeys[i];
+    if (latestCompleteMonthKey && currKey > latestCompleteMonthKey) continue; // exclude incomplete current month from history
     const prevBucket = monthBuckets.get(prevKey)!;
     const currBucket = monthBuckets.get(currKey)!;
+    if (!prevBucket || !currBucket || prevBucket.last <= 0 || currBucket.last <= 0) continue;
     const monthNum = parseInt(currKey.split("-")[1], 10);
     const ret = ((currBucket.last - prevBucket.last) / prevBucket.last) * 100;
     monthReturnsByMonth.get(monthNum)!.push(ret);
@@ -1374,9 +1378,11 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // One-time cleanup: delete known bad future row
+    // One-time cleanup: delete known bad placeholder rows
     await supabase.from("ohlcv_bars").delete()
       .eq("ticker", "NVDA").eq("bar_date", "2026-03-31").eq("timeframe", "daily");
+    await supabase.from("ohlcv_bars").delete()
+      .eq("ticker", "QQQ").eq("bar_date", "2026-03-13").eq("timeframe", "daily");
 
     const [{ data: definitions, error: definitionsError }, { data: stateRows, error: statesError }] = await Promise.all([
       supabase
