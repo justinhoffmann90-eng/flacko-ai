@@ -594,8 +594,8 @@ export default function BacktestClient() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="h-10 w-10 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-center text-xl leading-10">📊</div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ORB Backtest Explorer</h1>
-              <p className="text-sm text-zinc-400">Auto-scan all 19 setups against current conditions. All times Eastern.</p>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ORB Forward Return Engine</h1>
+              <p className="text-sm text-zinc-400">Measure what historically happened after the current setup: win rates, forward returns, and closest analogs across the validated backtest universe. All times Eastern.</p>
             </div>
           </div>
         </header>
@@ -657,7 +657,7 @@ export default function BacktestClient() {
             )}
 
             <p className="text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              {isSubscriber ? "Unlimited scans" : scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free scans remaining today` : "Select a ticker, then click Scan"}
+              {isSubscriber ? "Unlimited backtests" : scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free backtests remaining today` : "Select a supported ticker, then load the backtest"}
             </p>
           </div>
 
@@ -681,7 +681,7 @@ export default function BacktestClient() {
               {/* RIGHT NOW — always open */}
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
                 <p className="mb-2 text-[10px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  RIGHT NOW · {data.ticker} · {data.date ? new Date(data.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                  CURRENT BACKTEST READ · {data.ticker} · {data.date ? new Date(data.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                 </p>
                 <div className="space-y-2.5 text-sm leading-relaxed text-zinc-100">
                   {data.right_now.summary.split("\n\n").map((paragraph: string, i: number) => (
