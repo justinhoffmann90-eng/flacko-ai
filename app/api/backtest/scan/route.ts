@@ -1069,17 +1069,29 @@ async function fetchOhlcvRows(
   limit: number,
 ): Promise<OhlcvRow[] | null> {
   const today = new Date().toISOString().split("T")[0];
-  const { data, error } = await supabase
-    .from("ohlcv_bars")
-    .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
-    .eq("ticker", ticker)
-    .eq("timeframe", timeframe)
-    .lte("bar_date", today)
-    .order("bar_date", { ascending: false })
-    .limit(limit);
+  const pageSize = 1000;
+  const rows: OhlcvRow[] = [];
 
-  if (error || !data || data.length === 0) return null;
-  return (data as OhlcvRow[]).reverse(); // Return chronological (oldest first, newest last)
+  for (let offset = 0; offset < limit; offset += pageSize) {
+    const end = Math.min(offset + pageSize - 1, limit - 1);
+    const { data, error } = await supabase
+      .from("ohlcv_bars")
+      .select("bar_date, open, high, low, close, volume, rsi, bxt, bxt_state, ema_9, ema_13, ema_21, sma_200")
+      .eq("ticker", ticker)
+      .eq("timeframe", timeframe)
+      .lte("bar_date", today)
+      .order("bar_date", { ascending: false })
+      .range(offset, end);
+
+    if (error) return null;
+    if (!data || data.length === 0) break;
+
+    rows.push(...(data as OhlcvRow[]));
+    if (data.length < pageSize) break;
+  }
+
+  if (rows.length === 0) return null;
+  return rows.reverse(); // Return chronological (oldest first, newest last)
 }
 
 async function computeIndicatorsFromOhlcv(
