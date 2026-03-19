@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const PEER_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"] as const;
+const SUPPORTED_BACKTEST_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "AMZN", "META", "MU", "GOOGL", "BABA"] as const;
+const PEER_TICKERS = SUPPORTED_BACKTEST_TICKERS;
 const VALIDATED_BACKTEST_TICKER = "TSLA";
 const BACKTEST_START_INDEX = 250; // Need ~250 bars for SMA200 lookback
 
@@ -1371,6 +1372,15 @@ export async function GET(request: NextRequest) {
   if (!ticker || !/^[A-Z.^-]{1,10}$/.test(ticker)) {
     return NextResponse.json(
       { error: `Invalid ticker symbol: "${tickerRaw}"` },
+      { status: 400 },
+    );
+  }
+
+  if (!(SUPPORTED_BACKTEST_TICKERS as readonly string[]).includes(ticker)) {
+    return NextResponse.json(
+      {
+        error: `Unsupported ticker: ${ticker}. /backtest currently supports TSLA, QQQ, SPY, NVDA, AAPL, AMZN, META, MU, GOOGL, and BABA.`,
+      },
       { status: 400 },
     );
   }

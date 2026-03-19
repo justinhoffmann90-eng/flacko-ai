@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { BacktestExplorer } from "@/components/orb/BacktestExplorer";
 
-const FAVORITE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "MU", "BABA", "AMZN"];
+const SUPPORTED_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "AMZN", "META", "MU", "GOOGL", "BABA"] as const;
 const SUBSCRIBE_URL = "/signup";
 const MAX_FREE_SCANS_PER_DAY = 10;
 const MAX_PUBLIC_PEERS = 3;
@@ -553,6 +553,10 @@ export default function BacktestClient() {
     event.preventDefault();
     const normalized = tickerInput.toUpperCase().replace(/[^A-Z.^-]/g, "").slice(0, 10);
     if (!normalized) return;
+    if (!SUPPORTED_TICKERS.includes(normalized as (typeof SUPPORTED_TICKERS)[number])) {
+      setError(`Unsupported ticker: ${normalized}. /backtest currently supports TSLA, QQQ, SPY, NVDA, AAPL, AMZN, META, MU, GOOGL, and BABA.`);
+      return;
+    }
     setTickerInput(normalized);
     setSelectedTicker(normalized);
     doScan(normalized);
@@ -598,14 +602,14 @@ export default function BacktestClient() {
 
         <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3">
-            <h2 className="text-xl font-semibold">Auto-Scan</h2>
-            <p className="text-sm text-zinc-400">Pick a ticker — we evaluate all ORB setups against current conditions.</p>
+            <h2 className="text-xl font-semibold">Backtest Universe</h2>
+            <p className="text-sm text-zinc-400">Select a supported ticker to view the current setup against ORB forward returns, win rates, and historical analogs.</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 value={tickerInput}
                 onChange={(event) => setTickerInput(event.target.value.toUpperCase())}
-                placeholder="Enter any ticker..."
+                placeholder="TSLA"
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-100 outline-none ring-emerald-500/30 transition focus:ring sm:w-44"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               />
@@ -614,12 +618,16 @@ export default function BacktestClient() {
                 className="rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
-                {loading ? "Scanning..." : "Scan"}
+                {loading ? "Loading Backtest..." : "Load Ticker"}
               </button>
             </form>
 
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-xs text-zinc-400">
+              Supported tickers: TSLA, QQQ, SPY, NVDA, AAPL, AMZN, META, MU, GOOGL, BABA.
+            </div>
+
             <div className="flex flex-wrap gap-2">
-              {FAVORITE_TICKERS.map((ticker) => (
+              {SUPPORTED_TICKERS.map((ticker) => (
                 <button
                   key={ticker}
                   onClick={() => {
@@ -644,7 +652,7 @@ export default function BacktestClient() {
                 className="w-full rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
-                Scan {selectedTicker}
+                Load {selectedTicker} Backtest
               </button>
             )}
 
@@ -663,7 +671,7 @@ export default function BacktestClient() {
             <div className="py-12 text-center">
               <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-emerald-500" />
               <p className="text-sm text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                Evaluating all setups...
+                Loading ticker backtest...
               </p>
             </div>
           )}
