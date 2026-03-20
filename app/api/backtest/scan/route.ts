@@ -1342,8 +1342,60 @@ async function evaluateTickerNow(
   source: "ohlcv_bars" | "yahoo";
 }> {
   const { indicators, source } = await resolveIndicators(supabase, ticker);
-  const prevMap = ticker === VALIDATED_BACKTEST_TICKER ? tslaPrevMap : new Map<string, PreviousState>();
+
+  // For TSLA, use the pre-loaded map; for other tickers, read from DB
+  let prevMap: Map<string, PreviousState>;
+  if (ticker === VALIDATED_BACKTEST_TICKER) {
+    prevMap = tslaPrevMap;
+  } else {
+    const { data: rows } = await supabase
+      .from("orb_setup_states")
+      .select("setup_id, status, active_since, active_day, entry_price, gauge_entry_value")
+      .eq("ticker", ticker);
+
+    prevMap = new Map<string, PreviousState>(
+      ((rows as StateRow[]) || []).map((row) => [
+        row.setup_id,
+        {
+          setup_id: row.setup_id,
+          status: row.status,
+          gauge_entry_value: row.gauge_entry_value ?? undefined,
+          entry_price: row.entry_price ?? undefined,
+          active_since: row.active_since ?? undefined,
+          active_day: row.active_day ?? undefined,
+        },
+      ]),
+    );
+  }
+
   const setupResults = evaluateAllSetups(indicators, prevMap);
+
+  // Upsert new states back to orb_setup_states for all tickers
+  const upsertRows = setupResults.map((result) => {
+    const prev = prevMap.get(result.setup_id);
+    const status: "active" | "watching" | "inactive" = result.is_active
+      ? "active"
+      : result.is_watching
+        ? "watching"
+        : "inactive";
+
+    return {
+      ticker,
+      setup_id: result.setup_id,
+      status,
+      active_since: result.active_since_override ?? (status === "active" ? (prev?.active_since ?? indicators.date) : null),
+      active_day: result.active_day_override ?? (status === "active" ? (prev?.active_day ?? 1) : null),
+      entry_price: status === "active" ? (prev?.entry_price ?? indicators.close) : null,
+      gauge_entry_value: result.gauge_entry_value ?? (status === "active" ? (prev?.gauge_entry_value ?? null) : null),
+    };
+  });
+
+  if (upsertRows.length > 0) {
+    await supabase
+      .from("orb_setup_states")
+      .upsert(upsertRows, { onConflict: "ticker,setup_id" });
+  }
+
   const mode = suggestMode(indicators, setupResults.filter((setup) => setup.is_active));
   return { indicators, setupResults, mode, source };
 }

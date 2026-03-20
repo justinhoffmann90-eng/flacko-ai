@@ -64,6 +64,7 @@ const DEFAULT_TICKERS = [
   "MU",
   "BABA",
   "AMZN",
+  "META",
   "^VIX",
 ];
 
