@@ -78,25 +78,37 @@ async function fetchBarsFromDB(
     return fetchBarsFromYahoo(ticker, timeframe);
   }
 
-  const { data, error } = await supabase
-    .from("ohlcv_bars")
-    .select(
-      "bar_date,open,high,low,close,volume,rsi,bxt,bxt_state,bxt_consecutive_ll,ema_9,ema_13,ema_21,sma_200"
-    )
-    .eq("ticker", ticker)
-    .eq("timeframe", timeframe)
-    .order("bar_date", { ascending: true });
+  const PAGE_SIZE = 1000;
+  const allRows: any[] = [];
+  let offset = 0;
 
-  if (error) {
-    // Table doesn't exist or query error — fall back to Yahoo
-    console.warn(
-      `[backtest] DB query failed (${error.code}: ${error.message}), falling back to Yahoo`
-    );
-    return fetchBarsFromYahoo(ticker, timeframe);
+  while (true) {
+    const { data, error } = await supabase
+      .from("ohlcv_bars")
+      .select(
+        "bar_date,open,high,low,close,volume,rsi,bxt,bxt_state,bxt_consecutive_ll,ema_9,ema_13,ema_21,sma_200"
+      )
+      .eq("ticker", ticker)
+      .eq("timeframe", timeframe)
+      .order("bar_date", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      if (allRows.length > 0) break; // Use what we have if partial failure
+      console.warn(
+        `[backtest] DB query failed (${error.code}: ${error.message}), falling back to Yahoo`
+      );
+      return fetchBarsFromYahoo(ticker, timeframe);
+    }
+
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < PAGE_SIZE) break; // Last page
+    offset += PAGE_SIZE;
   }
 
-  if (!data || data.length === 0) {
-    // No data in DB for this ticker/timeframe yet — fall back to Yahoo
+  if (allRows.length === 0) {
     console.warn(
       `[backtest] No data in ohlcv_bars for ${ticker}/${timeframe}, falling back to Yahoo`
     );
@@ -104,7 +116,7 @@ async function fetchBarsFromDB(
   }
 
   // Map DB rows to IndicatorBar[]
-  return data.map((row: any): IndicatorBar => ({
+  return allRows.map((row: any): IndicatorBar => ({
     date: new Date(row.bar_date),
     open: row.open,
     high: row.high,
@@ -287,13 +299,17 @@ const KNOWN_VARS = [
   "high",
   "low",
   "volume",
-  "weekly_rsi",
-  "daily_rsi",
-  "monthly_rsi",
 ];
 
 function normalizeVar(v: string): string {
-  return v.replace(/^(weekly|daily|monthly|4h)_/, "");
+  const prefixMatch = v.match(/^(weekly|daily|monthly|4h)_/);
+  if (prefixMatch) {
+    throw new Error(
+      `Timeframe prefix "${prefixMatch[1]}_" is not supported in conditions. ` +
+      `Use the plain variable name (e.g. "rsi" instead of "${v}") and select the timeframe in the UI.`
+    );
+  }
+  return v;
 }
 
 function parseCondition(condition: string): ParsedCondition {
@@ -523,15 +539,32 @@ function computeForwardReturns(
     completed: sd.completed,
   }));
 
-  const incompleteIndices = signals
-    .map((s, i) => (!s.completed ? i : -1))
-    .filter((i) => i >= 0);
+  // Mark is_active based on actual streak logic:
+  // Walk backwards from the last signal. The most recent signal that is still
+  // developing (incomplete) AND part of a contiguous streak from the end is
+  // the "active" one. The one before it in the streak is "current" (penultimate).
+  // A streak breaks when there's a completed signal between incomplete ones.
+  let activeIdx = -1;
+  let currentIdx = -1;
+  for (let i = signals.length - 1; i >= 0; i--) {
+    if (!signals[i].completed) {
+      if (activeIdx === -1) {
+        activeIdx = i;
+      } else if (currentIdx === -1) {
+        currentIdx = i;
+      }
+      // Keep going to find more contiguous incomplete signals
+    } else {
+      // Hit a completed signal — the streak from the end is broken
+      break;
+    }
+  }
 
-  if (incompleteIndices.length >= 2) {
-    signals[incompleteIndices[incompleteIndices.length - 2]].is_current = true;
-    signals[incompleteIndices[incompleteIndices.length - 1]].is_active = true;
-  } else if (incompleteIndices.length === 1) {
-    signals[incompleteIndices[0]].is_active = true;
+  if (activeIdx >= 0) {
+    signals[activeIdx].is_active = true;
+  }
+  if (currentIdx >= 0) {
+    signals[currentIdx].is_current = true;
   }
 
   const summary: Record<string, SummaryPeriod> = {};
