@@ -698,7 +698,7 @@ export default function BacktestClient() {
         <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3">
             <h2 className="text-xl font-semibold">Backtest Universe</h2>
-            <p className="text-sm text-zinc-400">See how this exact setup performed historically — with forward returns, win rates, and live context.</p>
+            <p className="text-sm text-zinc-400">• See what happened after similar setups in the past — with win rates, seasonality, and signal context.</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
