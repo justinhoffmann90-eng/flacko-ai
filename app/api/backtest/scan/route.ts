@@ -1823,14 +1823,20 @@ export async function GET(request: NextRequest) {
       evaluatedTicker = await evaluateTickerNow(supabase, ticker, tslaPrevMap);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const status = message.includes("Too Many Requests") || message.includes("429") ? 429 : 500;
+      const isRateLimit = message.includes("Too Many Requests") || message.includes("429");
+      const isDbError = message.includes("supabase") || message.includes("PostgrestError") || message.includes("column");
+      const status = isRateLimit ? 429 : 500;
+      let userMessage: string;
+      if (isRateLimit) {
+        userMessage = "External data provider rate limit reached. Please retry in a few minutes.";
+      } else if (isDbError) {
+        userMessage = `Database error while computing indicators for ${ticker}. Please retry.`;
+      } else {
+        userMessage = `Failed to compute indicators for ${ticker}. Please retry.`;
+      }
+      console.error(`[scan] ${ticker} compute error: ${message}`);
       return NextResponse.json(
-        {
-          error:
-            status === 429
-              ? "Rate limit reached while fetching market data. Please retry in a moment."
-              : `Failed to compute indicators for ${ticker}: ${message}`,
-        },
+        { error: userMessage },
         { status },
       );
     }
