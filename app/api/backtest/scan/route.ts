@@ -948,6 +948,14 @@ function buildCurrentSummarySentence(params: {
   avoidActiveCount: number;
   watchingCount: number;
   average20d: number | null;
+  activeSetups?: Array<{
+    name: string;
+    type: "buy" | "avoid";
+    winRate20d?: string | null;
+    avgReturn20d?: number | null;
+    n?: number;
+  }>;
+  seasonality?: { next_30d: { avg_return: number; win_rate: number; n: number } | null } | null;
   indicators?: {
     close?: number | null;
     rsi?: number | null;
@@ -960,74 +968,92 @@ function buildCurrentSummarySentence(params: {
     vix_close?: number | null;
   };
 }) {
-  const { ticker, modeSuggestion, buyActiveCount, avoidActiveCount, watchingCount, average20d, indicators } = params;
+  const { ticker, modeSuggestion, buyActiveCount, avoidActiveCount, watchingCount, average20d, activeSetups, seasonality, indicators } = params;
 
   const lines: string[] = [];
   const mode = modeSuggestion.suggestion;
 
-  let stance = "Do nothing yet.";
-  if (mode.includes("GREEN") && buyActiveCount > 0 && avoidActiveCount === 0) {
-    stance = "Constructive buy setup.";
-  } else if (mode.includes("GREEN") && avoidActiveCount > 0) {
-    stance = "Bull trend, but don’t chase here.";
-  } else if (mode.includes("YELLOW") && mode.includes("Improving") && buyActiveCount > 0) {
-    stance = "Early long setup — start small, not full size.";
-  } else if (mode.includes("YELLOW")) {
-    stance = "Wait for cleaner confirmation.";
-  } else if (mode.includes("ORANGE") && buyActiveCount > 0) {
-    stance = "High-risk rebound setup — only small size if you take it.";
-  } else if (mode.includes("ORANGE")) {
-    stance = "Watchlist only — recovery not proven.";
-  } else if (mode === "RED" || mode === "RED / EJECTED") {
-    stance = avoidActiveCount > 0 ? "Defensive / reduce risk." : "Stay patient — not a fresh long spot.";
+  // 1. REGIME — one sentence describing the structural state
+  const regimeLabel: Record<string, string> = {
+    "RED / EJECTED": "confirmed downtrend (price below weekly EMA21 — Master Eject zone)",
+    "RED": "bearish regime with BX Trender declining on both timeframes",
+    "ORANGE": "early recovery — BX Trender bottoming but not yet confirmed",
+    "ORANGE (Improving)": "improving recovery — daily momentum leading, weekly still lagging",
+    "YELLOW": "neutral consolidation — range-bound, no directional edge",
+    "YELLOW (Improving)": "improving consolidation with rising BX Trender",
+    "GREEN (Extended)": "confirmed uptrend, extended — HH on both timeframes but stretched",
+    "GREEN": "confirmed uptrend — BX Trender HH on daily and weekly",
+    "GREEN (Recovering)": "recovering uptrend — BX Trender turning back up after a dip",
+  };
+  lines.push(`${ticker} is in a ${regimeLabel[mode] ?? "neutral regime"}.`);
+
+  // 2. TOP EVIDENCE — cite the best active setups by win rate, or the worst avoid setup
+  const buySetups = (activeSetups ?? []).filter((s) => s.type === "buy" && s.n && s.n > 0);
+  const avoidSetups = (activeSetups ?? []).filter((s) => s.type === "avoid" && s.n && s.n > 0);
+
+  // Sort buy setups by win rate descending
+  const sortedBuys = [...buySetups].sort((a, b) => {
+    const aWr = parseFloat((a.winRate20d ?? "0").replace("%", ""));
+    const bWr = parseFloat((b.winRate20d ?? "0").replace("%", ""));
+    return bWr - aWr;
+  });
+
+  if (sortedBuys.length > 0) {
+    const top = sortedBuys.slice(0, 2);
+    const citations = top.map((s) => {
+      const wr = s.winRate20d ?? "N/A";
+      const avg = s.avgReturn20d != null ? `${s.avgReturn20d >= 0 ? "+" : ""}${s.avgReturn20d.toFixed(1)}%` : "N/A";
+      return `"${s.name}" (${wr} win rate, ${avg} avg return over ${s.n} instances)`;
+    });
+    lines.push(`The strongest active buy signal${top.length > 1 ? "s are" : " is"} ${citations.join(" and ")}.`);
   }
 
-  lines.push(`${stance}`);
-
-  const whyParts: string[] = [];
-  if (buyActiveCount > 0) whyParts.push(`${buyActiveCount} buy setup${buyActiveCount !== 1 ? "s" : ""} active`);
-  if (avoidActiveCount > 0) whyParts.push(`${avoidActiveCount} risk setup${avoidActiveCount !== 1 ? "s" : ""} active`);
-  if (watchingCount > 0 && buyActiveCount === 0) whyParts.push(`${watchingCount} setup${watchingCount !== 1 ? "s" : ""} close to triggering`);
-  if (indicators?.bx_daily_state && indicators?.bx_weekly_state) {
-    whyParts.push(`BX ${indicators.bx_daily_state}/${indicators.bx_weekly_state} on daily/weekly`);
-  }
-  if (indicators?.rsi != null) {
-    whyParts.push(`RSI ${Number(indicators.rsi).toFixed(1)}`);
-  }
-  if (indicators?.smi != null && Math.abs(Number(indicators.smi)) >= 40) {
-    whyParts.push(`SMI ${Number(indicators.smi).toFixed(1)}`);
-  }
-  if (whyParts.length > 0) {
-    lines.push(`Why: ${ticker} has ${whyParts.join(", ")}.`);
+  if (avoidSetups.length > 0) {
+    const worst = avoidSetups[0];
+    lines.push(`Caution: "${worst.name}" is active — historically this pattern precedes elevated downside risk.`);
   }
 
+  if (buySetups.length === 0 && avoidSetups.length === 0) {
+    if (watchingCount > 0) {
+      lines.push(`No setups have triggered, but ${watchingCount} ${watchingCount !== 1 ? "are" : "is"} approaching activation — conditions are close to aligning.`);
+    } else {
+      lines.push(`No setups are active or approaching. The ORB system is in standby — conditions don't match any historical edge.`);
+    }
+  }
+
+  // 3. HISTORICAL EDGE — average forward return
   if (average20d != null && Number.isFinite(average20d)) {
-    const histTone = average20d >= 0 ? "Historically constructive" : "Historically weak";
-    lines.push(`${histTone}: similar setup alignment has averaged ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}% over the next 20 trading days.`);
+    lines.push(`Across active setups, the composite 20-day forward return averages ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}%.`);
   }
 
-  let action = "I’d do nothing until the setup gets cleaner.";
-  if (mode.includes("GREEN") && buyActiveCount > 0 && avoidActiveCount === 0) {
-    action = average20d != null && average20d > 0
-      ? "I’d be comfortable buying or adding on weakness rather than waiting for a perfect pullback."
-      : "I’d lean long, but still add selectively instead of going max size immediately.";
-  } else if (mode.includes("GREEN") && avoidActiveCount > 0) {
-    action = "I’d avoid chasing here — either wait for a pullback or keep current longs smaller than usual.";
-  } else if (mode.includes("YELLOW") && mode.includes("Improving") && buyActiveCount > 0) {
-    action = "I’d starter-size it only, then add if the trend confirms instead of assuming the turn is real.";
-  } else if (mode.includes("YELLOW")) {
-    action = "I’d wait. There’s not enough edge here yet to justify pressing a new swing.";
-  } else if (mode.includes("ORANGE") && buyActiveCount > 0) {
-    action = "I’d treat this as a tactical bounce setup only — small size, tight plan, no hero entries.";
-  } else if (mode.includes("ORANGE")) {
-    action = "I’d stay on watch, not force a trade before recovery proves itself.";
-  } else if (mode === "RED" || mode === "RED / EJECTED") {
-    action = avoidActiveCount > 0
-      ? "I’d reduce risk, avoid fresh longs, and only re-engage after the warning stack clears."
-      : "I’d stay defensive and wait for structure to improve before buying.";
+  // 4. SEASONALITY — if relevant
+  if (seasonality?.next_30d && seasonality.next_30d.n >= 5) {
+    const s = seasonality.next_30d;
+    const dir = s.avg_return >= 0 ? "positive" : "negative";
+    lines.push(`Seasonality is ${dir} for the next 30 days: ${s.avg_return >= 0 ? "+" : ""}${s.avg_return.toFixed(1)}% avg return, ${s.win_rate.toFixed(0)}% win rate (n=${s.n}).`);
   }
 
-  lines.push(`What I'd do: ${action}`);
+  // 5. CLEAR RECOMMENDATION — Buy / Wait / Reduce Risk
+  let stance: string;
+  if (mode.includes("RED") || avoidActiveCount >= 2) {
+    stance = "Reduce Risk. The trend structure is against longs and caution setups confirm elevated downside. Tighten stops, avoid new entries, preserve capital.";
+  } else if (avoidActiveCount > 0 && buyActiveCount === 0) {
+    stance = "Wait. Caution signals are present without offsetting buy signals. Stay flat until the risk picture clears.";
+  } else if (mode.includes("GREEN") && buyActiveCount > 0) {
+    stance = "Buy. Trend structure is bullish and buy setups confirm. Use pullbacks to support as entry opportunities. Size with conviction.";
+  } else if (buyActiveCount >= 2) {
+    stance = "Buy. Multiple buy setups are firing — the statistical edge favors longs. Size based on your risk tolerance and use the entry quality score for conviction sizing.";
+  } else if (buyActiveCount === 1 && avoidActiveCount === 0) {
+    stance = "Lean Buy. One buy setup is active with no caution signals. Consider a partial position and scale in if more setups confirm.";
+  } else if (mode.includes("YELLOW") && mode.includes("Improving")) {
+    stance = "Wait, improving. Conditions are getting better but not yet confirmed. Build a watchlist and prepare to act when setups trigger.";
+  } else if (watchingCount > 0) {
+    stance = "Wait. No setups have triggered yet. Monitor approaching setups and be ready to act, but don't front-run the signals.";
+  } else {
+    stance = "Wait. No edge detected in either direction. Patience is the correct position.";
+  }
+
+  lines.push(`Recommendation: ${stance}`);
 
   return lines.join("\n\n");
 }
@@ -1732,6 +1758,16 @@ export async function GET(request: NextRequest) {
     // Compute seasonality
     const seasonality = await computeSeasonality(supabase, ticker);
 
+    const activeSetupsForSummary = sortedSetups
+      .filter((s) => s.status === "active")
+      .map((s) => ({
+        name: s.public_name || s.name,
+        type: s.type,
+        winRate20d: s.backtest.summary?.["20"]?.win_rate_pct ?? null,
+        avgReturn20d: s.backtest.summary?.["20"]?.avg_return ?? null,
+        n: s.backtest.summary?.["20"]?.n ?? 0,
+      }));
+
     const rightNowSentence = buildCurrentSummarySentence({
       ticker,
       modeSuggestion: evaluatedTicker.mode,
@@ -1739,6 +1775,8 @@ export async function GET(request: NextRequest) {
       avoidActiveCount: activeAvoid,
       watchingCount,
       average20d,
+      activeSetups: activeSetupsForSummary,
+      seasonality,
       indicators: {
         close: evaluatedTicker.indicators.close,
         rsi: evaluatedTicker.indicators.rsi,
