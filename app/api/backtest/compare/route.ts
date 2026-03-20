@@ -412,14 +412,24 @@ export async function GET() {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch setup definitions once for type lookups
-    const { data: definitions } = await supabase
-      .from("orb_setup_definitions")
-      .select("id, type");
+    // Fetch setup definitions + cached seasonality in parallel
+    const [{ data: definitions }, { data: cachedSeasonality }] = await Promise.all([
+      supabase.from("orb_setup_definitions").select("id, type"),
+      supabase.from("orb_scan_cache").select("ticker, seasonality_json").in("ticker", [...SUPPORTED_TICKERS]),
+    ]);
+
+    // Build seasonality lookup from cache
+    const seasonalityCache = new Map<string, { avg_return: number; win_rate: number } | null>();
+    if (cachedSeasonality) {
+      for (const row of cachedSeasonality) {
+        const json = row.seasonality_json as { next_30d?: { avg_return: number; win_rate: number } | null } | null;
+        seasonalityCache.set(row.ticker, json?.next_30d ?? null);
+      }
+    }
 
     const results = await Promise.allSettled(
       SUPPORTED_TICKERS.map(async (ticker) => {
-        // Resolve indicators
+        // Resolve indicators (lightweight — only needs ~450 daily bars)
         const fromDb = await computeIndicatorsFromOhlcv(supabase, ticker);
         let indicators: Indicators & { open: number; volume: number; volumes: number[] };
         if (fromDb) {
@@ -467,8 +477,6 @@ export async function GET() {
         const watching = setupResults.filter((s) => s.is_watching).length;
 
         // Compute change % from previous close
-        const prevClose = indicators.close / (1 + 0); // We need the actual prev close
-        // Get it from daily data
         let changePct = 0;
         const dailyRows = await fetchOhlcvRows(supabase, ticker, "daily", 2);
         if (dailyRows && dailyRows.length >= 2) {
@@ -476,8 +484,13 @@ export async function GET() {
           if (prevCloseActual > 0) changePct = round(((indicators.close - prevCloseActual) / prevCloseActual) * 100);
         }
 
-        // Seasonality 30D
-        const seasonality30d = await computeSeasonality30d(supabase, ticker);
+        // Use cached seasonality; fall back to live computation only if not cached
+        let seasonality30d: { avg_return: number; win_rate: number } | null = null;
+        if (seasonalityCache.has(ticker)) {
+          seasonality30d = seasonalityCache.get(ticker) ?? null;
+        } else {
+          seasonality30d = await computeSeasonality30d(supabase, ticker);
+        }
 
         return {
           ticker,
