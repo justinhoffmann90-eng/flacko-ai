@@ -681,7 +681,7 @@ export default function BacktestClient() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="h-10 w-10 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-center text-xl leading-10">📊</div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ORB Forward Return Engine</h1>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">🔮 Orb Backtest Engine</h1>
               <p className="text-sm text-zinc-400">Measure what historically happened after the current setup: win rates, forward returns, and closest analogs across the validated backtest universe. All times Eastern.</p>
             </div>
           </div>
@@ -690,7 +690,7 @@ export default function BacktestClient() {
         <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3">
             <h2 className="text-xl font-semibold">Backtest Universe</h2>
-            <p className="text-sm text-zinc-400">Select a supported ticker to view the current setup against ORB forward returns, win rates, and historical analogs.</p>
+            <p className="text-sm text-zinc-400">See how this exact setup performed historically — with forward returns, win rates, and live context.</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
