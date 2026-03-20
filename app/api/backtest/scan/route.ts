@@ -1605,8 +1605,49 @@ export async function GET(request: NextRequest) {
   } catch {
     // Gracefully default to non-subscriber
   }
-  // TODO: add server-side rate limiting for non-subscribers
-  void isSubscriber;
+  // Server-side rate limiting for non-subscribers
+  if (!isSubscriber) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      ?? request.headers.get("x-real-ip")
+      ?? "unknown";
+    const rateLimitKey = `scan:${ip}:${new Date().toISOString().split("T")[0]}`;
+
+    try {
+      const serviceSupabase = await createServiceClient();
+      // Use a simple KV-style table or just check in-memory (Vercel edge has no persistent state)
+      // Use Supabase to track: upsert a row with ip + date + count
+      const { data: existing } = await serviceSupabase
+        .from("rate_limits")
+        .select("count")
+        .eq("key", rateLimitKey)
+        .single();
+
+      const currentCount = existing?.count ?? 0;
+      const MAX_FREE_SCANS = 3;
+
+      if (currentCount >= MAX_FREE_SCANS) {
+        return NextResponse.json(
+          {
+            error: "Daily scan limit reached. Subscribe for unlimited access.",
+            rateLimited: true,
+            scansUsed: currentCount,
+            maxScans: MAX_FREE_SCANS,
+          },
+          { status: 429 },
+        );
+      }
+
+      // Increment counter
+      await serviceSupabase
+        .from("rate_limits")
+        .upsert(
+          { key: rateLimitKey, count: currentCount + 1, updated_at: new Date().toISOString() },
+          { onConflict: "key" },
+        );
+    } catch {
+      // If rate_limits table doesn't exist or fails, allow the request (graceful degradation)
+    }
+  }
 
   const tickerRaw = request.nextUrl.searchParams.get("ticker") ?? "TSLA";
   const ticker = tickerRaw.trim().toUpperCase();

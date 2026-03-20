@@ -412,6 +412,11 @@ export async function GET() {
   try {
     const supabase = await createServiceClient();
 
+    // Fetch setup definitions once for type lookups
+    const { data: definitions } = await supabase
+      .from("orb_setup_definitions")
+      .select("id, type");
+
     const results = await Promise.allSettled(
       SUPPORTED_TICKERS.map(async (ticker) => {
         // Resolve indicators
@@ -446,13 +451,18 @@ export async function GET() {
         const setupResults = evaluateAllSetups(indicators, prevMap);
         const mode = suggestMode(indicators, setupResults.filter((s) => s.is_active));
 
+        // Use setup type from definitions, not hardcoded ID matching
+        const setupTypeMap = new Map<string, string>();
+        if (definitions) {
+          for (const def of definitions) {
+            setupTypeMap.set(def.id, def.type);
+          }
+        }
         const buyActive = setupResults.filter((s) =>
-          s.is_active && !s.setup_id.includes("over") && !s.setup_id.includes("crack") &&
-          !s.setup_id.includes("shield") && s.setup_id !== "dual-ll"
+          s.is_active && setupTypeMap.get(s.setup_id) === "buy"
         ).length;
         const avoidActive = setupResults.filter((s) =>
-          s.is_active && (s.setup_id.includes("over") || s.setup_id.includes("crack") ||
-          s.setup_id.includes("shield") || s.setup_id === "dual-ll")
+          s.is_active && setupTypeMap.get(s.setup_id) === "avoid"
         ).length;
         const watching = setupResults.filter((s) => s.is_watching).length;
 

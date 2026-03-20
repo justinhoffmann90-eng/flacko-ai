@@ -6,7 +6,7 @@ import { ComparisonDashboard } from "@/components/orb/ComparisonDashboard";
 
 const SUPPORTED_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "AMZN", "META", "MU", "GOOGL", "BABA"] as const;
 const SUBSCRIBE_URL = "/signup";
-const MAX_FREE_SCANS_PER_DAY = 10;
+const MAX_FREE_SCANS_PER_DAY = 3;
 const MAX_PUBLIC_PEERS = 3;
 
 function getScansToday(): number {
