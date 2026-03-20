@@ -14,6 +14,22 @@ const ticker = "TSLA";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function countTradingDays(startDate: string | null | undefined, endDate: string | null | undefined): number | null {
+  if (!startDate || !endDate) return null;
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const day = cursor.getUTCDay();
+    if (day !== 0 && day !== 6) count += 1;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
+}
+
 interface VolumeMetrics {
   volume: number;
   volume_20d_avg: number;
@@ -123,6 +139,15 @@ async function runCompute() {
 
     const supabase = await createServiceClient();
 
+    const { data: recentDailyRows } = await supabase
+      .from("ohlcv_bars")
+      .select("bar_date, close")
+      .eq("ticker", ticker)
+      .eq("timeframe", "daily")
+      .order("bar_date", { ascending: false })
+      .limit(400);
+    const dailyCloseByDate = new Map<string, number>((recentDailyRows || []).map((row: any) => [row.bar_date, Number(row.close)]));
+
     const { data: prevStates } = await supabase.from("orb_setup_states").select("*").eq("ticker", ticker);
     const { data: definitions } = await supabase
       .from("orb_setup_definitions")
@@ -162,20 +187,22 @@ async function runCompute() {
         updated_at: new Date().toISOString(),
       };
 
-      if (newStatus === "active" && prevStatus !== "active") {
-        stateUpdate.active_since = activeSinceOverride ?? indicators.date;
-        stateUpdate.active_day = activeDayOverride ?? 1;
-        stateUpdate.entry_price = indicators.close;
-        stateUpdate.entry_indicator_values = indicators;
+      if (newStatus === "active") {
+        const activeSince = activeSinceOverride ?? (prevStatus === "active" ? prev?.active_since : indicators.date);
+        const derivedEntryPrice = activeSince ? (dailyCloseByDate.get(activeSince) ?? indicators.close) : indicators.close;
+        const derivedActiveDay = activeDayOverride ?? countTradingDays(activeSince, indicators.date) ?? (prevStatus === "active" ? (existing?.active_day || 0) + 1 : 1);
+
+        stateUpdate.active_since = activeSince;
+        stateUpdate.active_day = derivedActiveDay;
+        stateUpdate.entry_price = derivedEntryPrice;
+        stateUpdate.entry_indicator_values = activeSince === indicators.date ? indicators : existing?.entry_indicator_values ?? prev?.entry_indicator_values ?? indicators;
+
         if (result.gauge_entry_value !== undefined) {
           stateUpdate.gauge_entry_value = result.gauge_entry_value;
           stateUpdate.gauge_target_value = result.gauge_target_value;
+        } else {
+          stateUpdate.gauge_entry_value = prev?.gauge_entry_value ?? null;
         }
-      } else if (newStatus === "active") {
-        stateUpdate.active_day = activeDayOverride ?? (existing?.active_day || 0) + 1;
-        stateUpdate.active_since = activeSinceOverride ?? prev?.active_since;
-        stateUpdate.entry_price = prev?.entry_price;
-        stateUpdate.gauge_entry_value = prev?.gauge_entry_value ?? null;
       }
 
       if (result.gauge_current_value !== undefined) {
@@ -418,15 +445,20 @@ async function runCompute() {
     const snapshotRows = results.map((result) => {
       const prev = prevMap.get(result.setup_id);
       const newStatus = result.is_active ? "active" : result.is_watching ? "watching" : "inactive";
-      const prevStateRow = (prevStates || []).find((s: any) => s.setup_id === result.setup_id);
+      const activeSince = newStatus === "active"
+        ? (result.active_since_override ?? (prev?.status === "active" ? prev.active_since : indicators.date))
+        : null;
       const activeDay = newStatus === "active"
-        ? (result.active_day_override ?? (prev?.status === "active" ? ((prevStateRow?.active_day || 0) + 1) : 1))
+        ? (result.active_day_override ?? countTradingDays(activeSince, indicators.date) ?? (prev?.status === "active" ? ((prev.active_day || 0) + 1) : 1))
+        : null;
+      const entryPrice = newStatus === "active"
+        ? (activeSince ? (dailyCloseByDate.get(activeSince) ?? indicators.close) : indicators.close)
         : null;
       return {
         date: indicators.date,
         setup_id: result.setup_id,
         status: newStatus,
-        entry_price: newStatus === "active" ? (prev?.entry_price ?? indicators.close) : null,
+        entry_price: entryPrice,
         active_day: activeDay,
         conditions_met: result.conditions_met ?? null,
         reason: result.reason || null,

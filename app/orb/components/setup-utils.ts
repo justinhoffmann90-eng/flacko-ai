@@ -24,9 +24,21 @@ export const formatPct = (value: any) => {
 
 const formatActivationDate = (value: any, withYear = false) => {
   if (!value) return "—";
+  const s = String(value);
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [year, month, day] = s.split("-").map(Number);
+    const d = new Date(Date.UTC(year, month - 1, day));
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+      ...(withYear ? { year: "numeric" } : {}),
+    });
+  }
+
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) {
-    const s = String(value);
     return s.length >= 10 ? s.slice(0, 10) : s;
   }
   return d.toLocaleDateString("en-US", {

@@ -311,7 +311,9 @@ export async function GET(request: NextRequest) {
       .select("*")
       .eq("ticker", ticker)
       .eq("status", "open")
-      .eq("exit_reason", "tracking_horizon");
+      .eq("exit_reason", "tracking_horizon")
+      .order("entry_date", { ascending: false })
+      .order("id", { ascending: false });
 
     // Fetch last zone transition timestamp
     const { data: lastTransition } = await supabase

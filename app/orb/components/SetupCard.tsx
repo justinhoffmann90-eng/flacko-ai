@@ -176,7 +176,7 @@ export function SetupCard({ row, index, expanded, onToggle, history, isDesktop, 
   const status = row.state?.status || "inactive";
   const sc = statusConfig[status] || statusConfig.inactive;
   const isActive = status === "active";
-  const isTracking = !!trackingTrade;
+  const isTracking = !isActive && !!trackingTrade;
   const openTrade = history?.trades.find((trade) => trade.status === "open") || null;
 
   const collapsedEntryPrice = isTracking ? trackingTrade.entry_price : row.state?.entry_price;

@@ -131,7 +131,17 @@ export default function OrbClient() {
   const trackingTradeMap = useMemo(() => {
     const out = new Map<string, Trade>();
     for (const trade of trackingTrades) {
-      out.set(trade.setup_id, trade);
+      const existing = out.get(trade.setup_id);
+      if (!existing) {
+        out.set(trade.setup_id, trade);
+        continue;
+      }
+
+      const existingTs = new Date(existing.entry_date).getTime();
+      const tradeTs = new Date(trade.entry_date).getTime();
+      if (tradeTs > existingTs) {
+        out.set(trade.setup_id, trade);
+      }
     }
     return out;
   }, [trackingTrades]);
