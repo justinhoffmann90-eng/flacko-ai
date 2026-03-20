@@ -1086,12 +1086,18 @@ function buildCurrentSummarySentence(params: {
   const buySetups = (activeSetups ?? []).filter((s) => s.type === "buy" && s.n && s.n > 0);
   const avoidSetups = (activeSetups ?? []).filter((s) => s.type === "avoid" && s.n && s.n > 0);
 
-  // Sort buy setups by win rate descending
-  const sortedBuys = [...buySetups].sort((a, b) => {
-    const aWr = parseFloat((a.winRate20d ?? "0").replace("%", ""));
-    const bWr = parseFloat((b.winRate20d ?? "0").replace("%", ""));
-    return bWr - aWr;
-  });
+  // Sort buy setups by win rate descending — only cite setups with positive edge
+  const sortedBuys = [...buySetups]
+    .filter((s) => {
+      const wr = parseFloat((s.winRate20d ?? "0").replace("%", ""));
+      const avg = s.avgReturn20d ?? 0;
+      return wr > 50 && avg > 0; // Only cite setups with genuine positive edge
+    })
+    .sort((a, b) => {
+      const aWr = parseFloat((a.winRate20d ?? "0").replace("%", ""));
+      const bWr = parseFloat((b.winRate20d ?? "0").replace("%", ""));
+      return bWr - aWr;
+    });
 
   if (sortedBuys.length > 0) {
     const top = sortedBuys.slice(0, 2);
@@ -1101,6 +1107,9 @@ function buildCurrentSummarySentence(params: {
       return `"${s.name}" (${wr} win rate, ${avg} avg return over ${s.n} instances)`;
     });
     lines.push(`The strongest active buy signal${top.length > 1 ? "s are" : " is"} ${citations.join(" and ")}.`);
+  } else if (buySetups.length > 0) {
+    // Buy setups exist but none have a genuine positive edge
+    lines.push(`${buySetups.length} buy setup${buySetups.length !== 1 ? "s are" : " is"} technically active, but none show a statistically compelling edge at 20 days — treat with caution.`);
   }
 
   if (avoidSetups.length > 0) {
