@@ -316,6 +316,31 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
         <div className="mt-2">
           <h3 className="text-base font-semibold text-zinc-100">{setup.public_name || setup.name}</h3>
           {setup.one_liner && <p className="mt-1 text-xs text-zinc-400">{setup.one_liner}</p>}
+          {(() => {
+            const tfMap: Record<string, string> = {
+              "smi-oversold-gauge": "Daily SMI",
+              "capitulation": "Daily RSI · Daily BXT",
+              "deep-value": "Daily RSI · Daily BXT",
+              "oversold-extreme": "Daily RSI · Daily SMI",
+              "momentum-flip": "Daily SMI · Daily BXT",
+              "green-shoots": "Daily BXT · Weekly BXT",
+              "trend-confirm": "Daily BXT · Daily SMI",
+              "trend-ride": "Daily BXT · Weekly BXT",
+              "trend-continuation": "Weekly BXT · Weekly EMAs",
+              "goldilocks": "Daily BXT · Daily RSI · Daily SMI",
+              "regime-shift": "Weekly BXT",
+              "climactic-volume-reversal": "Daily Volume · Daily RSI · Daily SMI",
+              "vix-spike-reversal": "Weekly VIX",
+              "dual-ll": "Daily BXT · Weekly BXT",
+              "smi-overbought": "Daily SMI",
+              "overextended": "Daily Close vs 200-Day SMA",
+              "momentum-crack": "Daily SMI · Daily BXT",
+              "ema-shield-caution": "Daily Close vs 9/21 EMA",
+              "ema-shield-break": "Daily Close vs 9/21 EMA",
+            };
+            const tf = tfMap[setup.id];
+            return tf ? <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">Timeframes: {tf}</p> : null;
+          })()}
         </div>
         <p
           className="mt-2 text-[11px] text-zinc-400"
@@ -431,18 +456,37 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                   RELEVANT INDICATORS
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {Object.entries(setup.relevant_indicators || {}).map(([key, value]) => (
+                  {Object.entries(setup.relevant_indicators || {}).map(([key, value]) => {
+                    // Add timeframe context to indicator labels
+                    const labelMap: Record<string, string> = {
+                      rsi: "RSI (Daily)", rsi_prev: "RSI Prev (Daily)", rsi_change_3d: "RSI 3D Δ (Daily)",
+                      smi: "SMI (Daily)", smi_prev: "SMI Prev (Daily)", smi_signal: "SMI Signal (Daily)",
+                      smi_change_3d: "SMI 3D Δ (Daily)", smi_bull_cross: "SMI Bull Cross (Daily)",
+                      smi_weekly: "SMI (Weekly)", smi_4h: "SMI (4H)",
+                      bx_daily: "BXT (Daily)", bx_daily_prev: "BXT Prev (Daily)",
+                      bx_daily_state: "BXT State (Daily)", bx_daily_state_prev: "BXT Prev State (Daily)",
+                      bx_weekly: "BXT (Weekly)", bx_weekly_prev: "BXT Prev (Weekly)",
+                      bx_weekly_state: "BXT State (Weekly)", bx_weekly_state_prev: "BXT Prev State (Weekly)",
+                      bx_weekly_transition: "BXT Transition (Weekly)",
+                      ema9: "EMA 9 (Daily)", ema21: "EMA 21 (Daily)",
+                      sma200: "SMA 200 (Daily)", sma200_dist: "SMA 200 Distance (Daily)",
+                      close: "Close (Daily)", volume: "Volume (Daily)",
+                      volume_avg_20d: "Avg Volume 20D", volume_ratio: "Vol Ratio (Daily)",
+                      vix_close: "VIX (Daily)", vix_change_pct: "VIX Δ% (Daily)",
+                    };
+                    const label = labelMap[key] ?? key.replace(/_/g, " ");
+                    return (
                     <div
                       key={key}
                       className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[11px]"
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     >
-                      <span className="text-zinc-500">{key.replace(/_/g, " ")}</span>
+                      <span className="text-zinc-500">{label}</span>
                       <span className="text-zinc-200">
                         {typeof value === "number" ? value.toFixed(2) : String(value)}
                       </span>
                     </div>
-                  ))}
+                  );})}
                 </div>
               </div>
 

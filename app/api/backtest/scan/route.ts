@@ -1050,6 +1050,7 @@ function buildCurrentSummarySentence(params: {
   watchingCount: number;
   average20d: number | null;
   activeSetups?: Array<{
+    id: string;
     name: string;
     type: "buy" | "avoid";
     winRate20d?: string | null;
@@ -1096,7 +1097,7 @@ function buildCurrentSummarySentence(params: {
   };
   lines.push(`${ticker} is in a ${regimeLabel[mode] ?? "neutral regime"}.`);
 
-  // Add key technical levels for context
+  // Add key technical levels for context — always cite the timeframe
   const techParts: string[] = [];
   if (indicators?.close != null) {
     techParts.push(`Last close: $${Number(indicators.close).toFixed(2)}`);
@@ -1104,15 +1105,15 @@ function buildCurrentSummarySentence(params: {
   if (indicators?.rsi != null) {
     const rsiVal = Number(indicators.rsi);
     const rsiContext = rsiVal < 30 ? " (oversold)" : rsiVal < 40 ? " (approaching oversold)" : rsiVal > 70 ? " (overbought)" : rsiVal > 60 ? " (approaching overbought)" : "";
-    techParts.push(`RSI ${rsiVal.toFixed(1)}${rsiContext}`);
+    techParts.push(`Daily RSI ${rsiVal.toFixed(1)}${rsiContext}`);
   }
   if (indicators?.smi != null) {
     const smiVal = Number(indicators.smi);
     const smiContext = smiVal < -40 ? " (deeply negative)" : smiVal < -20 ? " (negative)" : smiVal > 40 ? " (deeply positive)" : smiVal > 20 ? " (positive)" : " (neutral zone)";
-    techParts.push(`SMI ${smiVal.toFixed(1)}${smiContext}`);
+    techParts.push(`Daily SMI ${smiVal.toFixed(1)}${smiContext}`);
   }
   if (indicators?.bx_daily_state && indicators?.bx_weekly_state) {
-    techParts.push(`BX Trender: ${indicators.bx_daily_state} daily / ${indicators.bx_weekly_state} weekly`);
+    techParts.push(`BX Trender: ${indicators.bx_daily_state} (daily) / ${indicators.bx_weekly_state} (weekly)`);
   }
   if (indicators?.sma200_dist != null) {
     const dist = Number(indicators.sma200_dist);
@@ -1123,6 +1124,29 @@ function buildCurrentSummarySentence(params: {
   }
 
   // 2. SETUP EVIDENCE — cite active setups with statistical backing
+  // Timeframe labels for each setup — always cite which timeframe(s) drive the signal
+  const setupTimeframeMap: Record<string, string> = {
+    "smi-oversold-gauge": "Daily SMI",
+    "capitulation": "Daily RSI + Daily BXT",
+    "deep-value": "Daily RSI + Daily BXT",
+    "oversold-extreme": "Daily RSI + Daily SMI",
+    "momentum-flip": "Daily SMI + Daily BXT",
+    "green-shoots": "Daily BXT + Weekly BXT",
+    "trend-confirm": "Daily BXT + Daily SMI",
+    "trend-ride": "Daily BXT + Weekly BXT",
+    "trend-continuation": "Weekly BXT + Weekly EMAs",
+    "goldilocks": "Daily BXT + Daily RSI + Daily SMI",
+    "regime-shift": "Weekly BXT",
+    "climactic-volume-reversal": "Daily Volume + Daily RSI + Daily SMI",
+    "vix-spike-reversal": "Weekly VIX",
+    "dual-ll": "Daily BXT + Weekly BXT",
+    "smi-overbought": "Daily SMI",
+    "overextended": "Daily Close vs 200-Day SMA",
+    "momentum-crack": "Daily SMI + Daily BXT",
+    "ema-shield-caution": "Daily Close vs 9/21 EMA",
+    "ema-shield-break": "Daily Close vs 9/21 EMA",
+  };
+
   const buySetups = (activeSetups ?? []).filter((s) => s.type === "buy" && s.n && s.n > 0);
   const avoidSetups = (activeSetups ?? []).filter((s) => s.type === "avoid" && s.n && s.n > 0);
 
@@ -1144,7 +1168,9 @@ function buildCurrentSummarySentence(params: {
     const citations = top.map((s) => {
       const wr = s.winRate20d ?? "N/A";
       const avg = s.avgReturn20d != null ? `${s.avgReturn20d >= 0 ? "+" : ""}${s.avgReturn20d.toFixed(1)}%` : "N/A";
-      return `"${s.name}" — ${wr} win rate with ${avg} average forward return over ${s.n} historical instances`;
+      const tf = setupTimeframeMap[s.id ?? ""] ?? "";
+      const tfLabel = tf ? ` [${tf}]` : "";
+      return `"${s.name}"${tfLabel} — ${wr} win rate with ${avg} average forward return over ${s.n} historical instances`;
     });
     lines.push(`The strongest active buy signal${top.length > 1 ? "s" : ""}: ${citations.join("; ")}.`);
   } else if (buySetups.length > 0) {
@@ -1155,7 +1181,9 @@ function buildCurrentSummarySentence(params: {
     const worst = avoidSetups[0];
     const avoidWr = worst.winRate20d ?? "N/A";
     const avoidAvg = worst.avgReturn20d != null ? `${worst.avgReturn20d >= 0 ? "+" : ""}${worst.avgReturn20d.toFixed(1)}%` : "N/A";
-    lines.push(`Risk signal: "${worst.name}" is active — across ${worst.n} historical instances, this pattern averaged ${avoidAvg} over the next 20 trading days with a ${avoidWr} hit rate. This is a structural warning, not a timing signal.`);
+    const tf = setupTimeframeMap[worst.id ?? ""] ?? "";
+    const tfLabel = tf ? ` [${tf}]` : "";
+    lines.push(`Risk signal: "${worst.name}"${tfLabel} is active — across ${worst.n} historical instances, this pattern averaged ${avoidAvg} over the next 20 trading days with a ${avoidWr} hit rate. This is a structural warning, not a timing signal.`);
   }
 
   // 3. CONFLICTING SIGNAL ANALYSIS — when buy AND avoid setups are both active
@@ -1982,6 +2010,7 @@ export async function GET(request: NextRequest) {
     const activeSetupsForSummary = sortedSetups
       .filter((s) => s.status === "active")
       .map((s) => ({
+        id: s.id,
         name: s.public_name || s.name,
         type: s.type,
         winRate20d: s.backtest.summary?.["20"]?.win_rate_pct ?? null,
