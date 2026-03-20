@@ -1318,39 +1318,8 @@ async function fetchOhlcvRows(
   const pageSize = 1000;
   const rows: OhlcvRow[] = [];
 
-  if (timeframe === "weekly") {
-    const dailyLimit = Math.max(limit * 7, 450);
-    const dailyRows = await fetchOhlcvRows(supabase, ticker, "daily", dailyLimit);
-    if (!dailyRows || dailyRows.length === 0) return null;
-
-    const dailyBars: OHLCVBar[] = dailyRows.map((row) => ({
-      date: new Date(`${row.bar_date}T00:00:00Z`),
-      open: row.open,
-      high: row.high,
-      low: row.low,
-      close: row.close,
-      volume: row.volume,
-    }));
-
-    const weeklyBars = computeDerivedTimeframeIndicators(dailyBars, "weekly");
-    if (weeklyBars.length === 0) return null;
-
-    return weeklyBars.slice(-limit).map((bar) => ({
-      bar_date: bar.date.toISOString().slice(0, 10),
-      open: round(bar.open),
-      high: round(bar.high),
-      low: round(bar.low),
-      close: round(bar.close),
-      volume: Math.round(bar.volume ?? 0),
-      rsi: bar.rsi,
-      bxt: bar.bxt,
-      bxt_state: bar.bxt_state,
-      ema_9: bar.ema_9,
-      ema_13: bar.ema_13,
-      ema_21: bar.ema_21,
-      sma_200: bar.sma_200,
-    }));
-  }
+  // Read weekly bars directly from DB (pre-computed by recompute-indicators cron)
+  // Do NOT derive weekly from daily here — too slow for Vercel serverless
 
   for (let offset = 0; offset < limit; offset += pageSize) {
     const end = Math.min(offset + pageSize - 1, limit - 1);
