@@ -686,19 +686,15 @@ export default function BacktestClient() {
       {rateLimited && !isSubscriber && <RateLimitOverlay />}
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <header className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="h-10 w-10 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-center text-xl leading-10">📊</div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">🔮 Orb Backtest Engine</h1>
-              <p className="text-sm text-zinc-400">Measure what historically happened after the current setup: win rates, forward returns, and closest analogs across the validated backtest universe. All times Eastern.</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Orb Backtest Engine</h1>
+            <p className="mt-2 text-sm text-zinc-400">See what happened after similar setups in the past — with win rates, seasonality, and signal context.</p>
           </div>
         </header>
 
         <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3">
             <h2 className="text-xl font-semibold">Backtest Universe</h2>
-            <p className="text-sm text-zinc-400">• See what happened after similar setups in the past — with win rates, seasonality, and signal context.</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
