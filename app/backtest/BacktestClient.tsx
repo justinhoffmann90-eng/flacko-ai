@@ -687,7 +687,7 @@ export default function BacktestClient() {
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <header className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Orb Backtest Engine</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">🔮 Orb Backtest Engine</h1>
             <p className="mt-2 text-sm text-zinc-400">See what happened after similar setups in the past — with win rates, seasonality, and signal context.</p>
           </div>
         </header>
