@@ -1805,9 +1805,9 @@ export async function GET(request: NextRequest) {
       } else {
         userMessage = `Failed to compute indicators for ${ticker}. Please retry.`;
       }
-      console.error(`[scan] ${ticker} compute error: ${message}`);
+      console.error(`[scan] ${ticker} compute error: ${message}`, error instanceof Error ? error.stack : '');
       return NextResponse.json(
-        { error: userMessage },
+        { error: userMessage, debug: message.slice(0, 200) },
         { status },
       );
     }
