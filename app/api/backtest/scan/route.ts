@@ -1068,21 +1068,47 @@ function buildCurrentSummarySentence(params: {
   const lines: string[] = [];
   const mode = modeSuggestion.suggestion;
 
-  // 1. REGIME — one sentence describing the structural state
+  // 1. REGIME + TECHNICAL CONTEXT — rich structural description
   const regimeLabel: Record<string, string> = {
-    "RED / EJECTED": "confirmed downtrend (price below weekly EMA21 — Master Eject zone)",
-    "RED": "bearish regime with BX Trender declining on both timeframes",
-    "ORANGE": "early recovery — BX Trender bottoming but not yet confirmed",
-    "ORANGE (Improving)": "improving recovery — daily momentum leading, weekly still lagging",
-    "YELLOW": "neutral consolidation — range-bound, no directional edge",
-    "YELLOW (Improving)": "improving consolidation with rising BX Trender",
-    "GREEN (Extended)": "confirmed uptrend, extended — HH on both timeframes but stretched",
-    "GREEN": "confirmed uptrend — BX Trender HH on daily and weekly",
-    "GREEN (Recovering)": "recovering uptrend — BX Trender turning back up after a dip",
+    "RED / EJECTED": "confirmed downtrend — price is below the Weekly 21 EMA, placing it in Master Eject territory where historical risk of further drawdown is elevated",
+    "RED": "bearish regime — BX Trender is printing lower lows on both the daily and weekly timeframes, indicating sustained selling pressure across multiple time horizons",
+    "ORANGE": "early recovery phase — BX Trender momentum has bottomed on the daily chart but weekly structure has not confirmed, making this a \"show me\" tape",
+    "ORANGE (Improving)": "improving recovery — daily BX Trender is leading with a higher low while weekly momentum is still lagging, typical of the early stages of a trend reversal",
+    "YELLOW": "neutral consolidation — price action is range-bound with no clear directional edge on either timeframe, a tape that rewards patience over conviction",
+    "YELLOW (Improving)": "improving consolidation — BX Trender is trending higher within the range, suggesting accumulation that could precede a breakout",
+    "GREEN (Extended)": "confirmed uptrend but extended — BX Trender is printing HH on both timeframes, however the move is stretched and historically vulnerable to mean-reversion pullbacks",
+    "GREEN": "confirmed uptrend — BX Trender is in HH mode on both daily and weekly, the strongest structural alignment for sustained long positioning",
+    "GREEN (Recovering)": "recovering uptrend — BX Trender is turning back up after a pullback within a broader bullish structure, historically a high-probability re-entry zone",
   };
   lines.push(`${ticker} is in a ${regimeLabel[mode] ?? "neutral regime"}.`);
 
-  // 2. TOP EVIDENCE — cite the best active setups by win rate, or the worst avoid setup
+  // Add key technical levels for context
+  const techParts: string[] = [];
+  if (indicators?.close != null) {
+    techParts.push(`Last close: $${Number(indicators.close).toFixed(2)}`);
+  }
+  if (indicators?.rsi != null) {
+    const rsiVal = Number(indicators.rsi);
+    const rsiContext = rsiVal < 30 ? " (oversold)" : rsiVal < 40 ? " (approaching oversold)" : rsiVal > 70 ? " (overbought)" : rsiVal > 60 ? " (approaching overbought)" : "";
+    techParts.push(`RSI ${rsiVal.toFixed(1)}${rsiContext}`);
+  }
+  if (indicators?.smi != null) {
+    const smiVal = Number(indicators.smi);
+    const smiContext = smiVal < -40 ? " (deeply negative)" : smiVal < -20 ? " (negative)" : smiVal > 40 ? " (deeply positive)" : smiVal > 20 ? " (positive)" : " (neutral zone)";
+    techParts.push(`SMI ${smiVal.toFixed(1)}${smiContext}`);
+  }
+  if (indicators?.bx_daily_state && indicators?.bx_weekly_state) {
+    techParts.push(`BX Trender: ${indicators.bx_daily_state} daily / ${indicators.bx_weekly_state} weekly`);
+  }
+  if (indicators?.sma200_dist != null) {
+    const dist = Number(indicators.sma200_dist);
+    techParts.push(`${Math.abs(dist).toFixed(1)}% ${dist >= 0 ? "above" : "below"} 200-day SMA`);
+  }
+  if (techParts.length > 0) {
+    lines.push(`Technical snapshot: ${techParts.join(" · ")}.`);
+  }
+
+  // 2. SETUP EVIDENCE — cite active setups with statistical backing
   const buySetups = (activeSetups ?? []).filter((s) => s.type === "buy" && s.n && s.n > 0);
   const avoidSetups = (activeSetups ?? []).filter((s) => s.type === "avoid" && s.n && s.n > 0);
 
@@ -1091,7 +1117,7 @@ function buildCurrentSummarySentence(params: {
     .filter((s) => {
       const wr = parseFloat((s.winRate20d ?? "0").replace("%", ""));
       const avg = s.avgReturn20d ?? 0;
-      return wr > 50 && avg > 0; // Only cite setups with genuine positive edge
+      return wr > 50 && avg > 0;
     })
     .sort((a, b) => {
       const aWr = parseFloat((a.winRate20d ?? "0").replace("%", ""));
@@ -1104,33 +1130,40 @@ function buildCurrentSummarySentence(params: {
     const citations = top.map((s) => {
       const wr = s.winRate20d ?? "N/A";
       const avg = s.avgReturn20d != null ? `${s.avgReturn20d >= 0 ? "+" : ""}${s.avgReturn20d.toFixed(1)}%` : "N/A";
-      return `"${s.name}" (${wr} win rate, ${avg} avg return over ${s.n} instances)`;
+      return `"${s.name}" — ${wr} win rate with ${avg} average forward return over ${s.n} historical instances`;
     });
-    lines.push(`The strongest active buy signal${top.length > 1 ? "s are" : " is"} ${citations.join(" and ")}.`);
+    lines.push(`The strongest active buy signal${top.length > 1 ? "s" : ""}: ${citations.join("; ")}.`);
   } else if (buySetups.length > 0) {
-    // Buy setups exist but none have a genuine positive edge
-    lines.push(`${buySetups.length} buy setup${buySetups.length !== 1 ? "s are" : " is"} technically active, but none show a statistically compelling edge at 20 days — treat with caution.`);
+    lines.push(`${buySetups.length} buy setup${buySetups.length !== 1 ? "s are" : " is"} technically active, but none demonstrate a statistically compelling edge at the 20-day horizon (win rate ≤50% or negative expected return). This is not a setup worth sizing into.`);
   }
 
   if (avoidSetups.length > 0) {
     const worst = avoidSetups[0];
-    lines.push(`Caution: "${worst.name}" is active — historically this pattern precedes elevated downside risk.`);
+    const avoidWr = worst.winRate20d ?? "N/A";
+    const avoidAvg = worst.avgReturn20d != null ? `${worst.avgReturn20d >= 0 ? "+" : ""}${worst.avgReturn20d.toFixed(1)}%` : "N/A";
+    lines.push(`Risk signal: "${worst.name}" is active — across ${worst.n} historical instances, this pattern averaged ${avoidAvg} over the next 20 trading days with a ${avoidWr} hit rate. This is a structural warning, not a timing signal.`);
+  }
+
+  // 3. CONFLICTING SIGNAL ANALYSIS — when buy AND avoid setups are both active
+  if (sortedBuys.length > 0 && avoidSetups.length > 0) {
+    lines.push(`Signal conflict: Both buy and caution setups are firing simultaneously. This is a mixed tape — the buy setup suggests a statistical bounce opportunity, but the caution setup indicates the broader trend structure hasn't repaired. Historically, when these signals overlap, the caution signal tends to dominate in the first 5-10 days before the buy signal's edge materializes. Translation: if you act on the buy signal, size small and expect chop before any resolution.`);
   }
 
   if (buySetups.length === 0 && avoidSetups.length === 0) {
     if (watchingCount > 0) {
-      lines.push(`No setups have triggered, but ${watchingCount} ${watchingCount !== 1 ? "are" : "is"} approaching activation — conditions are close to aligning.`);
+      lines.push(`No setups have triggered yet, but ${watchingCount} ${watchingCount !== 1 ? "are" : "is"} approaching activation thresholds. The conditions are close to aligning — this is a "preparation" phase, not an "action" phase. Build your watchlist and define your entry levels now so you can act decisively when setups confirm.`);
     } else {
-      lines.push(`No setups are active or approaching. The ORB system is in standby — conditions don't match any historical edge.`);
+      lines.push(`No setups are active or approaching activation. The ORB system is in full standby — current conditions don't match any of the 19 evaluated historical patterns. This is not ambiguous; it means the tape lacks a quantifiable edge in either direction. The correct position is patience.`);
     }
   }
 
-  // 3. HISTORICAL EDGE — average forward return
+  // 4. HISTORICAL EDGE — composite forward return with context
   if (average20d != null && Number.isFinite(average20d)) {
-    lines.push(`Across active setups, the composite 20-day forward return averages ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}%.`);
+    const edgeTone = average20d > 2 ? "meaningfully positive" : average20d > 0 ? "modestly positive" : average20d > -2 ? "modestly negative" : "meaningfully negative";
+    lines.push(`Composite edge: Across all active setups, the blended 20-day forward return averages ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}% — a ${edgeTone} expected value that ${average20d >= 0 ? "supports" : "argues against"} directional positioning at current levels.`);
   }
 
-  // 4. SEASONALITY — forward windows (5D, 10D, 30D, 60D)
+  // 5. SEASONALITY — forward windows (5D, 10D, 30D, 60D)
   const fw = seasonality?.forward;
   if (fw) {
     const windowLabels = [
@@ -1143,35 +1176,43 @@ function buildCurrentSummarySentence(params: {
     for (const { key, label } of windowLabels) {
       const s = fw[key];
       if (s && s.n >= 3) {
-        parts.push(`${label}: ${s.avg_return >= 0 ? "+" : ""}${s.avg_return.toFixed(1)}% avg (${s.win_rate.toFixed(0)}% win, n=${s.n})`);
+        parts.push(`${label}: ${s.avg_return >= 0 ? "+" : ""}${s.avg_return.toFixed(1)}% avg / ${s.median_return >= 0 ? "+" : ""}${s.median_return.toFixed(1)}% median (${s.win_rate.toFixed(0)}% win, n=${s.n})`);
       }
     }
     if (parts.length > 0) {
-      // Determine overall seasonal tone from 30D window
       const s30 = fw.d30;
+      const s60 = fw.d60;
       const tone = s30 ? (s30.avg_return >= 1 ? "favorable" : s30.avg_return <= -1 ? "unfavorable" : "neutral") : "mixed";
       lines.push(`Seasonality from this calendar date is historically ${tone}: ${parts.join(" · ")}.`);
+      // Add median vs average context for credibility
+      if (s30 && s60 && Math.abs(s60.avg_return - s60.median_return) > 3) {
+        lines.push(`Note: The 60D average is skewed by outlier years — the median return of ${s60.median_return >= 0 ? "+" : ""}${s60.median_return.toFixed(1)}% is a more conservative baseline for sizing expectations.`);
+      }
     }
   }
 
-  // 5. CLEAR RECOMMENDATION — Buy / Wait / Reduce Risk
+  // 6. CLEAR RECOMMENDATION — with conviction level and specific guidance
   let stance: string;
-  if (mode.includes("RED") || avoidActiveCount >= 2) {
-    stance = "Reduce Risk. The trend structure is against longs and caution setups confirm elevated downside. Tighten stops, avoid new entries, preserve capital.";
+  if ((mode.includes("RED") && avoidActiveCount > 0) || avoidActiveCount >= 2) {
+    stance = "REDUCE RISK. The trend structure is against longs on both timeframes and caution setups confirm elevated downside risk. This is not a \"buy the dip\" environment — it's a capital preservation environment. Tighten stops on existing positions, avoid initiating new longs, and wait for structural repair (daily BX Trender needs to print at least a higher low) before re-engaging.";
+  } else if (mode.includes("RED") && avoidActiveCount === 0) {
+    stance = "DEFENSIVE WAIT. The trend is bearish but no specific caution setups have triggered, meaning the downtrend may be mature rather than accelerating. Stay flat on new positions. The re-entry trigger is a daily BX Trender state change from LL to HL, which would signal the first structural improvement.";
   } else if (avoidActiveCount > 0 && buyActiveCount === 0) {
-    stance = "Wait. Caution signals are present without offsetting buy signals. Stay flat until the risk picture clears.";
+    stance = "WAIT — CAUTION ACTIVE. Risk signals are present without offsetting buy signals. This is a tape to watch, not trade. Stay flat until either the caution signal deactivates (clearing the risk) or a high-conviction buy setup triggers alongside it (providing an offsetting edge).";
+  } else if (mode.includes("GREEN") && buyActiveCount >= 2 && avoidActiveCount === 0) {
+    stance = "BUY WITH CONVICTION. Trend structure is bullish on both timeframes, multiple buy setups confirm, and no caution signals are present. This is the highest-confidence alignment the system produces. Use pullbacks to key support levels as entry opportunities and size according to your risk tolerance.";
   } else if (mode.includes("GREEN") && buyActiveCount > 0) {
-    stance = "Buy. Trend structure is bullish and buy setups confirm. Use pullbacks to support as entry opportunities. Size with conviction.";
-  } else if (buyActiveCount >= 2) {
-    stance = "Buy. Multiple buy setups are firing — the statistical edge favors longs. Size based on your risk tolerance and use the entry quality score for conviction sizing.";
+    stance = "BUY. Trend structure is bullish and buy setups confirm the directional edge. Add on weakness toward support rather than chasing strength. If caution setups are also present, size down to reflect the mixed signal.";
+  } else if (buyActiveCount >= 2 && avoidActiveCount === 0) {
+    stance = "BUY. Multiple buy setups are firing simultaneously — the statistical edge favors longs even if the broader trend isn't fully confirmed. Size based on your risk tolerance and use the setup with the highest historical win rate as your primary conviction anchor.";
   } else if (buyActiveCount === 1 && avoidActiveCount === 0) {
-    stance = "Lean Buy. One buy setup is active with no caution signals. Consider a partial position and scale in if more setups confirm.";
+    stance = "LEAN BUY. One buy setup is active with no offsetting caution signals — a positive but not decisive edge. Consider a partial position (half-size or less) and scale in if additional setups confirm or the trend structure improves.";
   } else if (mode.includes("YELLOW") && mode.includes("Improving")) {
-    stance = "Wait, improving. Conditions are getting better but not yet confirmed. Build a watchlist and prepare to act when setups trigger.";
+    stance = "WAIT — IMPROVING. Conditions are getting better (BX Trender rising within range) but no setups have triggered yet. This is the preparation phase: build your watchlist, define entry levels, and be ready to act when the first setup confirms. Don't front-run the improvement.";
   } else if (watchingCount > 0) {
-    stance = "Wait. No setups have triggered yet. Monitor approaching setups and be ready to act, but don't front-run the signals.";
+    stance = "WAIT. No setups have triggered, but approaching setups indicate conditions are evolving. Monitor daily for setup activations. The edge isn't here yet, but it's getting closer.";
   } else {
-    stance = "Wait. No edge detected in either direction. Patience is the correct position.";
+    stance = "WAIT — NO EDGE. Neither buy nor caution setups are active, and no setups are approaching. The system has no quantifiable directional edge at current levels. Patience is the correct position — forcing a trade here means trading without an edge, which is gambling, not trading.";
   }
 
   lines.push(`Recommendation: ${stance}`);
