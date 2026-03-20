@@ -1636,7 +1636,19 @@ async function evaluateTickerNow(
 
     const activeSince = result.active_since_override ?? (status === "active" ? (prev?.active_since ?? indicators.date) : null);
     const derivedEntryPrice = activeSince ? (dailyCloseByDate.get(activeSince) ?? null) : null;
-    const derivedActiveDay = activeSince ? countTradingDays(activeSince, indicators.date) : null;
+    // Count trading days between two date strings (approx: weekdays only)
+    const derivedActiveDay = activeSince ? (() => {
+      const start = new Date(activeSince);
+      const end = new Date(indicators.date);
+      let count = 0;
+      const cur = new Date(start);
+      while (cur <= end) {
+        const dow = cur.getDay();
+        if (dow !== 0 && dow !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      return Math.max(count, 1);
+    })() : null;
 
     return {
       ticker,
