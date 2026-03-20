@@ -1390,11 +1390,6 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createServiceClient();
 
-    // One-time cleanup: delete known bad placeholder rows
-    await supabase.from("ohlcv_bars").delete()
-      .eq("ticker", "NVDA").eq("bar_date", "2026-03-31").eq("timeframe", "daily");
-    await supabase.from("ohlcv_bars").delete()
-      .eq("ticker", "QQQ").eq("bar_date", "2026-03-13").eq("timeframe", "daily");
 
     const [{ data: definitions, error: definitionsError }, { data: stateRows, error: statesError }] = await Promise.all([
       supabase
