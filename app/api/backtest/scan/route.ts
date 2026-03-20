@@ -9,6 +9,8 @@ import {
   suggestMode,
 } from "@/lib/orb/evaluate-setups";
 import { computeIndicators } from "@/lib/orb/compute-indicators";
+import { computeDerivedTimeframeIndicators } from "@/lib/ohlcv/derived-timeframes";
+import type { OHLCVBar } from "@/lib/indicators";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -1316,6 +1318,40 @@ async function fetchOhlcvRows(
   const pageSize = 1000;
   const rows: OhlcvRow[] = [];
 
+  if (timeframe === "weekly") {
+    const dailyLimit = Math.max(limit * 7, 450);
+    const dailyRows = await fetchOhlcvRows(supabase, ticker, "daily", dailyLimit);
+    if (!dailyRows || dailyRows.length === 0) return null;
+
+    const dailyBars: OHLCVBar[] = dailyRows.map((row) => ({
+      date: new Date(`${row.bar_date}T00:00:00Z`),
+      open: row.open,
+      high: row.high,
+      low: row.low,
+      close: row.close,
+      volume: row.volume,
+    }));
+
+    const weeklyBars = computeDerivedTimeframeIndicators(dailyBars, "weekly");
+    if (weeklyBars.length === 0) return null;
+
+    return weeklyBars.slice(-limit).map((bar) => ({
+      bar_date: bar.date.toISOString().slice(0, 10),
+      open: round(bar.open),
+      high: round(bar.high),
+      low: round(bar.low),
+      close: round(bar.close),
+      volume: Math.round(bar.volume ?? 0),
+      rsi: bar.rsi,
+      bxt: bar.bxt,
+      bxt_state: bar.bxt_state,
+      ema_9: bar.ema_9,
+      ema_13: bar.ema_13,
+      ema_21: bar.ema_21,
+      sma_200: bar.sma_200,
+    }));
+  }
+
   for (let offset = 0; offset < limit; offset += pageSize) {
     const end = Math.min(offset + pageSize - 1, limit - 1);
     const { data, error } = await supabase
@@ -1341,7 +1377,7 @@ async function fetchOhlcvRows(
 async function computeIndicatorsFromOhlcv(
   supabase: Awaited<ReturnType<typeof createServiceClient>>,
   ticker: string,
-): Promise<(Indicators & { open: number; volume: number; volumes: number[] }) | null> {
+): Promise<((Indicators & { open: number; volume: number; volumes: number[] }) & { recentDailyRows: OhlcvRow[] }) | null> {
   const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows] = await Promise.all([
     fetchOhlcvRows(supabase, ticker, "daily", 450),
     fetchOhlcvRows(supabase, ticker, "weekly", 150),
@@ -1518,6 +1554,7 @@ async function computeIndicatorsFromOhlcv(
     open: latest.open,
     volume: latest.volume,
     volumes: volumes.slice(-30),
+    recentDailyRows: dailyRows,
     vix_close: vixClose,
     vix_weekly_change_pct: vixWeeklyChangePct,
     bx_daily: bxtDaily,
@@ -1565,14 +1602,15 @@ async function computeIndicatorsFromOhlcv(
 async function resolveIndicators(
   supabase: Awaited<ReturnType<typeof createServiceClient>>,
   ticker: string,
-): Promise<{ indicators: Indicators & { open: number; volume: number; volumes: number[] }; source: "ohlcv_bars" | "yahoo" }> {
+): Promise<{ indicators: Indicators & { open: number; volume: number; volumes: number[] }; source: "ohlcv_bars" | "yahoo"; recentDailyRows: OhlcvRow[] | null }> {
   const fromDb = await computeIndicatorsFromOhlcv(supabase, ticker);
   if (fromDb) {
-    return { indicators: fromDb, source: "ohlcv_bars" };
+    const { recentDailyRows, ...indicators } = fromDb;
+    return { indicators, source: "ohlcv_bars", recentDailyRows };
   }
 
   const fromYahoo = await computeIndicators(ticker);
-  return { indicators: fromYahoo, source: "yahoo" };
+  return { indicators: fromYahoo, source: "yahoo", recentDailyRows: null };
 }
 
 async function evaluateTickerNow(
@@ -1584,8 +1622,9 @@ async function evaluateTickerNow(
   setupResults: SetupResult[];
   mode: ReturnType<typeof suggestMode>;
   source: "ohlcv_bars" | "yahoo";
+  resolvedStates: Map<string, PreviousState>;
 }> {
-  const { indicators, source } = await resolveIndicators(supabase, ticker);
+  const { indicators, source, recentDailyRows } = await resolveIndicators(supabase, ticker);
 
   // For TSLA, use the pre-loaded map; for other tickers, read from DB
   let prevMap: Map<string, PreviousState>;
@@ -1613,6 +1652,7 @@ async function evaluateTickerNow(
   }
 
   const setupResults = evaluateAllSetups(indicators, prevMap);
+  const dailyCloseByDate = new Map<string, number>((recentDailyRows ?? []).map((row) => [row.bar_date, row.close]));
 
   // Upsert new states back to orb_setup_states for all tickers
   const upsertRows = setupResults.map((result) => {
@@ -1623,13 +1663,17 @@ async function evaluateTickerNow(
         ? "watching"
         : "inactive";
 
+    const activeSince = result.active_since_override ?? (status === "active" ? (prev?.active_since ?? indicators.date) : null);
+    const derivedEntryPrice = activeSince ? (dailyCloseByDate.get(activeSince) ?? null) : null;
+    const derivedActiveDay = activeSince ? countTradingDays(activeSince, indicators.date) : null;
+
     return {
       ticker,
       setup_id: result.setup_id,
       status,
-      active_since: result.active_since_override ?? (status === "active" ? (prev?.active_since ?? indicators.date) : null),
-      active_day: result.active_day_override ?? (status === "active" ? (prev?.active_day ?? 1) : null),
-      entry_price: status === "active" ? (prev?.entry_price ?? indicators.close) : null,
+      active_since: activeSince,
+      active_day: result.active_day_override ?? (status === "active" ? (derivedActiveDay ?? prev?.active_day ?? 1) : null),
+      entry_price: status === "active" ? (derivedEntryPrice ?? prev?.entry_price ?? indicators.close) : null,
       gauge_entry_value: result.gauge_entry_value ?? (status === "active" ? (prev?.gauge_entry_value ?? null) : null),
     };
   });
@@ -1640,8 +1684,22 @@ async function evaluateTickerNow(
       .upsert(upsertRows, { onConflict: "ticker,setup_id" });
   }
 
+  const resolvedStates = new Map<string, PreviousState>(
+    upsertRows.map((row) => [
+      row.setup_id,
+      {
+        setup_id: row.setup_id,
+        status: row.status,
+        gauge_entry_value: row.gauge_entry_value ?? undefined,
+        entry_price: row.entry_price ?? undefined,
+        active_since: row.active_since ?? undefined,
+        active_day: row.active_day ?? undefined,
+      },
+    ]),
+  );
+
   const mode = suggestMode(indicators, setupResults.filter((setup) => setup.is_active));
-  return { indicators, setupResults, mode, source };
+  return { indicators, setupResults, mode, source, resolvedStates };
 }
 
 export async function GET(request: NextRequest) {
@@ -1679,7 +1737,7 @@ export async function GET(request: NextRequest) {
         .single();
 
       const currentCount = existing?.count ?? 0;
-      const MAX_FREE_SCANS = 2;
+      const MAX_FREE_SCANS = 5;
 
       if (currentCount >= MAX_FREE_SCANS) {
         return NextResponse.json(
@@ -1800,7 +1858,7 @@ export async function GET(request: NextRequest) {
         fallback?.type ||
         (result.setup_id.includes("over") || result.setup_id.includes("crack") || result.setup_id.includes("shield") || result.setup_id.includes("dual") ? "avoid" : "buy");
 
-      const state = stateMap.get(result.setup_id);
+      const state = evaluatedTicker.resolvedStates.get(result.setup_id) ?? stateMap.get(result.setup_id);
 
       return {
         id: result.setup_id,

@@ -18,6 +18,7 @@ import {
   OHLCVBar,
   IndicatorBar,
 } from "@/lib/indicators";
+import { computeDerivedTimeframeIndicators } from "@/lib/ohlcv/derived-timeframes";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ const TICKERS = [
 ];
 
 type Timeframe = "weekly" | "daily" | "monthly";
-const TIMEFRAMES: Timeframe[] = ["weekly", "daily", "monthly"];
+const TIMEFRAMES: Timeframe[] = ["daily", "weekly", "monthly"];
 
 const YAHOO_INTERVAL: Record<Timeframe, string> = {
   weekly: "1wk",
@@ -154,6 +155,38 @@ async function loadContextBars(
     .reverse(); // Ascending
 }
 
+async function loadAllDailyBars(
+  supabase: SupabaseClient,
+  ticker: string,
+): Promise<OHLCVBar[]> {
+  const rows: any[] = [];
+  const pageSize = 1000;
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from("ohlcv_bars")
+      .select("bar_date, open, high, low, close, volume")
+      .eq("ticker", ticker)
+      .eq("timeframe", "daily")
+      .order("bar_date", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw new Error(`loadAllDailyBars failed: ${error.message}`);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+
+  return rows.map((row: any) => ({
+    date: new Date(`${row.bar_date}T00:00:00Z`),
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    close: row.close,
+    volume: row.volume,
+  }));
+}
+
 // ─── Get latest bar date ───────────────────────────────────────────────────────
 
 async function getLatestDate(
@@ -254,6 +287,29 @@ export async function incrementalUpdateOHLCV(
   for (const ticker of tickerList) {
     for (const timeframe of timeframeList) {
       try {
+        if (timeframe !== "daily") {
+          const dailyBars = await loadAllDailyBars(supabase, ticker);
+          if (dailyBars.length === 0) {
+            results.push({ ticker, timeframe, newBars: 0, skipped: true });
+            continue;
+          }
+
+          const derivedBars = computeDerivedTimeframeIndicators(dailyBars, timeframe);
+          const rows = derivedBars.map((bar) => toDbRow(bar, ticker, timeframe));
+
+          const { error: deleteError } = await supabase
+            .from("ohlcv_bars")
+            .delete()
+            .eq("ticker", ticker)
+            .eq("timeframe", timeframe);
+          if (deleteError) throw new Error(`delete failed for ${ticker}/${timeframe}: ${deleteError.message}`);
+
+          await upsertRows(supabase, rows);
+          console.log(`[ohlcv] ${ticker}/${timeframe}: rebuilt ${rows.length} derived bars from daily history`);
+          results.push({ ticker, timeframe, newBars: rows.length, skipped: false });
+          continue;
+        }
+
         const latestDate = await getLatestDate(supabase, ticker, timeframe);
 
         if (!latestDate) {

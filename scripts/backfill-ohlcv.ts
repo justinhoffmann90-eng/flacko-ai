@@ -22,6 +22,7 @@ import {
   OHLCVBar,
   IndicatorBar,
 } from "../lib/indicators";
+import { computeDerivedTimeframeIndicators } from "../lib/ohlcv/derived-timeframes";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ const DEFAULT_TICKERS = [
 ];
 
 type Timeframe = "weekly" | "daily" | "monthly";
-const TIMEFRAMES: Timeframe[] = ["weekly", "daily", "monthly"];
+const TIMEFRAMES: Timeframe[] = ["daily", "weekly", "monthly"];
 
 const BATCH_SIZE = 500; // Max rows per Supabase upsert
 
@@ -249,6 +250,57 @@ async function getContextBars(
     .reverse(); // Ascending order
 }
 
+async function getAllDailyBars(ticker: string): Promise<OHLCVBar[]> {
+  const rows: any[] = [];
+  let offset = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("ohlcv_bars")
+      .select("bar_date, open, high, low, close, volume")
+      .eq("ticker", ticker)
+      .eq("timeframe", "daily")
+      .order("bar_date", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return rows.map((row: any) => ({
+    date: new Date(`${row.bar_date}T00:00:00Z`),
+    open: Number(row.open),
+    high: Number(row.high),
+    low: Number(row.low),
+    close: Number(row.close),
+    volume: Number(row.volume ?? 0),
+  }));
+}
+
+async function replaceDerivedTimeframe(ticker: string, timeframe: Exclude<Timeframe, "daily">): Promise<number> {
+  const dailyBars = await getAllDailyBars(ticker);
+  if (dailyBars.length === 0) throw new Error(`No daily bars available for ${ticker}`);
+
+  const indicatorBars = computeDerivedTimeframeIndicators(dailyBars, timeframe);
+  const rows = indicatorBars.map((bar) => toDbRow(bar, ticker, timeframe));
+
+  if (!dryRun) {
+    const { error: deleteError } = await supabase
+      .from("ohlcv_bars")
+      .delete()
+      .eq("ticker", ticker)
+      .eq("timeframe", timeframe);
+    if (deleteError) throw new Error(`Delete failed for ${ticker}/${timeframe}: ${deleteError.message}`);
+    await upsertBatch(rows);
+  }
+
+  return rows.length;
+}
+
 // ─── Batch upsert ─────────────────────────────────────────────────────────────
 
 async function upsertBatch(rows: object[]): Promise<void> {
@@ -304,6 +356,12 @@ function toDbRow(
 
 async function backfillOne(ticker: string, timeframe: Timeframe): Promise<void> {
   const label = `${ticker}/${timeframe}`;
+
+  if (timeframe !== "daily") {
+    const count = await replaceDerivedTimeframe(ticker, timeframe);
+    console.log(`  ${label}: ✅ Rebuilt ${count} derived bars from daily history${dryRun ? " (dry run)" : ""}`);
+    return;
+  }
 
   if (modeArg === "incremental") {
     // Incremental: fetch only new bars and recompute with context
