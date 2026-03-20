@@ -214,6 +214,7 @@ export async function fetchOrbScore(): Promise<OrbData> {
     const { data: indicator, error: indicatorError } = await supabase
       .from('orb_daily_indicators')
       .select('orb_score, orb_zone, created_at')
+      .eq('ticker', 'TSLA')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
@@ -225,7 +226,8 @@ export async function fetchOrbScore(): Promise<OrbData> {
       // Still fetch active setups for context
       const { data: states } = await supabase
         .from('orb_setup_states')
-        .select('setup_id, status, setup_type');
+        .select('setup_id, status, setup_type')
+        .eq('ticker', 'TSLA');
 
       const activeSetups = (states || [])
         .filter(s => s.status === 'active' || s.status === 'watching')
@@ -248,7 +250,8 @@ export async function fetchOrbScore(): Promise<OrbData> {
     
     const { data: states } = await supabase
       .from('orb_setup_states')
-      .select('setup_id, status, setup_type');
+      .select('setup_id, status, setup_type')
+      .eq('ticker', 'TSLA');
 
     const activeSetups = (states || [])
       .filter(s => s.status === 'active' || s.status === 'watching')

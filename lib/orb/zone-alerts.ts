@@ -114,6 +114,7 @@ export async function sendDownsideZoneAlert(
     .from("orb_signal_log")
     .select("event_date")
     .eq("setup_id", "orb-zone-alert")
+    .eq("ticker", "TSLA")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -161,6 +162,7 @@ export async function sendDownsideZoneAlert(
   // Log the alert
   await supabase.from("orb_signal_log").insert({
     setup_id: "orb-zone-alert",
+    ticker: "TSLA",
     event_type: "downside_alert",
     event_date: date,
     previous_status: prevZone,

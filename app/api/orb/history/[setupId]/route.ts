@@ -9,6 +9,7 @@ export async function GET(_request: Request, { params }: { params: { setupId: st
       .from("orb_tracker")
       .select("*")
       .eq("setup_id", params.setupId)
+      .eq("ticker", "TSLA")
       .order("entry_date", { ascending: false });
 
     if (tradesError) {
@@ -19,6 +20,7 @@ export async function GET(_request: Request, { params }: { params: { setupId: st
       .from("orb_signal_log")
       .select("*")
       .eq("setup_id", params.setupId)
+      .eq("ticker", "TSLA")
       .order("event_date", { ascending: false })
       .limit(50);
 
@@ -30,6 +32,7 @@ export async function GET(_request: Request, { params }: { params: { setupId: st
       .from("orb_backtest_instances")
       .select("*")
       .eq("setup_id", params.setupId)
+      .eq("ticker", "TSLA")
       .order("signal_date", { ascending: false })
       .limit(20);
 

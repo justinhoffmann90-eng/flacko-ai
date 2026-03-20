@@ -91,6 +91,7 @@ async function main() {
   const { data: indicatorRows, error: indicatorErr } = await supabase
     .from("orb_daily_indicators")
     .select("date, close_price")
+    .eq("ticker", "TSLA")
     .order("date", { ascending: true });
 
   if (indicatorErr) throw indicatorErr;
@@ -201,7 +202,7 @@ async function main() {
 
   let written = 0;
   for (const c of chunk(updates, 500)) {
-    const { error } = await supabase.from("orb_daily_indicators").upsert(c, { onConflict: "date" });
+    const { error } = await supabase.from("orb_daily_indicators").upsert(c.map(row => ({ ...row, ticker: "TSLA" })), { onConflict: "ticker,date" });
     if (error) throw error;
     written += c.length;
     process.stdout.write(`\rUpdated ${written}/${updates.length}`);
@@ -211,6 +212,7 @@ async function main() {
   const { data: sample, error: sampleErr } = await supabase
     .from("orb_daily_indicators")
     .select("date, volume, volume_20d_avg, relative_volume_pct, volume_price_alignment, volume_signal")
+    .eq("ticker", "TSLA")
     .not("volume", "is", null)
     .order("date", { ascending: false })
     .limit(3);

@@ -1397,7 +1397,8 @@ export async function GET(request: NextRequest) {
         .select("id, name, public_name, number, type, one_liner, public_description, description"),
       supabase
         .from("orb_setup_states")
-        .select("setup_id, status, active_since, active_day, entry_price, gauge_entry_value"),
+        .select("setup_id, status, active_since, active_day, entry_price, gauge_entry_value")
+        .eq("ticker", ticker),
     ]);
 
     if (definitionsError) {
@@ -1518,6 +1519,7 @@ export async function GET(request: NextRequest) {
         const { data: backtestRows, error: backtestError } = await supabase
           .from("orb_backtest_instances")
           .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
+          .eq("ticker", ticker)
           .in("setup_id", activeOrWatchingIds)
           .order("signal_date", { ascending: false });
 

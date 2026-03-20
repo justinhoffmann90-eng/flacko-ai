@@ -69,6 +69,7 @@ async function main() {
     const { data, error } = await supabase
       .from("orb_backtest_instances")
       .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d")
+      .eq("ticker", "TSLA")
       .order("signal_date", { ascending: true })
       .range(offset, offset + 999);
     if (error) { console.error(error); break; }

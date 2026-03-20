@@ -60,6 +60,7 @@ export async function sendAlert(setupId: string, newStatus: string, reason: stri
       .from("orb_tracker")
       .select("entry_price, entry_date, current_return_pct, max_return_pct, max_drawdown_pct, days_active")
       .eq("setup_id", setupId)
+      .eq("ticker", "TSLA")
       .eq("status", "open")
       .order("entry_date", { ascending: false })
       .limit(1)

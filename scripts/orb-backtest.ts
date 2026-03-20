@@ -409,11 +409,11 @@ async function main() {
   const { url, key } = getEnv();
   const supabase = createClient(url, key);
 
-  const { error: delErr } = await supabase.from("orb_backtest_instances").delete().neq("id", 0);
+  const { error: delErr } = await supabase.from("orb_backtest_instances").delete().eq("ticker", "TSLA").neq("id", 0);
   if (delErr) throw delErr;
 
   for (const c of chunk(instances, 100)) {
-    const { error } = await supabase.from("orb_backtest_instances").upsert(c, { onConflict: "setup_id,signal_date" });
+    const { error } = await supabase.from("orb_backtest_instances").upsert(c.map(row => ({ ...row, ticker: "TSLA" })), { onConflict: "ticker,setup_id,signal_date" });
     if (error) throw error;
   }
 
@@ -423,7 +423,7 @@ async function main() {
       gauge_days: g.gauge_days,
       gauge_return: g.gauge_return,
       gauge_completed: g.gauge_completed,
-    }).match({ setup_id: g.setup_id, signal_date: g.signal_date });
+    }).match({ setup_id: g.setup_id, signal_date: g.signal_date, ticker: "TSLA" });
     if (error) console.error(`Gauge update error for ${g.setup_id} ${g.signal_date}:`, error.message);
   }
   if (gaugeResults.length) console.log(`Updated ${gaugeResults.length} gauge measurements`);

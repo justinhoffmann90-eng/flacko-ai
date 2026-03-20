@@ -155,6 +155,7 @@ export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
+    const ticker = "TSLA";
     const supabase = await createServiceClient();
 
     const { data: definitions, error: definitionsError } = await supabase
@@ -169,7 +170,8 @@ export async function GET(request: NextRequest) {
 
     const { data: states, error: statesError } = await supabase
       .from("orb_setup_states")
-      .select("*");
+      .select("*")
+      .eq("ticker", ticker);
 
     if (statesError) {
       return NextResponse.json({ error: statesError.message }, { status: 500 });
@@ -178,6 +180,7 @@ export async function GET(request: NextRequest) {
     const { data: liveStats } = await supabase
       .from("orb_tracker")
       .select("setup_id, is_win, final_return_pct")
+      .eq("ticker", ticker)
       .eq("status", "closed");
 
     const livePerformance: Record<string, { wins: number; total: number; avgReturn: number }> = {};
@@ -225,6 +228,7 @@ export async function GET(request: NextRequest) {
     const { data: latestIndicator } = await supabase
       .from("orb_daily_indicators")
       .select("date, orb_score, orb_zone, orb_zone_prev, bx_daily, bx_weekly, rsi, smi, ema9, ema21, weekly_ema13")
+      .eq("ticker", ticker)
       .order("date", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -305,6 +309,7 @@ export async function GET(request: NextRequest) {
     const { data: trackingTrades } = await supabase
       .from("orb_tracker")
       .select("*")
+      .eq("ticker", ticker)
       .eq("status", "open")
       .eq("exit_reason", "tracking_horizon");
 
@@ -312,6 +317,7 @@ export async function GET(request: NextRequest) {
     const { data: lastTransition } = await supabase
       .from("orb_signal_log")
       .select("event_date, notes")
+      .eq("ticker", ticker)
       .eq("setup_id", "orb-score")
       .eq("event_type", "zone_transition")
       .order("created_at", { ascending: false })

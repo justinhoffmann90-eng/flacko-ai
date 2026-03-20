@@ -10,6 +10,8 @@ import { incrementalUpdateOHLCV } from "@/lib/ohlcv/incremental-update";
 
 export const maxDuration = 30;
 
+const ticker = "TSLA";
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 interface VolumeMetrics {
@@ -121,7 +123,7 @@ async function runCompute() {
 
     const supabase = await createServiceClient();
 
-    const { data: prevStates } = await supabase.from("orb_setup_states").select("*");
+    const { data: prevStates } = await supabase.from("orb_setup_states").select("*").eq("ticker", ticker);
     const { data: definitions } = await supabase
       .from("orb_setup_definitions")
       .select("id, public_name, stance, grade, framework");
@@ -187,7 +189,8 @@ async function runCompute() {
       if (newStatus === "watching") stateUpdate.watching_reason = result.reason;
       if (newStatus === "inactive") stateUpdate.inactive_reason = result.reason;
 
-      await supabase.from("orb_setup_states").upsert(stateUpdate, { onConflict: "setup_id" });
+      stateUpdate.ticker = ticker;
+      await supabase.from("orb_setup_states").upsert(stateUpdate, { onConflict: "ticker,setup_id" });
 
       if (statusChanged) {
         const eventType =
@@ -200,6 +203,7 @@ async function runCompute() {
             : "watching_ended";
 
         await supabase.from("orb_signal_log").insert({
+          ticker,
           setup_id: result.setup_id,
           event_type: eventType,
           event_date: indicators.date,
@@ -215,6 +219,7 @@ async function runCompute() {
           const { data: recentClosed } = await supabase
             .from("orb_tracker")
             .select("*")
+            .eq("ticker", ticker)
             .eq("setup_id", result.setup_id)
             .eq("status", "closed")
             .order("exit_date", { ascending: false })
@@ -239,6 +244,7 @@ async function runCompute() {
             }).eq("id", recentClosed.id);
           } else {
             await supabase.from("orb_tracker").insert({
+              ticker,
               setup_id: result.setup_id,
               entry_date: indicators.date,
               entry_price: indicators.close,
@@ -256,6 +262,7 @@ async function runCompute() {
           const { data: openTrade } = await supabase
             .from("orb_tracker")
             .select("*")
+            .eq("ticker", ticker)
             .eq("setup_id", result.setup_id)
             .eq("status", "open")
             .order("entry_date", { ascending: false })
@@ -312,6 +319,7 @@ async function runCompute() {
         const { data: openTrade } = await supabase
           .from("orb_tracker")
           .select("*")
+          .eq("ticker", ticker)
           .eq("setup_id", result.setup_id)
           .eq("status", "open")
           .order("entry_date", { ascending: false })
@@ -362,6 +370,7 @@ async function runCompute() {
     const { data: trackingTrades } = await supabase
       .from("orb_tracker")
       .select("*")
+      .eq("ticker", ticker)
       .eq("status", "open")
       .eq("exit_reason", "tracking_horizon");
 
@@ -442,6 +451,7 @@ async function runCompute() {
     const { data: prevIndicator } = await supabase
       .from("orb_daily_indicators")
       .select("orb_zone")
+      .eq("ticker", ticker)
       .order("date", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -452,6 +462,7 @@ async function runCompute() {
       const msg = transitionMessage(prevZone as any, orbZone);
       // Log transition
       await supabase.from("orb_signal_log").insert({
+        ticker,
         setup_id: "orb-score",
         event_type: "zone_transition",
         event_date: indicators.date,
@@ -475,6 +486,7 @@ async function runCompute() {
 
     await supabase.from("orb_daily_indicators").upsert(
       {
+        ticker,
         date: indicators.date,
         close_price: indicators.close,
         bx_daily: indicators.bx_daily,
@@ -517,7 +529,7 @@ async function runCompute() {
         volume_price_alignment: volumeMetrics.volume_price_alignment,
         volume_signal: volumeMetrics.volume_signal,
       },
-      { onConflict: "date" }
+      { onConflict: "ticker,date" }
     );
 
     const writeScorecard = async () => {
