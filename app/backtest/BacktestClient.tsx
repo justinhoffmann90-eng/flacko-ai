@@ -158,6 +158,12 @@ interface ScanResponse {
   seasonality?: {
     monthly: SeasonalityMonth[];
     next_30d: { avg_return: number; win_rate: number; n: number } | null;
+    forward?: {
+      d5: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d10: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d30: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d60: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+    };
   };
   peer_comparison: PeerRow[];
   scenarios: ScenarioRow[];
@@ -791,6 +797,55 @@ export default function BacktestClient() {
                         </p>
                       </div>
                     )}
+
+                    {/* Forward Seasonality: 5D / 10D / 30D / 60D */}
+                    {data.seasonality.forward && (() => {
+                      const fw = data.seasonality.forward;
+                      const windows = [
+                        { key: "d5" as const, label: "5D", subscriberOnly: true },
+                        { key: "d10" as const, label: "10D", subscriberOnly: true },
+                        { key: "d30" as const, label: "30D", subscriberOnly: false },
+                        { key: "d60" as const, label: "60D", subscriberOnly: true },
+                      ];
+                      const visibleWindows = windows.filter(w => !w.subscriberOnly || isSubscriber);
+                      const lockedWindows = windows.filter(w => w.subscriberOnly && !isSubscriber);
+
+                      return (
+                        <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+                          <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            FORWARD SEASONALITY FROM TODAY&apos;S CALENDAR DATE
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {visibleWindows.map(({ key, label }) => {
+                              const s = fw[key];
+                              if (!s) return null;
+                              return (
+                                <div key={key} className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3 text-center">
+                                  <p className="text-[10px] tracking-[0.1em] text-zinc-500 mb-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{label}</p>
+                                  <p className={`text-xl font-bold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                    {s.avg_return >= 0 ? "+" : ""}{s.avg_return.toFixed(1)}%
+                                  </p>
+                                  <p className="text-[10px] text-zinc-500 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                    {s.win_rate.toFixed(0)}% win · n={s.n}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                            {lockedWindows.length > 0 && (
+                              <div className="rounded-lg border border-zinc-700/30 bg-zinc-900/30 p-3 text-center flex flex-col items-center justify-center col-span-1">
+                                <span className="text-lg mb-1">🔒</span>
+                                <p className="text-[10px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  {lockedWindows.map(w => w.label).join(", ")}
+                                </p>
+                                <a href={SUBSCRIBE_URL} className="text-[10px] text-emerald-400 hover:text-emerald-300 mt-1">
+                                  Unlock →
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Bar chart — all 12 months */}
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
