@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { BacktestExplorer } from "@/components/orb/BacktestExplorer";
+import { ComparisonDashboard } from "@/components/orb/ComparisonDashboard";
 
 const SUPPORTED_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "AMZN", "META", "MU", "GOOGL", "BABA"] as const;
 const SUBSCRIBE_URL = "/signup";
@@ -167,6 +168,7 @@ interface ScanResponse {
   };
   peer_comparison: PeerRow[];
   scenarios: ScenarioRow[];
+  scenario_context?: string;
   setups: ScanSetup[];
   meta?: {
     backtest_source?: string;
@@ -511,6 +513,13 @@ export default function BacktestClient() {
   const [rateLimited, setRateLimited] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
   const [isSubscriber, setIsSubscriber] = useState(false);
+  const [viewMode, setViewMode] = useState<"single" | "compare">("single");
+  const [compareData, setCompareData] = useState<Array<{
+    ticker: string; close: number; change_pct: number; mode: string;
+    buy_active: number; avoid_active: number; watching: number;
+    recommendation_short: string; seasonality_30d: number | null;
+  }> | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
   // Check scans + subscription status on mount
   useEffect(() => {
     setScansUsed(getScansToday());
@@ -571,6 +580,34 @@ export default function BacktestClient() {
   const handleScanClick = () => {
     doScan(selectedTicker);
   };
+
+  const handleCompareAll = useCallback(async () => {
+    setViewMode("compare");
+    if (compareData) return; // Already loaded
+    setCompareLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/backtest/compare");
+      const body = await response.json();
+      if (!response.ok) {
+        setError(body.error ?? "Failed to load comparison data.");
+        return;
+      }
+      setCompareData(body.tickers);
+      if (body.is_subscriber) setIsSubscriber(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCompareLoading(false);
+    }
+  }, [compareData]);
+
+  const handleCompareTickerClick = useCallback((ticker: string) => {
+    setViewMode("single");
+    setTickerInput(ticker);
+    setSelectedTicker(ticker);
+    doScan(ticker);
+  }, [doScan]);
 
   const groupedSetups = useMemo(() => {
     const setups = data?.setups ?? [];
@@ -633,15 +670,28 @@ export default function BacktestClient() {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleCompareAll}
+                className={`rounded-md border px-3 py-1 text-[11px] font-semibold ${
+                  viewMode === "compare"
+                    ? "border-amber-500/35 bg-amber-500/15 text-amber-300"
+                    : "border-zinc-600 bg-zinc-800 text-zinc-300 hover:border-amber-500/30 hover:text-amber-300"
+                } transition`}
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                Compare All
+              </button>
+              <div className="w-px bg-zinc-700 mx-0.5" />
               {SUPPORTED_TICKERS.map((ticker) => (
                 <button
                   key={ticker}
                   onClick={() => {
+                    setViewMode("single");
                     setTickerInput(ticker);
                     setSelectedTicker(ticker);
                   }}
                   className={`rounded-md border px-2 py-1 text-[11px] ${
-                    selectedTicker === ticker
+                    viewMode === "single" && selectedTicker === ticker
                       ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-300"
                       : "border-zinc-700 bg-zinc-900 text-zinc-400"
                   }`}
@@ -652,7 +702,7 @@ export default function BacktestClient() {
               ))}
             </div>
 
-            {!data && !loading && (
+            {viewMode === "single" && !data && !loading && (
               <button
                 onClick={handleScanClick}
                 className="w-full rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
@@ -667,13 +717,40 @@ export default function BacktestClient() {
             </p>
           </div>
 
+          {/* ─── Compare All View ─── */}
+          {viewMode === "compare" && (
+            <div>
+              {compareLoading && (
+                <div className="py-12 text-center">
+                  <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-amber-500" />
+                  <p className="text-sm text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    Evaluating all 10 tickers...
+                  </p>
+                </div>
+              )}
+              {!compareLoading && compareData && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-200 mb-1">All Tickers at a Glance</h3>
+                    <p className="text-xs text-zinc-500">Click any ticker to load its full backtest. Sortable by any column.</p>
+                  </div>
+                  <ComparisonDashboard
+                    tickers={compareData}
+                    isSubscriber={isSubscriber}
+                    onTickerClick={handleCompareTickerClick}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {error}
             </div>
           )}
 
-          {loading && !data && (
+          {viewMode === "single" && loading && !data && (
             <div className="py-12 text-center">
               <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-emerald-500" />
               <p className="text-sm text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
@@ -682,7 +759,7 @@ export default function BacktestClient() {
             </div>
           )}
 
-          {data && (
+          {viewMode === "single" && data && (
             <div className="space-y-4">
               {/* RIGHT NOW — always open */}
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
