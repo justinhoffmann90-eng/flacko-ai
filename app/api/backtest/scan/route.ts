@@ -1580,7 +1580,7 @@ export async function GET(request: NextRequest) {
             ret_60d: number | null;
           }>,
           summary: {} as Record<string, SummaryPeriod>,
-          message: "No historical instances found.",
+          message: "No historical instances found." as string | null,
         },
       };
     });
