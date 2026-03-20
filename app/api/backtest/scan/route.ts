@@ -1751,29 +1751,33 @@ export async function GET(request: NextRequest) {
       .filter((setup) => setup.status === "active" || setup.status === "watching")
       .map((setup) => setup.id);
 
+    let usedCachedBacktest = false;
+
     if (activeOrWatchingIds.length > 0) {
       let rowsBySetup = new Map<string, BacktestRow[]>();
 
-      if (ticker === VALIDATED_BACKTEST_TICKER) {
-        // TSLA: use manually validated backtest instances
-        const { data: backtestRows, error: backtestError } = await supabase
-          .from("orb_backtest_instances")
-          .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
-          .eq("ticker", ticker)
-          .in("setup_id", activeOrWatchingIds)
-          .order("signal_date", { ascending: false });
+      // Try pre-computed backtest instances first (all tickers)
+      const { data: backtestRows, error: backtestError } = await supabase
+        .from("orb_backtest_instances")
+        .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
+        .eq("ticker", ticker)
+        .in("setup_id", activeOrWatchingIds)
+        .order("signal_date", { ascending: false });
 
-        if (backtestError) {
-          return NextResponse.json({ error: backtestError.message }, { status: 500 });
-        }
+      if (backtestError) {
+        return NextResponse.json({ error: backtestError.message }, { status: 500 });
+      }
 
-        for (const row of (backtestRows as BacktestRow[]) || []) {
+      if (backtestRows && backtestRows.length > 0) {
+        // Use cached results
+        usedCachedBacktest = true;
+        for (const row of backtestRows as BacktestRow[]) {
           const list = rowsBySetup.get(row.setup_id) ?? [];
           list.push(row);
           rowsBySetup.set(row.setup_id, list);
         }
       } else {
-        // All other tickers: compute on-the-fly from ohlcv_bars history
+        // No cached results — fall back to on-the-fly computation from ohlcv_bars
         rowsBySetup = await computeDynamicBacktestRows(supabase, ticker, new Set(activeOrWatchingIds));
       }
 
@@ -1988,7 +1992,7 @@ export async function GET(request: NextRequest) {
       scenario_context: scenarioContext,
       setups: sortedSetups,
       meta: {
-        backtest_source: ticker === VALIDATED_BACKTEST_TICKER ? "orb_backtest_instances" : "ohlcv_scan",
+        backtest_source: usedCachedBacktest ? "orb_backtest_instances" : "ohlcv_scan",
         data_range: await (async () => {
           const { data: rangeData } = await supabase
             .from("ohlcv_bars")

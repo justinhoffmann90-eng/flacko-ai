@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/sync-discord-roles",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/precompute-backtests",
+      "schedule": "0 22 * * 1-5"
     }
   ]
 }
