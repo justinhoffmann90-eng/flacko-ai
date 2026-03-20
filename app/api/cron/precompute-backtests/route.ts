@@ -419,6 +419,154 @@ async function computeBacktestForTicker(
   return allRows;
 }
 
+// ─── Seasonality computation (mirrors scan route) ───────────────────────────
+
+async function computeSeasonalityForTicker(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  ticker: string,
+): Promise<Record<string, unknown> | null> {
+  const rawDaily = await fetchOhlcvRows(supabase, ticker, "daily", 5100);
+  const allDaily = (rawDaily ?? []).filter((bar) => toNumber(bar.close) != null && Number(bar.close) > 0);
+  const emptyForward = { d5: null, d10: null, d30: null, d60: null };
+  if (!allDaily || allDaily.length < 250) return null;
+
+  // Group bars by year-month to get monthly returns
+  const monthBuckets: Map<string, { first: number; last: number }> = new Map();
+  for (const bar of allDaily) {
+    const key = bar.bar_date.substring(0, 7);
+    const existing = monthBuckets.get(key);
+    if (!existing) monthBuckets.set(key, { first: bar.close, last: bar.close });
+    else existing.last = bar.close;
+  }
+
+  const monthReturnsByMonth: Map<number, number[]> = new Map();
+  for (let m = 1; m <= 12; m++) monthReturnsByMonth.set(m, []);
+
+  const sortedKeys = [...monthBuckets.keys()].sort();
+  const latestCompleteMonthKey = sortedKeys.length >= 2 ? sortedKeys[sortedKeys.length - 2] : null;
+  for (let i = 1; i < sortedKeys.length; i++) {
+    const prevKey = sortedKeys[i - 1];
+    const currKey = sortedKeys[i];
+    if (latestCompleteMonthKey && currKey > latestCompleteMonthKey) continue;
+    const prevBucket = monthBuckets.get(prevKey)!;
+    const currBucket = monthBuckets.get(currKey)!;
+    if (!prevBucket || !currBucket || prevBucket.last <= 0 || currBucket.last <= 0) continue;
+    const monthNum = parseInt(currKey.split("-")[1], 10);
+    const ret = ((currBucket.last - prevBucket.last) / prevBucket.last) * 100;
+    monthReturnsByMonth.get(monthNum)!.push(ret);
+  }
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // First pass: compute raw averages to find the baseline
+  const allMonthlyReturns: number[] = [];
+  const rawSeasonalEntries: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }> = [];
+  for (let m = 1; m <= 12; m++) {
+    const returns = monthReturnsByMonth.get(m)!;
+    allMonthlyReturns.push(...returns);
+    if (returns.length === 0) {
+      rawSeasonalEntries.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
+      continue;
+    }
+    const sorted = [...returns].sort((a, b) => a - b);
+    const med = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+    const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
+    const wins = returns.filter((r) => r > 0).length;
+    rawSeasonalEntries.push({
+      month: m, name: monthNames[m - 1],
+      avg_return: round(avg), median_return: round(med),
+      win_rate: round((wins / returns.length) * 100), n: returns.length,
+    });
+  }
+
+  // Detrend: subtract the overall average monthly return
+  const overallAvg = allMonthlyReturns.length > 0
+    ? allMonthlyReturns.reduce((s, v) => s + v, 0) / allMonthlyReturns.length : 0;
+  const monthly = rawSeasonalEntries.map((m) => ({
+    ...m,
+    avg_return: m.n > 0 ? round(m.avg_return - overallAvg) : 0,
+    median_return: m.median_return,
+  }));
+
+  // Next 30 days
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+  const daysFromNextMonth = Math.max(0, 30 - daysLeftInMonth);
+  const currMonthData = monthly[currentMonth - 1];
+  const nextMonthData = monthly[nextMonth - 1];
+
+  let next30d = null;
+  if (currMonthData.n > 0) {
+    if (daysFromNextMonth > 0 && nextMonthData.n > 0) {
+      const blend = (currMonthData.avg_return * daysLeftInMonth + nextMonthData.avg_return * daysFromNextMonth) / 30;
+      const blendWin = (currMonthData.win_rate * daysLeftInMonth + nextMonthData.win_rate * daysFromNextMonth) / 30;
+      next30d = { avg_return: round(blend), win_rate: round(blendWin), n: Math.min(currMonthData.n, nextMonthData.n) };
+    } else {
+      next30d = { avg_return: currMonthData.avg_return, win_rate: currMonthData.win_rate, n: currMonthData.n };
+    }
+  }
+
+  // Forward seasonality: 5D, 10D, 30D, 60D from today's calendar position
+  const forwardWindows = [5, 10, 30, 60] as const;
+  const forwardResults: Record<number, number[]> = { 5: [], 10: [], 30: [], 60: [] };
+
+  const closeByDate = new Map<string, number>();
+  for (const bar of allDaily) closeByDate.set(bar.bar_date, bar.close);
+
+  const todayMonth = now.getMonth();
+  const todayDate = now.getDate();
+  const years = new Set<number>();
+  for (const bar of allDaily) years.add(parseInt(bar.bar_date.substring(0, 4), 10));
+
+  for (const year of years) {
+    if (year === now.getFullYear()) continue;
+    let anchorDate: string | null = null;
+    let anchorClose: number | null = null;
+    for (let offset = 0; offset <= 5; offset++) {
+      for (const dir of [0, 1, -1]) {
+        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + (offset * (dir || 1))));
+        const tryKey = tryDate.toISOString().split("T")[0];
+        const c = closeByDate.get(tryKey);
+        if (c != null && c > 0) { anchorDate = tryKey; anchorClose = c; break; }
+      }
+      if (anchorDate) break;
+    }
+    if (!anchorDate || !anchorClose) continue;
+
+    const futureBars = allDaily.filter((b) => b.bar_date > anchorDate! && parseInt(b.bar_date.substring(0, 4), 10) <= year + 1);
+    for (const window of forwardWindows) {
+      if (futureBars.length >= window) {
+        const futureClose = futureBars[window - 1].close;
+        if (futureClose > 0) forwardResults[window].push(((futureClose - anchorClose!) / anchorClose!) * 100);
+      }
+    }
+  }
+
+  function computeForwardStats(returns: number[]) {
+    if (returns.length < 3) return null;
+    const sorted = [...returns].sort((a, b) => a - b);
+    const med = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+    const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
+    const wins = returns.filter((r) => r > 0).length;
+    return { avg_return: round(avg), median_return: round(med), win_rate: round((wins / returns.length) * 100), n: returns.length };
+  }
+
+  const forward = {
+    d5: computeForwardStats(forwardResults[5]),
+    d10: computeForwardStats(forwardResults[10]),
+    d30: computeForwardStats(forwardResults[30]),
+    d60: computeForwardStats(forwardResults[60]),
+  };
+
+  return { monthly, next_30d: next30d, forward };
+}
+
 // ─── Main cron handler ──────────────────────────────────────────────────────
 
 export async function GET() {
@@ -438,6 +586,28 @@ export async function GET() {
       console.log(`[precompute-backtests] Starting ${ticker}...`);
       const rows = await computeBacktestForTicker(supabase, ticker);
       console.log(`[precompute-backtests] ${ticker}: ${rows.length} instances computed`);
+
+      // Cache seasonality even if no backtest rows
+      try {
+        const seasonality = await computeSeasonalityForTicker(supabase, ticker);
+        if (seasonality) {
+          const { error: cacheError } = await supabase
+            .from("orb_scan_cache")
+            .upsert({
+              ticker,
+              seasonality_json: seasonality,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "ticker" });
+          if (cacheError) {
+            console.error(`[precompute-backtests] ${ticker} seasonality cache error:`, cacheError.message);
+          } else {
+            console.log(`[precompute-backtests] ${ticker}: seasonality cached`);
+          }
+        }
+      } catch (seasonalityError) {
+        console.warn(`[precompute-backtests] ${ticker} seasonality cache failed:`,
+          seasonalityError instanceof Error ? seasonalityError.message : String(seasonalityError));
+      }
 
       if (rows.length === 0) {
         results.push({ ticker, rows: 0 });

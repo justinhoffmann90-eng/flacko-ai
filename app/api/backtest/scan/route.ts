@@ -2004,8 +2004,24 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Compute seasonality
-    const seasonality = await computeSeasonality(supabase, ticker);
+    // Check orb_scan_cache for pre-computed seasonality, fall back to live computation
+    let seasonality: Awaited<ReturnType<typeof computeSeasonality>>;
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const { data: cached } = await supabase
+        .from("orb_scan_cache")
+        .select("seasonality_json, updated_at")
+        .eq("ticker", ticker)
+        .single();
+      if (cached?.seasonality_json && cached.updated_at && cached.updated_at.startsWith(today)) {
+        seasonality = cached.seasonality_json as Awaited<ReturnType<typeof computeSeasonality>>;
+      } else {
+        seasonality = await computeSeasonality(supabase, ticker);
+      }
+    } catch {
+      // Cache table may not exist — fall back to live computation
+      seasonality = await computeSeasonality(supabase, ticker);
+    }
 
     const activeSetupsForSummary = sortedSetups
       .filter((s) => s.status === "active")
