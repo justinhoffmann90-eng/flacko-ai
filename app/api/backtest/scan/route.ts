@@ -828,11 +828,18 @@ async function computeSeasonality(
 ): Promise<{
   monthly: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }>;
   next_30d: { avg_return: number; win_rate: number; n: number } | null;
+  forward: {
+    d5: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+    d10: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+    d30: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+    d60: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+  };
 }> {
   // Fetch all monthly bars or compute from daily bars
   const rawDaily = await fetchOhlcvRows(supabase, ticker, "daily", 5100);
   const allDaily = (rawDaily ?? []).filter((bar) => toNumber(bar.close) != null && Number(bar.close) > 0);
-  if (!allDaily || allDaily.length < 250) return { monthly: [], next_30d: null };
+  const emptyForward = { d5: null, d10: null, d30: null, d60: null };
+  if (!allDaily || allDaily.length < 250) return { monthly: [], next_30d: null, forward: emptyForward };
 
   // Group bars by year-month to get monthly returns
   const monthlyReturns: Map<number, number[]> = new Map();
@@ -938,7 +945,87 @@ async function computeSeasonality(
     }
   }
 
-  return { monthly, next_30d: next30d };
+  // Forward seasonality: 5D, 10D, 30D, 60D from today's calendar position
+  // Look at every historical year on the same month+day, compute forward returns
+  const forwardWindows = [5, 10, 30, 60] as const;
+  const forwardResults: Record<number, number[]> = { 5: [], 10: [], 30: [], 60: [] };
+
+  // Build a date-indexed close map for fast lookups
+  const closeByDate = new Map<string, number>();
+  for (const bar of allDaily) {
+    closeByDate.set(bar.bar_date, bar.close);
+  }
+
+  // For each historical year, find the bar closest to today's month/day
+  const todayMonth = now.getMonth(); // 0-indexed
+  const todayDate = now.getDate();
+  const todayDoy = Math.floor((Date.UTC(now.getFullYear(), todayMonth, todayDate) - Date.UTC(now.getFullYear(), 0, 0)) / 86400000);
+
+  // Get unique years in the data
+  const years = new Set<number>();
+  for (const bar of allDaily) {
+    years.add(parseInt(bar.bar_date.substring(0, 4), 10));
+  }
+
+  for (const year of years) {
+    if (year === now.getFullYear()) continue; // skip current year (incomplete)
+    // Find the trading day closest to this calendar date in that year
+    // Try exact date first, then +/-1, +/-2 to account for weekends/holidays
+    let anchorDate: string | null = null;
+    let anchorClose: number | null = null;
+    for (let offset = 0; offset <= 5; offset++) {
+      for (const dir of [0, 1, -1]) {
+        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + (offset * (dir || 1))));
+        const tryKey = tryDate.toISOString().split("T")[0];
+        const c = closeByDate.get(tryKey);
+        if (c != null && c > 0) {
+          anchorDate = tryKey;
+          anchorClose = c;
+          break;
+        }
+      }
+      if (anchorDate) break;
+    }
+    if (!anchorDate || !anchorClose) continue;
+
+    // For each forward window, find the close N trading days forward
+    // Approximate: collect all bars after anchor date, take the Nth one
+    const futureBars = allDaily.filter((b) => b.bar_date > anchorDate! && parseInt(b.bar_date.substring(0, 4), 10) <= year + 1);
+    for (const window of forwardWindows) {
+      if (futureBars.length >= window) {
+        const futureClose = futureBars[window - 1].close;
+        if (futureClose > 0) {
+          const ret = ((futureClose - anchorClose!) / anchorClose!) * 100;
+          forwardResults[window].push(ret);
+        }
+      }
+    }
+  }
+
+  function computeForwardStats(returns: number[]) {
+    if (returns.length < 3) return null;
+    const sorted = [...returns].sort((a, b) => a - b);
+    const med = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+    const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
+    const wins = returns.filter((r) => r > 0).length;
+    return {
+      avg_return: round(avg),
+      median_return: round(med),
+      win_rate: round((wins / returns.length) * 100),
+      n: returns.length,
+    };
+  }
+
+  const forward = {
+    d5: computeForwardStats(forwardResults[5]),
+    d10: computeForwardStats(forwardResults[10]),
+    d30: computeForwardStats(forwardResults[30]),
+    d60: computeForwardStats(forwardResults[60]),
+  };
+
+  return { monthly, next_30d: next30d, forward };
 }
 
 function buildCurrentSummarySentence(params: {
@@ -955,7 +1042,15 @@ function buildCurrentSummarySentence(params: {
     avgReturn20d?: number | null;
     n?: number;
   }>;
-  seasonality?: { next_30d: { avg_return: number; win_rate: number; n: number } | null } | null;
+  seasonality?: {
+    next_30d: { avg_return: number; win_rate: number; n: number } | null;
+    forward?: {
+      d5: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d10: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d30: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d60: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+    };
+  } | null;
   indicators?: {
     close?: number | null;
     rsi?: number | null;
@@ -1026,11 +1121,28 @@ function buildCurrentSummarySentence(params: {
     lines.push(`Across active setups, the composite 20-day forward return averages ${average20d >= 0 ? "+" : ""}${average20d.toFixed(1)}%.`);
   }
 
-  // 4. SEASONALITY — if relevant
-  if (seasonality?.next_30d && seasonality.next_30d.n >= 5) {
-    const s = seasonality.next_30d;
-    const dir = s.avg_return >= 0 ? "positive" : "negative";
-    lines.push(`Seasonality is ${dir} for the next 30 days: ${s.avg_return >= 0 ? "+" : ""}${s.avg_return.toFixed(1)}% avg return, ${s.win_rate.toFixed(0)}% win rate (n=${s.n}).`);
+  // 4. SEASONALITY — forward windows (5D, 10D, 30D, 60D)
+  const fw = seasonality?.forward;
+  if (fw) {
+    const windowLabels = [
+      { key: "d5" as const, label: "5D" },
+      { key: "d10" as const, label: "10D" },
+      { key: "d30" as const, label: "30D" },
+      { key: "d60" as const, label: "60D" },
+    ];
+    const parts: string[] = [];
+    for (const { key, label } of windowLabels) {
+      const s = fw[key];
+      if (s && s.n >= 3) {
+        parts.push(`${label}: ${s.avg_return >= 0 ? "+" : ""}${s.avg_return.toFixed(1)}% avg (${s.win_rate.toFixed(0)}% win, n=${s.n})`);
+      }
+    }
+    if (parts.length > 0) {
+      // Determine overall seasonal tone from 30D window
+      const s30 = fw.d30;
+      const tone = s30 ? (s30.avg_return >= 1 ? "favorable" : s30.avg_return <= -1 ? "unfavorable" : "neutral") : "mixed";
+      lines.push(`Seasonality from this calendar date is historically ${tone}: ${parts.join(" · ")}.`);
+    }
   }
 
   // 5. CLEAR RECOMMENDATION — Buy / Wait / Reduce Risk
