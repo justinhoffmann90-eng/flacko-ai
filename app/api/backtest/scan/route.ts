@@ -1839,28 +1839,33 @@ export async function GET(request: NextRequest) {
     if (activeOrWatchingIds.length > 0) {
       let rowsBySetup = new Map<string, BacktestRow[]>();
 
-      // Try pre-computed backtest instances first (all tickers)
-      const { data: backtestRows, error: backtestError } = await supabase
+      // Check if this ticker has ANY pre-computed backtest instances
+      const { count: cachedCount } = await supabase
         .from("orb_backtest_instances")
-        .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
-        .eq("ticker", ticker)
-        .in("setup_id", activeOrWatchingIds)
-        .order("signal_date", { ascending: false });
+        .select("ticker", { count: "exact", head: true })
+        .eq("ticker", ticker);
 
-      if (backtestError) {
-        return NextResponse.json({ error: backtestError.message }, { status: 500 });
-      }
-
-      if (backtestRows && backtestRows.length > 0) {
-        // Use cached results
+      if (cachedCount && cachedCount > 0) {
+        // Ticker has cached backtest data — read instances for active/watching setups
         usedCachedBacktest = true;
-        for (const row of backtestRows as BacktestRow[]) {
+        const { data: backtestRows, error: backtestError } = await supabase
+          .from("orb_backtest_instances")
+          .select("setup_id, signal_date, signal_price, ret_5d, ret_10d, ret_20d, ret_60d, is_win_5d, is_win_10d, is_win_20d, is_win_60d")
+          .eq("ticker", ticker)
+          .in("setup_id", activeOrWatchingIds)
+          .order("signal_date", { ascending: false });
+
+        if (backtestError) {
+          return NextResponse.json({ error: backtestError.message }, { status: 500 });
+        }
+
+        for (const row of (backtestRows ?? []) as BacktestRow[]) {
           const list = rowsBySetup.get(row.setup_id) ?? [];
           list.push(row);
           rowsBySetup.set(row.setup_id, list);
         }
       } else {
-        // No cached results — fall back to on-the-fly computation from ohlcv_bars
+        // No cached results for this ticker — fall back to on-the-fly computation
         rowsBySetup = await computeDynamicBacktestRows(supabase, ticker, new Set(activeOrWatchingIds));
       }
 
