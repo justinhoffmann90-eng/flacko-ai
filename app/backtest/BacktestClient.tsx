@@ -6,7 +6,7 @@ import { ComparisonDashboard } from "@/components/orb/ComparisonDashboard";
 
 const SUPPORTED_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "AMZN", "META", "MU", "GOOGL", "BABA"] as const;
 const SUBSCRIBE_URL = "/signup";
-const MAX_FREE_SCANS_PER_DAY = 3;
+const MAX_FREE_SCANS_PER_DAY = 2;
 const MAX_PUBLIC_PEERS = 3;
 
 function getScansToday(): number {
@@ -31,16 +31,21 @@ function incrementScans(): number {
 
 function SubscribeCTA({ message, compact = false }: { message: string; compact?: boolean }) {
   return (
-    <div className={`rounded-xl border border-zinc-700/50 bg-zinc-800/30 ${compact ? "p-3" : "p-5"} text-center`}>
+    <div className={`rounded-xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/18 via-zinc-900 to-zinc-900 ${compact ? "p-3" : "p-5"} text-center shadow-[0_0_0_1px_rgba(16,185,129,0.08)]`}>
       <div className={`flex items-center justify-center gap-2 ${compact ? "mb-2" : "mb-3"}`}>
-        <span className="text-lg">🔒</span>
-        <p className={`${compact ? "text-xs" : "text-sm"} text-zinc-300`}>{message}</p>
+        <span className="text-lg">🔓</span>
+        <p className={`${compact ? "text-xs" : "text-sm"} text-zinc-100 font-medium`}>{message}</p>
       </div>
+      {!compact && (
+        <p className="mb-4 text-xs text-emerald-100/80">
+          Unlock unlimited ticker scans, the full setup library, custom explorer access, and deeper backtest context.
+        </p>
+      )}
       <a
         href={SUBSCRIBE_URL}
-        className={`inline-block rounded-lg bg-white ${compact ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm"} font-semibold text-zinc-900 transition hover:bg-zinc-200`}
+        className={`inline-block rounded-lg border border-emerald-400/40 bg-emerald-400 ${compact ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm"} font-semibold text-zinc-950 transition hover:bg-emerald-300 hover:border-emerald-300 shadow-lg shadow-emerald-500/20`}
       >
-        Subscribe to Flacko AI →
+        Unlock Full Access →
       </a>
     </div>
   );
@@ -51,17 +56,20 @@ function RateLimitOverlay() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="max-w-md rounded-2xl border border-amber-500/30 bg-zinc-900 p-8 text-center">
         <div className="text-4xl mb-4">⚡</div>
-        <h2 className="text-2xl font-bold mb-3">You&apos;ve used your free scan today</h2>
+        <h2 className="text-2xl font-bold mb-3">You&apos;ve used your 2 free ticker scans today</h2>
+        <p className="text-sm text-zinc-300 mb-2">
+          Non-subscribers get <span className="font-semibold text-white">2 ticker scans per day</span>.
+        </p>
         <p className="text-sm text-zinc-400 mb-6">
-          Subscribe for unlimited scans, real-time alerts when setups activate, custom condition backtests, and the full setup library.
+          Upgrade to unlock unlimited scans, the full setup library, custom explorer access, and real-time setup alerts.
         </p>
         <a
           href={SUBSCRIBE_URL}
-          className="inline-block rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-6 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
+          className="inline-block rounded-lg border border-emerald-400/40 bg-emerald-400 px-6 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300 shadow-lg shadow-emerald-500/20"
         >
-          Get Unlimited Access →
+          Subscribe for Unlimited Access →
         </a>
-        <p className="mt-4 text-xs text-zinc-500">Or come back tomorrow for another free scan.</p>
+        <p className="mt-4 text-xs text-zinc-500">Or come back tomorrow for 2 more free scans.</p>
       </div>
     </div>
   );
@@ -749,16 +757,27 @@ export default function BacktestClient() {
             {viewMode === "single" && !data && !loading && (
               <button
                 onClick={handleScanClick}
-                className="w-full rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-3 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+                className="w-full rounded-lg border border-emerald-400/35 bg-emerald-400/20 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/30 shadow-lg shadow-emerald-500/10"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
-                Load {selectedTicker} Backtest
+                {isSubscriber ? `Load ${selectedTicker} Backtest` : `Use 1 of ${MAX_FREE_SCANS_PER_DAY} Free Scans on ${selectedTicker}`}
               </button>
             )}
 
-            <p className="text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              {isSubscriber ? "Unlimited backtests" : scansUsed > 0 ? `${MAX_FREE_SCANS_PER_DAY - scansUsed} free backtests remaining today` : "Select a supported ticker, then load the backtest"}
-            </p>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+              <p className="text-[11px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                {isSubscriber
+                  ? "Subscriber status: unlimited ticker scans"
+                  : scansUsed > 0
+                    ? `Free plan: ${MAX_FREE_SCANS_PER_DAY - scansUsed} of ${MAX_FREE_SCANS_PER_DAY} ticker scans remaining today`
+                    : `Free plan: ${MAX_FREE_SCANS_PER_DAY} ticker scans per day`}
+              </p>
+              {!isSubscriber && (
+                <p className="mt-1 text-[11px] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  Subscribe to unlock unlimited scans, all setups, and the full custom explorer.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* ─── Compare All View ─── */}

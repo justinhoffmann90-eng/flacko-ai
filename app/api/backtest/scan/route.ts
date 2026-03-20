@@ -1679,7 +1679,7 @@ export async function GET(request: NextRequest) {
         .single();
 
       const currentCount = existing?.count ?? 0;
-      const MAX_FREE_SCANS = 3;
+      const MAX_FREE_SCANS = 2;
 
       if (currentCount >= MAX_FREE_SCANS) {
         return NextResponse.json(
