@@ -927,7 +927,7 @@ export default function BacktestClient() {
                     {/* Bar chart — all 12 months */}
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                       <p className="mb-4 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                        MONTHLY AVG RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
+                        MONTHLY RETURN vs AVERAGE · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
                       <div className="flex gap-1.5 sm:gap-2" style={{ height: "220px" }}>

@@ -901,11 +901,14 @@ async function computeSeasonality(
   }
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthly = [];
+  // First pass: compute raw averages to find the baseline (overall avg monthly return)
+  const allMonthlyReturns: number[] = [];
+  const rawSeasonalEntries: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }> = [];
   for (let m = 1; m <= 12; m++) {
     const returns = monthReturnsByMonth.get(m)!;
+    allMonthlyReturns.push(...returns);
     if (returns.length === 0) {
-      monthly.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
+      rawSeasonalEntries.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
       continue;
     }
     const sorted = [...returns].sort((a, b) => a - b);
@@ -914,7 +917,7 @@ async function computeSeasonality(
       : sorted[Math.floor(sorted.length / 2)];
     const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
     const wins = returns.filter((r) => r > 0).length;
-    monthly.push({
+    rawSeasonalEntries.push({
       month: m,
       name: monthNames[m - 1],
       avg_return: round(avg),
@@ -923,6 +926,17 @@ async function computeSeasonality(
       n: returns.length,
     });
   }
+
+  // Detrend: subtract the overall average monthly return so the chart shows
+  // relative strength/weakness instead of all-green from long-term growth bias
+  const overallAvg = allMonthlyReturns.length > 0
+    ? allMonthlyReturns.reduce((s, v) => s + v, 0) / allMonthlyReturns.length
+    : 0;
+  const monthly = rawSeasonalEntries.map((m) => ({
+    ...m,
+    avg_return: m.n > 0 ? round(m.avg_return - overallAvg) : 0,
+    median_return: m.median_return, // Keep median raw — it's already more robust
+  }));
 
   // Next 30 days — what month are we in now and what does the next month look like?
   const now = new Date();
