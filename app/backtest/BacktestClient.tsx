@@ -696,6 +696,25 @@ export default function BacktestClient() {
           <div className="mb-5 flex flex-col gap-3">
             <h2 className="text-xl font-semibold">Backtest Universe</h2>
 
+            {!isSubscriber && (
+              <div className="rounded-xl border border-emerald-400/30 bg-gradient-to-r from-emerald-500/18 via-emerald-500/8 to-zinc-900 px-4 py-4 sm:px-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Get unlimited scans with Flacko AI</p>
+                    <p className="mt-1 text-sm text-zinc-300">
+                      Free users get {MAX_FREE_SCANS_PER_DAY} ticker scans per day. Subscribe to unlock unlimited scans, every setup, and the full custom explorer.
+                    </p>
+                  </div>
+                  <a
+                    href={SUBSCRIBE_URL}
+                    className="inline-flex items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300 shadow-lg shadow-emerald-500/20"
+                  >
+                    Start Subscription →
+                  </a>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 value={tickerInput}
