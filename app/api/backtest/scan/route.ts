@@ -1355,6 +1355,7 @@ async function computeIndicatorsFromOhlcv(
   ]);
 
   if (!dailyRows || !weeklyRows || dailyRows.length < 30 || weeklyRows.length < 10) {
+    console.error(`[ohlcv] ${ticker} data check failed: daily=${dailyRows?.length ?? 'null'} weekly=${weeklyRows?.length ?? 'null'}`);
     return null;
   }
 
@@ -1395,6 +1396,7 @@ async function computeIndicatorsFromOhlcv(
     bxtWeekly == null ||
     bxtWeeklyPrev == null
   ) {
+    console.error(`[ohlcv] ${ticker} indicator null check failed:`, JSON.stringify({close, rsi, rsiPrev, bxtDaily, bxtDailyPrev, ema9, ema21, sma200, weeklyEma9, weeklyEma13, weeklyEma21, bxtWeekly, bxtWeeklyPrev}));
     return null;
   }
 
