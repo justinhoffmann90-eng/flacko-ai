@@ -923,6 +923,8 @@ async function computeSeasonality(
       avg_return: round(avg),
       median_return: round(med),
       win_rate: round((wins / returns.length) * 100),
+      best: round(Math.max(...returns)),
+      worst: round(Math.min(...returns)),
       n: returns.length,
     });
   }
@@ -1016,27 +1018,39 @@ async function computeSeasonality(
     }
   }
 
-  function computeForwardStats(returns: number[]) {
+  // Compute annualized daily drift for detrending forward windows
+  // Use the overall dataset: total return / total trading days * window size
+  const firstClose = allDaily[0].close;
+  const lastClose = allDaily[allDaily.length - 1].close;
+  const totalDays = allDaily.length;
+  const dailyDrift = totalDays > 1 ? (Math.pow(lastClose / firstClose, 1 / totalDays) - 1) * 100 : 0;
+
+  function computeForwardStats(returns: number[], windowDays: number) {
     if (returns.length < 3) return null;
-    const sorted = [...returns].sort((a, b) => a - b);
+    // Detrend: subtract the expected drift for this window length
+    const expectedDrift = dailyDrift * windowDays;
+    const detrended = returns.map((r) => r - expectedDrift);
+    const sorted = [...detrended].sort((a, b) => a - b);
     const med = sorted.length % 2 === 0
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
-    const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
-    const wins = returns.filter((r) => r > 0).length;
+    const avg = detrended.reduce((s, v) => s + v, 0) / detrended.length;
+    const wins = detrended.filter((r) => r > 0).length;
     return {
       avg_return: round(avg),
       median_return: round(med),
-      win_rate: round((wins / returns.length) * 100),
+      win_rate: round((wins / detrended.length) * 100),
+      best: round(Math.max(...detrended)),
+      worst: round(Math.min(...detrended)),
       n: returns.length,
     };
   }
 
   const forward = {
-    d5: computeForwardStats(forwardResults[5]),
-    d10: computeForwardStats(forwardResults[10]),
-    d30: computeForwardStats(forwardResults[30]),
-    d60: computeForwardStats(forwardResults[60]),
+    d5: computeForwardStats(forwardResults[5], 5),
+    d10: computeForwardStats(forwardResults[10], 10),
+    d30: computeForwardStats(forwardResults[30], 30),
+    d60: computeForwardStats(forwardResults[60], 60),
   };
 
   return { monthly, next_30d: next30d, forward };

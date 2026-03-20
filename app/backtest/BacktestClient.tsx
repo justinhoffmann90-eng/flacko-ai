@@ -160,10 +160,10 @@ interface ScanResponse {
     monthly: SeasonalityMonth[];
     next_30d: { avg_return: number; win_rate: number; n: number } | null;
     forward?: {
-      d5: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
-      d10: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
-      d30: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
-      d60: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
+      d5: { avg_return: number; median_return: number; win_rate: number; best: number; worst: number; n: number } | null;
+      d10: { avg_return: number; median_return: number; win_rate: number; best: number; worst: number; n: number } | null;
+      d30: { avg_return: number; median_return: number; win_rate: number; best: number; worst: number; n: number } | null;
+      d60: { avg_return: number; median_return: number; win_rate: number; best: number; worst: number; n: number } | null;
     };
   };
   peer_comparison: PeerRow[];
@@ -943,12 +943,22 @@ export default function BacktestClient() {
                               return (
                                 <div key={key} className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3 text-center">
                                   <p className="text-[10px] tracking-[0.1em] text-zinc-500 mb-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{label}</p>
-                                  <p className={`text-xl font-bold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <p className={`text-lg font-bold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                                     {s.avg_return >= 0 ? "+" : ""}{s.avg_return.toFixed(1)}%
+                                  </p>
+                                  <p className="text-[10px] text-zinc-400 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                    median: {s.median_return >= 0 ? "+" : ""}{s.median_return.toFixed(1)}%
                                   </p>
                                   <p className="text-[10px] text-zinc-500 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                                     {s.win_rate.toFixed(0)}% win · n={s.n}
                                   </p>
+                                  {s.best != null && s.worst != null && (
+                                    <p className="text-[9px] text-zinc-600 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                      <span className="text-emerald-500/70">▲ {s.best >= 0 ? "+" : ""}{s.best.toFixed(0)}%</span>
+                                      {" · "}
+                                      <span className="text-red-500/70">▼ {s.worst >= 0 ? "+" : ""}{s.worst.toFixed(0)}%</span>
+                                    </p>
+                                  )}
                                 </div>
                               );
                             })}
@@ -978,7 +988,8 @@ export default function BacktestClient() {
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          const barPct = Math.max((Math.abs(m.avg_return) / maxAbs) * 80, 5); // 5-80% of half
+                          // Linear scale: 0% value = 0 height, maxAbs = 90% height. Min 2px via minHeight.
+                          const barPct = (Math.abs(m.avg_return) / maxAbs) * 90;
                           const isPositive = m.avg_return >= 0;
 
                           return (
