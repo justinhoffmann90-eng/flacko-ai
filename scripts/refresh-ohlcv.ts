@@ -92,12 +92,22 @@ async function main() {
         });
       }
       
-      if (rows.length > 0) {
-        const { error } = await sb.from("ohlcv_bars").upsert(rows, { onConflict: "ticker,bar_date,timeframe" });
+      // Deduplicate by ticker+bar_date+timeframe — Yahoo can return duplicate timestamps
+      // which causes "ON CONFLICT DO UPDATE command cannot affect row a second time"
+      const deduped = Object.values(
+        rows.reduce((acc: Record<string, any>, row) => {
+          const key = `${row.ticker}|${row.bar_date}|${row.timeframe}`;
+          acc[key] = row; // last write wins
+          return acc;
+        }, {})
+      );
+
+      if (deduped.length > 0) {
+        const { error } = await sb.from("ohlcv_bars").upsert(deduped, { onConflict: "ticker,bar_date,timeframe" });
         if (error) {
           console.log(`  ❌ Upsert error: ${error.message}`);
         } else {
-          console.log(`  ✅ Inserted ${rows.length} bars (${rows[0].bar_date} → ${rows[rows.length-1].bar_date})`);
+          console.log(`  ✅ Inserted ${deduped.length} bars (${deduped[0].bar_date} → ${deduped[deduped.length-1].bar_date})`);
         }
       } else {
         console.log(`  ⚠ No valid bars to insert`);
