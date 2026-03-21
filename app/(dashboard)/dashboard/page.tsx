@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio, CalendarDays } from "lucide-react";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { EducationHubCard } from "@/components/dashboard/education-hub-card";
-import { hasSubscriptionAccess } from "@/lib/subscription";
+import { hasSubscriptionAccess, getNoAccessRedirect } from "@/lib/subscription";
 import { DiscordOnboarding } from "@/components/dashboard/discord-onboarding";
 import { ModeProvider } from "@/components/providers/mode-provider";
 
@@ -139,9 +139,7 @@ export default async function DashboardPage() {
     const hasAccess = hasSubscriptionAccess(sub);
 
     if (!hasAccess) {
-      // Check if user might have a Stripe subscription that's out of sync
-      // Pass user context so signup page can show appropriate message
-      redirect("/subscribe?reason=no_access&email=" + encodeURIComponent(user.email || ""));
+      redirect(getNoAccessRedirect(sub));
     }
 
     // Track dashboard visit

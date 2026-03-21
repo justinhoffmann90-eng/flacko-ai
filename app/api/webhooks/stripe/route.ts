@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { addRoleToMember, removeRoleFromMember } from "@/lib/discord/bot";
+import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import Stripe from "stripe";
 
 // Lazy-load Stripe for webhook verification
@@ -499,7 +500,7 @@ export async function POST(request: Request) {
           // Remove Discord role until payment is fixed
           const { data: userData } = await supabase
             .from("users")
-            .select("discord_user_id")
+            .select("discord_user_id, email")
             .eq("id", sub.user_id)
             .single();
 
@@ -507,13 +508,49 @@ export async function POST(request: Request) {
             await removeRoleFromMember(userData.discord_user_id);
           }
 
-          // Create notification
+          // Create in-app notification
           await supabase.from("notifications").insert({
             user_id: sub.user_id,
             type: "payment_failed",
             title: "Payment Failed",
             body: "Your payment failed. Please update your payment method to continue access.",
           });
+
+          // Send email notification about failed payment
+          const customerEmail = userData?.email || (invoice.customer_email as string);
+          if (customerEmail) {
+            try {
+              await resend.emails.send({
+                from: EMAIL_FROM,
+                to: customerEmail,
+                subject: "Action Required: Your Flacko AI payment failed",
+                html: `
+                  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 16px;">
+                    <h1 style="font-size: 22px; font-weight: 700; color: #111; margin-bottom: 16px;">Payment Failed</h1>
+                    <p style="font-size: 15px; color: #444; line-height: 1.6; margin-bottom: 16px;">
+                      Your most recent payment of <strong>$${((invoice.amount_due || 2999) / 100).toFixed(2)}</strong> for Flacko AI was declined.
+                    </p>
+                    <p style="font-size: 15px; color: #444; line-height: 1.6; margin-bottom: 16px;">
+                      Your access to daily reports, real-time alerts, and Discord has been paused until payment is resolved.
+                    </p>
+                    <p style="font-size: 15px; color: #444; line-height: 1.6; margin-bottom: 24px;">
+                      Please update your payment method to restore access. We'll automatically retry your payment in a few days.
+                    </p>
+                    <a href="https://www.flacko.ai/subscription-inactive"
+                       style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                      Update Payment Method
+                    </a>
+                    <p style="font-size: 13px; color: #888; margin-top: 24px;">
+                      Questions? Reply to this email or contact support@flacko.ai
+                    </p>
+                  </div>
+                `,
+              });
+              console.log(`Payment failed email sent to ${customerEmail}`);
+            } catch (emailError) {
+              console.error("Failed to send payment failed email:", emailError);
+            }
+          }
         }
         break;
       }
