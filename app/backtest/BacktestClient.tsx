@@ -123,7 +123,7 @@ interface ScanSetup {
 
 interface PeerRow {
   ticker: string;
-  state: "BULLISH" | "RISK" | "WATCH" | "NEUTRAL";
+  state: "BULLISH" | "CAUTION" | "STANDBY" | "NEUTRAL" | "RISK" | "WATCH";
   buy_active: number;
   avoid_active: number;
   watching: number;
@@ -200,13 +200,23 @@ function statusBadge(status: SetupStatus) {
   return { label: "INACTIVE", cls: "text-zinc-400 border-zinc-600/30 bg-zinc-700/10" };
 }
 
+function peerStateLabel(state: PeerRow["state"]) {
+  switch (state) {
+    case "RISK": return "CAUTION";
+    case "WATCH": return "STANDBY";
+    default: return state;
+  }
+}
+
 function peerStateStyle(state: PeerRow["state"]) {
   switch (state) {
     case "BULLISH":
       return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
     case "RISK":
+    case "CAUTION":
       return "border-red-500/30 bg-red-500/10 text-red-300";
     case "WATCH":
+    case "STANDBY":
       return "border-amber-500/30 bg-amber-500/10 text-amber-300";
     default:
       return "border-zinc-600/40 bg-zinc-700/10 text-zinc-300";
@@ -453,7 +463,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                       }`}
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
-                      {key.replace(/_/g, " ")}
+                      {key.replace(/_/g, " ").replace(/\b\w+/g, (w) => /^[a-z]/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : w.toUpperCase())}
                     </span>
                   ))}
                 </div>
@@ -1158,7 +1168,7 @@ export default function BacktestClient() {
               {/* PEER COMPARISON — collapsible, after setups */}
               <CollapsibleSection title="PEER COMPARISON" badge={isSubscriber ? `${data.peer_comparison.length} TICKERS` : `${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>
                 <p className="mb-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  How related tickers look right now using the same setup engine. Useful for reading the broader market environment — if peers are also in RISK, the headwind is systemic, not just {data.ticker}-specific.
+                  How {data.ticker} compares to peers — active buy setups vs active caution signals. If peers are also in CAUTION, the headwind is systemic, not just {data.ticker}-specific.
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   {(isSubscriber ? data.peer_comparison : data.peer_comparison.slice(0, MAX_PUBLIC_PEERS)).map((peer) => (
@@ -1168,7 +1178,7 @@ export default function BacktestClient() {
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       <div className="text-sm font-bold">{peer.ticker}</div>
-                      <div className="mt-1 text-[13px] font-semibold tracking-wide">{peer.state}</div>
+                      <div className="mt-1 text-[13px] font-semibold tracking-wide">{peerStateLabel(peer.state)}</div>
                       <div className="mt-2 space-y-0.5 text-[13px] text-zinc-400">
                         <div>{peer.buy_active} buy signal{peer.buy_active !== 1 ? "s" : ""} active</div>
                         <div>{peer.avoid_active} avoid signal{peer.avoid_active !== 1 ? "s" : ""} active</div>

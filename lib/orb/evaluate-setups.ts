@@ -536,15 +536,26 @@ function evaluateSmiOverboughtGauge(ind: Indicators, prev?: PreviousState): Setu
 function evaluateDualLL(ind: Indicators): SetupResult {
   const dailyLL = ind.bx_daily_state === "LL";
   const weeklyLL = ind.bx_weekly_state === "LL";
-  const isActive = dailyLL && weeklyLL;
-  const isWatching = dailyLL || weeklyLL;
+  const bothLL = dailyLL && weeklyLL;
+
+  // Transition detection: fire only when the dual-LL condition is NEWLY met
+  const dailyJustEnteredLL = dailyLL && ind.bx_daily_state_prev !== "LL";
+  const weeklyJustEnteredLL = weeklyLL && ind.bx_weekly_state_prev !== "LL";
+  const isTransition = bothLL && (dailyJustEnteredLL || weeklyJustEnteredLL);
+
+  // Watching: one in LL + the other deteriorating (LH), or both LL but no fresh transition
+  const isWatching = (dailyLL && !weeklyLL) || (!dailyLL && weeklyLL) ||
+    (bothLL && !isTransition);
+
   return {
     setup_id: "dual-ll",
-    is_active: isActive,
-    is_watching: isWatching && !isActive,
-    conditions_met: { daily_ll: dailyLL, weekly_ll: weeklyLL },
-    reason: isActive
-      ? "AVOID - Both Daily and Weekly BX in LL (dual downtrend)"
+    is_active: isTransition,
+    is_watching: isWatching,
+    conditions_met: { daily_ll: dailyLL, weekly_ll: weeklyLL, fresh_transition: isTransition },
+    reason: isTransition
+      ? `AVOID - Dual LL just triggered (Daily: ${ind.bx_daily_state_prev}→LL, Weekly: ${ind.bx_weekly_state_prev}→${ind.bx_weekly_state})`
+      : bothLL
+      ? `Ongoing dual LL (no new transition) - Daily: LL, Weekly: LL`
       : isWatching
       ? `Daily: ${ind.bx_daily_state}, Weekly: ${ind.bx_weekly_state} - one in LL`
       : `Daily: ${ind.bx_daily_state}, Weekly: ${ind.bx_weekly_state}`,
