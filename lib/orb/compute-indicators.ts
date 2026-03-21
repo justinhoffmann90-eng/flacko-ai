@@ -627,6 +627,8 @@ export async function computeIndicators(
     open: todayOpen,
     volume: todayVolume,
     volumes,
+    vix_close: vixClose,
+    vix_weekly_change_pct: vixWeeklyChangePct,
 
     // VIX
     vix_close: vixClose,
