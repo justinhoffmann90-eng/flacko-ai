@@ -234,11 +234,11 @@ function CollapsibleSection({
         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-zinc-900/40 transition"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <span className="text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
             {title}
           </span>
           {badge && (
-            <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            <span className="rounded-full border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[13px] text-zinc-400" style={{ fontFamily: "'Inter', sans-serif" }}>
               {badge}
             </span>
           )}
@@ -256,7 +256,7 @@ function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPerio
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+      <table className="w-full text-[13px]" style={{ fontFamily: "'Inter', sans-serif" }}>
         <thead>
           <tr className="text-zinc-500 border-b border-zinc-800">
             {["Period", "N", "Wins", "Win%", "Avg", "Median", "Best", "Worst"].map((heading) => (
@@ -304,18 +304,18 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
       >
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold tracking-[0.08em] ${badge.cls}`}
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            className={`inline-flex rounded-full border px-2 py-1 text-[13px] font-bold tracking-[0.08em] ${badge.cls}`}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {badge.label}
           </span>
           <span
-            className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold tracking-[0.08em] ${
+            className={`inline-flex rounded-full border px-2 py-1 text-[13px] font-bold tracking-[0.08em] ${
               setup.type === "buy"
                 ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
                 : "border-red-500/25 bg-red-500/10 text-red-300"
             }`}
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {setup.type.toUpperCase()}
           </span>
@@ -347,12 +347,12 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
               "ema-shield-break": "Daily Close vs 9/21 EMA",
             };
             const tf = tfMap[setup.id];
-            return tf ? <p className="mt-0.5 text-[10px] text-zinc-500 font-mono">Timeframes: {tf}</p> : null;
+            return tf ? <p className="mt-0.5 text-[13px] text-zinc-500">Timeframes: {tf}</p> : null;
           })()}
         </div>
         <p
-          className="mt-2 text-[11px] text-zinc-400"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          className="mt-2 text-[13px] text-zinc-400"
+          style={{ fontFamily: "'Inter', sans-serif" }}
         >
           {setup.reason}
         </p>
@@ -363,8 +363,8 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
         <div className="px-4 pb-5 sm:px-5 space-y-4 border-t border-zinc-800/50">
           {!limited && setup.active_streak && (
             <div
-              className="mt-3 grid gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[11px] text-sky-100 sm:grid-cols-3"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="mt-3 grid gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[13px] text-sky-100 sm:grid-cols-3"
+              style={{ fontFamily: "'Inter', sans-serif" }}
             >
               <div>Active Since: {setup.active_streak.active_since ?? "—"}</div>
               <div>Active Day: {setup.active_streak.active_day ?? "—"}</div>
@@ -376,7 +376,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
             /* PUBLIC VIEW: forward return table + historical instances, no conditions/indicators */
             <div className="space-y-3 mt-3">
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-                <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mb-3 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                   FORWARD RETURN SUMMARY · {setup.backtest.n} INSTANCES
                 </p>
                 {setup.backtest.n > 0 ? (
@@ -390,15 +390,15 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
                   <button
                     onClick={() => setInstancesExpanded(!instancesExpanded)}
-                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-300 hover:text-white transition"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    className="w-full flex items-center justify-between text-left text-[13px] tracking-[0.1em] text-zinc-300 hover:text-white transition"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     <span>{instancesExpanded ? "▲" : "▼"} {setup.backtest.n} historical instances</span>
                   </button>
                   {instancesExpanded && (
                     <>
                       <div className="overflow-x-auto mt-2">
-                        <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <table className="w-full text-[13px]" style={{ fontFamily: "'Inter', sans-serif" }}>
                           <thead>
                             <tr className="border-b border-zinc-800 text-zinc-500">
                               <th className="px-2 py-2 text-left">Date</th>
@@ -424,7 +424,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                         </table>
                       </div>
                       {setup.backtest.instances.length > 8 && (
-                        <p className="mt-2 text-[10px] text-zinc-500 text-center" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <p className="mt-2 text-[13px] text-zinc-500 text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
                           Showing 8 of {setup.backtest.instances.length} instances
                         </p>
                       )}
@@ -439,19 +439,19 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
             /* SUBSCRIBER VIEW: full details */
             <>
               <div>
-                <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mb-2 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                   CONDITIONS MET ({trueConditions.length}/{Object.keys(setup.conditions_met || {}).length})
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(setup.conditions_met || {}).map(([key, value]) => (
                     <span
                       key={key}
-                      className={`rounded-full border px-2 py-1 text-[10px] ${
+                      className={`rounded-full border px-2 py-1 text-[13px] ${
                         value
                           ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
                           : "border-zinc-700 bg-zinc-900 text-zinc-400"
                       }`}
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       {key.replace(/_/g, " ")}
                     </span>
@@ -460,7 +460,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
               </div>
 
               <div>
-                <p className="mb-2 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mb-2 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                   RELEVANT INDICATORS
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -486,8 +486,8 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                     return (
                     <div
                       key={key}
-                      className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[11px]"
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-950/60 px-2 py-1 text-[13px]"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       <span className="text-zinc-500">{label}</span>
                       <span className="text-zinc-200">
@@ -499,7 +499,7 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
               </div>
 
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-                <p className="mb-3 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mb-3 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                   FORWARD RETURN SUMMARY
                 </p>
                 {setup.backtest.message && !showInstances ? (
@@ -513,14 +513,14 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
                 <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
                   <button
                     onClick={() => setInstancesExpanded(!instancesExpanded)}
-                    className="w-full flex items-center justify-between text-left text-[10px] tracking-[0.1em] text-zinc-300 hover:text-white transition"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    className="w-full flex items-center justify-between text-left text-[13px] tracking-[0.1em] text-zinc-300 hover:text-white transition"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     <span>{instancesExpanded ? "▲" : "▼"} {setup.backtest.n} historical instances</span>
                   </button>
                   {instancesExpanded && (
                     <div className="overflow-x-auto mt-2">
-                      <table className="w-full text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <table className="w-full text-[13px]" style={{ fontFamily: "'Inter', sans-serif" }}>
                         <thead>
                           <tr className="border-b border-zinc-800 text-zinc-500">
                             <th className="px-2 py-2 text-left">Date</th>
@@ -721,12 +721,12 @@ export default function BacktestClient() {
                 onChange={(event) => setTickerInput(event.target.value.toUpperCase())}
                 placeholder="TSLA"
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-100 outline-none ring-emerald-500/30 transition focus:ring sm:w-44"
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ fontFamily: "'Inter', sans-serif" }}
               />
               <button
                 type="submit"
                 className="rounded-lg border border-emerald-500/35 bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 {loading ? "Loading Backtest..." : "Load Ticker"}
               </button>
@@ -739,12 +739,12 @@ export default function BacktestClient() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleCompareAll}
-                className={`rounded-md border px-3 py-1 text-[11px] font-semibold ${
+                className={`rounded-md border px-3 py-1 text-[13px] font-semibold ${
                   viewMode === "compare"
                     ? "border-amber-500/35 bg-amber-500/15 text-amber-300"
                     : "border-zinc-600 bg-zinc-800 text-zinc-300 hover:border-amber-500/30 hover:text-amber-300"
                 } transition`}
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 Compare All
               </button>
@@ -757,12 +757,12 @@ export default function BacktestClient() {
                     setTickerInput(ticker);
                     setSelectedTicker(ticker);
                   }}
-                  className={`rounded-md border px-2 py-1 text-[11px] ${
+                  className={`rounded-md border px-2 py-1 text-[13px] ${
                     viewMode === "single" && selectedTicker === ticker
                       ? "border-emerald-500/35 bg-emerald-500/15 text-emerald-300"
                       : "border-zinc-700 bg-zinc-900 text-zinc-400"
                   }`}
-                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   {ticker}
                 </button>
@@ -773,14 +773,14 @@ export default function BacktestClient() {
               <button
                 onClick={handleScanClick}
                 className="w-full rounded-lg border border-emerald-400/35 bg-emerald-400/20 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/30 shadow-lg shadow-emerald-500/10"
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 {isSubscriber ? `Load ${selectedTicker} Backtest` : `Use 1 of ${MAX_FREE_SCANS_PER_DAY} Free Scans on ${selectedTicker}`}
               </button>
             )}
 
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
-              <p className="text-[11px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <p className="text-[13px] text-zinc-400" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {isSubscriber
                   ? "Subscriber status: unlimited ticker scans"
                   : scansUsed > 0
@@ -788,7 +788,7 @@ export default function BacktestClient() {
                     : `Free plan: ${MAX_FREE_SCANS_PER_DAY} ticker scans per day`}
               </p>
               {!isSubscriber && (
-                <p className="mt-1 text-[11px] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mt-1 text-[13px] text-emerald-300" style={{ fontFamily: "'Inter', sans-serif" }}>
                   Subscribe to unlock unlimited scans, all setups, and the full custom explorer.
                 </p>
               )}
@@ -801,7 +801,7 @@ export default function BacktestClient() {
               {compareLoading && (
                 <div className="py-12 text-center">
                   <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-amber-500" />
-                  <p className="text-sm text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <p className="text-sm text-zinc-400" style={{ fontFamily: "'Inter', sans-serif" }}>
                     Evaluating all 10 tickers...
                   </p>
                 </div>
@@ -831,7 +831,7 @@ export default function BacktestClient() {
           {viewMode === "single" && loading && !data && (
             <div className="py-12 text-center">
               <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-emerald-500" />
-              <p className="text-sm text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <p className="text-sm text-zinc-400" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Loading ticker backtest...
               </p>
             </div>
@@ -841,23 +841,25 @@ export default function BacktestClient() {
             <div className="space-y-4">
               {/* RIGHT NOW — always open */}
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-                <p className="mb-2 text-[10px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mb-2 text-[13px] tracking-[0.1em] text-emerald-300" style={{ fontFamily: "'Inter', sans-serif" }}>
                   CURRENT BACKTEST READ · {data.ticker} · {data.date ? new Date(data.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
                 </p>
                 <div className="space-y-2.5 text-sm leading-relaxed text-zinc-100">
                   {data.right_now.summary.split("\n\n").map((paragraph: string, i: number) => {
                     // Seasonality paragraph: break timeframe windows into separate rows
-                    const seasonMatch = paragraph.match(/^(Seasonality from this calendar date is historically \w+): (.+)\.$/);
+                    const seasonMatch = paragraph.match(/^(Seasonality[^:]*): (.+)$/);
                     if (seasonMatch) {
                       const intro = seasonMatch[1];
-                      const windowParts = seasonMatch[2].split(" · ");
+                      const rest = seasonMatch[2].replace(/\.\s*$/, ""); // strip trailing period
+                      // Split on " · " or "; " to separate timeframe entries
+                      const windowParts = rest.split(/\s*[·;]\s*/);
                       return (
-                        <div key={i} className="space-y-1">
-                          <p className="text-zinc-400 text-xs uppercase tracking-wide">{intro}</p>
+                        <div key={i} className="space-y-1.5">
+                          <p className="text-zinc-400 text-[13px] uppercase tracking-wide font-medium">{intro}:</p>
                           {windowParts.map((part: string, j: number) => {
-                            const labelMatch = part.match(/^(\d+D): (.+)$/);
+                            const labelMatch = part.match(/^(\d+D):?\s*(.+)$/);
                             return (
-                              <p key={j} className="pl-3 border-l-2 border-purple-500/40">
+                              <p key={j} className="pl-3 border-l-2 border-purple-500/40 text-[14px] leading-relaxed">
                                 <span className="font-bold text-purple-300">{labelMatch ? labelMatch[1] : ""}</span>
                                 {labelMatch ? `: ${labelMatch[2]}` : part}
                               </p>
@@ -873,7 +875,7 @@ export default function BacktestClient() {
                     );
                   })}
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-300" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <div className="mt-2 flex flex-wrap gap-2 text-[13px] text-zinc-300" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">BXT: {data.indicators?.bxt_state || "—"} {data.indicators?.bxt_state === "HH" ? "↑" : data.indicators?.bxt_state === "LL" ? "↓" : data.indicators?.bxt_state === "HL" ? "↗" : data.indicators?.bxt_state === "LH" ? "↘" : ""}</span>
                   <span className="rounded bg-zinc-900/60 px-2 py-1">Signal: {data.right_now.confidence.toUpperCase()}</span>
                   {data.meta?.data_range?.years && (
@@ -881,7 +883,7 @@ export default function BacktestClient() {
                   )}
                 </div>
                 {data.indicators && (
-                  <div className="mt-2 flex flex-wrap gap-2 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[13px]" style={{ fontFamily: "'Inter', sans-serif" }}>
                     {data.indicators.close != null && (
                       <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300">Close: ${data.indicators.close}</span>
                     )}
@@ -918,7 +920,7 @@ export default function BacktestClient() {
 
               {/* No active banner */}
               {groupedSetups.active.length === 0 && groupedSetups.watching.length > 0 && (
-                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[12px] text-amber-200/70" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[12px] text-amber-200/70" style={{ fontFamily: "'Inter', sans-serif" }}>
                   No setups are active right now — {groupedSetups.watching.length} setup{groupedSetups.watching.length !== 1 ? "s are" : " is"} approaching trigger. Conditions are being monitored.
                 </div>
               )}
@@ -939,7 +941,8 @@ export default function BacktestClient() {
               {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
                 const currentMonth = new Date().getMonth(); // 0-indexed
                 const months = data.seasonality.monthly;
-                const maxAbs = Math.max(...months.map((m) => Math.abs(m.avg_return)), 1);
+                const maxPos = Math.max(...months.filter(m => m.avg_return >= 0).map(m => m.avg_return), 1);
+                const maxNeg = Math.max(...months.filter(m => m.avg_return < 0).map(m => Math.abs(m.avg_return)), 1);
                 // Free: show current month + next 2 months (3 total); subscribers see all 12
                 const freeIndices = isSubscriber
                   ? new Set(Array.from({ length: 12 }, (_, i) => i))
@@ -949,31 +952,37 @@ export default function BacktestClient() {
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-purple-300">Seasonality</h3>
 
-                    {/* Next 30 days highlight */}
-                    {data.seasonality.next_30d && (
-                      <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
-                        <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          NEXT 30 DAYS · TIME-WEIGHTED BLEND OF {data.seasonality.next_30d.n} YEARS
-                        </p>
-                        <div className="flex items-center gap-8 mb-3">
-                          <div>
-                            <p className={`text-3xl font-bold ${data.seasonality.next_30d.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                              {data.seasonality.next_30d.avg_return >= 0 ? "+" : ""}{data.seasonality.next_30d.avg_return.toFixed(2)}%
-                            </p>
-                            <p className="text-[10px] text-purple-300/70 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>AVG RETURN</p>
+                    {/* Next 30 days highlight — use forward.d30 for consistency with card tiles */}
+                    {(() => {
+                      const fwd30 = data.seasonality?.forward?.d30;
+                      const fallback = data.seasonality?.next_30d;
+                      const src = fwd30 || fallback;
+                      if (!src) return null;
+                      return (
+                        <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
+                          <p className="text-[13px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            NEXT 30 DAYS · FORWARD SEASONALITY FROM TODAY&apos;S DATE · {src.n} INSTANCES
+                          </p>
+                          <div className="flex items-center gap-8 mb-3">
+                            <div>
+                              <p className={`text-3xl font-bold ${src.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'Inter', sans-serif" }}>
+                                {src.avg_return >= 0 ? "+" : ""}{src.avg_return.toFixed(2)}%
+                              </p>
+                              <p className="text-[13px] text-purple-300/70 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>AVG RETURN</p>
+                            </div>
+                            <div>
+                              <p className="text-3xl font-bold text-zinc-200" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                {src.win_rate.toFixed(0)}%
+                              </p>
+                              <p className="text-[13px] text-purple-300/70 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>WIN RATE</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-3xl font-bold text-zinc-200" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                              {data.seasonality.next_30d.win_rate.toFixed(0)}%
-                            </p>
-                            <p className="text-[10px] text-purple-300/70 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>WIN RATE</p>
-                          </div>
+                          <p className="text-[13px] text-purple-300/50" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            Based on forward 30-day returns from this calendar date across all historical instances.
+                          </p>
                         </div>
-                        <p className="text-[10px] text-purple-300/50" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                          This differs from the monthly bar because it is a time-weighted blend of the remaining days in the current month + the start of the next month — not a single month's average.
-                        </p>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Forward Seasonality: 5D / 10D / 30D / 60D */}
                     {data.seasonality.forward && (() => {
@@ -989,7 +998,7 @@ export default function BacktestClient() {
 
                       return (
                         <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
-                          <p className="text-[10px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          <p className="text-[13px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
                             FORWARD SEASONALITY FROM TODAY&apos;S CALENDAR DATE
                           </p>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -998,18 +1007,18 @@ export default function BacktestClient() {
                               if (!s) return null;
                               return (
                                 <div key={key} className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3 text-center">
-                                  <p className="text-[10px] tracking-[0.1em] text-zinc-500 mb-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{label}</p>
-                                  <p className={`text-lg font-bold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <p className="text-[13px] tracking-[0.1em] text-zinc-500 mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</p>
+                                  <p className={`text-lg font-bold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'Inter', sans-serif" }}>
                                     {s.avg_return >= 0 ? "+" : ""}{s.avg_return.toFixed(1)}%
                                   </p>
-                                  <p className="text-[10px] text-zinc-400 mt-0.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <p className="text-[13px] text-zinc-400 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
                                     median: {s.median_return >= 0 ? "+" : ""}{s.median_return.toFixed(1)}%
                                   </p>
-                                  <p className="text-[10px] text-zinc-500 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                  <p className="text-[13px] text-zinc-500 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
                                     {s.win_rate.toFixed(0)}% win · n={s.n}
                                   </p>
                                   {s.best != null && s.worst != null && (
-                                    <p className="text-[9px] text-zinc-600 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                    <p className="text-[13px] text-zinc-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
                                       <span className="text-emerald-500/70">▲ {s.best >= 0 ? "+" : ""}{s.best.toFixed(0)}%</span>
                                       {" · "}
                                       <span className="text-red-500/70">▼ {s.worst >= 0 ? "+" : ""}{s.worst.toFixed(0)}%</span>
@@ -1021,10 +1030,10 @@ export default function BacktestClient() {
                             {lockedWindows.length > 0 && (
                               <div className="rounded-lg border border-zinc-700/30 bg-zinc-900/30 p-3 text-center flex flex-col items-center justify-center col-span-1">
                                 <span className="text-lg mb-1">🔒</span>
-                                <p className="text-[10px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                <p className="text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                                   {lockedWindows.map(w => w.label).join(", ")}
                                 </p>
-                                <a href={SUBSCRIBE_URL} className="text-[10px] text-emerald-400 hover:text-emerald-300 mt-1">
+                                <a href={SUBSCRIBE_URL} className="text-[13px] text-emerald-400 hover:text-emerald-300 mt-1">
                                   Unlock →
                                 </a>
                               </div>
@@ -1036,7 +1045,7 @@ export default function BacktestClient() {
 
                     {/* Bar chart — all 12 months */}
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
-                      <p className="mb-4 text-[10px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <p className="mb-4 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                         MONTHLY RETURN vs AVERAGE · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
@@ -1044,12 +1053,12 @@ export default function BacktestClient() {
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          // Linear scale: 0% value = 0 height, maxAbs = 90% height. Min 2px via minHeight.
-                          const barPct = (Math.abs(m.avg_return) / maxAbs) * 90;
                           const isPositive = m.avg_return >= 0;
+                          // Linear scale per direction so negative bars are proportional to each other
+                          const barPct = (Math.abs(m.avg_return) / (isPositive ? maxPos : maxNeg)) * 90;
 
                           return (
-                            <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'Inter', sans-serif" }}>
                               {/* TOP HALF — positive bars grow up from center */}
                               <div className="flex flex-col items-center justify-end w-full" style={{ height: "45%" }}>
                                 {/* Win rate + return label above positive bars */}
@@ -1057,18 +1066,18 @@ export default function BacktestClient() {
                                   <>
                                     {isFree ? (
                                       <div className="mb-0.5 flex flex-col items-center">
-                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-300">
+                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-300">
                                           {m.win_rate.toFixed(0)}%
                                         </span>
-                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
                                       </div>
                                     ) : (
                                       <div className="mb-0.5 flex flex-col items-center">
-                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500">—</span>
-                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-500">—</span>
+                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
                                       </div>
                                     )}
-                                    <div className={`mb-0.5 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
+                                    <div className={`mb-0.5 text-[13px] sm:text-[13px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
                                       <span className="text-emerald-300">+{m.avg_return.toFixed(1)}%</span>
                                     </div>
                                     <div
@@ -1098,20 +1107,20 @@ export default function BacktestClient() {
                                       } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
                                       style={{ height: `${barPct}%`, minHeight: "4px" }}
                                     />
-                                    <div className={`mt-0.5 text-[9px] sm:text-[10px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
+                                    <div className={`mt-0.5 text-[13px] sm:text-[13px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
                                       <span className="text-red-300">{m.avg_return.toFixed(1)}%</span>
                                     </div>
                                     {isFree ? (
                                       <div className="mt-0.5 flex flex-col items-center">
-                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-300">
+                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-300">
                                           {m.win_rate.toFixed(0)}%
                                         </span>
-                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
                                       </div>
                                     ) : (
                                       <div className="mt-0.5 flex flex-col items-center">
-                                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-500">—</span>
-                                        <span className="text-[7px] text-zinc-600 leading-tight">win</span>
+                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-500">—</span>
+                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
                                       </div>
                                     )}
                                   </>
@@ -1119,7 +1128,7 @@ export default function BacktestClient() {
                               </div>
 
                               {/* Month label — always at bottom */}
-                              <div className={`mt-auto text-[9px] sm:text-[10px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
+                              <div className={`mt-auto text-[13px] sm:text-[13px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
                                 {m.name}
                               </div>
                             </div>
@@ -1128,7 +1137,7 @@ export default function BacktestClient() {
                       </div>
 
                       {/* Legend */}
-                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[9px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive avg return</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative avg return</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
@@ -1148,7 +1157,7 @@ export default function BacktestClient() {
 
               {/* PEER COMPARISON — collapsible, after setups */}
               <CollapsibleSection title="PEER COMPARISON" badge={isSubscriber ? `${data.peer_comparison.length} TICKERS` : `${Math.min(data.peer_comparison.length, MAX_PUBLIC_PEERS)} OF ${data.peer_comparison.length} TICKERS`} defaultOpen={false}>
-                <p className="mb-3 text-[11px] text-zinc-500" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <p className="mb-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                   How related tickers look right now using the same setup engine. Useful for reading the broader market environment — if peers are also in RISK, the headwind is systemic, not just {data.ticker}-specific.
                 </p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -1156,11 +1165,11 @@ export default function BacktestClient() {
                     <div
                       key={peer.ticker}
                       className={`rounded-lg border p-3 ${peerStateStyle(peer.state)}`}
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       <div className="text-sm font-bold">{peer.ticker}</div>
-                      <div className="mt-1 text-[11px] font-semibold tracking-wide">{peer.state}</div>
-                      <div className="mt-2 space-y-0.5 text-[10px] text-zinc-400">
+                      <div className="mt-1 text-[13px] font-semibold tracking-wide">{peer.state}</div>
+                      <div className="mt-2 space-y-0.5 text-[13px] text-zinc-400">
                         <div>{peer.buy_active} buy signal{peer.buy_active !== 1 ? "s" : ""} active</div>
                         <div>{peer.avoid_active} avoid signal{peer.avoid_active !== 1 ? "s" : ""} active</div>
                         <div>{peer.watching} watching</div>
@@ -1182,7 +1191,7 @@ export default function BacktestClient() {
                   badge={`${data.scenarios.length}`}
                   defaultOpen={false}
                 >
-                  <p className="mb-3 text-[11px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  <p className="mb-3 text-[13px] text-zinc-400" style={{ fontFamily: "'Inter', sans-serif" }}>
                     {data.scenario_context || `Each card shows a past instance when the same setup triggered on ${data.ticker}.`} The date it fired, the entry price, and what the stock actually returned over the next 5, 10, 20, and 60 days. Use these to calibrate your expectations for the current setup.
                   </p>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -1190,14 +1199,14 @@ export default function BacktestClient() {
                       <div key={`${scenario.setup_id}-${scenario.date}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <p className="text-sm font-semibold text-zinc-100">{scenario.setup_name}</p>
-                          <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] text-zinc-400" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 text-[13px] text-zinc-400" style={{ fontFamily: "'Inter', sans-serif" }}>
                             PAST TRIGGER
                           </span>
                         </div>
-                        <p className="text-[11px] text-zinc-400 mb-2" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <p className="text-[13px] text-zinc-400 mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
                           Triggered {scenario.date} · Entry ${scenario.entry_price.toFixed(2)}{scenario.distance_pct != null ? ` · ${Math.abs(scenario.distance_pct).toFixed(1)}% ${scenario.distance_pct >= 0 ? "above" : "below"} current price` : ""}
                         </p>
-                        <div className="grid grid-cols-4 gap-2 text-[11px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                        <div className="grid grid-cols-4 gap-2 text-[13px]" style={{ fontFamily: "'Inter', sans-serif" }}>
                           {([
                             ["5 days", scenario.ret_5d],
                             ["10 days", scenario.ret_10d],
@@ -1205,9 +1214,9 @@ export default function BacktestClient() {
                             ["60 days", scenario.ret_60d],
                           ] as const).map(([label, value]) => (
                             <div key={label} className="rounded border border-zinc-800 bg-zinc-950/70 px-2 py-1.5 text-center">
-                              <div className="text-zinc-500 text-[9px] mb-0.5">{label}</div>
+                              <div className="text-zinc-500 text-[13px] mb-0.5">{label}</div>
                               <div className={`font-semibold ${value != null && value >= 0 ? "text-emerald-300" : "text-red-300"}`}>{fmtPct(value)}</div>
-                              <div className="text-zinc-600 text-[8px] mt-0.5">return</div>
+                              <div className="text-zinc-600 text-[13px] mt-0.5">return</div>
                             </div>
                           ))}
                         </div>
