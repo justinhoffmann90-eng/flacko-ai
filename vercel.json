@@ -16,7 +16,7 @@
     },
     {
       "path": "/api/orb/compute",
-      "schedule": "30 21 * * 1-5"
+      "schedule": "50 19 * * 1-5"
     },
     {
       "path": "/api/cron/sync-discord-roles",
