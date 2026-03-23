@@ -7,6 +7,12 @@
   "functions": {
     "app/api/reports/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/reports/notify/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/emails/morning-brief/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
