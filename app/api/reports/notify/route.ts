@@ -16,10 +16,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reportId, todayGameplan, yesterdayRecap } = await request.json() as {
+    const { reportId, todayGameplan, yesterdayRecap, dryRun } = await request.json() as {
       reportId?: string;
-      todayGameplan?: string;  // Forward-looking: bottom line, what to watch, action plan
-      yesterdayRecap?: string;  // Backward-looking: what happened yesterday, context
+      todayGameplan?: string;
+      yesterdayRecap?: string;
+      dryRun?: boolean;
     };
 
     if (!reportId) {
@@ -80,30 +81,75 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "No subscribers to notify" });
     }
 
-    // Filter subscribers who want email notifications
-    const subscribersToNotify = [];
-    for (const sub of subscribers) {
-      const { data: settings } = await supabase
-        .from("user_settings")
-        .select("email_new_reports")
-        .eq("user_id", sub.user_id)
-        .single();
+    // Batch-fetch all user_settings in a single query instead of N sequential queries
+    const { data: settingsRows } = await supabase
+      .from("user_settings")
+      .select("user_id, email_new_reports")
+      .in("user_id", subscribers.map(s => s.user_id));
 
-      if (settings?.email_new_reports !== false) {
-        subscribersToNotify.push(sub);
+    const settingsMap = new Map<string, boolean>();
+    if (settingsRows) {
+      for (const row of settingsRows) {
+        settingsMap.set(row.user_id, row.email_new_reports);
       }
     }
 
-    // Send emails
-    let sentCount = 0;
-    for (const sub of subscribersToNotify) {
-      const user = sub.users as unknown as { email: string } | null;
-      if (!user?.email) continue;
+    // Filter subscribers who want email notifications (default true if no settings row)
+    const subscribersToNotify = subscribers.filter(sub => {
+      const pref = settingsMap.get(sub.user_id);
+      return pref !== false;
+    });
 
-      const html = getNewReportEmailHtml({
-        userName: user.email.split("@")[0],
+    // Hard cap: refuse to send to more than 500 recipients
+    if (subscribersToNotify.length > 500) {
+      return NextResponse.json(
+        { error: "Too many recipients", count: subscribersToNotify.length },
+        { status: 400 }
+      );
+    }
+
+    // Build recipient list with emails
+    const recipients = subscribersToNotify
+      .map(sub => {
+        const user = sub.users as unknown as { email: string } | null;
+        return { userId: sub.user_id, email: user?.email };
+      })
+      .filter((r): r is { userId: string; email: string } => !!r.email);
+
+    // Dry-run support: return recipient info without sending
+    if (dryRun) {
+      return NextResponse.json({
+        dryRun: true,
+        recipients: recipients.map(r => r.email),
+        count: recipients.length,
+      });
+    }
+
+    // Audit log before sending
+    console.log("REPORT_NOTIFY_SEND", {
+      count: recipients.length,
+      date: report.report_date,
+      reportId,
+      timestamp: new Date().toISOString(),
+    });
+
+    const reportDate = new Date().toLocaleDateString("en-US", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "America/Chicago",
+    });
+    const subjectDate = new Date().toLocaleDateString("en-US", {
+      month: "short", day: "numeric", timeZone: "America/Chicago",
+    });
+    const subject = `TSLA Morning Gameplan — ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE — ${subjectDate}`;
+
+    // Build all emails for Resend batch send
+    const emailBatch = recipients.map(r => ({
+      from: EMAIL_FROM,
+      to: r.email,
+      subject,
+      html: getNewReportEmailHtml({
+        userName: r.email.split("@")[0],
         mode: extractedData?.mode?.current || "yellow",
-        reportDate: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "America/Chicago" }),
+        reportDate,
         closePrice: extractedData?.price?.close || 0,
         changePct: extractedData?.price?.change_pct || 0,
         modeSummary: extractedData?.mode?.summary,
@@ -123,37 +169,36 @@ export async function POST(request: Request) {
         positionGuidance: parsedData.position_guidance,
         todayGameplan: todayGameplan || undefined,
         yesterdayRecap: yesterdayRecap || undefined,
-      });
+      }),
+    }));
 
-      try {
-        await resend.emails.send({
-          from: EMAIL_FROM,
-          to: user.email,
-          subject: `TSLA Morning Gameplan — ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Chicago" })}`,
-          html,
-        });
-        sentCount++;
-      } catch (error) {
-        console.error(`Failed to send email to ${user.email}:`, error);
-      }
-
-      // Create notification
-      await supabase.from("notifications").insert({
-        user_id: sub.user_id,
-        type: "new_report",
-        title: "New Report Available",
-        body: `Today's ${extractedData?.mode?.current?.toUpperCase() || ""} MODE report is ready`,
-        metadata: {
-          report_id: reportId,
-          mode: extractedData?.mode?.current,
-        },
-      });
+    // Send all emails in one batch call
+    let sentCount = 0;
+    try {
+      await resend.batch.send(emailBatch);
+      sentCount = emailBatch.length;
+    } catch (error) {
+      console.error("Batch email send failed:", error);
     }
+
+    // Batch-insert notifications for all recipients
+    const notifications = recipients.map(r => ({
+      user_id: r.userId,
+      type: "new_report" as const,
+      title: "New Report Available",
+      body: `Today's ${extractedData?.mode?.current?.toUpperCase() || ""} MODE report is ready`,
+      metadata: {
+        report_id: reportId,
+        mode: extractedData?.mode?.current,
+      },
+    }));
+
+    await supabase.from("notifications").insert(notifications);
 
     return NextResponse.json({
       success: true,
       emailsSent: sentCount,
-      notificationsCreated: subscribersToNotify.length,
+      notificationsCreated: recipients.length,
     });
   } catch (error) {
     console.error("Notification error:", error);
