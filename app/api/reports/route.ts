@@ -154,6 +154,8 @@ export async function POST(request: Request) {
         extracted_data,
         parser_version: PARSER_VERSION,
         parser_warnings: warnings,
+        mode: extracted_data?.mode?.current?.toUpperCase() || null,
+        price_close: extracted_data?.price?.close || null,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: "report_date",
