@@ -4,6 +4,11 @@
       "main": true
     }
   },
+  "functions": {
+    "app/api/reports/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/cleanup-grace-periods",
