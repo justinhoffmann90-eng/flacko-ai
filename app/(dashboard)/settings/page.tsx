@@ -18,6 +18,7 @@ interface UserSettings {
   cash_available: number | null;
   alerts_enabled: boolean;
   email_new_reports: boolean;
+  morning_brief_email: boolean;
 }
 
 interface DiscordInfo {
@@ -40,6 +41,7 @@ export default function SettingsPage() {
   const [cashAvailable, setCashAvailable] = useState("");
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [emailNewReports, setEmailNewReports] = useState(true);
+  const [morningBriefEmail, setMorningBriefEmail] = useState(false);
   
   // Password change state
   const [newPassword, setNewPassword] = useState("");
@@ -77,6 +79,7 @@ export default function SettingsPage() {
           setCashAvailable(settings.cash_available?.toString() || "");
           setAlertsEnabled(settings.alerts_enabled ?? true);
           setEmailNewReports(settings.email_new_reports ?? true);
+          setMorningBriefEmail(settings.morning_brief_email ?? false);
         }
         setLoading(false);
         return;
@@ -96,8 +99,9 @@ export default function SettingsPage() {
           setCashAvailable(settings.cash_available?.toString() || "");
           setAlertsEnabled(settings.alerts_enabled ?? true);
           setEmailNewReports(settings.email_new_reports ?? true);
+          setMorningBriefEmail(settings.morning_brief_email ?? false);
         }
-        
+
         // Set Discord info
         if (data.discord) {
           setDiscord(data.discord);
@@ -126,6 +130,7 @@ export default function SettingsPage() {
           cash_available: cashAvailable ? parseInt(cashAvailable) : null,
           alerts_enabled: alertsEnabled,
           email_new_reports: emailNewReports,
+          morning_brief_email: morningBriefEmail,
         }));
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
@@ -139,6 +144,7 @@ export default function SettingsPage() {
           cash_available: cashAvailable ? parseInt(cashAvailable) : null,
           alerts_enabled: alertsEnabled,
           email_new_reports: emailNewReports,
+          morning_brief_email: morningBriefEmail,
         }),
       });
 
@@ -329,6 +335,19 @@ export default function SettingsPage() {
               <Switch
                 checked={emailNewReports}
                 onCheckedChange={setEmailNewReports}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Morning Brief Email</p>
+                <p className="text-sm text-muted-foreground">
+                  Pre-market summary with mode, levels & game plan
+                </p>
+              </div>
+              <Switch
+                checked={morningBriefEmail}
+                onCheckedChange={setMorningBriefEmail}
               />
             </div>
           </CardContent>

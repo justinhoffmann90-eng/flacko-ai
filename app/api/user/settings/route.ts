@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { cash_available, alerts_enabled, email_new_reports, email_alerts } = body;
+    const { cash_available, alerts_enabled, email_new_reports, email_alerts, morning_brief_email } = body;
 
     // Check if settings exist
     const { data: existing } = await supabase
@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       alerts_enabled: alerts_enabled !== undefined ? alerts_enabled : true,
       email_new_reports: email_new_reports !== undefined ? email_new_reports : true,
       email_alerts: email_alerts !== undefined ? email_alerts : true,
+      morning_brief_email: morning_brief_email !== undefined ? morning_brief_email : false,
       updated_at: new Date().toISOString(),
     };
 

@@ -173,6 +173,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
+    // Fire-and-forget: notify subscribers about the new report
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://www.flacko.ai'}/api/reports/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.ADMIN_SECRET}` },
+      body: JSON.stringify({ reportId: report.id })
+    }).catch(e => console.error('notify failed:', e));
+
     // Log successful report generation
     await logReportGeneration({
       reportDate: today,
