@@ -70,7 +70,17 @@ export default async function ReportPage() {
   const masterEject = extractedData?.master_eject?.price || 0;
 
   // Get positioning data
-  const posture = extractedData?.positioning?.posture || extractedData?.position?.current_stance || "—";
+  const postureFullText = extractedData?.positioning?.posture || extractedData?.position?.current_stance || "—";
+  // Shorten posture to 1-2 words for tile display
+  const postureTile = postureFullText === "—" ? "—"
+    : postureFullText.toLowerCase().includes("bull") ? "Bullish"
+    : postureFullText.toLowerCase().includes("bear") ? "Bearish"
+    : postureFullText.toLowerCase().includes("neutral") ? "Neutral"
+    : postureFullText.toLowerCase().includes("defensive") ? "Defensive"
+    : postureFullText.toLowerCase().includes("improving") ? "Improving"
+    : postureFullText.toLowerCase().includes("cautious") ? "Cautious"
+    : postureFullText.split(/[,—\-]/)[0].trim().split(" ").slice(0, 2).join(" ");
+  const posture = postureFullText;
 
   // Parse daily cap % and format as "X% of cash"
   const dailyCapStr = extractedData?.positioning?.daily_cap || "";
@@ -125,7 +135,7 @@ export default async function ReportPage() {
 
           <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
             <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Positioning</p>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1">{posture}</p>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1">{postureTile}</p>
           </div>
 
           <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
@@ -136,6 +146,13 @@ export default async function ReportPage() {
             )}
           </div>
         </div>
+
+        {/* Posture subtitle — full text below tiles */}
+        {posture && posture !== "—" && (
+          <p className="text-xs sm:text-sm text-muted-foreground text-center -mt-2 px-2">
+            {posture}
+          </p>
+        )}
 
         {/* Call Options Alert Widget */}
         {extractedData?.call_alert && (
