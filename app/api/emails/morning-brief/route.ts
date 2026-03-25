@@ -57,8 +57,10 @@ export async function POST(request: Request) {
 
     const parsedData = (report?.parsed_data || {}) as {
       macro_context?: string;
+      market_flow_context?: string;
       catalyst_watch?: string;
       today_gameplan?: string;
+      game_plan?: string;
       emas?: { ema8?: number; ema21?: number; ema50?: number; ema200?: number };
     };
 
@@ -92,14 +94,14 @@ export async function POST(request: Request) {
       currentStance: extractedData?.position?.current_stance,
       dailyCapPct: extractedData?.position?.daily_cap_pct,
       correctionRisk: extractedData?.correction_risk,
-      macroContext: parsedData?.macro_context,
+      macroContext: parsedData?.macro_context || parsedData?.market_flow_context,
       keyLevels: extractedData?.key_levels,
       masterEject: extractedData?.master_eject,
       emas: parsedData?.emas,
       gammaRegime: extractedData?.gamma_regime,
       hiroReading: extractedData?.hiro?.reading,
       catalystWatch: parsedData?.catalyst_watch,
-      todayGameplan: parsedData?.today_gameplan,
+      todayGameplan: parsedData?.today_gameplan || parsedData?.game_plan,
       alerts: extractedData?.alerts,
       entryQualityScore: extractedData?.entry_quality?.score,
     });
