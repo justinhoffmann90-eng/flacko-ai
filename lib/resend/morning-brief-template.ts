@@ -214,13 +214,13 @@ export function getMorningBriefEmailHtml(props: MorningBriefEmailProps): string 
     </td></tr></table>
 
     ${modeBanner}
-    ${macroSection}
+    ${gameplanSection}
+    ${ejectSection}
     ${levelsContent}
     ${emaSection}
     ${flowSection}
-    ${ejectSection}
     ${catalystSection}
-    ${gameplanSection}
+    ${macroSection}
 
     <!-- CTA -->
     <div style="text-align: center; padding: 16px;">
