@@ -1367,45 +1367,68 @@ async function computeIndicatorsFromOhlcv(
     return null;
   }
 
-  // ─── Live price injection: if latest bar is stale (not today), fetch live close from Yahoo ───
-  // This keeps indicators (RSI, BXT, EMAs) from DB but uses today's actual close price.
-  // Only applies during/after market hours on trading days.
-  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // YYYY-MM-DD in ET
+  // ─── Live price injection: if latest bar is stale (not today), inject live price ───
+  // Keeps historical indicators (RSI, BXT, EMAs) from DB but uses today's actual close.
+  // Sources (in priority order): 1) price_cache table, 2) Yahoo Finance
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // YYYY-MM-DD ET
   const latestBarDate = dailyRows[dailyRows.length - 1].bar_date;
-  if (latestBarDate < todayStr) {
+  if (latestBarDate < todayStr && ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "GOOGL", "AMZN"].includes(ticker)) {
     try {
       const now = new Date();
-      const etHour = parseInt(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/New_York" }).format(now));
       const isWeekday = [1,2,3,4,5].includes(now.getDay());
-      // Only inject if market has opened (ET 9:30+) and it's a weekday
+      const etMs = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+      const etHour = new Date(etMs).getHours();
+      // Only inject during/after market hours on weekdays
       if (isWeekday && etHour >= 9) {
-        const yahooFinance = (await import("yahoo-finance2")).default;
-        const quote = await yahooFinance.quote(ticker === "^VIX" ? "^VIX" : ticker);
-        const livePrice = quote?.regularMarketPrice ?? quote?.preMarketPrice ?? null;
+        let livePrice: number | null = null;
+        let liveOpen: number | null = null;
+        let liveHigh: number | null = null;
+        let liveLow: number | null = null;
+        let liveVolume: number | null = null;
+
+        // Source 1: price_cache table (internal Supabase — always fast)
+        if (ticker === "TSLA" || ticker === "QQQ") {
+          const { data: cached } = await supabase
+            .from("price_cache")
+            .select("price, updated_at")
+            .eq("symbol", ticker)
+            .single();
+          if (cached?.price && cached.price > 0) {
+            livePrice = cached.price;
+          }
+        }
+
+        // Source 2: Yahoo Finance fallback
+        if (!livePrice) {
+          try {
+            const yahooFinance = (await import("yahoo-finance2")).default;
+            const quote = await (yahooFinance as unknown as { quote: (t: string) => Promise<Record<string, number>> }).quote(ticker);
+            livePrice = quote?.regularMarketPrice ?? quote?.preMarketPrice ?? null;
+            liveOpen = quote?.regularMarketOpen ?? null;
+            liveHigh = quote?.regularMarketDayHigh ?? null;
+            liveLow = quote?.regularMarketDayLow ?? null;
+            liveVolume = quote?.regularMarketVolume ?? null;
+          } catch {
+            // Yahoo blocked or unavailable — use DB price
+          }
+        }
+
         if (livePrice && livePrice > 0) {
-          // Clone the latest bar and override close/open/high/low with live data
           const liveBar: OhlcvRow = {
             ...dailyRows[dailyRows.length - 1],
             bar_date: todayStr,
             close: livePrice,
-            open: quote?.regularMarketOpen ?? livePrice,
-            high: quote?.regularMarketDayHigh ?? livePrice,
-            low: quote?.regularMarketDayLow ?? livePrice,
-            volume: quote?.regularMarketVolume ?? 0,
+            open: liveOpen ?? livePrice,
+            high: liveHigh ?? livePrice,
+            low: liveLow ?? livePrice,
+            volume: liveVolume ?? 0,
           };
-          // Replace last bar if it's a new trading day, otherwise append
-          const alreadyHasToday = dailyRows[dailyRows.length - 1].bar_date === todayStr;
-          if (alreadyHasToday) {
-            dailyRows[dailyRows.length - 1] = liveBar;
-          } else {
-            dailyRows.push(liveBar);
-          }
+          dailyRows.push(liveBar);
           console.log(`[ohlcv] ${ticker} live price injected: $${livePrice} (DB was ${latestBarDate})`);
         }
       }
     } catch (e) {
-      // Non-fatal — fall back to DB price silently
-      console.warn(`[ohlcv] ${ticker} live price fetch failed, using DB price:`, e instanceof Error ? e.message : e);
+      console.warn(`[ohlcv] ${ticker} live price injection failed, using DB:`, e instanceof Error ? e.message : e);
     }
   }
 
