@@ -1062,9 +1062,9 @@ export default function BacktestClient() {
                                   </p>
                                   {s.best != null && s.worst != null && (
                                     <p className="text-[13px] text-zinc-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                      <span className="text-emerald-500/70">▲ {s.best >= 0 ? "+" : ""}{s.best.toFixed(0)}%</span>
+                                      <span className="text-emerald-500/70">Max Up: {s.best >= 0 ? "+" : ""}{s.best.toFixed(0)}%</span>
                                       {" · "}
-                                      <span className="text-red-500/70">▼ {s.worst >= 0 ? "+" : ""}{s.worst.toFixed(0)}%</span>
+                                      <span className="text-red-500/70">Max Down: {s.worst.toFixed(0)}%</span>
                                     </p>
                                   )}
                                 </div>
@@ -1089,10 +1089,10 @@ export default function BacktestClient() {
                     {/* Bar chart — all 12 months */}
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                       <p className="mb-4 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        MEDIAN MONTHLY RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA · DOT = AVG
+                        MEDIAN MONTHLY RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
-                      <div className="flex gap-1.5 sm:gap-2" style={{ height: "260px" }}>
+                      <div className="flex gap-1.5 sm:gap-2 mt-8" style={{ height: "220px" }}>
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
@@ -1109,9 +1109,8 @@ export default function BacktestClient() {
                                   <div className="absolute bottom-full mb-1 flex flex-col items-center w-full gap-0.5">
                                     {isFree ? (
                                       <>
-                                        <span className="text-[10px] sm:text-[11px] text-emerald-300 leading-none font-semibold">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
-                                        <span className="text-[9px] text-yellow-500/80 leading-none">~{m.avg_return >= 0 ? "+" : ""}{m.avg_return.toFixed(1)}%</span>
-                                        <span className="text-[9px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%w</span>
+                                        <span className="text-[11px] text-emerald-300 leading-none font-semibold">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
+                                        <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}% win</span>
                                       </>
                                     ) : (
                                       <span className="text-[10px] text-zinc-600 leading-none">—</span>
@@ -1148,9 +1147,8 @@ export default function BacktestClient() {
                                     <div className="absolute top-full mt-1 flex flex-col items-center w-full gap-0.5">
                                       {isFree ? (
                                         <>
-                                          <span className="text-[10px] sm:text-[11px] text-red-300 leading-none font-semibold">{m.median_return.toFixed(1)}%</span>
-                                          <span className="text-[9px] text-yellow-500/80 leading-none">~{m.avg_return >= 0 ? "+" : ""}{m.avg_return.toFixed(1)}%</span>
-                                          <span className="text-[9px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%w</span>
+                                          <span className="text-[11px] text-red-300 leading-none font-semibold">{m.median_return.toFixed(1)}%</span>
+                                          <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}% win</span>
                                         </>
                                       ) : (
                                         <span className="text-[10px] text-zinc-600 leading-none">—</span>
@@ -1160,17 +1158,9 @@ export default function BacktestClient() {
                                 )}
                               </div>
 
-                              {/* Month label + best/worst range */}
-                              <div className="mt-auto flex flex-col items-center">
-                                <div className={`text-[11px] sm:text-[12px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
-                                  {m.name}
-                                </div>
-                                {isFree && m.best != null && m.worst != null && (
-                                  <div className="flex flex-col items-center leading-none mt-0.5">
-                                    <span className="text-[9px] text-emerald-600/70">{m.best >= 0 ? "+" : ""}{m.best.toFixed(0)}%</span>
-                                    <span className="text-[9px] text-red-600/70">{m.worst.toFixed(0)}%</span>
-                                  </div>
-                                )}
+                              {/* Month label */}
+                              <div className={`mt-auto text-[11px] sm:text-[12px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
+                                {m.name}
                               </div>
                             </div>
                           );
@@ -1179,11 +1169,10 @@ export default function BacktestClient() {
 
                       {/* Legend */}
                       <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive median</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative median</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive month</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative month</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked</span>
-                        <span className="flex items-center gap-1 text-zinc-400">· Bar = median · ~yellow = avg · %w = win rate · green/red below = best/worst ever</span>
+                        <span className="flex items-center gap-1 text-zinc-400">· Bar height = median return · % = how often that month is positive</span>
                       </div>
 
                       {!isSubscriber && (
