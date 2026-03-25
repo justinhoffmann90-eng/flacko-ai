@@ -1386,15 +1386,24 @@ async function computeIndicatorsFromOhlcv(
         let liveLow: number | null = null;
         let liveVolume: number | null = null;
 
-        // Source 1: price_cache table (internal Supabase — always fast)
-        if (ticker === "TSLA" || ticker === "QQQ") {
-          const { data: cached } = await supabase
-            .from("price_cache")
-            .select("price, updated_at")
-            .eq("symbol", ticker)
-            .single();
-          if (cached?.price && cached.price > 0) {
-            livePrice = cached.price;
+        // Source 1: internal price-cache API (backed by separate Supabase project)
+        if (ticker === "TSLA" || ticker === "TSLL") {
+          try {
+            const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.flacko.ai";
+            const priceRes = await fetch(`${host}/api/price-cache`, { cache: "no-store" });
+            if (priceRes.ok) {
+              const priceData = await priceRes.json();
+              const entry = priceData?.[ticker];
+              if (entry?.price && entry.price > 0) {
+                // Only use if updated within last 15 min (market hours)
+                const age = Date.now() - new Date(entry.updated_at).getTime();
+                if (age < 15 * 60 * 1000) {
+                  livePrice = entry.price;
+                }
+              }
+            }
+          } catch {
+            // Fall through to Yahoo
           }
         }
 
