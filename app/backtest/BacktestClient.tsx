@@ -1096,12 +1096,9 @@ export default function BacktestClient() {
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          // Median is primary — more reliable than average for skewed stocks
+                          // Median drives bar height — more reliable than avg for skewed stocks like TSLA
                           const isPositive = m.median_return >= 0;
                           const barPct = (Math.abs(m.median_return) / maxAbs) * 90;
-                          // Average dot overlay position (as % of half-height zone)
-                          const avgIsPositive = m.avg_return >= 0;
-                          const avgDotPct = (Math.abs(m.avg_return) / maxAbs) * 90;
 
                           return (
                             <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -1112,8 +1109,9 @@ export default function BacktestClient() {
                                   <div className="absolute bottom-full mb-1 flex flex-col items-center w-full gap-0.5">
                                     {isFree ? (
                                       <>
-                                        <span className="text-[10px] sm:text-[11px] text-emerald-300 leading-none font-medium">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
-                                        <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%</span>
+                                        <span className="text-[10px] sm:text-[11px] text-emerald-300 leading-none font-semibold">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
+                                        <span className="text-[9px] text-yellow-500/80 leading-none">~{m.avg_return >= 0 ? "+" : ""}{m.avg_return.toFixed(1)}%</span>
+                                        <span className="text-[9px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%w</span>
                                       </>
                                     ) : (
                                       <span className="text-[10px] text-zinc-600 leading-none">—</span>
@@ -1122,19 +1120,12 @@ export default function BacktestClient() {
                                 )}
                                 {/* Median bar fills from bottom of the 45% zone */}
                                 {isPositive && (
-                                  <div className="relative w-full self-end" style={{ height: `${barPct}%`, minHeight: "4px" }}>
-                                    <div className={`w-full h-full rounded-t-sm transition-all ${
+                                  <div
+                                    className={`w-full rounded-t-sm transition-all self-end ${
                                       !isFree ? "bg-zinc-700/40 blur-[2px]" : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
-                                    } ${isCurrent ? "ring-1 ring-white/30" : ""}`} />
-                                    {/* Avg dot overlay — shows where avg sits vs median */}
-                                    {isFree && avgIsPositive && (
-                                      <div
-                                        className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-yellow-400/80 z-10"
-                                        style={{ bottom: `${Math.min((avgDotPct / barPct) * 100, 200)}%` }}
-                                        title={`Avg: +${m.avg_return.toFixed(1)}%`}
-                                      />
-                                    )}
-                                  </div>
+                                    } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                    style={{ height: `${barPct}%`, minHeight: "4px" }}
+                                  />
                                 )}
                               </div>
 
@@ -1157,8 +1148,9 @@ export default function BacktestClient() {
                                     <div className="absolute top-full mt-1 flex flex-col items-center w-full gap-0.5">
                                       {isFree ? (
                                         <>
-                                          <span className="text-[10px] sm:text-[11px] text-red-300 leading-none font-medium">{m.median_return.toFixed(1)}%</span>
-                                          <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%</span>
+                                          <span className="text-[10px] sm:text-[11px] text-red-300 leading-none font-semibold">{m.median_return.toFixed(1)}%</span>
+                                          <span className="text-[9px] text-yellow-500/80 leading-none">~{m.avg_return >= 0 ? "+" : ""}{m.avg_return.toFixed(1)}%</span>
+                                          <span className="text-[9px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%w</span>
                                         </>
                                       ) : (
                                         <span className="text-[10px] text-zinc-600 leading-none">—</span>
@@ -1189,10 +1181,9 @@ export default function BacktestClient() {
                       <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive median</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative median</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-yellow-400/80" /> Avg return</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked (subscribe)</span>
-                        <span className="flex items-center gap-1 text-zinc-400">· % = win rate · bar = median · dot = avg · green/red below = best/worst ever</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked</span>
+                        <span className="flex items-center gap-1 text-zinc-400">· Bar = median · ~yellow = avg · %w = win rate · green/red below = best/worst ever</span>
                       </div>
 
                       {!isSubscriber && (
