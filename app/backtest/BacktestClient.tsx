@@ -1091,7 +1091,7 @@ export default function BacktestClient() {
                         MONTHLY RETURN vs AVERAGE · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
-                      <div className="flex gap-1.5 sm:gap-2" style={{ height: "220px" }}>
+                      <div className="flex gap-1.5 sm:gap-2" style={{ height: "260px" }}>
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
@@ -1101,70 +1101,68 @@ export default function BacktestClient() {
 
                           return (
                             <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'Inter', sans-serif" }}>
-                              {/* TOP HALF — positive bars grow up from center */}
-                              <div className="flex flex-col items-center justify-end w-full" style={{ height: "45%" }}>
-                                {/* Win rate + return label above positive bars */}
+                              {/* TOP HALF — positive bars grow up from center. Labels sit above via absolute positioning */}
+                              <div className="relative flex items-end justify-center w-full" style={{ height: "45%" }}>
+                                {/* Labels absolutely above the bar so they don't compress bar height */}
                                 {isPositive && (
-                                  <>
+                                  <div className="absolute bottom-full mb-0.5 flex flex-col items-center w-full">
                                     {isFree ? (
-                                      <div className="mb-0.5 flex flex-col items-center">
-                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-300">
-                                          {m.win_rate.toFixed(0)}%
-                                        </span>
-                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
-                                      </div>
+                                      <>
+                                        <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-300 leading-none">{m.win_rate.toFixed(0)}%</span>
+                                        <span className="text-[10px] text-zinc-600 leading-none">win</span>
+                                        <span className={`text-[11px] sm:text-[12px] text-emerald-300 leading-none mt-0.5 ${!isFree ? "blur-[3px] select-none" : ""}`}>+{m.avg_return.toFixed(1)}%</span>
+                                      </>
                                     ) : (
-                                      <div className="mb-0.5 flex flex-col items-center">
-                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-500">—</span>
-                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
-                                      </div>
+                                      <>
+                                        <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-500 leading-none">—</span>
+                                        <span className="text-[10px] text-zinc-600 leading-none">win</span>
+                                      </>
                                     )}
-                                    <div className={`mb-0.5 text-[13px] sm:text-[13px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
-                                      <span className="text-emerald-300">+{m.avg_return.toFixed(1)}%</span>
-                                    </div>
-                                    <div
-                                      className={`w-full rounded-t-sm transition-all ${
-                                        !isFree
-                                          ? "bg-zinc-700/40 blur-[2px]"
-                                          : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
-                                      } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
-                                      style={{ height: `${barPct}%`, minHeight: "4px" }}
-                                    />
-                                  </>
+                                  </div>
+                                )}
+                                {/* Bar fills from bottom of the 45% zone */}
+                                {isPositive && (
+                                  <div
+                                    className={`w-full rounded-t-sm transition-all self-end ${
+                                      !isFree
+                                        ? "bg-zinc-700/40 blur-[2px]"
+                                        : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
+                                    } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                    style={{ height: `${barPct}%`, minHeight: "4px" }}
+                                  />
                                 )}
                               </div>
 
                               {/* X-AXIS LINE */}
                               <div className="w-full h-px bg-zinc-700 flex-shrink-0" />
 
-                              {/* BOTTOM HALF — negative bars grow down from center */}
-                              <div className="flex flex-col items-center justify-start w-full" style={{ height: "45%" }}>
+                              {/* BOTTOM HALF — negative bars grow down from center. Labels sit below via absolute positioning */}
+                              <div className="relative flex items-start justify-center w-full" style={{ height: "45%" }}>
                                 {!isPositive && (
                                   <>
                                     <div
-                                      className={`w-full rounded-b-sm transition-all ${
+                                      className={`w-full rounded-b-sm transition-all self-start ${
                                         !isFree
                                           ? "bg-zinc-700/40 blur-[2px]"
                                           : isCurrent ? "bg-red-400" : "bg-red-500/70"
                                       } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
                                       style={{ height: `${barPct}%`, minHeight: "4px" }}
                                     />
-                                    <div className={`mt-0.5 text-[13px] sm:text-[13px] ${!isFree ? "blur-[3px] select-none" : ""}`}>
-                                      <span className="text-red-300">{m.avg_return.toFixed(1)}%</span>
+                                    {/* Labels absolutely below the bar */}
+                                    <div className="absolute top-full mt-0.5 flex flex-col items-center w-full">
+                                      <span className={`text-[11px] sm:text-[12px] text-red-300 leading-none ${!isFree ? "blur-[3px] select-none" : ""}`}>{m.avg_return.toFixed(1)}%</span>
+                                      {isFree ? (
+                                        <>
+                                          <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-300 leading-none mt-0.5">{m.win_rate.toFixed(0)}%</span>
+                                          <span className="text-[10px] text-zinc-600 leading-none">win</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-500 leading-none mt-0.5">—</span>
+                                          <span className="text-[10px] text-zinc-600 leading-none">win</span>
+                                        </>
+                                      )}
                                     </div>
-                                    {isFree ? (
-                                      <div className="mt-0.5 flex flex-col items-center">
-                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-300">
-                                          {m.win_rate.toFixed(0)}%
-                                        </span>
-                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
-                                      </div>
-                                    ) : (
-                                      <div className="mt-0.5 flex flex-col items-center">
-                                        <span className="text-[13px] sm:text-[13px] font-semibold text-zinc-500">—</span>
-                                        <span className="text-[13px] text-zinc-600 leading-tight">win</span>
-                                      </div>
-                                    )}
                                   </>
                                 )}
                               </div>
