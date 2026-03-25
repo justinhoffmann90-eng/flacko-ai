@@ -2,13 +2,72 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
-import { getMorningBriefEmailHtml } from "@/lib/resend/morning-brief-template";
-import { TrafficLightMode } from "@/types";
+import * as fs from "fs";
+import * as path from "path";
 
 export const maxDuration = 60;
 
-// Called by cron after morning brief is posted to Discord
-// Only sends to subscribers with morning_brief_email=true toggle
+// Renders the Discord embed description (markdown-like) as clean email HTML
+function discordToEmailHtml(description: string, title: string, modeColor: string): string {
+  // Convert Discord markdown to email-safe HTML
+  const body = description
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/━+/g, '<hr style="border:none;border-top:1px solid #374151;margin:16px 0;">')
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/\n/g, "<br>")
+    .replace(/^<\/p>/, "")
+    .replace(/<p>$/, "");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark only">
+  <meta name="supported-color-schemes" content="dark only">
+  <style>
+    body, table, td, div { background-color: #0a0a0a !important; color: #f9fafb !important; }
+    @media (prefers-color-scheme: light) {
+      body, table, td, div { background-color: #0a0a0a !important; color: #f9fafb !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;padding:32px 16px;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+
+      <!-- Header -->
+      <tr><td style="background-color:#18181b;border-radius:12px 12px 0 0;border-left:4px solid ${modeColor};padding:24px 28px 20px;">
+        <p style="margin:0 0 4px 0;font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:1.5px;">Flacko AI</p>
+        <h1 style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">${title}</h1>
+      </td></tr>
+
+      <!-- Body -->
+      <tr><td style="background-color:#18181b;padding:0 28px 8px;border-radius:0;">
+        <div style="color:#d1d5db;font-size:14px;line-height:1.75;">
+          <p>${body}</p>
+        </div>
+      </td></tr>
+
+      <!-- CTA -->
+      <tr><td style="background-color:#18181b;padding:20px 28px 28px;border-radius:0 0 12px 12px;text-align:center;">
+        <a href="https://flacko.ai/report" style="display:inline-block;background-color:${modeColor};color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+          View Full Report →
+        </a>
+        <p style="margin:16px 0 0;font-size:12px;color:#52525b;">
+          © 2026 Flacko AI · Not financial advice ·
+          <a href="https://flacko.ai/settings" style="color:#52525b;">Manage preferences</a>
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
 export async function POST(request: Request) {
   try {
     const headersList = await headers();
@@ -22,91 +81,43 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const testTo = body?.testTo as string | undefined; // if set, only send to this address
+    const testTo = body?.testTo as string | undefined;
 
-    const supabase = await createServiceClient();
+    // Load today's morning brief from the Discord archive (single source of truth)
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }); // YYYY-MM-DD
+    const archivePath = path.join(
+      process.env.HOME || "/Users/trunks",
+      "clawd/posts/discord/morning-brief",
+      `${today}.md`
+    );
 
-    // Get today's most recent report for all email content
-    const { data: report } = await supabase
-      .from("reports")
-      .select("*")
-      .order("report_date", { ascending: false })
-      .limit(1)
-      .single();
+    if (!fs.existsSync(archivePath)) {
+      return NextResponse.json({ error: `Archive not found: ${archivePath}` }, { status: 404 });
+    }
 
-    const extractedData = report?.extracted_data as {
-      mode?: { current: TrafficLightMode; summary?: string };
-      price?: { close: number; change_pct: number };
-      position?: { current_stance?: string; daily_cap_pct?: number };
-      correction_risk?: string;
-      slow_zone_active?: boolean;
-      slow_zone?: number;
-      master_eject?: { price: number; action: string };
-      gamma_regime?: string;
-      hiro?: { reading?: number };
-      key_levels?: {
-        gamma_strike?: number;
-        put_wall?: number;
-        call_wall?: number;
-        hedge_wall?: number;
-        master_eject?: number;
-      };
-      alerts?: { type: "upside" | "downside"; level_name: string; price: number; action: string; reason?: string }[];
-      entry_quality?: { score: number };
-    } | null;
+    const raw = fs.readFileSync(archivePath, "utf-8");
+    const parsed = JSON.parse(raw);
+    const embed = parsed?.embeds?.[0];
+    if (!embed) {
+      return NextResponse.json({ error: "No embed found in archive" }, { status: 500 });
+    }
 
-    const parsedData = (report?.parsed_data || {}) as {
-      macro_context?: string;
-      market_flow_context?: string;
-      catalyst_watch?: string;
-      today_gameplan?: string;
-      game_plan?: string;
-      emas?: { ema8?: number; ema21?: number; ema50?: number; ema200?: number };
-    };
+    const title = embed.title || "☀️ TSLA Morning Brief";
+    const description = embed.description || "";
+    const embedColor: number = embed.color || 16711680;
 
-    const mode = (extractedData?.mode?.current || "red") as TrafficLightMode;
-    const closePrice = extractedData?.price?.close || 0;
-    const changePct = extractedData?.price?.change_pct || 0;
+    // Convert Discord color int to hex
+    const modeColor = "#" + embedColor.toString(16).padStart(6, "0");
 
-    const reportDate = new Date().toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      timeZone: "America/Chicago",
-    });
-    const shortDate = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      timeZone: "America/Chicago",
-    });
+    // Derive mode label + short date for subject
+    const modeLabel = embedColor === 65280 ? "GREEN" : embedColor === 16776960 ? "YELLOW" : embedColor === 16744448 ? "ORANGE" : "RED";
+    const shortDate = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Chicago" });
+    const modeEmoji: Record<string, string> = { GREEN: "🟢", YELLOW: "🟡", ORANGE: "🟠", RED: "🔴" };
+    const subject = `${modeEmoji[modeLabel] || "🔴"} TSLA Morning Brief — ${modeLabel} MODE — ${shortDate}`;
 
-    const modeEmoji: Record<string, string> = { green: "🟢", yellow: "🟡", orange: "🟠", red: "🔴" };
-    const subject = `${modeEmoji[mode] || "🔴"} TSLA Morning Brief — ${mode.toUpperCase()} MODE — ${shortDate}`;
+    const html = discordToEmailHtml(description, title, modeColor);
 
-    const html = getMorningBriefEmailHtml({
-      userName: "",
-      mode,
-      reportDate,
-      closePrice,
-      changePct,
-      modeSummary: extractedData?.mode?.summary,
-      currentStance: extractedData?.position?.current_stance,
-      dailyCapPct: extractedData?.position?.daily_cap_pct,
-      correctionRisk: extractedData?.correction_risk,
-      macroContext: parsedData?.macro_context || parsedData?.market_flow_context,
-      keyLevels: extractedData?.key_levels,
-      masterEject: extractedData?.master_eject,
-      emas: parsedData?.emas,
-      gammaRegime: extractedData?.gamma_regime,
-      hiroReading: extractedData?.hiro?.reading,
-      catalystWatch: parsedData?.catalyst_watch,
-      todayGameplan: parsedData?.today_gameplan || parsedData?.game_plan,
-      alerts: extractedData?.alerts,
-      entryQualityScore: extractedData?.entry_quality?.score,
-    });
-
-    // TEST MODE: only send to one address
+    // TEST MODE: send only to one address
     if (testTo) {
       const { error } = await resend.emails.send({
         from: EMAIL_FROM,
@@ -114,28 +125,21 @@ export async function POST(request: Request) {
         subject: `[TEST] ${subject}`,
         html,
       });
-      if (error) return NextResponse.json({ error: "Failed to send test email", detail: error }, { status: 500 });
+      if (error) return NextResponse.json({ error: "Failed to send test", detail: error }, { status: 500 });
       return NextResponse.json({ success: true, testSent: true, to: testTo });
     }
 
-    // PRODUCTION: only send to subscribers with morning_brief_email=true
+    // PRODUCTION: only subscribers with morning_brief_email=true
+    const supabase = await createServiceClient();
     const { data: subscribers } = await supabase
       .from("subscriptions")
-      .select(`
-        user_id,
-        status,
-        trial_ends_at,
-        users (email)
-      `)
-      .or(
-        `status.in.(active,comped),and(status.eq.trial,trial_ends_at.gt.${new Date().toISOString()})`
-      );
+      .select("user_id, status, trial_ends_at, users (email)")
+      .or(`status.in.(active,comped),and(status.eq.trial,trial_ends_at.gt.${new Date().toISOString()})`);
 
     if (!subscribers || subscribers.length === 0) {
       return NextResponse.json({ message: "No subscribers", emailsSent: 0 });
     }
 
-    // Only include users who explicitly opted in to morning brief emails
     const toNotify: string[] = [];
     for (const sub of subscribers) {
       const { data: settings } = await supabase
@@ -151,15 +155,10 @@ export async function POST(request: Request) {
     }
 
     if (toNotify.length === 0) {
-      return NextResponse.json({ message: "No subscribers with morning_brief_email=true", emailsSent: 0 });
+      return NextResponse.json({ message: "No opted-in subscribers", emailsSent: 0 });
     }
 
-    const batchPayload = toNotify.map((email) => ({
-      from: EMAIL_FROM,
-      to: email,
-      subject,
-      html,
-    }));
+    const batchPayload = toNotify.map((email) => ({ from: EMAIL_FROM, to: email, subject, html }));
 
     let sentCount = 0;
     const BATCH_SIZE = 100;
@@ -170,7 +169,6 @@ export async function POST(request: Request) {
       else console.error("Resend batch error:", error);
     }
 
-    console.log(`Morning brief email: sent ${sentCount}/${toNotify.length} (morning_brief_email=true only)`);
     return NextResponse.json({ success: true, emailsSent: sentCount, total: toNotify.length });
 
   } catch (error) {
