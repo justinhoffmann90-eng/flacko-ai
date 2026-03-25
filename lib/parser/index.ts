@@ -179,18 +179,22 @@ export function parseReport(markdown: string): ParseResult {
     // No valid frontmatter, continue with other formats
   }
 
-  // If no YAML frontmatter, try to parse JSON from HTML comment (<!-- REPORT_DATA {...} -->)
-  if (!frontmatter) {
-    const jsonCommentMatch = markdown.match(/<!--\s*REPORT_DATA\s*([\s\S]*?)-->/);
-    if (jsonCommentMatch) {
-      try {
-        const jsonData = JSON.parse(jsonCommentMatch[1].trim());
+  // Always try to parse JSON from HTML comment (<!-- REPORT_DATA {...} -->)
+  // If YAML frontmatter exists, REPORT_DATA fields are merged in (REPORT_DATA wins on conflict)
+  const jsonCommentMatch = markdown.match(/<!--\s*REPORT_DATA\s*([\s\S]*?)-->/);
+  if (jsonCommentMatch) {
+    try {
+      const jsonData = JSON.parse(jsonCommentMatch[1].trim());
+      if (!frontmatter) {
         frontmatter = jsonData as ReportFrontmatter;
-        // Remove the comment from content
-        content = markdown.replace(/<!--\s*REPORT_DATA[\s\S]*?-->/, '').trim();
-      } catch {
-        warnings.push("Found REPORT_DATA comment but failed to parse JSON");
+      } else {
+        // Merge: REPORT_DATA fields override sparse YAML frontmatter
+        frontmatter = { ...frontmatter, ...jsonData } as ReportFrontmatter;
       }
+      // Remove the comment from content
+      content = content.replace(/<!--\s*REPORT_DATA[\s\S]*?-->/, '').trim();
+    } catch {
+      warnings.push("Found REPORT_DATA comment but failed to parse JSON");
     }
   }
 
