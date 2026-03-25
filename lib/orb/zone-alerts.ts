@@ -1,8 +1,15 @@
 /**
  * Orb Zone Downside Alerts
- * 
- * Sends email when the Orb Score zone transitions DOWN to CAUTION or DEFENSIVE.
- * One alert per day max. No upward transition alerts.
+ *
+ * ⛔ APPROVAL GATE — zone alerts NEVER auto-fire without explicit Justin approval.
+ *
+ * Flow:
+ *   1. Detect zone transition in orb/compute
+ *   2. sendDownsideZoneAlert() logs as PENDING_APPROVAL + notifies Justin on Telegram
+ *   3. Justin replies "approve zone alert" → /api/orb/approve-zone-alert calls executeApprovedZoneAlert()
+ *   4. executeApprovedZoneAlert() sends batch email to subscribers
+ *
+ * This prevents accidental blasts from manual compute runs, date fixes, or backfills.
  */
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -99,6 +106,10 @@ function buildEmailHtml(msg: ZoneAlertMessage, zone: OrbZone): string {
 </html>`;
 }
 
+/**
+ * Stage a zone alert for approval. Does NOT send to subscribers.
+ * Logs as PENDING_APPROVAL and notifies Justin on Telegram.
+ */
 export async function sendDownsideZoneAlert(
   supabase: SupabaseClient,
   prevZone: string,
@@ -109,10 +120,10 @@ export async function sendDownsideZoneAlert(
   const msg = getAlertMessage(prevZone as OrbZone, newZone as OrbZone);
   if (!msg) return { sent: false, reason: "not_downside_transition" };
 
-  // Frequency protection: max 1 alert per day
+  // Frequency protection: max 1 alert per day (sent or pending)
   const { data: lastAlert } = await supabase
     .from("orb_signal_log")
-    .select("event_date")
+    .select("event_date, notes")
     .eq("setup_id", "orb-zone-alert")
     .eq("ticker", "TSLA")
     .order("created_at", { ascending: false })
@@ -120,29 +131,77 @@ export async function sendDownsideZoneAlert(
     .maybeSingle();
 
   if (lastAlert?.event_date === date) {
-    return { sent: false, reason: "already_sent_today" };
+    return { sent: false, reason: "already_sent_or_pending_today" };
   }
 
-  // Get all active subscribers with email
+  // Log as pending — DO NOT send to subscribers yet
+  await supabase.from("orb_signal_log").insert({
+    setup_id: "orb-zone-alert",
+    ticker: "TSLA",
+    event_type: "downside_alert",
+    event_date: date,
+    previous_status: prevZone,
+    new_status: newZone,
+    notes: `PENDING_APPROVAL: ${msg.subject}`,
+  });
+
+  // Notify Justin on Telegram for approval
+  try {
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_MAIN || process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN) {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: "7867480149",
+          text: `⚠️ ORB ZONE ALERT — APPROVAL REQUIRED\n\nTransition: ${prevZone} → ${newZone}\nDate: ${date}\n\nSubject: ${msg.subject}\nBody: ${msg.body}\nAction: ${msg.action}\n\n⚠️ NOT SENT YET. Reply "approve zone alert" to send to all subscribers, or "cancel zone alert" to discard.`,
+        }),
+      });
+    }
+  } catch (telegramErr) {
+    console.error("[ORB_ZONE_ALERT] Telegram notification failed:", telegramErr);
+  }
+
+  return { sent: false, reason: "pending_approval_telegram_notified" };
+}
+
+/**
+ * Called after Justin approves via Telegram ("approve zone alert").
+ * Reads the pending alert and sends batch email to all subscribers.
+ */
+export async function executeApprovedZoneAlert(
+  supabase: SupabaseClient,
+  date: string,
+): Promise<{ sent: boolean; reason: string; count?: number }> {
+  const { data: pendingAlert } = await supabase
+    .from("orb_signal_log")
+    .select("*")
+    .eq("setup_id", "orb-zone-alert")
+    .eq("ticker", "TSLA")
+    .eq("event_date", date)
+    .like("notes", "PENDING_APPROVAL:%")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!pendingAlert) return { sent: false, reason: "no_pending_alert_for_date" };
+
+  const prevZone = pendingAlert.previous_status as OrbZone;
+  const newZone = pendingAlert.new_status as OrbZone;
+  const msg = getAlertMessage(prevZone, newZone);
+  if (!msg) return { sent: false, reason: "invalid_transition" };
+
   const { data: subscribers } = await supabase
     .from("subscriptions")
     .select("user_id, users!inner(email)")
     .in("status", ["active", "trial", "comped"]);
 
-  if (!subscribers?.length) {
-    return { sent: false, reason: "no_subscribers" };
-  }
+  if (!subscribers?.length) return { sent: false, reason: "no_subscribers" };
 
-  const emails = subscribers
-    .map((s: any) => s.users?.email)
-    .filter(Boolean) as string[];
+  const emails = subscribers.map((s: any) => s.users?.email).filter(Boolean) as string[];
+  if (!emails.length) return { sent: false, reason: "no_emails" };
 
-  if (!emails.length) {
-    return { sent: false, reason: "no_emails" };
-  }
-
-  // Send emails individually to protect subscriber privacy
-  const html = buildEmailHtml(msg, newZone as OrbZone);
+  const html = buildEmailHtml(msg, newZone);
   let sentCount = 0;
 
   for (const email of emails) {
@@ -159,16 +218,10 @@ export async function sendDownsideZoneAlert(
     }
   }
 
-  // Log the alert
-  await supabase.from("orb_signal_log").insert({
-    setup_id: "orb-zone-alert",
-    ticker: "TSLA",
-    event_type: "downside_alert",
-    event_date: date,
-    previous_status: prevZone,
-    new_status: newZone,
-    notes: `Sent ${sentCount} emails: ${msg.subject}`,
-  });
+  await supabase
+    .from("orb_signal_log")
+    .update({ notes: `APPROVED_SENT: ${sentCount} emails — ${msg.subject}` })
+    .eq("id", pendingAlert.id);
 
-  return { sent: true, reason: `sent_to_${sentCount}_subscribers` };
+  return { sent: true, reason: `approved_sent_to_${sentCount}_subscribers`, count: sentCount };
 }
