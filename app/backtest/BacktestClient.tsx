@@ -150,6 +150,8 @@ interface SeasonalityMonth {
   avg_return: number;
   median_return: number;
   win_rate: number;
+  best?: number;
+  worst?: number;
   n: number;
 }
 
@@ -1166,9 +1168,17 @@ export default function BacktestClient() {
                                 )}
                               </div>
 
-                              {/* Month label — always at bottom */}
-                              <div className={`mt-auto text-[13px] sm:text-[13px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
-                                {m.name}
+                              {/* Month label + best/worst range */}
+                              <div className="mt-auto flex flex-col items-center">
+                                <div className={`text-[11px] sm:text-[12px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
+                                  {m.name}
+                                </div>
+                                {isFree && m.best != null && m.worst != null && (
+                                  <div className="flex flex-col items-center leading-none mt-0.5">
+                                    <span className="text-[9px] text-emerald-600/70">{m.best >= 0 ? "+" : ""}{m.best.toFixed(0)}%</span>
+                                    <span className="text-[9px] text-red-600/70">{m.worst.toFixed(0)}%</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
@@ -1182,7 +1192,7 @@ export default function BacktestClient() {
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-yellow-400/80" /> Avg return</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked (subscribe)</span>
-                        <span className="flex items-center gap-1 text-zinc-400">· % = win rate · bar = median return · dot = avg</span>
+                        <span className="flex items-center gap-1 text-zinc-400">· % = win rate · bar = median · dot = avg · green/red below = best/worst ever</span>
                       </div>
 
                       {!isSubscriber && (
