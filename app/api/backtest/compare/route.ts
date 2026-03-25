@@ -350,6 +350,7 @@ async function computeIndicatorsFromOhlcv(
     ema9_slope_5d: ema9Slope5d,
     days_below_ema9: daysBelowEma9,
     was_full_bull_5d: wasFullBull5d,
+    bx_weekly_consec_ll: 0, // not computed in compare path
   };
 }
 

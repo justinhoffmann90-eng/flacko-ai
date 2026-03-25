@@ -262,6 +262,18 @@ async function computeBacktestForTicker(
   const weeklyEma13Series = weeklyRows.map((r) => toNumber(r.ema_13) ?? Number.NaN);
   const weeklyEma21Series = weeklyRows.map((r) => toNumber(r.ema_21) ?? Number.NaN);
 
+  // Weekly BXT consecutive Lower-Low streak series
+  const weeklyConsecLLSeries: number[] = new Array(weeklyRows.length).fill(0);
+  for (let i = 1; i < weeklyRows.length; i++) {
+    const curr = weeklyBxtSeries[i];
+    const prev = weeklyBxtSeries[i - 1];
+    if (Number.isFinite(curr) && Number.isFinite(prev) && curr < 0 && curr < prev) {
+      weeklyConsecLLSeries[i] = weeklyConsecLLSeries[i - 1] + 1;
+    } else {
+      weeklyConsecLLSeries[i] = 0;
+    }
+  }
+
   const vixDailyCloses = vixDailyRows ? vixDailyRows.map((r) => r.close) : [];
   const vixWeeklyCloses = vixWeeklyRows ? vixWeeklyRows.map((r) => r.close) : [];
   const vixDailyDates = vixDailyRows ? vixDailyRows.map((r) => r.bar_date) : [];
@@ -402,6 +414,7 @@ async function computeBacktestForTicker(
       ema9_slope_5d: ema9Slope5d,
       days_below_ema9: daysBelowEma9Series[i],
       was_full_bull_5d: wasFullBull5dSeries[i],
+      bx_weekly_consec_ll: weeklyConsecLLSeries[weeklyIndex] ?? 0,
     };
 
     const setupResults = evaluateAllSetups(indicators, previousStates);

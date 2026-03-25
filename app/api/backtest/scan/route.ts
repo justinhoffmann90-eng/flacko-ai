@@ -222,6 +222,13 @@ const FALLBACK_SETUP_META: Record<string, FallbackSetupMeta> = {
     one_liner: "Sustained break below D9 EMA with negative slope.",
     number: 6,
   },
+  "bxt-weekly-streak": {
+    name: "BXT Weekly Streak Reversal",
+    public_name: "BXT Streak Reversal",
+    type: "buy",
+    one_liner: "Weekly BXT ≥8 consecutive lower-lows then first higher low fires reversal signal.",
+    number: 20,
+  },
 };
 
 const PERIOD_TO_COLUMN: Record<"5" | "10" | "20" | "60", ReturnColumn> = {
@@ -618,6 +625,19 @@ async function computeDynamicBacktestRows(
   const weeklyEma13Series = weeklyRows.map((r) => toNumber(r.ema_13) ?? Number.NaN);
   const weeklyEma21Series = weeklyRows.map((r) => toNumber(r.ema_21) ?? Number.NaN);
 
+  // Pre-compute weekly BXT consecutive Lower-Low streak (negative & falling)
+  // A week is a LL if bxt[i] < 0 AND bxt[i] < bxt[i-1]
+  const weeklyConsecLLSeries: number[] = new Array(weeklyRows.length).fill(0);
+  for (let i = 1; i < weeklyRows.length; i++) {
+    const curr = weeklyBxtSeries[i];
+    const prev = weeklyBxtSeries[i - 1];
+    if (Number.isFinite(curr) && Number.isFinite(prev) && curr < 0 && curr < prev) {
+      weeklyConsecLLSeries[i] = weeklyConsecLLSeries[i - 1] + 1;
+    } else {
+      weeklyConsecLLSeries[i] = 0;
+    }
+  }
+
   // VIX arrays
   const vixDailyCloses = vixDailyRows ? vixDailyRows.map((r) => r.close) : [];
   const vixWeeklyCloses = vixWeeklyRows ? vixWeeklyRows.map((r) => r.close) : [];
@@ -797,6 +817,7 @@ async function computeDynamicBacktestRows(
       ema9_slope_5d: ema9Slope5d,
       days_below_ema9: daysBelowEma9Series[i],
       was_full_bull_5d: wasFullBull5dSeries[i],
+      bx_weekly_consec_ll: weeklyConsecLLSeries[weeklyIndex] ?? 0,
     };
 
     const setupResults = evaluateAllSetups(indicators, previousStates);
@@ -1508,6 +1529,18 @@ async function computeIndicatorsFromOhlcv(
   const bxWeeklyState = normalizeBxtState(weeklyLatest.bxt_state) ?? weeklyInferredStates[weeklyInferredStates.length - 1] ?? "LL";
   const bxWeeklyStatePrev = normalizeBxtState(weeklyPrev?.bxt_state ?? null) ?? weeklyInferredStates[Math.max(0, weeklyInferredStates.length - 2)] ?? "LL";
 
+  // Weekly BXT consecutive Lower-Low streak for live indicators
+  let bxWeeklyConsecLL = 0;
+  for (let i = weeklyBxtSeries.length - 1; i > 0; i--) {
+    const curr = weeklyBxtSeries[i];
+    const prev = weeklyBxtSeries[i - 1];
+    if (Number.isFinite(curr) && Number.isFinite(prev) && curr < 0 && curr < prev) {
+      bxWeeklyConsecLL += 1;
+    } else {
+      break;
+    }
+  }
+
   let consecutiveDown = 0;
   let consecutiveUp = 0;
   for (let i = closes.length - 1; i > 0; i--) {
@@ -1643,6 +1676,7 @@ async function computeIndicatorsFromOhlcv(
     ema9_slope_5d: ema9Slope5d,
     days_below_ema9: daysBelowEma9,
     was_full_bull_5d: wasFullBull5d,
+    bx_weekly_consec_ll: bxWeeklyConsecLL,
   };
 }
 
