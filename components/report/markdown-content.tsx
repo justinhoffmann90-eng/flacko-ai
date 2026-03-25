@@ -189,21 +189,21 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         components={{
           // Simple table rendering - horizontal scroll on mobile for wide tables
           table: ({ children }) => (
-            <div className="my-4 -mx-4 px-4 max-w-full overflow-x-auto">
-              <table className="border-collapse table-auto min-w-full">{children}</table>
+            <div className="my-4 -mx-2 sm:-mx-4 px-2 sm:px-4 max-w-full overflow-x-auto rounded-lg">
+              <table className="border-collapse table-auto min-w-full text-sm">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
             <thead className="bg-slate-700/80">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border border-slate-600 px-3 py-2.5 text-left font-semibold text-xs md:text-sm uppercase tracking-wider text-slate-200">
+            <th className="border border-slate-600 px-2 sm:px-3 py-2 text-left font-semibold text-[11px] sm:text-xs md:text-sm uppercase tracking-wider text-slate-200 whitespace-nowrap">
               {children}
             </th>
           ),
           td: ({ children }) => (
             <td
-              className={`border border-border/50 px-3 py-2 align-top text-[13px] md:text-base lg:text-lg break-words overflow-hidden ${
+              className={`border border-border/50 px-2 sm:px-3 py-2 align-top text-[13px] sm:text-sm md:text-base break-words ${
                 shouldNoWrapCell(children) ? "whitespace-nowrap" : ""
               }`}
             >

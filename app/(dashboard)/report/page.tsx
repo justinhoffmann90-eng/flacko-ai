@@ -107,32 +107,32 @@ export default async function ReportPage() {
   return (
     <>
       <Header title={formattedTitle} />
-      <main className="px-4 py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-6 md:space-y-8">
+      <main className="px-3 sm:px-4 py-4 sm:py-6 max-w-2xl md:max-w-4xl lg:max-w-5xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
         {/* Daily/Weekly Toggle */}
         <ReportToggle />
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-3 gap-3 md:gap-4 lg:gap-6">
-          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Mode</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+          <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Mode</p>
             <Badge
               variant={mode as "green" | "yellow" | "orange" | "red"}
-              className="mt-1 md:mt-2 text-sm md:text-base lg:text-lg px-3 md:px-4"
+              className="mt-1 text-xs sm:text-sm md:text-base lg:text-lg px-2 sm:px-3 md:px-4"
             >
               {mode.toUpperCase()}
             </Badge>
           </div>
 
-          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Positioning</p>
-            <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{posture}</p>
+          <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Positioning</p>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1">{posture}</p>
           </div>
 
-          <div className="bg-card border rounded-lg p-3 md:p-4 lg:p-6 text-center">
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground uppercase tracking-wide">Daily Cap</p>
-            <p className="text-base md:text-lg lg:text-xl font-semibold mt-1 md:mt-2">{dailyCap}</p>
+          <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
+            <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Daily Cap</p>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1">{dailyCap}</p>
             {(slowZoneActive || slowZoneNear) && slowZone && (
-              <p className="text-[11px] md:text-xs text-yellow-500 mt-1">Slow Zone {formatPrice(slowZone)}</p>
+              <p className="text-[10px] sm:text-[11px] md:text-xs text-yellow-500 mt-1">Slow Zone {formatPrice(slowZone)}</p>
             )}
           </div>
         </div>
@@ -143,7 +143,7 @@ export default async function ReportPage() {
         )}
 
         {/* Full Report Content */}
-        <div className="bg-card border rounded-lg p-4 sm:p-6 md:p-8 lg:p-10">
+        <div className="bg-card border rounded-lg p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10">
           <MarkdownContent content={report.raw_markdown} />
         </div>
 
