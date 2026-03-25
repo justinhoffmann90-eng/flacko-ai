@@ -1092,76 +1092,68 @@ export default function BacktestClient() {
                         MEDIAN MONTHLY RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
                       </p>
 
-                      <div className="flex gap-1.5 sm:gap-2 mt-8" style={{ height: "220px" }}>
+                      {/* Fixed 5-row grid per column: [top-label] [pos-bar] [axis] [neg-bar] [month+label] */}
+                      <div className="flex gap-1.5 sm:gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          // Median drives bar height — more reliable than avg for skewed stocks like TSLA
                           const isPositive = m.median_return >= 0;
-                          const barPct = (Math.abs(m.median_return) / maxAbs) * 90;
+                          const barPct = (Math.abs(m.median_return) / maxAbs) * 100;
+                          const BAR_ZONE = 90; // px for each half
 
                           return (
-                            <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'Inter', sans-serif" }}>
-                              {/* TOP HALF — positive bars grow up from center. Labels sit above via absolute positioning */}
-                              <div className="relative flex items-end justify-center w-full" style={{ height: "45%" }}>
-                                {/* Labels absolutely above the bar so they don't compress bar height */}
-                                {isPositive && (
-                                  <div className="absolute bottom-full mb-1 flex flex-col items-center w-full gap-0.5">
-                                    {isFree ? (
-                                      <>
-                                        <span className="text-[11px] text-emerald-300 leading-none font-semibold">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
-                                        <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}% win</span>
-                                      </>
-                                    ) : (
-                                      <span className="text-[10px] text-zinc-600 leading-none">—</span>
-                                    )}
-                                  </div>
+                            <div key={m.month} className="flex flex-1 flex-col items-center" style={{ minWidth: 0 }}>
+
+                              {/* ROW 1: top label (return + win) — fixed height, always present */}
+                              <div className="flex flex-col items-center justify-end w-full" style={{ height: "44px" }}>
+                                {isPositive && isFree && (
+                                  <>
+                                    <span className="text-[11px] font-semibold text-emerald-300 leading-none">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
+                                    <span className="text-[10px] text-zinc-500 leading-none mt-0.5">{m.win_rate.toFixed(0)}%</span>
+                                  </>
                                 )}
-                                {/* Median bar fills from bottom of the 45% zone */}
+                                {isPositive && !isFree && (
+                                  <span className="text-[10px] text-zinc-600 leading-none">—</span>
+                                )}
+                              </div>
+
+                              {/* ROW 2: positive bar zone — fixed height, bar grows up from bottom */}
+                              <div className="flex items-end justify-center w-full" style={{ height: `${BAR_ZONE}px` }}>
                                 {isPositive && (
                                   <div
-                                    className={`w-full rounded-t-sm transition-all self-end ${
-                                      !isFree ? "bg-zinc-700/40 blur-[2px]" : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
-                                    } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
-                                    style={{ height: `${barPct}%`, minHeight: "4px" }}
+                                    className={`w-full rounded-t-sm ${!isFree ? "bg-zinc-700/40 blur-[2px]" : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"} ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                    style={{ height: `${barPct}%`, minHeight: "3px" }}
                                   />
                                 )}
                               </div>
 
-                              {/* X-AXIS LINE */}
+                              {/* ROW 3: axis line */}
                               <div className="w-full h-px bg-zinc-700 flex-shrink-0" />
 
-                              {/* BOTTOM HALF — negative bars grow down from center. Labels sit below via absolute positioning */}
-                              <div className="relative flex items-start justify-center w-full" style={{ height: "45%" }}>
+                              {/* ROW 4: negative bar zone — fixed height, bar grows down from top */}
+                              <div className="flex items-start justify-center w-full" style={{ height: `${BAR_ZONE}px` }}>
                                 {!isPositive && (
-                                  <>
-                                    <div
-                                      className={`w-full rounded-b-sm transition-all self-start ${
-                                        !isFree
-                                          ? "bg-zinc-700/40 blur-[2px]"
-                                          : isCurrent ? "bg-red-400" : "bg-red-500/70"
-                                      } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
-                                      style={{ height: `${barPct}%`, minHeight: "4px" }}
-                                    />
-                                    {/* Labels absolutely below the bar */}
-                                    <div className="absolute top-full mt-1 flex flex-col items-center w-full gap-0.5">
-                                      {isFree ? (
-                                        <>
-                                          <span className="text-[11px] text-red-300 leading-none font-semibold">{m.median_return.toFixed(1)}%</span>
-                                          <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}% win</span>
-                                        </>
-                                      ) : (
-                                        <span className="text-[10px] text-zinc-600 leading-none">—</span>
-                                      )}
-                                    </div>
-                                  </>
+                                  <div
+                                    className={`w-full rounded-b-sm ${!isFree ? "bg-zinc-700/40 blur-[2px]" : isCurrent ? "bg-red-400" : "bg-red-500/70"} ${isCurrent ? "ring-1 ring-white/30" : ""}`}
+                                    style={{ height: `${barPct}%`, minHeight: "3px" }}
+                                  />
                                 )}
                               </div>
 
-                              {/* Month label */}
-                              <div className={`mt-auto text-[11px] sm:text-[12px] ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>
-                                {m.name}
+                              {/* ROW 5: month name + bottom label (for negative months) — fixed height */}
+                              <div className="flex flex-col items-center justify-start w-full" style={{ height: "44px" }}>
+                                <span className={`text-[11px] leading-none ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>{m.name}</span>
+                                {!isPositive && isFree && (
+                                  <>
+                                    <span className="text-[11px] font-semibold text-red-300 leading-none mt-0.5">{m.median_return.toFixed(1)}%</span>
+                                    <span className="text-[10px] text-zinc-500 leading-none mt-0.5">{m.win_rate.toFixed(0)}%</span>
+                                  </>
+                                )}
+                                {!isPositive && !isFree && (
+                                  <span className="text-[10px] text-zinc-600 leading-none mt-0.5">—</span>
+                                )}
                               </div>
+
                             </div>
                           );
                         })}
