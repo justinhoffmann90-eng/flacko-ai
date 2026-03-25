@@ -981,9 +981,9 @@ export default function BacktestClient() {
               {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
                 const currentMonth = new Date().getMonth(); // 0-indexed
                 const months = data.seasonality.monthly;
-                // Single unified scale — both positive and negative bars sized against the same max absolute value
-                // This prevents a -0.8% bar from looking as tall as a +10.6% bar
-                const maxAbs = Math.max(...months.map(m => Math.abs(m.avg_return)), 1);
+                // Use MEDIAN as primary bar value — more representative than average for skewed stocks like TSLA
+                // Average is kept as secondary dot overlay. Scale against max absolute median.
+                const maxAbs = Math.max(...months.map(m => Math.abs(m.median_return)), 1);
                 // Free: show current month + next 2 months (3 total); subscribers see all 12
                 const freeIndices = isSubscriber
                   ? new Set(Array.from({ length: 12 }, (_, i) => i))
@@ -1087,16 +1087,19 @@ export default function BacktestClient() {
                     {/* Bar chart — all 12 months */}
                     <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                       <p className="mb-4 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        MONTHLY RETURN vs AVERAGE · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
+                        MEDIAN MONTHLY RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA · DOT = AVG
                       </p>
 
                       <div className="flex gap-1.5 sm:gap-2" style={{ height: "260px" }}>
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          const isPositive = m.avg_return >= 0;
-                          // Unified scale: all bars sized against the single largest absolute value
-                          const barPct = (Math.abs(m.avg_return) / maxAbs) * 90;
+                          // Median is primary — more reliable than average for skewed stocks
+                          const isPositive = m.median_return >= 0;
+                          const barPct = (Math.abs(m.median_return) / maxAbs) * 90;
+                          // Average dot overlay position (as % of half-height zone)
+                          const avgIsPositive = m.avg_return >= 0;
+                          const avgDotPct = (Math.abs(m.avg_return) / maxAbs) * 90;
 
                           return (
                             <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -1107,7 +1110,7 @@ export default function BacktestClient() {
                                   <div className="absolute bottom-full mb-1 flex flex-col items-center w-full gap-0.5">
                                     {isFree ? (
                                       <>
-                                        <span className="text-[10px] sm:text-[11px] text-emerald-300 leading-none font-medium">+{m.avg_return.toFixed(1)}%</span>
+                                        <span className="text-[10px] sm:text-[11px] text-emerald-300 leading-none font-medium">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
                                         <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%</span>
                                       </>
                                     ) : (
@@ -1115,16 +1118,21 @@ export default function BacktestClient() {
                                     )}
                                   </div>
                                 )}
-                                {/* Bar fills from bottom of the 45% zone */}
+                                {/* Median bar fills from bottom of the 45% zone */}
                                 {isPositive && (
-                                  <div
-                                    className={`w-full rounded-t-sm transition-all self-end ${
-                                      !isFree
-                                        ? "bg-zinc-700/40 blur-[2px]"
-                                        : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
-                                    } ${isCurrent ? "ring-1 ring-white/30" : ""}`}
-                                    style={{ height: `${barPct}%`, minHeight: "4px" }}
-                                  />
+                                  <div className="relative w-full self-end" style={{ height: `${barPct}%`, minHeight: "4px" }}>
+                                    <div className={`w-full h-full rounded-t-sm transition-all ${
+                                      !isFree ? "bg-zinc-700/40 blur-[2px]" : isCurrent ? "bg-emerald-400" : "bg-emerald-500/70"
+                                    } ${isCurrent ? "ring-1 ring-white/30" : ""}`} />
+                                    {/* Avg dot overlay — shows where avg sits vs median */}
+                                    {isFree && avgIsPositive && (
+                                      <div
+                                        className="absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-yellow-400/80 z-10"
+                                        style={{ bottom: `${Math.min((avgDotPct / barPct) * 100, 200)}%` }}
+                                        title={`Avg: +${m.avg_return.toFixed(1)}%`}
+                                      />
+                                    )}
+                                  </div>
                                 )}
                               </div>
 
@@ -1147,7 +1155,7 @@ export default function BacktestClient() {
                                     <div className="absolute top-full mt-1 flex flex-col items-center w-full gap-0.5">
                                       {isFree ? (
                                         <>
-                                          <span className={`text-[10px] sm:text-[11px] text-red-300 leading-none font-medium ${!isFree ? "blur-[3px] select-none" : ""}`}>{m.avg_return.toFixed(1)}%</span>
+                                          <span className="text-[10px] sm:text-[11px] text-red-300 leading-none font-medium">{m.median_return.toFixed(1)}%</span>
                                           <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%</span>
                                         </>
                                       ) : (
@@ -1169,11 +1177,12 @@ export default function BacktestClient() {
 
                       {/* Legend */}
                       <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive avg return</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative avg return</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive median</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative median</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-yellow-400/80" /> Avg return</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
                         <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-zinc-700/40 blur-[1px]" /> Locked (subscribe)</span>
-                        <span className="flex items-center gap-1 text-zinc-400">· % above bar = win rate (how often that month was positive)</span>
+                        <span className="flex items-center gap-1 text-zinc-400">· % = win rate · bar = median return · dot = avg</span>
                       </div>
 
                       {!isSubscriber && (
