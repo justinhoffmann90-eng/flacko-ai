@@ -409,13 +409,16 @@ export async function computeIndicators(
         .select("bar_date, open, high, low, close, volume")
         .eq("ticker", "^VIX")
         .eq("timeframe", "daily")
-        .order("bar_date", { ascending: true })
+        .order("bar_date", { ascending: false })
         .limit(400);
 
       if (error || !data || data.length === 0) {
         console.error("[VIX] Supabase fallback also failed:", error?.message);
         return [];
       }
+
+      // data is newest-first — reverse to chronological order
+      data.reverse();
 
       return data
         .filter((r: any) => r.open != null && r.close != null)
@@ -456,7 +459,7 @@ export async function computeIndicators(
         .select("bar_date, open, high, low, close, volume")
         .eq("ticker", t)
         .eq("timeframe", "daily")
-        .order("bar_date", { ascending: true })
+        .order("bar_date", { ascending: false })
         .limit(count);
 
       if (error || !data || data.length < 50) {
@@ -464,7 +467,10 @@ export async function computeIndicators(
         throw new Error(`All data sources failed for ${t}`);
       }
 
-      console.log(`[${t}] Using Supabase fallback — ${data.length} daily bars`);
+      // data is newest-first — reverse to get chronological order for indicator math
+      data.reverse();
+
+      console.log(`[${t}] Using Supabase fallback — ${data.length} daily bars (most recent: ${data[data.length - 1]?.bar_date})`);
       return data
         .filter((r: any) => r.open != null && r.close != null)
         .map((r: any) => ({
