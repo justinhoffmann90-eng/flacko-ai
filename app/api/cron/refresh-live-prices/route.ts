@@ -2,7 +2,7 @@
  * /api/cron/refresh-live-prices
  *
  * Lightweight cron (every 30 min, 9am-4pm ET weekdays) that:
- * 1. Fetches live quotes from Yahoo Finance for key tickers
+ * 1. Fetches live TSLA price via multi-provider fetcher (Yahoo → Finnhub → Polygon → AV)
  * 2. Upserts today's bar into ohlcv_bars with fresh close price
  * 3. Invalidates orb_scan_cache so next backtest request gets fresh data
  *
@@ -13,12 +13,13 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
-import yahooFinance from "yahoo-finance2";
+import { fetchTSLAPrice } from "@/lib/price/fetcher";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const LIVE_PRICE_TICKERS = ["TSLA", "QQQ", "SPY", "NVDA", "AAPL", "^VIX"];
+// Only TSLA for now — it's the primary ticker and we have a robust fetcher for it
+const TICKERS_TO_REFRESH = ["TSLA"];
 
 export async function GET() {
   const headersList = await headers();
@@ -35,10 +36,12 @@ export async function GET() {
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const results: Record<string, { price: number | null; status: string }> = {};
 
-  for (const ticker of LIVE_PRICE_TICKERS) {
+  for (const ticker of TICKERS_TO_REFRESH) {
     try {
-      const quote = await yahooFinance.quote(ticker);
-      const livePrice = quote?.regularMarketPrice ?? null;
+      // Use the robust multi-provider fetcher (Yahoo → Finnhub → Polygon → Alpha Vantage)
+      const priceData = await fetchTSLAPrice();
+      const livePrice = priceData.price;
+
       if (!livePrice || livePrice <= 0) {
         results[ticker] = { price: null, status: "no_price" };
         continue;
@@ -59,17 +62,19 @@ export async function GET() {
         continue;
       }
 
-      // Upsert today's bar with live price (preserve all computed indicators from latest DB row)
+      // Upsert today's bar with live price
+      // Indicators (RSI, BXT, EMAs) are inherited from yesterday's row
+      // They will be properly recomputed tonight by the nightly orb/compute cron
       const todayBar = {
         ticker,
         timeframe: "daily",
         bar_date: todayStr,
-        open: quote.regularMarketOpen ?? livePrice,
-        high: quote.regularMarketDayHigh ?? livePrice,
-        low: quote.regularMarketDayLow ?? livePrice,
+        open: priceData.price, // Approximation — open not available from all providers
+        high: priceData.high ?? livePrice,
+        low: priceData.low ?? livePrice,
         close: livePrice,
-        volume: quote.regularMarketVolume ?? 0,
-        // Inherit indicators from latest bar (will be recomputed tonight by orb/compute)
+        volume: priceData.volume ?? 0,
+        // Inherit indicators from latest bar
         rsi: latestRow.rsi,
         bxt: latestRow.bxt,
         bxt_state: latestRow.bxt_state,
@@ -94,7 +99,7 @@ export async function GET() {
     }
   }
 
-  // Invalidate orb_scan_cache for all updated tickers so next request recomputes
+  // Invalidate orb_scan_cache for updated tickers so next scan request recomputes
   const updatedTickers = Object.entries(results)
     .filter(([, v]) => v.status === "ok")
     .map(([t]) => t);
@@ -104,6 +109,7 @@ export async function GET() {
       .from("orb_scan_cache")
       .update({ updated_at: "2000-01-01T00:00:00Z" })
       .in("ticker", updatedTickers);
+    console.log(`[refresh-live-prices] Invalidated cache for: ${updatedTickers.join(", ")}`);
   }
 
   console.log(`[refresh-live-prices] ${todayStr}:`, results);
