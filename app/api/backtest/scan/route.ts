@@ -1367,6 +1367,48 @@ async function computeIndicatorsFromOhlcv(
     return null;
   }
 
+  // ─── Live price injection: if latest bar is stale (not today), fetch live close from Yahoo ───
+  // This keeps indicators (RSI, BXT, EMAs) from DB but uses today's actual close price.
+  // Only applies during/after market hours on trading days.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // YYYY-MM-DD in ET
+  const latestBarDate = dailyRows[dailyRows.length - 1].bar_date;
+  if (latestBarDate < todayStr) {
+    try {
+      const now = new Date();
+      const etHour = parseInt(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/New_York" }).format(now));
+      const isWeekday = [1,2,3,4,5].includes(now.getDay());
+      // Only inject if market has opened (ET 9:30+) and it's a weekday
+      if (isWeekday && etHour >= 9) {
+        const yahooFinance = (await import("yahoo-finance2")).default;
+        const quote = await yahooFinance.quote(ticker === "^VIX" ? "^VIX" : ticker);
+        const livePrice = quote?.regularMarketPrice ?? quote?.preMarketPrice ?? null;
+        if (livePrice && livePrice > 0) {
+          // Clone the latest bar and override close/open/high/low with live data
+          const liveBar: OhlcvRow = {
+            ...dailyRows[dailyRows.length - 1],
+            bar_date: todayStr,
+            close: livePrice,
+            open: quote?.regularMarketOpen ?? livePrice,
+            high: quote?.regularMarketDayHigh ?? livePrice,
+            low: quote?.regularMarketDayLow ?? livePrice,
+            volume: quote?.regularMarketVolume ?? 0,
+          };
+          // Replace last bar if it's a new trading day, otherwise append
+          const alreadyHasToday = dailyRows[dailyRows.length - 1].bar_date === todayStr;
+          if (alreadyHasToday) {
+            dailyRows[dailyRows.length - 1] = liveBar;
+          } else {
+            dailyRows.push(liveBar);
+          }
+          console.log(`[ohlcv] ${ticker} live price injected: $${livePrice} (DB was ${latestBarDate})`);
+        }
+      }
+    } catch (e) {
+      // Non-fatal — fall back to DB price silently
+      console.warn(`[ohlcv] ${ticker} live price fetch failed, using DB price:`, e instanceof Error ? e.message : e);
+    }
+  }
+
   const latest = dailyRows[dailyRows.length - 1];
   const prev = dailyRows[dailyRows.length - 2];
   const prev3 = dailyRows[Math.max(0, dailyRows.length - 4)];
@@ -1876,11 +1918,28 @@ export async function GET(request: NextRequest) {
             }
           : null,
         active_streak: status === "active"
-          ? {
-              active_since: state?.active_since ?? evaluatedTicker.indicators.date,
-              active_day: state?.active_day ?? null,
-              entry_price: state?.entry_price != null ? round(state.entry_price) : null,
-            }
+          ? (() => {
+              const since = state?.active_since ?? evaluatedTicker.indicators.date;
+              // Recompute active_day dynamically — don't trust stale nightly cron counter
+              let computedActiveDay: number | null = null;
+              if (since) {
+                const start = new Date(since);
+                const end = new Date(); // today
+                let count = 0;
+                const cur = new Date(start);
+                while (cur <= end) {
+                  const dow = cur.getDay();
+                  if (dow !== 0 && dow !== 6) count++;
+                  cur.setDate(cur.getDate() + 1);
+                }
+                computedActiveDay = Math.max(count, 1);
+              }
+              return {
+                active_since: since,
+                active_day: computedActiveDay,
+                entry_price: state?.entry_price != null ? round(state.entry_price) : null,
+              };
+            })()
           : null,
         backtest: {
           n: 0,
