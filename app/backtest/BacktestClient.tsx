@@ -981,10 +981,9 @@ export default function BacktestClient() {
               {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
                 const currentMonth = new Date().getMonth(); // 0-indexed
                 const months = data.seasonality.monthly;
-                const posReturns = months.filter(m => m.avg_return >= 0).map(m => m.avg_return);
-                const negReturns = months.filter(m => m.avg_return < 0).map(m => Math.abs(m.avg_return));
-                const maxPos = posReturns.length > 0 ? Math.max(...posReturns) : 1;
-                const maxNeg = negReturns.length > 0 ? Math.max(...negReturns) : 1;
+                // Single unified scale — both positive and negative bars sized against the same max absolute value
+                // This prevents a -0.8% bar from looking as tall as a +10.6% bar
+                const maxAbs = Math.max(...months.map(m => Math.abs(m.avg_return)), 1);
                 // Free: show current month + next 2 months (3 total); subscribers see all 12
                 const freeIndices = isSubscriber
                   ? new Set(Array.from({ length: 12 }, (_, i) => i))
@@ -1096,8 +1095,8 @@ export default function BacktestClient() {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
                           const isPositive = m.avg_return >= 0;
-                          // Linear scale per direction so negative bars are proportional to each other
-                          const barPct = (Math.abs(m.avg_return) / (isPositive ? maxPos : maxNeg)) * 90;
+                          // Unified scale: all bars sized against the single largest absolute value
+                          const barPct = (Math.abs(m.avg_return) / maxAbs) * 90;
 
                           return (
                             <div key={m.month} className="flex flex-1 flex-col items-center h-full relative" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -1105,18 +1104,14 @@ export default function BacktestClient() {
                               <div className="relative flex items-end justify-center w-full" style={{ height: "45%" }}>
                                 {/* Labels absolutely above the bar so they don't compress bar height */}
                                 {isPositive && (
-                                  <div className="absolute bottom-full mb-0.5 flex flex-col items-center w-full">
+                                  <div className="absolute bottom-full mb-1 flex flex-col items-center w-full gap-0.5">
                                     {isFree ? (
                                       <>
-                                        <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-300 leading-none">{m.win_rate.toFixed(0)}%</span>
-                                        <span className="text-[10px] text-zinc-600 leading-none">win</span>
-                                        <span className={`text-[11px] sm:text-[12px] text-emerald-300 leading-none mt-0.5 ${!isFree ? "blur-[3px] select-none" : ""}`}>+{m.avg_return.toFixed(1)}%</span>
+                                        <span className="text-[10px] sm:text-[11px] text-emerald-300 leading-none font-medium">+{m.avg_return.toFixed(1)}%</span>
+                                        <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%</span>
                                       </>
                                     ) : (
-                                      <>
-                                        <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-500 leading-none">—</span>
-                                        <span className="text-[10px] text-zinc-600 leading-none">win</span>
-                                      </>
+                                      <span className="text-[10px] text-zinc-600 leading-none">—</span>
                                     )}
                                   </div>
                                 )}
@@ -1149,18 +1144,14 @@ export default function BacktestClient() {
                                       style={{ height: `${barPct}%`, minHeight: "4px" }}
                                     />
                                     {/* Labels absolutely below the bar */}
-                                    <div className="absolute top-full mt-0.5 flex flex-col items-center w-full">
-                                      <span className={`text-[11px] sm:text-[12px] text-red-300 leading-none ${!isFree ? "blur-[3px] select-none" : ""}`}>{m.avg_return.toFixed(1)}%</span>
+                                    <div className="absolute top-full mt-1 flex flex-col items-center w-full gap-0.5">
                                       {isFree ? (
                                         <>
-                                          <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-300 leading-none mt-0.5">{m.win_rate.toFixed(0)}%</span>
-                                          <span className="text-[10px] text-zinc-600 leading-none">win</span>
+                                          <span className={`text-[10px] sm:text-[11px] text-red-300 leading-none font-medium ${!isFree ? "blur-[3px] select-none" : ""}`}>{m.avg_return.toFixed(1)}%</span>
+                                          <span className="text-[10px] text-zinc-500 leading-none">{m.win_rate.toFixed(0)}%</span>
                                         </>
                                       ) : (
-                                        <>
-                                          <span className="text-[11px] sm:text-[12px] font-semibold text-zinc-500 leading-none mt-0.5">—</span>
-                                          <span className="text-[10px] text-zinc-600 leading-none">win</span>
-                                        </>
+                                        <span className="text-[10px] text-zinc-600 leading-none">—</span>
                                       )}
                                     </div>
                                   </>
