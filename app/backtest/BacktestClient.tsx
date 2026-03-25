@@ -298,7 +298,7 @@ function ForwardSummaryTable({ summary }: { summary: Record<string, SummaryPerio
   );
 }
 
-function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: ScanSetup; defaultOpen?: boolean; limited?: boolean }) {
+function SetupCard({ setup, defaultOpen = false, limited = false, currentPrice }: { setup: ScanSetup; defaultOpen?: boolean; limited?: boolean; currentPrice?: number | null }) {
   const [expanded, setExpanded] = useState(defaultOpen);
   const [instancesExpanded, setInstancesExpanded] = useState(false);
   const badge = statusBadge(setup.status);
@@ -373,12 +373,42 @@ function SetupCard({ setup, defaultOpen = false, limited = false }: { setup: Sca
         <div className="px-4 pb-5 sm:px-5 space-y-4 border-t border-zinc-800/50">
           {!limited && setup.active_streak && (
             <div
-              className="mt-3 grid gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[13px] text-sky-100 sm:grid-cols-3"
+              className="mt-3 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3 text-[13px] text-sky-100 space-y-2"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              <div>Active Since: {setup.active_streak.active_since ?? "—"}</div>
-              <div>Active Day: {setup.active_streak.active_day ?? "—"}</div>
-              <div>Entry: {setup.active_streak.entry_price != null ? `$${setup.active_streak.entry_price.toFixed(2)}` : "—"}</div>
+              {/* Trigger explanation */}
+              <div className="text-sky-200 font-medium">
+                🎯 Why this triggered: <span className="text-sky-100 font-normal">{setup.one_liner ?? "Signal conditions met — see indicators below."}</span>
+              </div>
+              {/* Active streak stats */}
+              <div className="grid gap-2 sm:grid-cols-3 pt-1 border-t border-sky-500/20">
+                <div>
+                  <span className="text-sky-400">Activated:</span>{" "}
+                  {setup.active_streak.active_since
+                    ? new Date(setup.active_streak.active_since).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-sky-400">Day:</span> {setup.active_streak.active_day != null ? `Day ${setup.active_streak.active_day}` : "—"}
+                </div>
+                <div>
+                  <span className="text-sky-400">Entry:</span>{" "}
+                  {setup.active_streak.entry_price != null ? (
+                    <>
+                      ${setup.active_streak.entry_price.toFixed(2)}
+                      {currentPrice != null && (
+                        <span className={`ml-1.5 ${currentPrice >= setup.active_streak.entry_price ? "text-emerald-400" : "text-red-400"}`}>
+                          ({currentPrice >= setup.active_streak.entry_price ? "+" : ""}{(((currentPrice - setup.active_streak.entry_price) / setup.active_streak.entry_price) * 100).toFixed(1)}% now)
+                        </span>
+                      )}
+                    </>
+                  ) : "—"}
+                </div>
+              </div>
+              {/* Signal still valid note */}
+              <div className="text-[12px] text-sky-300/70 pt-0.5 border-t border-sky-500/20">
+                Signal is active as of the last market close. Check BX Trender daily — if it flips back to LL, this setup deactivates.
+              </div>
             </div>
           )}
 
@@ -922,7 +952,7 @@ export default function BacktestClient() {
                   <h3 className="text-lg font-semibold text-emerald-300">Active Setups ({groupedSetups.active.length})</h3>
                   <div className="space-y-4">
                     {groupedSetups.active.map((setup) => (
-                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited={!isSubscriber} />
+                      <SetupCard key={setup.id} setup={setup} defaultOpen={true} limited={!isSubscriber} currentPrice={data.indicators?.close != null ? Number(data.indicators.close) : null} />
                     ))}
                   </div>
                 </div>

@@ -1101,7 +1101,7 @@ function buildCurrentSummarySentence(params: {
 
   // 1. REGIME + TECHNICAL CONTEXT — rich structural description
   const regimeLabel: Record<string, string> = {
-    "RED / EJECTED": "confirmed downtrend — price is below the Weekly 21 EMA, placing it in Master Eject territory where historical risk of further drawdown is elevated",
+    "RED / EJECTED": "confirmed downtrend with kill-leverage signal active — price has broken below the D21 EMA, triggering the Master Eject condition. This means all leveraged exposure (TSLL, calls) should be off the table until price reclaims D21. Stock-only, minimum size, or flat.",
     "RED": "bearish regime — BX Trender is printing lower lows on both the daily and weekly timeframes, indicating sustained selling pressure across multiple time horizons",
     "ORANGE": "early recovery phase — BX Trender momentum has bottomed on the daily chart but weekly structure has not confirmed, making this a \"show me\" tape",
     "ORANGE (Improving)": "improving recovery — daily BX Trender is leading with a higher low while weekly momentum is still lagging, typical of the early stages of a trend reversal",
@@ -1125,7 +1125,15 @@ function buildCurrentSummarySentence(params: {
   }
   if (indicators?.smi != null) {
     const smiVal = Number(indicators.smi);
-    const smiContext = smiVal < -40 ? " (deeply negative)" : smiVal < -20 ? " (negative)" : smiVal > 40 ? " (deeply positive)" : smiVal > 20 ? " (positive)" : " (neutral zone)";
+    const smiContext = smiVal < -40
+      ? " (deeply negative — historically oversold range, mean-reversion setups activate here)"
+      : smiVal < -20
+      ? " (negative — below the -20 threshold, bearish momentum zone)"
+      : smiVal > 40
+      ? " (deeply positive — overbought range, trend is extended)"
+      : smiVal > 20
+      ? " (positive — above +20 threshold, bullish momentum zone)"
+      : " (neutral zone — between -20 and +20, no directional edge from SMI alone)";
     techParts.push(`Daily SMI ${smiVal.toFixed(1)}${smiContext}`);
   }
   if (indicators?.bx_daily_state && indicators?.bx_weekly_state) {
@@ -1252,11 +1260,11 @@ function buildCurrentSummarySentence(params: {
   // 6. CLEAR RECOMMENDATION — with conviction level and specific guidance
   let stance: string;
   if ((mode.includes("RED") && avoidActiveCount > 0) || avoidActiveCount >= 2) {
-    stance = "REDUCE RISK. The trend structure is against longs on both timeframes and caution setups confirm elevated downside risk. This is not a \"buy the dip\" environment — it's a capital preservation environment. Tighten stops on existing positions, avoid initiating new longs, and wait for structural repair (daily BX Trender needs to print at least a higher low) before re-engaging.\n\nWhat would change this stance: Watch for Daily BXT to flip from LL to HL (first sign of bottoming), or SMI to reclaim -20 from below (momentum shift). Both would need to occur while Weekly BXT stabilizes.\n\nIf forced to enter here: 25% max position, stock only — no calls, no leveraged ETFs (e.g. TSLL). The risk/reward does not justify leverage. Risk spectrum: Stock (acceptable if conviction is high) → TSLL/leveraged ETF (avoid) → Calls (avoid entirely).";
+    stance = "REDUCE RISK. The trend structure is against longs on both timeframes and caution setups confirm elevated downside risk. This is not a \"buy the dip\" environment — it's a capital preservation environment. Tighten stops on existing positions, avoid initiating new longs, and wait for structural repair (daily BX Trender needs to print at least a higher low) before re-engaging.\n\nWhat would change this stance: Watch for Daily BXT to flip from LL to HL (first sign of bottoming), or SMI to reclaim -20 from below (momentum shift). Both would need to occur while Weekly BXT stabilizes.\n\nIf forced to enter here: Follow current mode caps — RED mode is 5% max, stock only. No calls, no leveraged ETFs (e.g. TSLL). The risk/reward does not justify leverage. Risk spectrum: Stock (mode-capped size only) → TSLL/leveraged ETF (avoid) → Calls (avoid entirely).";
   } else if (mode.includes("RED") && avoidActiveCount === 0) {
-    stance = "DEFENSIVE WAIT. The trend is bearish but no specific caution setups have triggered, meaning the downtrend may be mature rather than accelerating. Stay flat on new positions. The re-entry trigger is a daily BX Trender state change from LL to HL, which would signal the first structural improvement.\n\nWhat would change this stance: Daily BXT flipping LL → HL, or RSI dropping below 30 (which would activate oversold bounce setups). SMI crossing back above -20 would also be an early improvement signal.\n\nIf forced to enter here: 25% max position, stock only. No leveraged ETFs or options — the trend is still structurally bearish and leverage magnifies losses in these environments. Risk spectrum: Stock (small size only) → TSLL/leveraged ETF (avoid) → Calls (avoid entirely).";
+    stance = "DEFENSIVE WAIT. The trend is bearish but no specific caution setups have triggered, meaning the downtrend may be mature rather than accelerating. Stay flat on new positions. The re-entry trigger is a daily BX Trender state change from LL to HL, which would signal the first structural improvement.\n\nWhat would change this stance: Daily BXT flipping LL → HL, or RSI dropping below 30 (which would activate oversold bounce setups). SMI crossing back above -20 would also be an early improvement signal.\n\nIf forced to enter here: Follow current mode caps. In RED mode: 5% max exposure, stock only. In RED/EJECTED: no new positions. No leveraged ETFs or options — the trend is still structurally bearish. Risk spectrum: Stock (small size per mode cap) → TSLL/leveraged ETF (avoid) → Calls (avoid entirely).";
   } else if (avoidActiveCount > 0 && buyActiveCount === 0) {
-    stance = "WAIT — CAUTION ACTIVE. Risk signals are present without offsetting buy signals. This is a tape to watch, not trade. Stay flat until either the caution signal deactivates (clearing the risk) or a high-conviction buy setup triggers alongside it (providing an offsetting edge).\n\nWhat would change this stance: The active caution signal deactivating (check the setup card for its specific exit condition), or a high-win-rate buy setup triggering alongside it. A Daily SMI bull cross while Daily BXT is in HL or better would also indicate improving conditions.\n\nIf forced to enter here: 33% max position, stock preferred. Calls only if 6+ months to expiry and deep ITM. Avoid leveraged ETFs entirely — the caution signal means volatility is elevated and leverage works against you. Risk spectrum: Stock (reduced size) → LEAPS 6mo+ (small, ITM only) → TSLL/leveraged ETF (avoid) → Near-term calls (avoid).";
+    stance = "WAIT — CAUTION ACTIVE. Risk signals are present without offsetting buy signals. This is a tape to watch, not trade. Stay flat until either the caution signal deactivates (clearing the risk) or a high-conviction buy setup triggers alongside it (providing an offsetting edge).\n\nWhat would change this stance: The active caution signal deactivating (check the setup card for its specific exit condition), or a high-win-rate buy setup triggering alongside it. A Daily SMI bull cross while Daily BXT is in HL or better would also indicate improving conditions.\n\nIf forced to enter here: Follow current mode caps — apply mode-appropriate max exposure, stock preferred. Calls only if 6+ months to expiry and deep ITM. Avoid leveraged ETFs entirely — caution signal means volatility is elevated. Risk spectrum: Stock (mode-capped size) → LEAPS 6mo+ (small, ITM only) → TSLL/leveraged ETF (avoid) → Near-term calls (avoid).";
   } else if (mode.includes("GREEN") && buyActiveCount >= 2 && avoidActiveCount === 0) {
     stance = "BUY WITH CONVICTION. Trend structure is bullish on both timeframes, multiple buy setups confirm, and no caution signals are present. This is the highest-confidence alignment the system produces. Use pullbacks to key support levels as entry opportunities and size according to your risk tolerance.";
   } else if (mode.includes("GREEN") && buyActiveCount > 0) {
