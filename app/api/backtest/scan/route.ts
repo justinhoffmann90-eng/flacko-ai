@@ -931,16 +931,10 @@ async function computeSeasonality(
     });
   }
 
-  // Detrend: subtract the overall average monthly return so the chart shows
-  // relative strength/weakness instead of all-green from long-term growth bias
-  const overallAvg = allMonthlyReturns.length > 0
-    ? allMonthlyReturns.reduce((s, v) => s + v, 0) / allMonthlyReturns.length
-    : 0;
-  const monthly = rawSeasonalEntries.map((m) => ({
-    ...m,
-    avg_return: m.n > 0 ? round(m.avg_return - overallAvg) : 0,
-    median_return: m.median_return, // Keep median raw — it's already more robust
-  }));
+  // Use raw returns — matches industry standard (Barchart, Equity Clock, etc.)
+  // Detrending was distorting numbers by subtracting ~3.5%/mo TSLA growth bias,
+  // flipping months negative and understating all returns vs reality.
+  const monthly = rawSeasonalEntries;
 
   // Next 30 days — what month are we in now and what does the next month look like?
   const now = new Date();
