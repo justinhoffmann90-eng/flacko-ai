@@ -82,22 +82,26 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const testTo = body?.testTo as string | undefined;
+    const requestEmbed = body?.embed;
 
-    // Load today's morning brief from the Discord archive (single source of truth)
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }); // YYYY-MM-DD
-    const archivePath = path.join(
-      process.env.HOME || "/Users/trunks",
-      "clawd/posts/discord/morning-brief",
-      `${today}.md`
-    );
+    // Load today's morning brief from request body first (for Vercel), fallback to local archive
+    let embed = requestEmbed;
+    if (!embed) {
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }); // YYYY-MM-DD
+      const archivePath = path.join(
+        process.env.HOME || "/Users/trunks",
+        "clawd/posts/discord/morning-brief",
+        `${today}.md`
+      );
 
-    if (!fs.existsSync(archivePath)) {
-      return NextResponse.json({ error: `Archive not found: ${archivePath}` }, { status: 404 });
+      if (!fs.existsSync(archivePath)) {
+        return NextResponse.json({ error: `Archive not found: ${archivePath}` }, { status: 404 });
+      }
+
+      const raw = fs.readFileSync(archivePath, "utf-8");
+      const parsed = JSON.parse(raw);
+      embed = parsed?.embeds?.[0];
     }
-
-    const raw = fs.readFileSync(archivePath, "utf-8");
-    const parsed = JSON.parse(raw);
-    const embed = parsed?.embeds?.[0];
     if (!embed) {
       return NextResponse.json({ error: "No embed found in archive" }, { status: 500 });
     }
