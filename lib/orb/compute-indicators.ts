@@ -433,8 +433,56 @@ export async function computeIndicators(
     }
   }
 
+  // Fetch TSLA daily bars with Supabase fallback (Yahoo rate-limited on Vercel IPs)
+  async function fetchDailyBarsWithFallback(t: string, count: number): Promise<OHLCV[]> {
+    // Try Yahoo Finance twice
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const bars = await fetchDailyBars(t, count);
+        if (bars.length > 50) return bars;
+      } catch (e) {
+        console.warn(`[${t}] Yahoo daily attempt ${attempt + 1} failed: ${e}`);
+        if (attempt === 0) await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+
+    // Fallback: read from ohlcv_bars in Supabase — always fresh from nightly pipeline
+    console.warn(`[${t}] Yahoo failed, falling back to Supabase ohlcv_bars`);
+    try {
+      const { createServiceClient } = await import("@/lib/supabase/server");
+      const supabase = await createServiceClient();
+      const { data, error } = await supabase
+        .from("ohlcv_bars")
+        .select("bar_date, open, high, low, close, volume")
+        .eq("ticker", t)
+        .eq("timeframe", "daily")
+        .order("bar_date", { ascending: true })
+        .limit(count);
+
+      if (error || !data || data.length < 50) {
+        console.error(`[${t}] Supabase fallback failed:`, error?.message ?? "insufficient rows");
+        throw new Error(`All data sources failed for ${t}`);
+      }
+
+      console.log(`[${t}] Using Supabase fallback — ${data.length} daily bars`);
+      return data
+        .filter((r: any) => r.open != null && r.close != null)
+        .map((r: any) => ({
+          date: new Date(r.bar_date + "T12:00:00Z"),
+          open: Number(r.open),
+          high: Number(r.high),
+          low: Number(r.low),
+          close: Number(r.close),
+          volume: Number(r.volume) || 0,
+        }));
+    } catch (e) {
+      console.error(`[${t}] Supabase fallback error:`, e);
+      throw e;
+    }
+  }
+
   const [dailyBars, vixBars, hourlyBars] = await Promise.all([
-    fetchDailyBars(ticker, 400),
+    fetchDailyBarsWithFallback(ticker, 400),
     fetchVixWithFallback(),
     fetchHourlyBars(ticker, 60).catch(() => []),
   ]);
