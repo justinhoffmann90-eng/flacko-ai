@@ -951,8 +951,10 @@ export default function BacktestClient() {
               {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
                 const currentMonth = new Date().getMonth(); // 0-indexed
                 const months = data.seasonality.monthly;
-                const maxPos = Math.max(...months.filter(m => m.avg_return >= 0).map(m => m.avg_return), 1);
-                const maxNeg = Math.max(...months.filter(m => m.avg_return < 0).map(m => Math.abs(m.avg_return)), 1);
+                const posReturns = months.filter(m => m.avg_return >= 0).map(m => m.avg_return);
+                const negReturns = months.filter(m => m.avg_return < 0).map(m => Math.abs(m.avg_return));
+                const maxPos = posReturns.length > 0 ? Math.max(...posReturns) : 1;
+                const maxNeg = negReturns.length > 0 ? Math.max(...negReturns) : 1;
                 // Free: show current month + next 2 months (3 total); subscribers see all 12
                 const freeIndices = isSubscriber
                   ? new Set(Array.from({ length: 12 }, (_, i) => i))
