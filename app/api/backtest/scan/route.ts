@@ -850,7 +850,7 @@ async function computeSeasonality(
   ticker: string,
 ): Promise<{
   monthly: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }>;
-  next_30d: { avg_return: number; win_rate: number; n: number } | null;
+  next_30d: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
   forward: {
     d5: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
     d10: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
@@ -1012,7 +1012,7 @@ async function computeSeasonality(
 
   // next_30d: use the date-anchored 30-day forward return directly
   const next30d = forward.d30
-    ? { avg_return: forward.d30.avg_return, win_rate: forward.d30.win_rate, n: forward.d30.n }
+    ? { avg_return: forward.d30.avg_return, median_return: forward.d30.median_return, win_rate: forward.d30.win_rate, n: forward.d30.n }
     : null;
 
   return { monthly, next_30d: next30d, forward };
@@ -1034,7 +1034,7 @@ function buildCurrentSummarySentence(params: {
     n?: number;
   }>;
   seasonality?: {
-    next_30d: { avg_return: number; win_rate: number; n: number } | null;
+    next_30d: { avg_return: number; median_return?: number; win_rate: number; n: number } | null;
     forward?: {
       d5: { avg_return: number; median_return: number; win_rate: number; n: number } | null;
       d10: { avg_return: number; median_return: number; win_rate: number; n: number } | null;

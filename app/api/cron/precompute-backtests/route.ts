@@ -551,7 +551,7 @@ async function computeSeasonalityForTicker(
 
   // next_30d: use the date-anchored 30-day forward return directly
   const next30d = forward.d30
-    ? { avg_return: forward.d30.avg_return, win_rate: forward.d30.win_rate, n: forward.d30.n }
+    ? { avg_return: forward.d30.avg_return, median_return: forward.d30.median_return, win_rate: forward.d30.win_rate, n: forward.d30.n }
     : null;
 
   return { monthly, next_30d: next30d, forward };

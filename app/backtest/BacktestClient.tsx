@@ -168,7 +168,7 @@ interface ScanResponse {
   };
   seasonality?: {
     monthly: SeasonalityMonth[];
-    next_30d: { avg_return: number; win_rate: number; n: number } | null;
+    next_30d: { avg_return: number; median_return?: number; win_rate: number; n: number } | null;
     forward?: {
       d5: { avg_return: number; median_return: number; win_rate: number; best: number; worst: number; n: number } | null;
       d10: { avg_return: number; median_return: number; win_rate: number; best: number; worst: number; n: number } | null;
@@ -614,6 +614,7 @@ export default function BacktestClient() {
     recommendation_short: string; seasonality_30d: number | null;
   }> | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [monthlyStatMode, setMonthlyStatMode] = useState<"median" | "avg">("median");
   // Check scans + subscription status on mount
   useEffect(() => {
     setScansUsed(getScansToday());
@@ -979,53 +980,59 @@ export default function BacktestClient() {
                 </div>
               )}
 
-              {/* SEASONALITY — visual bar chart */}
+              {/* SEASONALITY — cohesive section */}
               {data.seasonality && data.seasonality.monthly.length > 0 && (() => {
                 const currentMonth = new Date().getMonth(); // 0-indexed
                 const months = data.seasonality.monthly;
-                // Use MEDIAN as primary bar value — more representative than average for skewed stocks like TSLA
-                // Average is kept as secondary dot overlay. Scale against max absolute median.
-                const maxAbs = Math.max(...months.map(m => Math.abs(m.median_return)), 1);
+                const useMedian = monthlyStatMode === "median";
+                const maxAbs = Math.max(...months.map(m => Math.abs(useMedian ? m.median_return : m.avg_return)), 1);
                 // Free: show current month + next 2 months (3 total); subscribers see all 12
                 const freeIndices = isSubscriber
                   ? new Set(Array.from({ length: 12 }, (_, i) => i))
                   : new Set([currentMonth, (currentMonth + 1) % 12, (currentMonth + 2) % 12]);
 
                 return (
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-purple-300">Seasonality</h3>
+                  <div className="rounded-xl border border-purple-500/20 bg-zinc-950/60 p-4 space-y-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    {/* Section header + Next 30D hero inline */}
+                    <div className="flex flex-col gap-3">
+                      <h3 className="text-lg font-semibold text-purple-300">Seasonality</h3>
 
-                    {/* Next 30 days highlight — use forward.d30 for consistency with card tiles */}
-                    {(() => {
-                      const fwd30 = data.seasonality?.forward?.d30;
-                      const fallback = data.seasonality?.next_30d;
-                      const src = fwd30 || fallback;
-                      if (!src) return null;
-                      return (
-                        <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4">
-                          <p className="text-[13px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                            NEXT 30 DAYS · FORWARD SEASONALITY FROM TODAY&apos;S DATE · {src.n} INSTANCES
-                          </p>
-                          <div className="flex items-center gap-8 mb-3">
-                            <div>
-                              <p className={`text-3xl font-bold ${src.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'Inter', sans-serif" }}>
-                                {src.avg_return >= 0 ? "+" : ""}{src.avg_return.toFixed(2)}%
-                              </p>
-                              <p className="text-[13px] text-purple-300/70 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>AVG RETURN</p>
-                            </div>
-                            <div>
-                              <p className="text-3xl font-bold text-zinc-200" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                {src.win_rate.toFixed(0)}%
-                              </p>
-                              <p className="text-[13px] text-purple-300/70 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>WIN RATE</p>
+                      {/* Next 30 days hero — compact 3-stat row */}
+                      {(() => {
+                        const fwd30 = data.seasonality?.forward?.d30;
+                        const fallback = data.seasonality?.next_30d;
+                        const src = fwd30 || fallback;
+                        if (!src) return null;
+                        const medianVal = src.median_return ?? (fwd30?.median_return);
+                        return (
+                          <div className="rounded-lg border border-purple-500/20 bg-purple-500/5 px-4 py-3">
+                            <p className="text-[11px] tracking-[0.12em] text-purple-300/60 mb-2">
+                              NEXT 30 DAYS · {src.n} INSTANCES
+                            </p>
+                            <div className="flex items-baseline gap-6 sm:gap-10">
+                              <div>
+                                <p className={`text-2xl font-bold ${src.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                                  {src.avg_return >= 0 ? "+" : ""}{src.avg_return.toFixed(2)}%
+                                </p>
+                                <p className="text-[11px] text-purple-300/50 mt-0.5">AVG RETURN</p>
+                              </div>
+                              <div>
+                                <p className={`text-2xl font-bold ${medianVal != null && medianVal >= 0 ? "text-emerald-300" : medianVal != null ? "text-red-300" : "text-zinc-400"}`}>
+                                  {medianVal != null ? `${medianVal >= 0 ? "+" : ""}${medianVal.toFixed(2)}%` : "—"}
+                                </p>
+                                <p className="text-[11px] text-purple-300/50 mt-0.5">MEDIAN RETURN</p>
+                              </div>
+                              <div>
+                                <p className="text-2xl font-bold text-zinc-200">
+                                  {src.win_rate.toFixed(0)}%
+                                </p>
+                                <p className="text-[11px] text-purple-300/50 mt-0.5">WIN RATE</p>
+                              </div>
                             </div>
                           </div>
-                          <p className="text-[13px] text-purple-300/50" style={{ fontFamily: "'Inter', sans-serif" }}>
-                            Based on forward 30-day returns from this calendar date across all historical instances.
-                          </p>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
+                    </div>
 
                     {/* Forward Seasonality: 5D / 10D / 30D / 60D */}
                     {data.seasonality.forward && (() => {
@@ -1040,43 +1047,51 @@ export default function BacktestClient() {
                       const lockedWindows = windows.filter(w => w.subscriberOnly && !isSubscriber);
 
                       return (
-                        <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
-                          <p className="text-[13px] tracking-[0.1em] text-purple-300 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                            FORWARD SEASONALITY FROM TODAY&apos;S CALENDAR DATE
+                        <div>
+                          <p className="text-[11px] tracking-[0.12em] text-zinc-500 mb-2">
+                            FORWARD SEASONALITY FROM TODAY&apos;S DATE
                           </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {visibleWindows.map(({ key, label }) => {
                               const s = fw[key];
                               if (!s) return null;
                               return (
-                                <div key={key} className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3 text-center">
-                                  <p className="text-[13px] tracking-[0.1em] text-zinc-500 mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</p>
-                                  <p className={`text-lg font-bold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`} style={{ fontFamily: "'Inter', sans-serif" }}>
-                                    {s.avg_return >= 0 ? "+" : ""}{s.avg_return.toFixed(1)}%
-                                  </p>
-                                  <p className="text-[13px] text-zinc-400 mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                    median: {s.median_return >= 0 ? "+" : ""}{s.median_return.toFixed(1)}%
-                                  </p>
-                                  <p className="text-[13px] text-zinc-500 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <div key={key} className="rounded-lg border border-purple-500/10 bg-zinc-900/40 p-2.5">
+                                  <p className="text-[11px] tracking-[0.1em] text-zinc-500 mb-1.5">{label}</p>
+                                  <div className="flex items-baseline gap-3 mb-1">
+                                    <div>
+                                      <span className="text-[10px] text-zinc-500">avg </span>
+                                      <span className={`text-sm font-semibold ${s.avg_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                                        {s.avg_return >= 0 ? "+" : ""}{s.avg_return.toFixed(1)}%
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-[10px] text-zinc-500">med </span>
+                                      <span className={`text-sm font-semibold ${s.median_return >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                                        {s.median_return >= 0 ? "+" : ""}{s.median_return.toFixed(1)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <p className="text-[11px] text-zinc-500">
                                     {s.win_rate.toFixed(0)}% win · n={s.n}
                                   </p>
                                   {s.best != null && s.worst != null && (
-                                    <p className="text-[13px] text-zinc-600 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                      <span className="text-emerald-500/70">Max Up: {s.best >= 0 ? "+" : ""}{s.best.toFixed(0)}%</span>
-                                      {" · "}
-                                      <span className="text-red-500/70">Max Down: {s.worst.toFixed(0)}%</span>
+                                    <p className="text-[11px] text-zinc-600 mt-0.5">
+                                      <span className="text-emerald-500/60">+{s.best.toFixed(0)}%</span>
+                                      {" / "}
+                                      <span className="text-red-500/60">{s.worst.toFixed(0)}%</span>
                                     </p>
                                   )}
                                 </div>
                               );
                             })}
                             {lockedWindows.length > 0 && (
-                              <div className="rounded-lg border border-zinc-700/30 bg-zinc-900/30 p-3 text-center flex flex-col items-center justify-center col-span-1">
+                              <div className="rounded-lg border border-zinc-700/30 bg-zinc-900/30 p-2.5 flex flex-col items-center justify-center">
                                 <span className="text-lg mb-1">🔒</span>
-                                <p className="text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <p className="text-[11px] text-zinc-500">
                                   {lockedWindows.map(w => w.label).join(", ")}
                                 </p>
-                                <a href={SUBSCRIBE_URL} className="text-[13px] text-emerald-400 hover:text-emerald-300 mt-1">
+                                <a href={SUBSCRIBE_URL} className="text-[11px] text-emerald-400 hover:text-emerald-300 mt-1">
                                   Unlock →
                                 </a>
                               </div>
@@ -1087,28 +1102,44 @@ export default function BacktestClient() {
                     })()}
 
                     {/* Bar chart — all 12 months */}
-                    <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
-                      <p className="mb-4 text-[13px] tracking-[0.1em] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        MEDIAN MONTHLY RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS OF DATA
-                      </p>
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[11px] tracking-[0.12em] text-zinc-500">
+                          {useMedian ? "MEDIAN" : "AVERAGE"} MONTHLY RETURN · {Math.max(...months.map((m) => m.n), 0)} YEARS
+                        </p>
+                        <div className="flex rounded-md border border-zinc-700/50 overflow-hidden">
+                          <button
+                            onClick={() => setMonthlyStatMode("median")}
+                            className={`px-2.5 py-0.5 text-[11px] font-medium transition-colors ${useMedian ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                          >
+                            Median
+                          </button>
+                          <button
+                            onClick={() => setMonthlyStatMode("avg")}
+                            className={`px-2.5 py-0.5 text-[11px] font-medium transition-colors ${!useMedian ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}
+                          >
+                            Avg
+                          </button>
+                        </div>
+                      </div>
 
-                      {/* Fixed 5-row grid per column: [top-label] [pos-bar] [axis] [neg-bar] [month+label] */}
-                      <div className="flex gap-1.5 sm:gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <div className="flex gap-1.5 sm:gap-2">
                         {months.map((m, idx) => {
                           const isFree = freeIndices.has(idx);
                           const isCurrent = idx === currentMonth;
-                          const isPositive = m.median_return >= 0;
-                          const barPct = (Math.abs(m.median_return) / maxAbs) * 100;
+                          const val = useMedian ? m.median_return : m.avg_return;
+                          const isPositive = val >= 0;
+                          const barPct = (Math.abs(val) / maxAbs) * 100;
                           const BAR_ZONE = 90; // px for each half
 
                           return (
                             <div key={m.month} className="flex flex-1 flex-col items-center" style={{ minWidth: 0 }}>
 
-                              {/* ROW 1: top label (return + win) — fixed height, always present */}
+                              {/* ROW 1: top label (return + win) */}
                               <div className="flex flex-col items-center justify-end w-full" style={{ height: "44px" }}>
                                 {isPositive && isFree && (
                                   <>
-                                    <span className="text-[11px] font-semibold text-emerald-300 leading-none">{m.median_return >= 0 ? "+" : ""}{m.median_return.toFixed(1)}%</span>
+                                    <span className="text-[11px] font-semibold text-emerald-300 leading-none">+{val.toFixed(1)}%</span>
                                     <span className="text-[10px] text-zinc-500 leading-none mt-0.5">{m.win_rate.toFixed(0)}%</span>
                                   </>
                                 )}
@@ -1117,7 +1148,7 @@ export default function BacktestClient() {
                                 )}
                               </div>
 
-                              {/* ROW 2: positive bar zone — fixed height, bar grows up from bottom */}
+                              {/* ROW 2: positive bar zone */}
                               <div className="flex items-end justify-center w-full" style={{ height: `${BAR_ZONE}px` }}>
                                 {isPositive && (
                                   <div
@@ -1130,7 +1161,7 @@ export default function BacktestClient() {
                               {/* ROW 3: axis line */}
                               <div className="w-full h-px bg-zinc-700 flex-shrink-0" />
 
-                              {/* ROW 4: negative bar zone — fixed height, bar grows down from top */}
+                              {/* ROW 4: negative bar zone */}
                               <div className="flex items-start justify-center w-full" style={{ height: `${BAR_ZONE}px` }}>
                                 {!isPositive && (
                                   <div
@@ -1140,12 +1171,12 @@ export default function BacktestClient() {
                                 )}
                               </div>
 
-                              {/* ROW 5: month name + bottom label (for negative months) — fixed height */}
+                              {/* ROW 5: month name + bottom label */}
                               <div className="flex flex-col items-center justify-start w-full" style={{ height: "44px" }}>
                                 <span className={`text-[11px] leading-none ${isCurrent ? "text-white font-bold" : "text-zinc-500"}`}>{m.name}</span>
                                 {!isPositive && isFree && (
                                   <>
-                                    <span className="text-[11px] font-semibold text-red-300 leading-none mt-0.5">{m.median_return.toFixed(1)}%</span>
+                                    <span className="text-[11px] font-semibold text-red-300 leading-none mt-0.5">{val.toFixed(1)}%</span>
                                     <span className="text-[10px] text-zinc-500 leading-none mt-0.5">{m.win_rate.toFixed(0)}%</span>
                                   </>
                                 )}
@@ -1160,11 +1191,11 @@ export default function BacktestClient() {
                       </div>
 
                       {/* Legend */}
-                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px] text-zinc-500" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive month</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative month</span>
-                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current month</span>
-                        <span className="flex items-center gap-1 text-zinc-400">· Bar height = median return · % = how often that month is positive</span>
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500/70" /> Positive</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500/70" /> Negative</span>
+                        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full ring-1 ring-white/30 bg-zinc-600" /> Current</span>
+                        <span className="text-zinc-600">· % = win rate</span>
                       </div>
 
                       {!isSubscriber && (
