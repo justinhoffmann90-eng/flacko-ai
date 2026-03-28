@@ -471,14 +471,12 @@ async function computeSeasonalityForTicker(
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  // First pass: compute raw averages to find the baseline
-  const allMonthlyReturns: number[] = [];
-  const rawSeasonalEntries: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }> = [];
+  // Compute raw averages per month — no detrending, matches industry standard (Barchart, Equity Clock)
+  const monthly: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }> = [];
   for (let m = 1; m <= 12; m++) {
     const returns = monthReturnsByMonth.get(m)!;
-    allMonthlyReturns.push(...returns);
     if (returns.length === 0) {
-      rawSeasonalEntries.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
+      monthly.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
       continue;
     }
     const sorted = [...returns].sort((a, b) => a - b);
@@ -487,41 +485,14 @@ async function computeSeasonalityForTicker(
       : sorted[Math.floor(sorted.length / 2)];
     const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
     const wins = returns.filter((r) => r > 0).length;
-    rawSeasonalEntries.push({
+    monthly.push({
       month: m, name: monthNames[m - 1],
       avg_return: round(avg), median_return: round(med),
       win_rate: round((wins / returns.length) * 100), n: returns.length,
     });
   }
 
-  // Detrend: subtract the overall average monthly return
-  const overallAvg = allMonthlyReturns.length > 0
-    ? allMonthlyReturns.reduce((s, v) => s + v, 0) / allMonthlyReturns.length : 0;
-  const monthly = rawSeasonalEntries.map((m) => ({
-    ...m,
-    avg_return: m.n > 0 ? round(m.avg_return - overallAvg) : 0,
-    median_return: m.median_return,
-  }));
-
-  // Next 30 days
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
-  const daysFromNextMonth = Math.max(0, 30 - daysLeftInMonth);
-  const currMonthData = monthly[currentMonth - 1];
-  const nextMonthData = monthly[nextMonth - 1];
-
-  let next30d = null;
-  if (currMonthData.n > 0) {
-    if (daysFromNextMonth > 0 && nextMonthData.n > 0) {
-      const blend = (currMonthData.avg_return * daysLeftInMonth + nextMonthData.avg_return * daysFromNextMonth) / 30;
-      const blendWin = (currMonthData.win_rate * daysLeftInMonth + nextMonthData.win_rate * daysFromNextMonth) / 30;
-      next30d = { avg_return: round(blend), win_rate: round(blendWin), n: Math.min(currMonthData.n, nextMonthData.n) };
-    } else {
-      next30d = { avg_return: currMonthData.avg_return, win_rate: currMonthData.win_rate, n: currMonthData.n };
-    }
-  }
 
   // Forward seasonality: 5D, 10D, 30D, 60D from today's calendar position
   const forwardWindows = [5, 10, 30, 60] as const;
@@ -540,8 +511,9 @@ async function computeSeasonalityForTicker(
     let anchorDate: string | null = null;
     let anchorClose: number | null = null;
     for (let offset = 0; offset <= 5; offset++) {
-      for (const dir of [0, 1, -1]) {
-        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + (offset * (dir || 1))));
+      const adjustments = offset === 0 ? [0] : [offset, -offset];
+      for (const adj of adjustments) {
+        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + adj));
         const tryKey = tryDate.toISOString().split("T")[0];
         const c = closeByDate.get(tryKey);
         if (c != null && c > 0) { anchorDate = tryKey; anchorClose = c; break; }
@@ -576,6 +548,11 @@ async function computeSeasonalityForTicker(
     d30: computeForwardStats(forwardResults[30]),
     d60: computeForwardStats(forwardResults[60]),
   };
+
+  // next_30d: use the date-anchored 30-day forward return directly
+  const next30d = forward.d30
+    ? { avg_return: forward.d30.avg_return, win_rate: forward.d30.win_rate, n: forward.d30.n }
+    : null;
 
   return { monthly, next_30d: next30d, forward };
 }

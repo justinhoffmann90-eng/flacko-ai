@@ -864,35 +864,7 @@ async function computeSeasonality(
   const emptyForward = { d5: null, d10: null, d30: null, d60: null };
   if (!allDaily || allDaily.length < 250) return { monthly: [], next_30d: null, forward: emptyForward };
 
-  // Group bars by year-month to get monthly returns
-  const monthlyReturns: Map<number, number[]> = new Map();
-  for (let m = 1; m <= 12; m++) monthlyReturns.set(m, []);
-
-  // Walk through and compute month-over-month returns
-  let prevMonthClose: number | null = null;
-  let prevMonth: number | null = null;
-
-  for (const bar of allDaily) {
-    const d = new Date(bar.bar_date + "T12:00:00Z");
-    const month = d.getMonth() + 1; // 1-12
-
-    if (prevMonth !== null && month !== prevMonth && prevMonthClose !== null) {
-      // Month changed — record return for the NEW month that just completed
-      const ret = ((bar.close - prevMonthClose) / prevMonthClose) * 100;
-      // The return belongs to prevMonth (the month that just ended)
-      monthlyReturns.get(prevMonth)!.push(ret);
-    }
-
-    // Track last bar of each month
-    if (prevMonth !== null && month !== prevMonth) {
-      prevMonthClose = bar.close;
-    } else if (prevMonthClose === null) {
-      prevMonthClose = bar.close;
-    }
-    prevMonth = month;
-  }
-
-  // Actually, let me redo this properly — compute return for each calendar month
+  // Compute return for each calendar month
   // by looking at close on first and last trading day of each month
   const monthBuckets: Map<string, { first: number; last: number }> = new Map(); // "YYYY-MM" → first/last close
   for (const bar of allDaily) {
@@ -924,12 +896,10 @@ async function computeSeasonality(
   }
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  // First pass: compute raw averages to find the baseline (overall avg monthly return)
-  const allMonthlyReturns: number[] = [];
+  // Compute raw averages per month
   const rawSeasonalEntries: Array<{ month: number; name: string; avg_return: number; median_return: number; win_rate: number; n: number }> = [];
   for (let m = 1; m <= 12; m++) {
     const returns = monthReturnsByMonth.get(m)!;
-    allMonthlyReturns.push(...returns);
     if (returns.length === 0) {
       rawSeasonalEntries.push({ month: m, name: monthNames[m - 1], avg_return: 0, median_return: 0, win_rate: 0, n: 0 });
       continue;
@@ -957,26 +927,7 @@ async function computeSeasonality(
   // flipping months negative and understating all returns vs reality.
   const monthly = rawSeasonalEntries;
 
-  // Next 30 days — what month are we in now and what does the next month look like?
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-  // Blend current month remaining + next month proportionally
-  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
-  const daysFromNextMonth = Math.max(0, 30 - daysLeftInMonth);
-  const currMonthData = monthly[currentMonth - 1];
-  const nextMonthData = monthly[nextMonth - 1];
-
-  let next30d = null;
-  if (currMonthData.n > 0) {
-    if (daysFromNextMonth > 0 && nextMonthData.n > 0) {
-      const blend = (currMonthData.avg_return * daysLeftInMonth + nextMonthData.avg_return * daysFromNextMonth) / 30;
-      const blendWin = (currMonthData.win_rate * daysLeftInMonth + nextMonthData.win_rate * daysFromNextMonth) / 30;
-      next30d = { avg_return: round(blend), win_rate: round(blendWin), n: Math.min(currMonthData.n, nextMonthData.n) };
-    } else {
-      next30d = { avg_return: currMonthData.avg_return, win_rate: currMonthData.win_rate, n: currMonthData.n };
-    }
-  }
 
   // Forward seasonality: 5D, 10D, 30D, 60D from today's calendar position
   // Look at every historical year on the same month+day, compute forward returns
@@ -992,8 +943,6 @@ async function computeSeasonality(
   // For each historical year, find the bar closest to today's month/day
   const todayMonth = now.getMonth(); // 0-indexed
   const todayDate = now.getDate();
-  const todayDoy = Math.floor((Date.UTC(now.getFullYear(), todayMonth, todayDate) - Date.UTC(now.getFullYear(), 0, 0)) / 86400000);
-
   // Get unique years in the data
   const years = new Set<number>();
   for (const bar of allDaily) {
@@ -1007,8 +956,9 @@ async function computeSeasonality(
     let anchorDate: string | null = null;
     let anchorClose: number | null = null;
     for (let offset = 0; offset <= 5; offset++) {
-      for (const dir of [0, 1, -1]) {
-        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + (offset * (dir || 1))));
+      const adjustments = offset === 0 ? [0] : [offset, -offset];
+      for (const adj of adjustments) {
+        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + adj));
         const tryKey = tryDate.toISOString().split("T")[0];
         const c = closeByDate.get(tryKey);
         if (c != null && c > 0) {
@@ -1035,40 +985,35 @@ async function computeSeasonality(
     }
   }
 
-  // Compute annualized daily drift for detrending forward windows
-  // Use the overall dataset: total return / total trading days * window size
-  const firstClose = allDaily[0].close;
-  const lastClose = allDaily[allDaily.length - 1].close;
-  const totalDays = allDaily.length;
-  const dailyDrift = totalDays > 1 ? (Math.pow(lastClose / firstClose, 1 / totalDays) - 1) * 100 : 0;
-
-  function computeForwardStats(returns: number[], windowDays: number) {
+  function computeForwardStats(returns: number[]) {
     if (returns.length < 3) return null;
-    // Detrend: subtract the expected drift for this window length
-    const expectedDrift = dailyDrift * windowDays;
-    const detrended = returns.map((r) => r - expectedDrift);
-    const sorted = [...detrended].sort((a, b) => a - b);
+    const sorted = [...returns].sort((a, b) => a - b);
     const med = sorted.length % 2 === 0
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
-    const avg = detrended.reduce((s, v) => s + v, 0) / detrended.length;
-    const wins = detrended.filter((r) => r > 0).length;
+    const avg = returns.reduce((s, v) => s + v, 0) / returns.length;
+    const wins = returns.filter((r) => r > 0).length;
     return {
       avg_return: round(avg),
       median_return: round(med),
-      win_rate: round((wins / detrended.length) * 100),
-      best: round(Math.max(...detrended)),
-      worst: round(Math.min(...detrended)),
+      win_rate: round((wins / returns.length) * 100),
+      best: round(Math.max(...returns)),
+      worst: round(Math.min(...returns)),
       n: returns.length,
     };
   }
 
   const forward = {
-    d5: computeForwardStats(forwardResults[5], 5),
-    d10: computeForwardStats(forwardResults[10], 10),
-    d30: computeForwardStats(forwardResults[30], 30),
-    d60: computeForwardStats(forwardResults[60], 60),
+    d5: computeForwardStats(forwardResults[5]),
+    d10: computeForwardStats(forwardResults[10]),
+    d30: computeForwardStats(forwardResults[30]),
+    d60: computeForwardStats(forwardResults[60]),
   };
+
+  // next_30d: use the date-anchored 30-day forward return directly
+  const next30d = forward.d30
+    ? { avg_return: forward.d30.avg_return, win_rate: forward.d30.win_rate, n: forward.d30.n }
+    : null;
 
   return { monthly, next_30d: next30d, forward };
 }

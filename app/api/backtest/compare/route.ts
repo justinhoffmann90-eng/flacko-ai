@@ -363,53 +363,54 @@ async function computeSeasonality30d(
   const rawDaily = await fetchOhlcvRows(supabase, ticker, "daily", 5100);
   if (!rawDaily || rawDaily.length < 250) return null;
 
-  const monthBuckets: Map<string, { first: number; last: number }> = new Map();
-  for (const bar of rawDaily) {
-    const key = bar.bar_date.substring(0, 7);
-    const existing = monthBuckets.get(key);
-    if (!existing) monthBuckets.set(key, { first: bar.close, last: bar.close });
-    else existing.last = bar.close;
-  }
+  const allDaily = rawDaily.filter((bar) => toNumber(bar.close) != null && Number(bar.close) > 0);
+  if (allDaily.length < 250) return null;
 
-  const monthReturnsByMonth: Map<number, number[]> = new Map();
-  for (let m = 1; m <= 12; m++) monthReturnsByMonth.set(m, []);
-
-  const sortedKeys = [...monthBuckets.keys()].sort();
-  const latestCompleteKey = sortedKeys.length >= 2 ? sortedKeys[sortedKeys.length - 2] : null;
-  for (let i = 1; i < sortedKeys.length; i++) {
-    const prevKey = sortedKeys[i - 1];
-    const currKey = sortedKeys[i];
-    if (latestCompleteKey && currKey > latestCompleteKey) continue;
-    const prevBucket = monthBuckets.get(prevKey)!;
-    const currBucket = monthBuckets.get(currKey)!;
-    if (prevBucket.last <= 0 || currBucket.last <= 0) continue;
-    const monthNum = parseInt(currKey.split("-")[1], 10);
-    monthReturnsByMonth.get(monthNum)!.push(((currBucket.last - prevBucket.last) / prevBucket.last) * 100);
-  }
+  // Build a date-indexed close map for fast lookups
+  const closeByDate = new Map<string, number>();
+  for (const bar of allDaily) closeByDate.set(bar.bar_date, bar.close);
 
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-  const daysLeftInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
-  const daysFromNextMonth = Math.max(0, 30 - daysLeftInMonth);
+  const todayMonth = now.getMonth();
+  const todayDate = now.getDate();
 
-  const currReturns = monthReturnsByMonth.get(currentMonth)!;
-  const nextReturns = monthReturnsByMonth.get(nextMonth)!;
-  if (currReturns.length === 0) return null;
+  // Get unique years in the data
+  const years = new Set<number>();
+  for (const bar of allDaily) years.add(parseInt(bar.bar_date.substring(0, 4), 10));
 
-  const currAvg = currReturns.reduce((s, v) => s + v, 0) / currReturns.length;
-  const currWin = round((currReturns.filter((r) => r > 0).length / currReturns.length) * 100);
+  // Compute 30-day forward returns from the same calendar date in each historical year
+  const returns30d: number[] = [];
+  for (const year of years) {
+    if (year === now.getFullYear()) continue;
+    // Find closest trading day to this calendar date
+    let anchorDate: string | null = null;
+    let anchorClose: number | null = null;
+    for (let offset = 0; offset <= 5; offset++) {
+      const adjustments = offset === 0 ? [0] : [offset, -offset];
+      for (const adj of adjustments) {
+        const tryDate = new Date(Date.UTC(year, todayMonth, todayDate + adj));
+        const tryKey = tryDate.toISOString().split("T")[0];
+        const c = closeByDate.get(tryKey);
+        if (c != null && c > 0) { anchorDate = tryKey; anchorClose = c; break; }
+      }
+      if (anchorDate) break;
+    }
+    if (!anchorDate || !anchorClose) continue;
 
-  if (daysFromNextMonth > 0 && nextReturns.length > 0) {
-    const nextAvg = nextReturns.reduce((s, v) => s + v, 0) / nextReturns.length;
-    const nextWin = round((nextReturns.filter((r) => r > 0).length / nextReturns.length) * 100);
-    return {
-      avg_return: round((currAvg * daysLeftInMonth + nextAvg * daysFromNextMonth) / 30),
-      win_rate: round((currWin * daysLeftInMonth + nextWin * daysFromNextMonth) / 30),
-    };
+    // Find close 30 trading days forward
+    const futureBars = allDaily.filter((b) => b.bar_date > anchorDate! && parseInt(b.bar_date.substring(0, 4), 10) <= year + 1);
+    if (futureBars.length >= 30) {
+      const futureClose = futureBars[29].close;
+      if (futureClose > 0) {
+        returns30d.push(((futureClose - anchorClose) / anchorClose) * 100);
+      }
+    }
   }
 
-  return { avg_return: round(currAvg), win_rate: currWin };
+  if (returns30d.length < 3) return null;
+  const avg = returns30d.reduce((s, v) => s + v, 0) / returns30d.length;
+  const wins = returns30d.filter((r) => r > 0).length;
+  return { avg_return: round(avg), win_rate: round((wins / returns30d.length) * 100) };
 }
 
 // ─── Derive recommendation from mode + setups ──────────────────────────────
