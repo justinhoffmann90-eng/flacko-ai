@@ -144,6 +144,31 @@ export async function POST(request: Request) {
     // Get report date — use requested date if provided (for weekly/backdated reports), otherwise today
     const today = requestedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 
+    // Compute daily change_pct from previous report's close if not already set
+    const currentClose = extracted_data?.price?.close;
+    const currentChangePct = extracted_data?.price?.change_pct;
+    if (currentClose && currentClose > 0 && (!currentChangePct || currentChangePct === 0)) {
+      try {
+        const { data: prevReport } = await serviceSupabase
+          .from("reports")
+          .select("price_close")
+          .lt("report_date", today)
+          .not("price_close", "is", null)
+          .gt("price_close", "0")
+          .order("report_date", { ascending: false })
+          .limit(1)
+          .single();
+        if (prevReport?.price_close && prevReport.price_close > 0) {
+          const computedChange = Math.round(((currentClose - prevReport.price_close) / prevReport.price_close) * 10000) / 100;
+          if (extracted_data.price) {
+            extracted_data.price.change_pct = computedChange;
+          }
+        }
+      } catch {
+        // Non-critical — continue with existing change_pct
+      }
+    }
+
     // Insert report
     const { data: report, error: insertError } = await serviceSupabase
       .from("reports")
