@@ -327,7 +327,57 @@ export default async function DashboardPage() {
           <OrbSignalsCard />
         </div>
 
-        {/* Positioning Card — full width, above the 2-col grid */}
+        {/* Support row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-4 lg:gap-5">
+          {/* Upcoming Catalysts */}
+          {upcomingCatalysts.length > 0 && (
+            <Card className="p-4 md:p-5 lg:p-6 h-full">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className="flex items-center gap-2 md:gap-3">
+                  <Calendar className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-muted-foreground" />
+                  <h3 className="font-semibold text-sm md:text-base lg:text-lg">Upcoming Catalysts</h3>
+                </div>
+                <Link href="/catalysts" className="text-xs md:text-sm text-primary hover:underline">
+                  View all →
+                </Link>
+              </div>
+              <div className="space-y-2 md:space-y-3">
+                {upcomingCatalysts.map((catalyst) => {
+                  const eventDate = new Date(catalyst.event_date + 'T12:00:00');
+                  const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
+                  const day = eventDate.getDate();
+                  const statusColors: Record<string, string> = {
+                    confirmed: 'bg-green-500/20 text-green-500',
+                    projected: 'bg-yellow-500/20 text-yellow-500',
+                    speculative: 'bg-slate-500/20 text-slate-400',
+                  };
+                  return (
+                    <div key={catalyst.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <div className="text-center min-w-[52px]">
+                        <p className="text-[10px] md:text-xs uppercase text-muted-foreground">{month}</p>
+                        <p className="text-xl md:text-2xl font-bold leading-tight">{day}</p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm md:text-base font-medium leading-tight line-clamp-2">{catalyst.name}</p>
+                        <span className={`inline-block mt-1 text-[10px] md:text-xs px-2 py-0.5 rounded font-medium ${statusColors[catalyst.status]}`}>
+                          {catalyst.status.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
+          {/* System Onboarding */}
+          <OnboardingCard />
+
+          {/* Education Hub */}
+          <EducationHubCard />
+        </div>
+
+        {/* Positioning Card — full width */}
         {positioning && (
           <PositioningCard
             dailyCapPct={dailyCapPct}
@@ -337,91 +387,35 @@ export default async function DashboardPage() {
           />
         )}
 
-        {/* Desktop: 2-column grid | Mobile: stacked */}
-        <div className="md:grid md:grid-cols-[1fr_340px] md:gap-6 lg:gap-8 space-y-4 md:space-y-0">
-          {/* Left column */}
-          <div className="space-y-4">
-            {/* Key Levels - Live Price Ladder */}
-            {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
-              <LivePriceLadder
-                upsideLevels={upsideLevels}
-                downsideLevels={downsideLevels}
-                masterEject={masterEject}
-                fallbackPrice={closePrice}
-                reportDate={report?.report_date}
-              />
-            )}
-          </div>
-
-          {/* Right column */}
-          <div className="space-y-4">
-            {/* Upcoming Catalysts */}
-            {upcomingCatalysts.length > 0 && (
-              <Card className="p-4 md:p-5 lg:p-6">
-                <div className="flex items-center justify-between mb-3 md:mb-4 lg:mb-6">
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <Calendar className="h-4 w-4 md:h-6 md:w-6 lg:h-7 lg:w-7 text-muted-foreground" />
-                    <h3 className="font-semibold text-sm md:text-lg lg:text-xl">Upcoming Catalysts</h3>
-                  </div>
-                  <Link href="/catalysts" className="text-xs md:text-sm lg:text-base text-primary hover:underline">
-                    View all →
-                  </Link>
+        {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
+        {!devBypass && !cashAvailable && (
+          <Link href="/settings">
+            <Card className="p-4 md:p-5 lg:p-6 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
+              <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
+                <div className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-full bg-muted flex items-center justify-center">
+                  <Wallet className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground" />
                 </div>
-                <div className="space-y-2 md:space-y-3 lg:space-y-4">
-                  {upcomingCatalysts.map((catalyst) => {
-                    const eventDate = new Date(catalyst.event_date + 'T12:00:00');
-                    const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
-                    const day = eventDate.getDate();
-                    const statusColors: Record<string, string> = {
-                      confirmed: 'bg-green-500/20 text-green-500',
-                      projected: 'bg-yellow-500/20 text-yellow-500',
-                      speculative: 'bg-slate-500/20 text-slate-400',
-                    };
-                    return (
-                      <div key={catalyst.id} className="flex items-center gap-3 md:gap-4 lg:gap-5 p-2 md:p-3 lg:p-4 rounded-lg bg-muted/50">
-                        <div className="text-center min-w-[40px] md:min-w-[60px] lg:min-w-[70px]">
-                          <p className="text-[10px] md:text-xs lg:text-sm uppercase text-muted-foreground">{month}</p>
-                          <p className="text-lg md:text-2xl lg:text-3xl font-bold leading-tight">{day}</p>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm md:text-base lg:text-lg font-medium truncate">{catalyst.name}</p>
-                          <span className={`text-[10px] md:text-xs lg:text-sm px-1.5 md:px-2 py-0.5 md:py-1 rounded font-medium ${statusColors[catalyst.status]}`}>
-                            {catalyst.status.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div>
+                  <p className="font-medium md:text-lg lg:text-xl">Set Up Position Sizing</p>
+                  <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+                    Enter your cash available to see daily budget &amp; bullet sizes
+                  </p>
                 </div>
-              </Card>
-            )}
+              </div>
+            </Card>
+          </Link>
+        )}
 
-            {/* System Onboarding */}
-            <OnboardingCard />
-
-            {/* Education Hub */}
-            <EducationHubCard />
-
-            {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
-            {!devBypass && !cashAvailable && (
-              <Link href="/settings">
-                <Card className="p-4 md:p-5 lg:p-6 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
-                    <div className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-full bg-muted flex items-center justify-center">
-                      <Wallet className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium md:text-lg lg:text-xl">Set Up Position Sizing</p>
-                      <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
-                        Enter your cash available to see daily budget &amp; bullet sizes
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            )}
-          </div>
-        </div>
+        {/* Key Levels - Full width */}
+        {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
+          <LivePriceLadder
+            upsideLevels={upsideLevels}
+            downsideLevels={downsideLevels}
+            masterEject={masterEject}
+            fallbackPrice={closePrice}
+            reportDate={report?.report_date}
+          />
+        )}
 
         {/* Quick Actions */}
         <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-4`}>
