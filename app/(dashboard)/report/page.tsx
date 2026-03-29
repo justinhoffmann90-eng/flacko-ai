@@ -122,7 +122,7 @@ export default async function ReportPage() {
         <ReportToggle />
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
           <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
             <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Mode</p>
             <Badge
@@ -145,6 +145,20 @@ export default async function ReportPage() {
               <p className="text-[10px] sm:text-[11px] md:text-xs text-yellow-500 mt-1">Slow Zone {formatPrice(slowZone)}</p>
             )}
           </div>
+
+          {masterEject > 0 && (
+            <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
+              <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Kill Leverage</p>
+              <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1 ${
+                closePrice && closePrice < masterEject ? 'text-red-500' : 'text-muted-foreground'
+              }`}>
+                {ejectLabel}
+              </p>
+              {ejectStep && ejectStep >= 2 && (
+                <p className="text-[10px] sm:text-[11px] md:text-xs text-red-500 mt-1">⚠️ ACTIVE</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Posture subtitle — full text below tiles */}
