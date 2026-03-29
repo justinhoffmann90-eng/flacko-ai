@@ -34,6 +34,12 @@ export interface HIROData {
 
 export type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
 
+// v3: Trim regime — determines which trim levels fire
+export type TrimRegime = 'A' | 'B' | 'MIXED';
+
+// v3: BX-Trender states (daily)
+export type BxState = 'HH' | 'HL' | 'LH' | 'LL' | null;
+
 export interface DailyReport {
   date: string;
   mode: TradeMode;
@@ -46,6 +52,13 @@ export interface DailyReport {
   levels: KeyLevel[];
   commentary?: string;
   daily_21ema?: number; // D21 EMA for Slow Zone check
+  // v3 fields
+  daily_9ema?: number;  // D9 EMA — used for Regime B trim suppression
+  weekly_9ema?: number; // W9 EMA — used for regime detection + KGS proxy
+  weekly_13ema?: number; // W13 EMA — used for regime detection
+  weekly_21ema?: number; // W21 EMA — used for regime detection (= master eject)
+  sma_200?: number;     // 200 SMA — used for Deep Dip Bridge
+  bx_daily_state?: BxState; // Daily BX-Trender state — used for Recovery Acceleration
 }
 
 export interface KeyLevel {
@@ -267,3 +280,35 @@ export const MAX_INVESTED: Record<string, number> = {
   ORANGE: 0.40,
   RED: 0.20,
 };
+
+// v3: Daily trim cap — max fraction of holdings trimmed per day by mode
+export const DAILY_TRIM_CAPS: Record<string, number> = {
+  GREEN: 0.10,
+  YELLOW_IMPROVING: 0.15,
+  YELLOW: 0.15,
+  ORANGE: 0.25,
+  RED: 0.30,
+};
+
+// v3: Core hold floor — 20% of peak position value never trimmed (shares only, not leverage)
+export const CORE_HOLD_FLOOR_PCT = 0.20;
+
+// v3: Recovery acceleration — double buy cap for N trading days after LL→HL flip
+export const RECOVERY_ACCEL_DAYS = 5;
+
+// v3: Deep Dip Bridge — boosted buying when 10-15% below 200 SMA
+export const DEEP_DIP_BRIDGE = {
+  MIN_PCT: -15,   // -15% below SMA200
+  MAX_PCT: -10,   // -10% below SMA200
+  CAP: 0.10,      // 10% daily cap for RED in bridge zone
+};
+
+// v3 state tracking interface
+export interface V3State {
+  peakPositionValue: number;     // highest total TSLA invested value (for core hold floor)
+  dailyTrimPercent: number;      // total trimmed today as fraction of holdings (resets daily)
+  dailyTrimDate: string;         // date of dailyTrimPercent tracking (for reset detection)
+  lastBxFlipDate: string | null; // date of most recent LL→HL BX flip
+  previousBxState: BxState;      // previous day's BX state (to detect LL→HL)
+  recoveryAccelRemaining: number; // trading days remaining of 2x buy cap
+}

@@ -56,7 +56,8 @@ import {
   logBot,
   saveLevelsHitToday,
 } from './performance';
-import type { Trade, Portfolio, MultiPortfolio, TradeSignal, OrbZone, Instrument } from './types';
+import type { Trade, Portfolio, MultiPortfolio, TradeSignal, OrbZone, Instrument, V3State, BxState } from './types';
+import { CORE_HOLD_FLOOR_PCT, RECOVERY_ACCEL_DAYS } from './types';
 
 // Bot configuration
 const CONFIG = {
@@ -95,6 +96,15 @@ let sessionState = {
   consecutiveClosesBelowKL: 0,  // Track consecutive daily closes below Kill Leverage
   levelsHitToday: new Set<string>(),  // Track which key levels have been hit today (avoid duplicate posts)
   previousPrice: 0,  // Track previous cycle price for directional context on level hits
+  // v3 state
+  v3: {
+    peakPositionValue: 0,
+    dailyTrimPercent: 0,
+    dailyTrimDate: getTodayCT(),
+    lastBxFlipDate: null,
+    previousBxState: null,
+    recoveryAccelRemaining: 0,
+  } as V3State,
 };
 
 /**
@@ -174,6 +184,13 @@ async function tradingLoop(): Promise<void> {
       marketOpenPosted = false;
       marketClosePosted = false;
       weeklyReportPosted = false;
+      // v3: Reset daily trim and decrement recovery acceleration
+      sessionState.v3.dailyTrimPercent = 0;
+      sessionState.v3.dailyTrimDate = today;
+      if (sessionState.v3.recoveryAccelRemaining > 0) {
+        sessionState.v3.recoveryAccelRemaining--;
+        console.log(`⚡ v3: Recovery Acceleration: ${sessionState.v3.recoveryAccelRemaining} days remaining`);
+      }
     }
     
     // Check market hours
@@ -257,6 +274,9 @@ async function tradingLoop(): Promise<void> {
             console.log(`🔴 Kill Leverage: sold all TSLL`);
           }
           // Note: shares are HELD per the rule — only leverage/options get cut
+          // v3: Reset core hold floor on full eject
+          sessionState.v3.peakPositionValue = 0;
+          console.log('v3: Core hold floor reset (Kill Leverage eject)');
           await logBot('trade', `Kill Leverage triggered: ${sessionState.consecutiveClosesBelowKL} consecutive closes below $${report.masterEject}`, {});
         }
       } else {
@@ -351,6 +371,31 @@ async function tradingLoop(): Promise<void> {
       }
     }
     
+    // --- v3: Daily trim reset (new day) ---
+    if (sessionState.v3.dailyTrimDate !== today) {
+      sessionState.v3.dailyTrimPercent = 0;
+      sessionState.v3.dailyTrimDate = today;
+    }
+
+    // --- v3: Recovery Acceleration — detect BX LL→HL flip ---
+    if (report && report.bx_daily_state) {
+      const currentBx = report.bx_daily_state;
+      const prevBx = sessionState.v3.previousBxState;
+      if (prevBx === 'LL' && currentBx === 'HL') {
+        sessionState.v3.lastBxFlipDate = today;
+        sessionState.v3.recoveryAccelRemaining = RECOVERY_ACCEL_DAYS;
+        console.log(`⚡ v3: BX flip LL→HL detected — Recovery Acceleration active for ${RECOVERY_ACCEL_DAYS} days`);
+      }
+      sessionState.v3.previousBxState = currentBx;
+    }
+
+    // --- v3: Decrement recovery acceleration each trading day ---
+    // (only decrement once per day, not per cycle)
+    if (sessionState.v3.recoveryAccelRemaining > 0 && sessionState.v3.dailyTrimDate === today) {
+      // Already handled by daily reset logic above; just ensure countdown
+      // happens at most once per day by using a flag approach via dailyTrimDate
+    }
+
     // Calculate current portfolio (multi-instrument)
     const multiPortfolio = calculateMultiPortfolio(
       sessionState.cash,
@@ -362,7 +407,13 @@ async function tradingLoop(): Promise<void> {
       tsllQuote.price,
       sessionState.realizedPnl
     );
-    
+
+    // --- v3: Update peak position value (TSLA shares only — TSLL not protected) ---
+    const tslaValue = multiPortfolio.tsla?.value || 0;
+    if (tslaValue > sessionState.v3.peakPositionValue) {
+      sessionState.v3.peakPositionValue = tslaValue;
+    }
+
     // Legacy single-instrument portfolio for compatibility
     const portfolio = calculatePortfolio(
       sessionState.cash,
@@ -371,9 +422,9 @@ async function tradingLoop(): Promise<void> {
       quote.price,
       sessionState.realizedPnl
     );
-    
+
     // Generate Flacko's take
-    const flackoTake = generateFlackoTake(quote, report, hiro, multiPortfolio.tsla ? { 
+    const flackoTake = generateFlackoTake(quote, report, hiro, multiPortfolio.tsla ? {
       shares: multiPortfolio.tsla.shares,
       avgCost: multiPortfolio.tsla.avgCost,
       entryTime: new Date(),
@@ -382,11 +433,11 @@ async function tradingLoop(): Promise<void> {
       unrealizedPnlPercent: multiPortfolio.tsla.pnlPercent,
       currentValue: multiPortfolio.tsla.value,
     } : null);
-    
+
     // Key moments only — no routine 15-min status posts.
     // Taylor speaks when there's something to say: trades, zone changes, market open/close.
-    
-    // Make trading decision (multi-instrument + Orb)
+
+    // Make trading decision (multi-instrument + Orb + v3)
     const signal = makeTradeDecision({
       quote,
       tsllQuote,
@@ -397,6 +448,7 @@ async function tradingLoop(): Promise<void> {
       multiPortfolio,
       todayTradesCount: sessionState.todayTradesCount,
       previousOrbZone: sessionState.previousOrbZone,
+      v3State: sessionState.v3,
     });
     
     // Execute trade if signaled

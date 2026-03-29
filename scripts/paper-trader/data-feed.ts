@@ -12,6 +12,7 @@ import type {
   OrbData,
   OrbZone,
   TradeMode,
+  BxState,
 } from './types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
@@ -461,6 +462,13 @@ export async function fetchDailyReport(): Promise<DailyReport | null> {
   }
 }
 
+function parseBxState(raw: any): BxState {
+  if (!raw) return null;
+  const s = String(raw).toUpperCase().trim();
+  if (s === 'HH' || s === 'HL' || s === 'LH' || s === 'LL') return s as BxState;
+  return null;
+}
+
 function parseExtractedData(date: string, ed: any): DailyReport {
   const levels = ed.levels_map || [];
   let mode = ed.mode?.current || ed.mode?.label || 'YELLOW';
@@ -485,6 +493,13 @@ function parseExtractedData(date: string, ed: any): DailyReport {
     hedgeWall: findLevelByName(levels, 'hedge wall')?.price || 0,
     callWall: findLevelByName(levels, 'call wall')?.price || 0,
     daily_21ema: ed.daily_21ema || ed.d21_ema || null,
+    // v3 fields
+    daily_9ema: ed.daily_9ema || ed.d9_ema || null,
+    weekly_9ema: ed.weekly_9ema || ed.w9_ema || null,
+    weekly_13ema: ed.weekly_13ema || ed.w13_ema || null,
+    weekly_21ema: ed.weekly_21ema || ed.w21_ema || ed.master_eject?.price || null,
+    sma_200: ed.sma_200 || ed.sma200 || ed.daily_sma200 || null,
+    bx_daily_state: parseBxState(ed.bx_daily_state || ed.bx_state_daily || ed.d_bx_state || null),
     levels: levels.map((l: any) => {
       // Normalize type — parser uses 'downside'/'upside', engine uses 'support'/'resistance'
       // CRITICAL: levels_map from the API often has NO type field, so we also infer from the level name.
