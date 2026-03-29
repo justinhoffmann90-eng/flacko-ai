@@ -327,8 +327,48 @@ export default async function DashboardPage() {
           <OrbSignalsCard />
         </div>
 
-        {/* Support row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-4 lg:gap-5">
+        {/* Positioning Card — full width */}
+        {positioning && (
+          <PositioningCard
+            dailyCapPct={dailyCapPct}
+            posture={positioning.posture || ''}
+            serverCashAvailable={cashAvailable}
+            isDevMode={devBypass}
+          />
+        )}
+
+        {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
+        {!devBypass && !cashAvailable && (
+          <Link href="/settings">
+            <Card className="p-4 md:p-5 lg:p-6 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
+              <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
+                <div className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-full bg-muted flex items-center justify-center">
+                  <Wallet className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium md:text-lg lg:text-xl">Set Up Position Sizing</p>
+                  <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+                    Enter your cash available to see daily budget &amp; bullet sizes
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        )}
+
+        {/* Key Levels - Full width */}
+        {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
+          <LivePriceLadder
+            upsideLevels={upsideLevels}
+            downsideLevels={downsideLevels}
+            masterEject={masterEject}
+            fallbackPrice={closePrice}
+            reportDate={report?.report_date}
+          />
+        )}
+
+        {/* Support row below trading workflow */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-5">
           {/* Upcoming Catalysts */}
           {upcomingCatalysts.length > 0 && (
             <Card className="p-4 md:p-5 lg:p-6 h-full">
@@ -372,53 +412,10 @@ export default async function DashboardPage() {
 
           {/* System Onboarding */}
           <OnboardingCard />
-
-          {/* Education Hub */}
-          <EducationHubCard />
         </div>
 
-        {/* Positioning Card — full width */}
-        {positioning && (
-          <PositioningCard
-            dailyCapPct={dailyCapPct}
-            posture={positioning.posture || ''}
-            serverCashAvailable={cashAvailable}
-            isDevMode={devBypass}
-          />
-        )}
-
-        {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
-        {!devBypass && !cashAvailable && (
-          <Link href="/settings">
-            <Card className="p-4 md:p-5 lg:p-6 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
-              <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
-                <div className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-full bg-muted flex items-center justify-center">
-                  <Wallet className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium md:text-lg lg:text-xl">Set Up Position Sizing</p>
-                  <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
-                    Enter your cash available to see daily budget &amp; bullet sizes
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </Link>
-        )}
-
-        {/* Key Levels - Full width */}
-        {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
-          <LivePriceLadder
-            upsideLevels={upsideLevels}
-            downsideLevels={downsideLevels}
-            masterEject={masterEject}
-            fallbackPrice={closePrice}
-            reportDate={report?.report_date}
-          />
-        )}
-
         {/* Quick Actions */}
-        <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-4`}>
+        <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-5`}>
           <Link href="/report" className="block">
             <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <FileText className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
@@ -455,8 +452,17 @@ export default async function DashboardPage() {
               </p>
             </Card>
           </Link>
+          <Link href="/learn/how-to-use-flacko" className="block">
+            <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
+              <Upload className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
+              <p className="font-medium md:text-xl lg:text-2xl">Education</p>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
+                Learn the system
+              </p>
+            </Card>
+          </Link>
           {isAdmin && (
-            <Link href="/admin/command-center" className="col-span-2 md:col-span-4 block">
+            <Link href="/admin/command-center" className="col-span-2 md:col-span-5 block">
               <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
                 <Radio className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary mb-2 md:mb-3 lg:mb-4" />
                 <p className="font-medium md:text-xl lg:text-2xl">Command Center</p>
