@@ -461,9 +461,19 @@ function parseTierValue(value: string | undefined): TierSignal {
   return 'yellow';
 }
 
-// Helper to parse mode string (e.g., "Yellow (Improving)" -> { base: "yellow", subtype: "Improving" })
+// Helper to parse mode string
+// Handles: "YELLOW_IMPROVING", "Yellow (Improving)", "Yellow", "GREEN", "RED", etc.
 function parseMode(modeStr: string | undefined): { base: TrafficLightMode; subtype: string } {
   if (!modeStr) return { base: 'yellow', subtype: '' };
+
+  // Handle underscore format from v5.9 guide: "YELLOW_IMPROVING"
+  const underscoreMatch = modeStr.match(/^(green|yellow|orange|red)_(\w+)$/i);
+  if (underscoreMatch) {
+    return {
+      base: underscoreMatch[1].toLowerCase() as TrafficLightMode,
+      subtype: underscoreMatch[2].charAt(0).toUpperCase() + underscoreMatch[2].slice(1).toLowerCase(),
+    };
+  }
 
   // Check for subtype in parentheses: "Yellow (Improving)"
   const match = modeStr.match(/^(green|yellow|orange|red)\s*(?:\(([^)]+)\))?$/i);
