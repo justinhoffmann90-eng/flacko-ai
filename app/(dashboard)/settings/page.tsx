@@ -426,13 +426,29 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             {discord?.username ? (
               // Connected state
-              <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <div>
-                    <p className="font-medium text-green-500">Connected</p>
-                    <p className="text-sm text-muted-foreground">@{discord.username}</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <p className="font-medium text-green-500">Connected</p>
+                      <p className="text-sm text-muted-foreground">@{discord.username}</p>
+                    </div>
                   </div>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    You&apos;ve been automatically added to the server with the <strong>Subscriber</strong> role — no invite link needed.{" "}
+                    <a
+                      href={DISCORD_INVITE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#5865F2] hover:underline"
+                    >
+                      Open Discord
+                    </a>{" "}
+                    and check your server list.
+                  </p>
                 </div>
               </div>
             ) : (
