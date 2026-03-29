@@ -180,9 +180,10 @@ function shouldNoWrapCell(node: ReactNode): boolean {
 
 export function MarkdownContent({ content }: MarkdownContentProps) {
   const cleanedContent = cleanContent(content);
+  let firstH2Seen = false;
 
   return (
-    <div className="markdown-content [&_h2]:border-t [&_h2]:border-slate-600/60 [&_h2]:pt-8 [&_h2:first-of-type]:border-t-0 [&_h2:first-of-type]:pt-0">
+    <div className="markdown-content">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
@@ -217,9 +218,17 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
           h1: ({ children }) => (
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mt-8 mb-4 text-foreground">{children}</h1>
           ),
-          h2: ({ children }) => (
-            <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mt-10 mb-4 text-foreground flex items-center gap-2">{children}</h2>
-          ),
+          h2: ({ children }) => {
+            const isFirst = !firstH2Seen;
+            firstH2Seen = true;
+            return (
+              <h2 className={`text-lg md:text-xl lg:text-2xl font-semibold mb-4 text-foreground flex items-center gap-2 ${
+                isFirst
+                  ? "mt-0 pt-0"
+                  : "mt-10 pt-8 border-t border-slate-600/60"
+              }`}>{children}</h2>
+            );
+          },
           h3: ({ children }) => (
             <h3 className="text-base md:text-lg lg:text-xl font-semibold mt-5 mb-2 text-foreground/90">{children}</h3>
           ),
