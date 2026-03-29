@@ -9,6 +9,21 @@ html, body {
   position: relative;
 }
 
+/* PWA standalone mode: pad content below the status bar / notch.
+   Pages that use a sticky header handle their own safe-area via
+   the .pwa-safe-top utility.  Pages WITHOUT a sticky header
+   (learn, orb, etc.) get padding from this body rule.             */
+@media all and (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+    /* Offset sticky headers so they sit below the notch */
+  }
+  .sticky.top-0,
+  [data-sticky-header] {
+    top: env(safe-area-inset-top, 0px) !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
