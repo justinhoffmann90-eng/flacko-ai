@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Shield,
   Layers,
@@ -29,17 +28,17 @@ import {
 
 function HeroSection() {
   return (
-    <div className="text-center py-10 md:py-16">
-      <p className="text-sm md:text-base text-muted-foreground tracking-widest uppercase">
+    <div className="text-center py-8 md:py-14 px-2">
+      <p className="text-xs md:text-sm text-muted-foreground tracking-widest uppercase">
         battlefield command intelligence
       </p>
-      <h1 className="text-3xl md:text-5xl font-bold tracking-tight mt-3">
+      <h1 className="text-2xl md:text-5xl font-bold tracking-tight mt-3 leading-tight">
         the tsla operating system.
       </h1>
-      <p className="text-lg md:text-xl text-muted-foreground mt-3 max-w-xl mx-auto">
+      <p className="text-base md:text-xl text-muted-foreground mt-2 max-w-xl mx-auto">
         one system. every scenario covered.
       </p>
-      <p className="text-sm md:text-base text-muted-foreground mt-6 max-w-2xl mx-auto leading-relaxed">
+      <p className="text-sm text-muted-foreground mt-4 max-w-2xl mx-auto leading-relaxed px-2">
         we turn technicals, flow and catalysts into a daily playbook. wake up
         with a plan already prepared for you — scenarios mapped, price alerts
         activated, risk managed.
@@ -67,7 +66,7 @@ const philosophyItems = [
     icon: Target,
     title: "Rules-Based",
     description:
-      "No gut feelings. Every mode assignment, every cap, every trim level follows documented rules — backtested across multiple market cycles and continuously validated with live grading, daily assessments, and weekly reviews.",
+      "No gut feelings. Every mode assignment, every cap, every trim level follows documented rules — backtested across multiple market cycles and continuously validated.",
   },
 ];
 
@@ -78,18 +77,18 @@ function PhilosophyCard() {
         <CardTitle>Our Philosophy</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {philosophyItems.map((item) => (
-            <div key={item.title} className="text-center md:text-left space-y-2">
-              <div className="flex justify-center md:justify-start">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <item.icon className="h-5 w-5 text-primary" />
-                </div>
+            <div key={item.title} className="flex gap-4 items-start">
+              <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
+                <item.icon className="h-4 w-4 text-primary" />
               </div>
-              <h3 className="font-semibold">{item.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -138,19 +137,16 @@ function HowItWorksCard() {
         <div className="relative">
           {timelineSteps.map((item, idx) => (
             <div key={item.step} className="flex gap-4 relative">
-              {/* Vertical line */}
               {idx < timelineSteps.length - 1 && (
                 <div className="absolute left-[15px] top-8 w-0.5 h-full bg-border" />
               )}
-              {/* Step number */}
               <div className="relative z-10 flex-shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                 {item.step}
               </div>
-              {/* Content */}
               <div className="pb-8 last:pb-0">
-                <p className="font-medium">{item.title}</p>
+                <p className="font-medium text-sm">{item.title}</p>
                 <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <ChevronRight className="h-3 w-3" />
+                  <ChevronRight className="h-3 w-3 flex-shrink-0" />
                   {item.detail}
                 </p>
               </div>
@@ -177,7 +173,7 @@ const modeRows = [
     color: "bg-yellow-500",
     textColor: "text-yellow-500",
     stance: "Cautious optimism",
-    description: "Early signs of recovery. System is warming up — ease back in.",
+    description: "Early signs of recovery. System warming up — ease back in.",
   },
   {
     mode: "YELLOW",
@@ -211,10 +207,10 @@ const modeRows = [
 
 const spectrumColors = [
   { label: "GREEN", color: "bg-green-500" },
-  { label: "YELLOW", color: "bg-yellow-500" },
+  { label: "YLW", color: "bg-yellow-500" },
   { label: "ORANGE", color: "bg-orange-500" },
   { label: "RED", color: "bg-red-500" },
-  { label: "EJECTED", color: "bg-zinc-600" },
+  { label: "EJECT", color: "bg-zinc-600" },
 ];
 
 function ModeSystemCard() {
@@ -223,160 +219,116 @@ function ModeSystemCard() {
       <CardHeader>
         <CardTitle>The Mode System</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5">
         <p className="text-sm text-muted-foreground leading-relaxed">
           Mode is not commentary — it&apos;s your position-sizing rule set.
           Multiple inputs work together to classify market state and determine
           how aggressively you should be positioned.
         </p>
 
-        {/* What drives modes */}
-        <div className="space-y-4">
+        {/* What drives modes — 2-col on mobile */}
+        <div className="space-y-3">
           <h3 className="text-sm font-semibold">What Determines Mode</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="rounded-lg border border-border p-3 space-y-1">
-              <div className="flex items-center gap-2">
-                <Gauge className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">BX-Trender</span>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { icon: Gauge, title: "BX-Trender", desc: "Momentum structure — HH/HL/LH/LL patterns on daily + weekly." },
+              { icon: TrendingUp, title: "EMA Structure", desc: "9, 13, 21 EMAs stacked bullish or bearish across timeframes." },
+              { icon: TrendingDown, title: "RSI + SMI", desc: "Momentum oscillators confirming trend energy or fade." },
+              { icon: Layers, title: "Multi-Timeframe", desc: "Hourly, 4H, daily, weekly all read before assigning mode." },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="rounded-lg border border-border p-3 space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Icon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                  <span className="text-xs font-semibold">{title}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Reads momentum structure — higher highs, lower lows, and
-                transition patterns on both daily and weekly timeframes.
-              </p>
-            </div>
-            <div className="rounded-lg border border-border p-3 space-y-1">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">EMA Structure</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                The 9, 13, and 21 EMAs on daily and weekly charts. When
-                they&apos;re stacked bullish (price above all three, in order),
-                it supports higher modes. When bearish, it supports lower modes.
-              </p>
-            </div>
-            <div className="rounded-lg border border-border p-3 space-y-1">
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">RSI + SMI</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Momentum oscillators that provide confirmation. They validate
-                whether the trend has real energy behind it or is losing steam.
-              </p>
-            </div>
-            <div className="rounded-lg border border-border p-3 space-y-1">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Multi-Timeframe</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                No single timeframe tells the full story. The system reads
-                hourly, 4H, daily, and weekly to build a complete picture before
-                assigning mode.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
 
         {/* Speed limit analogy */}
         <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-2">
           <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Gauge className="h-4 w-4 text-primary" />
+            <Gauge className="h-4 w-4 text-primary flex-shrink-0" />
             Think of it like a speed limit
           </h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
             GREEN is 65 mph on the highway — you can cruise. ORANGE is a 25 mph
             school zone — slow down. RED is a stop sign. You don&apos;t decide
-            how fast to go — the road conditions do. The system reads the road
-            and sets the limit for you.
+            how fast to go — the road conditions do.
           </p>
         </div>
 
-        {/* Mode Table */}
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-3 pr-4 font-semibold">Mode</th>
-                <th className="text-left py-3 px-3 font-semibold">Stance</th>
-                <th className="text-left py-3 pl-3 font-semibold">What It Means</th>
-              </tr>
-            </thead>
-            <tbody>
-              {modeRows.map((row) => (
-                <tr key={row.mode} className="border-b border-border/50">
-                  <td className="py-3 pr-4">
-                    <span className="flex items-center gap-2 whitespace-nowrap">
-                      <span
-                        className={`inline-block h-2.5 w-2.5 rounded-full ${row.color}`}
-                      />
-                      <span className={`font-medium ${row.textColor}`}>
-                        {row.mode}
-                      </span>
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 font-medium whitespace-nowrap">
-                    {row.stance}
-                  </td>
-                  <td className="py-3 pl-3 text-muted-foreground">
-                    {row.description}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Mode cards — stacked on mobile, readable on all sizes */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Mode Reference</h3>
+          <div className="space-y-2">
+            {modeRows.map((row) => (
+              <div
+                key={row.mode}
+                className="rounded-lg border border-border p-3 flex items-start gap-3"
+              >
+                <div className="flex-shrink-0 flex items-center gap-2 min-w-[130px]">
+                  <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${row.color}`} />
+                  <span className={`text-xs font-semibold ${row.textColor}`}>{row.mode}</span>
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <p className="text-xs font-medium text-foreground">{row.stance}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{row.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Spectrum Bar */}
-        <div className="space-y-2">
-          <div className="flex rounded-lg overflow-hidden h-3">
+        <div className="space-y-1.5">
+          <div className="flex rounded-lg overflow-hidden h-2.5">
             {spectrumColors.map((s) => (
               <div key={s.label} className={`flex-1 ${s.color}`} />
             ))}
           </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground px-1">
+          <div className="flex justify-between text-[10px] text-muted-foreground px-0.5">
             {spectrumColors.map((s) => (
               <span key={s.label}>{s.label}</span>
             ))}
           </div>
         </div>
 
-        {/* Early Warning + Uptrend/Downtrend behavior */}
-        <div className="space-y-3">
-          <div className="rounded-lg border border-border p-4 space-y-2">
+        {/* Early Warning + trend behavior */}
+        <div className="space-y-2">
+          <div className="rounded-lg border border-border p-3 space-y-1.5">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-yellow-500" />
+              <Zap className="h-4 w-4 text-yellow-500 flex-shrink-0" />
               Early Warning System
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Mode downgrades happen BEFORE price crashes — not after. BX-Trender
-              transitions are leading signals. By the time mainstream indicators
-              confirm a downtrend, the system has already reduced your exposure.
+              Mode downgrades happen BEFORE price crashes — not after. By the
+              time mainstream indicators confirm a downtrend, the system has
+              already reduced your exposure.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 space-y-1">
               <h4 className="text-sm font-medium text-green-500 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
+                <TrendingUp className="h-4 w-4 flex-shrink-0" />
                 In an Uptrend
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                BX-Trender confirms higher highs, EMAs stack bullish. Modes
-                upgrade progressively — GREEN lets you deploy with conviction
-                because the system has confirmed structural momentum.
+                BX confirms higher highs, EMAs stack bullish. GREEN lets you
+                deploy with conviction because structure is confirmed.
               </p>
             </div>
             <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 space-y-1">
               <h4 className="text-sm font-medium text-red-500 flex items-center gap-2">
-                <TrendingDown className="h-4 w-4" />
+                <TrendingDown className="h-4 w-4 flex-shrink-0" />
                 In a Downtrend
               </h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                BX-Trender flags lower lows, EMAs roll bearish. Modes downgrade
-                and trim caps activate. The system doesn&apos;t try to catch the
-                bottom — it reduces exposure as evidence deteriorates.
+                BX flags lower lows, EMAs roll bearish. Modes downgrade and
+                trim caps activate automatically.
               </p>
             </div>
           </div>
@@ -392,26 +344,22 @@ const featureItems = [
   {
     icon: FileText,
     title: "Daily Report",
-    description:
-      "Complete analysis with mode, levels, scenarios, and action plan. Published before market open.",
+    description: "Mode, levels, scenarios, and action plan. Published before market open.",
   },
   {
     icon: Bell,
     title: "Real-Time Alerts",
-    description:
-      "Price alerts at every key level. Know when to act without watching charts all day.",
+    description: "Price alerts at every key level. Know when to act without watching charts.",
   },
   {
     icon: CalendarDays,
     title: "Weekly Review",
-    description:
-      "Performance grading with accuracy scores. System evolution tracked weekly.",
+    description: "Performance grading with accuracy scores. System evolution tracked weekly.",
   },
   {
     icon: Radar,
     title: "Orb Signal Tracker",
-    description:
-      "17 backtested buy setups and avoid signals. See what's active and what's watching.",
+    description: "17 backtested buy setups and avoid signals. See what's active right now.",
   },
 ];
 
@@ -422,19 +370,21 @@ function WhatYouGetCard() {
         <CardTitle>What You Get Every Day</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {featureItems.map((item) => (
             <div
               key={item.title}
-              className="rounded-lg border border-border p-4 space-y-2"
+              className="rounded-lg border border-border p-4 space-y-2 flex gap-3"
             >
-              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <item.icon className="h-4 w-4 text-primary" />
               </div>
-              <h3 className="font-semibold text-sm">{item.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
+              <div className="space-y-1 min-w-0">
+                <h3 className="font-semibold text-sm">{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -450,25 +400,25 @@ const beyondItems = [
     icon: MessageSquare,
     title: "Discord Community",
     description:
-      "Not just alerts. #tesla-research for curated news and earnings breakdowns. #fs-insight for daily Fundstrat macro + technical summaries (Tom Lee, Mark Newton). #alerts for real-time price notifications at every key level. Taylor — our trading bot that paper trades the system live for full transparency. Plus community discussion with other TSLA traders.",
+      "#tesla-research for curated news. #fs-insight for daily Fundstrat macro (Tom Lee, Mark Newton). #alerts for real-time price notifications. Taylor — our paper trading bot that runs the system live for full transparency.",
   },
   {
     icon: Calendar,
     title: "Catalyst Calendar",
     description:
-      "Upcoming events that could move the stock — earnings, robotaxi milestones, product launches, macro events. Not just dates — context on why each one matters and how it fits into the current regime.",
+      "Upcoming events that could move the stock — earnings, robotaxi milestones, product launches, macro events — with context on why each one matters.",
   },
   {
     icon: Radar,
     title: "Orb Signal Tracker",
     description:
-      "17 backtested setups tracked in real-time. See what's active, what's on watch, and historical win rates for each signal. Quantified edge, not vibes.",
+      "17 backtested setups tracked in real-time. See what's active, what's on watch, and historical win rates. Quantified edge, not vibes.",
   },
   {
     icon: BookOpen,
     title: "Education Hub",
     description:
-      "20+ articles explaining every concept in the system — modes, gamma, kill leverage, EMA structure, and more. Designed so you understand the why behind every call.",
+      "20+ articles explaining every concept — modes, gamma, kill leverage, EMA structure, and more. Understand the why behind every call.",
   },
 ];
 
@@ -479,21 +429,21 @@ function BeyondTheReportCard() {
         <CardTitle>Beyond the Report</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-3">
           {beyondItems.map((item) => (
             <div
               key={item.title}
-              className="rounded-lg border border-border p-4 space-y-2"
+              className="rounded-lg border border-border p-3 flex gap-3"
             >
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <item.icon className="h-4 w-4 text-primary" />
-                </div>
-                <h3 className="font-semibold text-sm">{item.title}</h3>
+              <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
+                <item.icon className="h-4 w-4 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
+              <div className="space-y-1 min-w-0">
+                <h3 className="font-semibold text-sm">{item.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {item.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -506,22 +456,24 @@ function BeyondTheReportCard() {
 
 const levelTypes = [
   {
-    type: "Support Levels (S1–S4)",
-    description: "Where to buy, with stops defined below each level",
+    type: "Support (S1–S4)",
+    badge: "bg-blue-500/20 text-blue-400",
+    description: "Where to buy, with stops defined below each level.",
   },
   {
-    type: "Trim Levels (T1–T4)",
-    description: "Where to take profit based on mode trim cap percentage",
+    type: "Trim (T1–T4)",
+    badge: "bg-green-500/20 text-green-400",
+    description: "Where to take profit based on mode trim cap %.",
   },
   {
     type: "Kill Leverage",
-    description:
-      "The non-negotiable defense line. All leverage must be cut if breached.",
+    badge: "bg-red-500/20 text-red-400",
+    description: "Non-negotiable defense line. Cut all leverage if breached.",
   },
   {
     type: "Slow Zone",
-    description:
-      "When price drops into this zone, buying caps are reduced dramatically to prevent overexposure in weakening conditions",
+    badge: "bg-yellow-500/20 text-yellow-400",
+    description: "Buying caps reduce dramatically to prevent overexposure.",
   },
 ];
 
@@ -533,33 +485,20 @@ function KeyLevelsCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          SpotGamma gamma data combined with EMA structure across multiple
-          timeframes creates a precise map of support and resistance. These
-          aren&apos;t arbitrary lines — they&apos;re institutional flow zones
-          where buyers and sellers cluster.
+          SpotGamma gamma data + EMA structure creates a precise map of support
+          and resistance. These aren&apos;t arbitrary lines — they&apos;re
+          institutional flow zones where buyers and sellers cluster.
         </p>
 
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-3 pr-4 font-semibold">Level Type</th>
-                <th className="text-left py-3 pl-3 font-semibold">Purpose</th>
-              </tr>
-            </thead>
-            <tbody>
-              {levelTypes.map((row) => (
-                <tr key={row.type} className="border-b border-border/50">
-                  <td className="py-3 pr-4 font-medium whitespace-nowrap">
-                    {row.type}
-                  </td>
-                  <td className="py-3 pl-3 text-muted-foreground">
-                    {row.description}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {levelTypes.map((row) => (
+            <div key={row.type} className="rounded-lg border border-border p-3 space-y-1">
+              <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${row.badge}`}>
+                {row.type}
+              </span>
+              <p className="text-sm text-muted-foreground leading-relaxed">{row.description}</p>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -569,12 +508,12 @@ function KeyLevelsCard() {
 // ─── G. Backtested Results Card ──────────────────────────────────────────────
 
 const backtestRows = [
-  { ticker: "TSLA", sysReturn: "+53,307%", bh: "+23,937%", outperf: "+123%", maxDD: "-45.0%", bhDD: "-73.6%" },
-  { ticker: "QQQ", sysReturn: "+500%", bh: "+389%", outperf: "+28%", maxDD: "-14.3%", bhDD: "-35.1%" },
-  { ticker: "NVDA", sysReturn: "+5,985%", bh: "+6,241%", outperf: "-4%", maxDD: "-43.3%", bhDD: "-66.3%" },
-  { ticker: "AMZN", sysReturn: "+437%", bh: "+400%", outperf: "+9%", maxDD: "-28.5%", bhDD: "-56.1%" },
-  { ticker: "GOOGL", sysReturn: "+604%", bh: "+569%", outperf: "+6%", maxDD: "-23.1%", bhDD: "-44.3%" },
-  { ticker: "META", sysReturn: "+748%", bh: "+324%", outperf: "+131%", maxDD: "-42.3%", bhDD: "-76.7%" },
+  { ticker: "TSLA", sysReturn: "+53,307%", bh: "+23,937%", outperf: "+123%", maxDD: "-45.0%" },
+  { ticker: "QQQ",  sysReturn: "+500%",    bh: "+389%",    outperf: "+28%",  maxDD: "-14.3%" },
+  { ticker: "NVDA", sysReturn: "+5,985%",  bh: "+6,241%",  outperf: "-4%",   maxDD: "-43.3%" },
+  { ticker: "AMZN", sysReturn: "+437%",    bh: "+400%",    outperf: "+9%",   maxDD: "-28.5%" },
+  { ticker: "GOOGL", sysReturn: "+604%",   bh: "+569%",    outperf: "+6%",   maxDD: "-23.1%" },
+  { ticker: "META", sysReturn: "+748%",    bh: "+324%",    outperf: "+131%", maxDD: "-42.3%" },
 ];
 
 function BacktestCard() {
@@ -590,49 +529,31 @@ function BacktestCard() {
           2026) on 6 major tickers.
         </p>
 
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-3 pr-3 font-semibold">Ticker</th>
-                <th className="text-right py-3 px-3 font-semibold">System</th>
-                <th className="text-right py-3 px-3 font-semibold">Buy &amp; Hold</th>
-                <th className="text-right py-3 px-3 font-semibold">Edge</th>
-                <th className="text-right py-3 px-3 font-semibold">Max DD</th>
-                <th className="text-right py-3 pl-3 font-semibold">B&amp;H DD</th>
-              </tr>
-            </thead>
-            <tbody>
-              {backtestRows.map((row) => (
-                <tr key={row.ticker} className="border-b border-border/50">
-                  <td className="py-3 pr-3 font-semibold">{row.ticker}</td>
-                  <td className="py-3 px-3 text-right font-mono text-green-500">
-                    {row.sysReturn}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-muted-foreground">
-                    {row.bh}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono">
-                    <span
-                      className={
-                        row.outperf.startsWith("-")
-                          ? "text-red-400"
-                          : "text-green-400"
-                      }
-                    >
-                      {row.outperf}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-yellow-500">
-                    {row.maxDD}
-                  </td>
-                  <td className="py-3 pl-3 text-right font-mono text-red-400">
-                    {row.bhDD}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Mobile-first: card layout instead of wide table */}
+        <div className="space-y-2">
+          {/* Header row */}
+          <div className="grid grid-cols-4 gap-1 px-3 py-1">
+            <span className="text-xs font-semibold text-muted-foreground">Ticker</span>
+            <span className="text-xs font-semibold text-muted-foreground text-right">System</span>
+            <span className="text-xs font-semibold text-muted-foreground text-right">Edge</span>
+            <span className="text-xs font-semibold text-muted-foreground text-right">Max DD</span>
+          </div>
+          {backtestRows.map((row) => (
+            <div
+              key={row.ticker}
+              className="grid grid-cols-4 gap-1 rounded-lg border border-border/50 px-3 py-2.5 items-center"
+            >
+              <span className="text-sm font-bold">{row.ticker}</span>
+              <span className="text-sm font-mono text-green-500 text-right">{row.sysReturn}</span>
+              <span className={`text-sm font-mono text-right ${row.outperf.startsWith("-") ? "text-red-400" : "text-green-400"}`}>
+                {row.outperf}
+              </span>
+              <span className="text-sm font-mono text-yellow-500 text-right">{row.maxDD}</span>
+            </div>
+          ))}
+          <p className="text-[11px] text-muted-foreground/60 text-center pt-1">
+            B&H returns: TSLA +23,937% / QQQ +389% / NVDA +6,241%
+          </p>
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed">
@@ -670,11 +591,11 @@ function QualityControlsCard() {
         <p className="text-sm text-muted-foreground leading-relaxed">
           Every report is machine-verified before it reaches you.
         </p>
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {qualityControls.map((item) => (
-            <li key={item} className="flex items-start gap-2 text-sm">
+            <li key={item} className="flex items-start gap-2.5 text-sm">
               <Shield className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-              <span>{item}</span>
+              <span className="leading-relaxed">{item}</span>
             </li>
           ))}
         </ul>
@@ -726,8 +647,8 @@ function GettingStartedCard() {
               <span className="flex-shrink-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                 {idx + 1}
               </span>
-              <div className="pt-0.5">
-                <p className="text-sm">{item.text}</p>
+              <div className="pt-0.5 min-w-0">
+                <p className="text-sm leading-relaxed">{item.text}</p>
                 {item.href && (
                   <Link
                     href={item.href}
@@ -763,7 +684,7 @@ export function OnboardingContent() {
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-32">
+    <div className="max-w-2xl mx-auto space-y-5 pb-32 px-1">
       {/* A. Hero */}
       <HeroSection />
 
