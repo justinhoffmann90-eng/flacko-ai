@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { addRoleToMember } from "@/lib/discord/bot";
+import { addMemberToGuild } from "@/lib/discord/bot";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +15,8 @@ export async function GET() {
     return NextResponse.json({ error: "Discord not configured" }, { status: 500 });
   }
 
-  const scope = "identify";
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=${scope}`;
+  const scope = "identify guilds.join";
+  const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scope)}`;
 
   return NextResponse.redirect(url);
 }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to link Discord account" }, { status: 500 });
     }
 
-    // If user has active subscription, add Discord role
+    // If user has active subscription, join them to the guild + assign Subscriber role
     const { data: subscription } = await serviceSupabase
       .from("subscriptions")
       .select("status, trial_ends_at")
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       .single();
 
     if (hasSubscriptionAccess(subscription)) {
-      await addRoleToMember(discordUser.id);
+      await addMemberToGuild(discordUser.id, tokenData.access_token);
     }
 
     return NextResponse.json({

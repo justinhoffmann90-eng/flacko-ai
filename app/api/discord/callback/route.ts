@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { addRoleToMember } from "@/lib/discord/bot";
+import { addMemberToGuild } from "@/lib/discord/bot";
 import { hasSubscriptionAccess } from "@/lib/subscription";
 
 export const dynamic = "force-dynamic";
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/settings?discord_error=update_failed`);
     }
 
-    // If user has active subscription, add Discord role
+    // If user has active subscription, join them to the guild + assign Subscriber role
     const { data: subscription } = await serviceSupabase
       .from("subscriptions")
       .select("status, trial_ends_at")
@@ -95,21 +95,20 @@ export async function GET(request: Request) {
       .single();
 
     if (hasSubscriptionAccess(subscription)) {
-      const roleResult = await addRoleToMember(discordUser.id);
-      if (!roleResult.success) {
-        console.error(`Discord role add failed for user ${user.id} (${discordUser.username}):`, roleResult.error);
-        // Log to database for debugging
+      const guildResult = await addMemberToGuild(discordUser.id, tokenData.access_token);
+      if (!guildResult.success) {
+        console.error(`Discord guild join failed for user ${user.id} (${discordUser.username}):`, guildResult.error);
         await serviceSupabase.from("discord_alert_log").insert({
           user_id: user.id,
-          event_type: "role_assignment_failed_on_link",
+          event_type: "guild_join_failed_on_link",
           status: "error",
-          error_message: roleResult.error || "Unknown error adding role during Discord link",
+          error_message: guildResult.error || "Unknown error joining guild during Discord link",
         });
       } else {
-        console.log(`Discord role added for user ${user.id} (${discordUser.username}) on link`);
+        console.log(`Discord guild join+role for user ${user.id} (${discordUser.username}): alreadyMember=${guildResult.alreadyMember}`);
       }
     } else {
-      console.log(`User ${user.id} linked Discord but has no active subscription - skipping role`);
+      console.log(`User ${user.id} linked Discord but has no active subscription - skipping guild join`);
     }
 
     return NextResponse.redirect(`${origin}/settings?discord_linked=true`);

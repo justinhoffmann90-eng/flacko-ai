@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle } from "lucide-react";
+import { X } from "lucide-react";
 
 const DISCORD_INVITE_URL = "https://discord.gg/WuDSbQFbfW";
 const DISCORD_CLIENT_ID = "1465761828461216028";
@@ -23,12 +23,8 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
     setDismissed(isDismissed);
   }, []);
 
-  // Show Step 2 (Join Server) if Discord is linked but card not dismissed
-  // Show Step 1 (Link Account) if Discord is NOT linked
-  const showJoinStep = isDiscordLinked && !dismissed;
-  const showLinkStep = !isDiscordLinked && !dismissed;
-
-  if (!mounted || dismissed || (isDiscordLinked && dismissed)) {
+  // Don't show if not mounted, dismissed, or already linked
+  if (!mounted || dismissed || isDiscordLinked) {
     return null;
   }
 
@@ -37,16 +33,9 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
     setDismissed(true);
   };
 
-  const handleJoinServer = () => {
-    // After joining, dismiss the card
-    localStorage.setItem(STORAGE_KEY, "true");
-    setDismissed(true);
-    window.open(DISCORD_INVITE_URL, "_blank");
-  };
-
-  const handleLinkDiscord = () => {
+  const handleConnectDiscord = () => {
     const redirectUri = encodeURIComponent(`${window.location.origin}/api/discord/callback`);
-    const scope = "identify";
+    const scope = encodeURIComponent("identify guilds.join");
     const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
     window.location.href = url;
   };
@@ -60,7 +49,7 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
       >
         <X className="h-4 w-4 text-muted-foreground" />
       </button>
-      
+
       <div className="flex items-start gap-3 pr-6">
         <div className="h-10 w-10 rounded-full bg-[#5865F2] flex items-center justify-center flex-shrink-0">
           <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -68,41 +57,31 @@ export function DiscordOnboarding({ isDiscordLinked }: DiscordOnboardingProps) {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          {showLinkStep && (
-            <>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 1 of 2</p>
-              <h3 className="font-semibold text-sm">Link Your Discord Account</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Connect your Discord to get the <span className="text-[#5865F2] font-medium">Subscriber</span> role automatically.
-              </p>
-              <Button
-                size="sm"
-                className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
-                onClick={handleLinkDiscord}
-              >
-                Link Discord Account
-              </Button>
-            </>
-          )}
-          {showJoinStep && (
-            <>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Step 2 of 2</p>
-              <h3 className="font-semibold text-sm">Join Our Member-Only Discord</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Your account is linked! Now join the server to access private channels.
-              </p>
-              <Button
-                size="sm"
-                className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
-                onClick={handleJoinServer}
-              >
-                Join Discord Server
-              </Button>
-            </>
-          )}
+          <h3 className="font-semibold text-sm">Connect Discord</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            One click to join the server and get the <span className="text-[#5865F2] font-medium">Subscriber</span> role.
+          </p>
+          <Button
+            size="sm"
+            className="bg-[#5865F2] hover:bg-[#4752C4] text-white h-8 text-xs mt-3"
+            onClick={handleConnectDiscord}
+          >
+            Connect Discord
+          </Button>
+          <p className="text-[11px] text-muted-foreground/60 mt-2">
+            Already in the server?{" "}
+            <a
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#5865F2]/70 hover:underline"
+            >
+              Just linking your account
+            </a>
+          </p>
         </div>
       </div>
-      
+
       <div className="flex justify-end mt-2">
         <button
           onClick={handleDismiss}

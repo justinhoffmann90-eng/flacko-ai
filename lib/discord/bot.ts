@@ -160,6 +160,83 @@ export async function memberHasRole(
 }
 
 /**
+ * Add a user to the guild using their OAuth2 access_token.
+ * This uses PUT /guilds/{guild_id}/members/{user_id} which:
+ * - Joins the user to the server if they're not already in it
+ * - Assigns the specified roles in the same call
+ * - If already in the server, updates their roles instead
+ * Requires Bot token for auth and the user's OAuth access_token in the body.
+ */
+export async function addMemberToGuild(
+  discordUserId: string,
+  userAccessToken: string,
+  roleId: string = DISCORD_SUBSCRIBER_ROLE_ID || ""
+): Promise<{ success: boolean; alreadyMember?: boolean; error?: string }> {
+  if (!DISCORD_BOT_TOKEN) {
+    return { success: false, error: "DISCORD_BOT_TOKEN not configured" };
+  }
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(
+        `${DISCORD_API_BASE}/guilds/${DISCORD_GUILD_ID}/members/${discordUserId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            access_token: userAccessToken,
+            roles: roleId ? [roleId] : [],
+          }),
+        }
+      );
+
+      // 201 = user was added to the guild
+      if (response.status === 201) {
+        return { success: true, alreadyMember: false };
+      }
+
+      // 204 = user was already in the guild (roles may have been updated)
+      if (response.status === 204) {
+        // User already in guild — need to explicitly add the role
+        if (roleId) {
+          const roleResult = await addRoleToMember(discordUserId, roleId);
+          return { success: roleResult.success, alreadyMember: true, error: roleResult.error };
+        }
+        return { success: true, alreadyMember: true };
+      }
+
+      // Handle rate limiting
+      if (response.status === 429) {
+        const retryAfter = response.headers.get("Retry-After");
+        const waitMs = retryAfter ? parseInt(retryAfter) * 1000 : (attempt + 1) * 2000;
+        console.log(`Rate limited on addMemberToGuild, waiting ${waitMs}ms before retry ${attempt + 1}/2`);
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+        continue;
+      }
+
+      const errorData = (await response.json()) as DiscordApiError;
+      return {
+        success: false,
+        error: `Discord API error: ${errorData.message} (${errorData.code})`,
+      };
+    } catch (error) {
+      if (attempt === 2) {
+        return {
+          success: false,
+          error: `Failed to add member to guild: ${error instanceof Error ? error.message : "Unknown error"}`,
+        };
+      }
+      await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
+    }
+  }
+
+  return { success: false, error: "Max retries exceeded" };
+}
+
+/**
  * Get Discord user info by ID
  */
 export async function getDiscordUser(discordUserId: string): Promise<{
