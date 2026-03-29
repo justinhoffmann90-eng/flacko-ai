@@ -98,13 +98,25 @@ export async function GET(request: Request) {
       const guildResult = await addMemberToGuild(discordUser.id, tokenData.access_token);
       if (!guildResult.success) {
         console.error(`Discord guild join failed for user ${user.id} (${discordUser.username}):`, guildResult.error);
+        // Store the pending join so it can be retried without a new OAuth flow
+        await serviceSupabase
+          .from("users")
+          .update({ discord_guild_join_pending: true })
+          .eq("id", user.id);
         await serviceSupabase.from("discord_alert_log").insert({
           user_id: user.id,
           event_type: "guild_join_failed_on_link",
           status: "error",
           error_message: guildResult.error || "Unknown error joining guild during Discord link",
         });
+        // Redirect with flag so Settings page can show a retry prompt
+        return NextResponse.redirect(`${origin}/settings?discord_linked=true&guild_join_pending=true`);
       } else {
+        // Clear any stale pending flag
+        await serviceSupabase
+          .from("users")
+          .update({ discord_guild_join_pending: false })
+          .eq("id", user.id);
         console.log(`Discord guild join+role for user ${user.id} (${discordUser.username}): alreadyMember=${guildResult.alreadyMember}`);
       }
     } else {

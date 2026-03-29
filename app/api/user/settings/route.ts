@@ -28,7 +28,7 @@ export async function GET() {
     const serviceSupabase = await createServiceClient();
     const { data: userData } = await serviceSupabase
       .from("users")
-      .select("discord_user_id, discord_username")
+      .select("discord_user_id, discord_username, discord_guild_join_pending")
       .eq("id", user.id)
       .single();
 
@@ -37,6 +37,7 @@ export async function GET() {
       discord: userData ? {
         user_id: userData.discord_user_id,
         username: userData.discord_username,
+        guild_join_pending: userData.discord_guild_join_pending ?? false,
       } : null,
     });
   } catch (error) {

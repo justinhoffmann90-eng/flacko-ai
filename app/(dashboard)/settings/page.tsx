@@ -24,6 +24,7 @@ interface UserSettings {
 interface DiscordInfo {
   user_id: string | null;
   username: string | null;
+  guild_join_pending?: boolean;
 }
 
 const DISCORD_INVITE_URL = "https://discord.gg/WuDSbQFbfW";
@@ -52,6 +53,26 @@ export default function SettingsPage() {
   
   // Discord state
   const [discord, setDiscord] = useState<DiscordInfo | null>(null);
+  const [fixRoleLoading, setFixRoleLoading] = useState(false);
+  const [fixRoleSuccess, setFixRoleSuccess] = useState(false);
+
+  const handleFixRole = async () => {
+    setFixRoleLoading(true);
+    try {
+      const res = await fetch("/api/discord/fix-role", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setDiscord(prev => prev ? { ...prev, guild_join_pending: false } : prev);
+        setFixRoleSuccess(true);
+      } else {
+        setError(data.hint || data.error || "Failed to assign role. Please try again.");
+      }
+    } catch {
+      setError("Failed to assign role. Please try again.");
+    } finally {
+      setFixRoleLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Check for Discord callback params
@@ -436,20 +457,51 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    You&apos;ve been automatically added to the server with the <strong>Subscriber</strong> role — no invite link needed.{" "}
-                    <a
-                      href={DISCORD_INVITE_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#5865F2] hover:underline"
-                    >
-                      Open Discord
-                    </a>{" "}
-                    and check your server list.
-                  </p>
-                </div>
+                {discord.guild_join_pending && !fixRoleSuccess ? (
+                  <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-2">
+                      <strong>Almost there!</strong> Your account is linked but we couldn&apos;t automatically add you to the server. Join via the invite link below, then click <strong>Fix My Access</strong>.
+                    </p>
+                    <div className="flex gap-2">
+                      <a
+                        href={DISCORD_INVITE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-center text-xs py-2 px-3 rounded bg-[#5865F2] text-white hover:bg-[#4752C4]"
+                      >
+                        Join Server
+                      </a>
+                      <button
+                        onClick={handleFixRole}
+                        disabled={fixRoleLoading}
+                        className="flex-1 text-xs py-2 px-3 rounded border border-yellow-500 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/10 disabled:opacity-50"
+                      >
+                        {fixRoleLoading ? "Fixing..." : "Fix My Access"}
+                      </button>
+                    </div>
+                  </div>
+                ) : fixRoleSuccess ? (
+                  <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      ✅ <strong>Subscriber role assigned!</strong> Open Discord and check your subscriber channels.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      You&apos;ve been automatically added to the server with the <strong>Subscriber</strong> role — no invite link needed.{" "}
+                      <a
+                        href={DISCORD_INVITE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#5865F2] hover:underline"
+                      >
+                        Open Discord
+                      </a>{" "}
+                      and check your server list.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               // Not connected state — single OAuth button joins server + assigns role
