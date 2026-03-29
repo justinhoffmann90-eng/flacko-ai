@@ -70,6 +70,29 @@ const OrbSignalsCard = dynamicImport(
   }
 );
 
+const WhatsNewCard = dynamicImport(
+  () => import("@/components/dashboard/whats-new-card").then((mod) => ({ default: mod.WhatsNewCard })),
+  {
+    ssr: false,
+    loading: () => (
+      <Card className="p-4 md:p-6 animate-pulse">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="h-5 w-5 bg-zinc-700/50 rounded" />
+          <div className="h-5 w-28 bg-zinc-700/50 rounded" />
+        </div>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2 py-3">
+              <div className="h-4 w-16 bg-zinc-800/40 rounded-full" />
+              <div className="h-4 w-3/4 bg-zinc-800/40 rounded" />
+            </div>
+          ))}
+        </div>
+      </Card>
+    ),
+  }
+);
+
 // CallOptionsWidget removed — Orb replaces it
 
 interface ExtractedData {
@@ -443,6 +466,9 @@ export default async function DashboardPage() {
             </Link>
           )}
         </div>
+
+        {/* What's New */}
+        <WhatsNewCard />
       </main>
     </ModeProvider>
   );

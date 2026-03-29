@@ -363,5 +363,19 @@ export interface PriceTier {
   subscribers_range: string;
 }
 
+// Product Update Types
+export type ProductUpdateCategory = 'feature' | 'enhancement' | 'system' | 'content';
+
+export interface ProductUpdate {
+  id: string;
+  title: string;
+  category: ProductUpdateCategory;
+  summary: string;
+  body: string;
+  pinned: boolean;
+  published_at: string;
+  created_at: string;
+}
+
 // Re-export weekly review types
 export * from "./weekly-review";
