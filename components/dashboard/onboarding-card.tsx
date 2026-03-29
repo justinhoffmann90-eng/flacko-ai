@@ -65,9 +65,9 @@ export function OnboardingCard() {
         <div className="flex items-center gap-3">
           <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
           <div>
-            <p className="font-medium text-sm md:text-base">System Overview</p>
+            <p className="font-medium text-sm md:text-base">Welcome to Flacko AI</p>
             <p className="text-xs text-muted-foreground">
-              Review how Flacko AI works
+              Review how the system works
             </p>
           </div>
         </div>
