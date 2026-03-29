@@ -13,10 +13,13 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
-    
-    // Use the actual request origin to match what the client sent
-    const origin = url.origin;
-    const redirectUri = `${origin}/api/discord/callback`;
+
+    // Always use the canonical app URL for redirect_uri — must match exactly
+    // what was registered in the Discord OAuth app AND what link/route.ts sends.
+    // Using url.origin caused www vs non-www mismatches that silently broke token exchange.
+    const canonicalOrigin = process.env.NEXT_PUBLIC_APP_URL || "https://www.flacko.ai";
+    const origin = canonicalOrigin;
+    const redirectUri = `${canonicalOrigin}/api/discord/callback`;
 
     // User denied permissions
     if (error) {
