@@ -235,7 +235,7 @@ export default function OrbClient() {
   return (
     <div
       ref={containerRef}
-      className="min-h-screen p-4"
+      className="min-h-screen p-4 pwa-safe-top"
       style={{ background: "#0a0a0c", color: "#f0f0f0", fontFamily: "'Inter', system-ui, sans-serif", overscrollBehavior: "none" }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

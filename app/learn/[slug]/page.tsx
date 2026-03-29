@@ -66,7 +66,7 @@ export default function LearnTopicPage({ params }: { params: { slug: string } })
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pwa-safe-top">
       <div className="container mx-auto px-4 py-10 sm:py-12">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
