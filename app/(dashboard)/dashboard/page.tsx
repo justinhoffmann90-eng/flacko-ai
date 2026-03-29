@@ -367,52 +367,8 @@ export default async function DashboardPage() {
           />
         )}
 
-        {/* Support row below trading workflow */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-4 lg:gap-5">
-          {/* Upcoming Catalysts */}
-          {upcomingCatalysts.length > 0 && (
-            <Card className="p-4 md:p-5 lg:p-6 h-full">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <Calendar className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-muted-foreground" />
-                  <h3 className="font-semibold text-sm md:text-base lg:text-lg">Upcoming Catalysts</h3>
-                </div>
-                <Link href="/catalysts" className="text-xs md:text-sm text-primary hover:underline">
-                  View all →
-                </Link>
-              </div>
-              <div className="space-y-2 md:space-y-3">
-                {upcomingCatalysts.map((catalyst) => {
-                  const eventDate = new Date(catalyst.event_date + 'T12:00:00');
-                  const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
-                  const day = eventDate.getDate();
-                  const statusColors: Record<string, string> = {
-                    confirmed: 'bg-green-500/20 text-green-500',
-                    projected: 'bg-yellow-500/20 text-yellow-500',
-                    speculative: 'bg-slate-500/20 text-slate-400',
-                  };
-                  return (
-                    <div key={catalyst.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <div className="text-center min-w-[52px]">
-                        <p className="text-[10px] md:text-xs uppercase text-muted-foreground">{month}</p>
-                        <p className="text-xl md:text-2xl font-bold leading-tight">{day}</p>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm md:text-base font-medium leading-tight line-clamp-2">{catalyst.name}</p>
-                        <span className={`inline-block mt-1 text-[10px] md:text-xs px-2 py-0.5 rounded font-medium ${statusColors[catalyst.status]}`}>
-                          {catalyst.status.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-
-          {/* System Onboarding */}
-          <OnboardingCard />
-        </div>
+        {/* System Onboarding */}
+        <OnboardingCard />
 
         {/* Quick Actions */}
         <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-5`}>
