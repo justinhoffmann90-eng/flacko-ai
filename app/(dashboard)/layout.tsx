@@ -1,10 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { ProgressTrigger } from "@/components/ui/progress-trigger";
+
+const SIDEBAR_KEY = "flacko_sidebar_collapsed";
 
 export default function DashboardLayout({
   children,
@@ -12,7 +15,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  
+  const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_KEY);
+    if (stored === "true") setCollapsed(true);
+    setMounted(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_KEY, String(next));
+      return next;
+    });
+  };
+
   // Disable pull-to-refresh on chat page (has its own scroll handling)
   const disablePullToRefresh = pathname === "/chat";
 
@@ -20,33 +39,72 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <ProgressTrigger />
       {/* Desktop sidebar nav */}
-      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-72 lg:w-80 md:flex-col">
+      <div
+        className={`hidden md:fixed md:inset-y-0 md:flex md:flex-col transition-all duration-200 ${
+          collapsed ? "md:w-16" : "md:w-72 lg:w-80"
+        }`}
+      >
         <div className="flex min-h-0 flex-1 flex-col border-r border-border bg-card">
           <div className="flex flex-1 flex-col overflow-y-auto pt-6 pb-4">
             <div className="flex flex-shrink-0 items-center px-5">
-              <span className="text-2xl font-bold">Flacko AI</span>
+              {collapsed ? (
+                <span className="text-2xl font-bold mx-auto">F</span>
+              ) : (
+                <span className="text-2xl font-bold">Flacko AI</span>
+              )}
             </div>
             <nav className="mt-10 flex-1 space-y-2 px-3">
-              <DesktopNavLink href="/dashboard" icon="home" label="Home" currentPath={pathname} />
-              <DesktopNavLink href="/report" icon="file" label="Reports" currentPath={pathname} />
-              <DesktopNavLink href="/orb" icon="radar" label="Orb" currentPath={pathname} />
-              <DesktopNavLink href="/catalysts" icon="spark" label="Catalysts" currentPath={pathname} />
-              <DesktopNavLink href="/chat" icon="message" label="Chat" currentPath={pathname} />
-              <DesktopNavLink href="/settings" icon="settings" label="Settings" currentPath={pathname} />
+              <DesktopNavLink href="/dashboard" icon="home" label="Home" currentPath={pathname} collapsed={collapsed} />
+              <DesktopNavLink href="/report" icon="file" label="Reports" currentPath={pathname} collapsed={collapsed} />
+              <DesktopNavLink href="/orb" icon="radar" label="Orb" currentPath={pathname} collapsed={collapsed} />
+              <DesktopNavLink href="/catalysts" icon="spark" label="Catalysts" currentPath={pathname} collapsed={collapsed} />
+              <DesktopNavLink href="/chat" icon="message" label="Chat" currentPath={pathname} collapsed={collapsed} />
+              <DesktopNavLink href="/settings" icon="settings" label="Settings" currentPath={pathname} collapsed={collapsed} />
             </nav>
+          </div>
+          {/* Collapse toggle */}
+          <div className="border-t border-border p-3">
+            <button
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className={`flex items-center w-full rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${
+                collapsed ? "justify-center px-0" : ""
+              }`}
+            >
+              {collapsed ? (
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M6 5l7 7-7 7" />
+                </svg>
+              ) : (
+                <>
+                  <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
+                  </svg>
+                  Collapse
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
-      
+
       {/* Main content - offset for desktop sidebar */}
-      <div className="md:pl-72 lg:pl-80">
+      <div
+        className={`transition-all duration-200 ${
+          mounted
+            ? collapsed
+              ? "md:pl-16"
+              : "md:pl-72 lg:pl-80"
+            : "md:pl-72 lg:pl-80"
+        }`}
+      >
         <div className="mx-auto max-w-7xl md:px-8 lg:px-12">
           <PullToRefresh disabled={disablePullToRefresh}>
             {children}
           </PullToRefresh>
         </div>
       </div>
-      
+
       {/* Mobile bottom nav - hidden on desktop */}
       <div className="md:hidden">
         <BottomNav />
@@ -56,31 +114,36 @@ export default function DashboardLayout({
 }
 
 // Desktop nav link component - uses Link for automatic prefetching
-function DesktopNavLink({ 
-  href, 
-  icon, 
-  label, 
-  currentPath 
-}: { 
-  href: string; 
-  icon: string; 
-  label: string; 
+function DesktopNavLink({
+  href,
+  icon,
+  label,
+  currentPath,
+  collapsed,
+}: {
+  href: string;
+  icon: string;
+  label: string;
   currentPath: string;
+  collapsed: boolean;
 }) {
   const isActive = currentPath === href;
-  
+
   return (
     <Link
       href={href}
       prefetch={true}
-      className={`group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-colors ${
-        isActive 
-          ? "bg-primary/10 text-primary" 
+      title={collapsed ? label : undefined}
+      className={`group flex items-center py-3 text-base font-medium rounded-lg transition-colors ${
+        collapsed ? "justify-center px-0" : "px-4"
+      } ${
+        isActive
+          ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
-      <NavIcon name={icon} className={`mr-4 h-6 w-6 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-      {label}
+      <NavIcon name={icon} className={`h-6 w-6 ${collapsed ? "" : "mr-4"} ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+      {!collapsed && label}
     </Link>
   );
 }
@@ -133,6 +196,6 @@ function NavIcon({ name, className }: { name: string; className?: string }) {
       </svg>
     ),
   };
-  
+
   return <>{icons[name] || null}</>;
 }

@@ -194,7 +194,7 @@ export default async function DashboardPage() {
     .select("id, event_date, name, status")
     .gte("event_date", today)
     .order("event_date", { ascending: true })
-    .limit(3);
+    .limit(2);
   
   const upcomingCatalysts = (catalystsData || []) as Catalyst[];
 
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
   return (
     <ModeProvider mode={mode}>
       <Header title="Dashboard" />
-      <main className="px-4 py-6 max-w-lg mx-auto md:max-w-none md:max-w-5xl lg:max-w-6xl md:px-0 space-y-4 md:space-y-8">
+      <main className="px-4 py-6 max-w-lg mx-auto md:max-w-none md:px-0 space-y-4 md:space-y-6">
         {/* Discord Onboarding Banner */}
         <DiscordOnboarding isDiscordLinked={isDiscordLinked} />
         
@@ -327,21 +327,20 @@ export default async function DashboardPage() {
           <OrbSignalsCard />
         </div>
 
+        {/* Positioning Card — full width, above the 2-col grid */}
+        {positioning && (
+          <PositioningCard
+            dailyCapPct={dailyCapPct}
+            posture={positioning.posture || ''}
+            serverCashAvailable={cashAvailable}
+            isDevMode={devBypass}
+          />
+        )}
+
         {/* Desktop: 2-column grid | Mobile: stacked */}
-        <div className="md:grid md:grid-cols-2 md:gap-8 lg:gap-10 space-y-4 md:space-y-0">
+        <div className="md:grid md:grid-cols-[1fr_340px] md:gap-6 lg:gap-8 space-y-4 md:space-y-0">
           {/* Left column */}
           <div className="space-y-4">
-
-            {/* Positioning Card */}
-            {positioning && (
-              <PositioningCard
-                dailyCapPct={dailyCapPct}
-                posture={positioning.posture || ''}
-                serverCashAvailable={cashAvailable}
-                isDevMode={devBypass}
-              />
-            )}
-
             {/* Key Levels - Live Price Ladder */}
             {(upsideLevels.length > 0 || downsideLevels.length > 0) && (
               <LivePriceLadder
@@ -358,7 +357,7 @@ export default async function DashboardPage() {
           <div className="space-y-4">
             {/* Upcoming Catalysts */}
             {upcomingCatalysts.length > 0 && (
-              <Card className="p-4 md:p-6 lg:p-8">
+              <Card className="p-4 md:p-5 lg:p-6">
                 <div className="flex items-center justify-between mb-3 md:mb-4 lg:mb-6">
                   <div className="flex items-center gap-2 md:gap-3">
                     <Calendar className="h-4 w-4 md:h-6 md:w-6 lg:h-7 lg:w-7 text-muted-foreground" />
@@ -406,7 +405,7 @@ export default async function DashboardPage() {
             {/* Set Up Position Sizing - only show if no cash available (hide in dev mode) */}
             {!devBypass && !cashAvailable && (
               <Link href="/settings">
-                <Card className="p-4 md:p-6 lg:p-8 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
+                <Card className="p-4 md:p-5 lg:p-6 border-dashed border-2 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer">
                   <div className="flex items-center gap-3 md:gap-4 lg:gap-5">
                     <div className="h-10 w-10 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-full bg-muted flex items-center justify-center">
                       <Wallet className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground" />
@@ -425,7 +424,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className={`grid gap-3 md:gap-4 lg:gap-6 pt-2 grid-cols-2 md:grid-cols-4`}>
+        <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-4`}>
           <Link href="/report" className="block">
             <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <FileText className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
