@@ -15,6 +15,14 @@ import {
   Radar,
   ArrowRight,
   ChevronRight,
+  MessageSquare,
+  Zap,
+  Users,
+  TrendingUp,
+  TrendingDown,
+  Gauge,
+  Calendar,
+  BookOpen,
 } from "lucide-react";
 
 // ─── A. Hero Section ─────────────────────────────────────────────────────────
@@ -22,17 +30,19 @@ import {
 function HeroSection() {
   return (
     <div className="text-center py-10 md:py-16">
-      <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
-        The Flacko AI System
+      <p className="text-sm md:text-base text-muted-foreground tracking-widest uppercase">
+        battlefield command intelligence
+      </p>
+      <h1 className="text-3xl md:text-5xl font-bold tracking-tight mt-3">
+        the tsla operating system.
       </h1>
       <p className="text-lg md:text-xl text-muted-foreground mt-3 max-w-xl mx-auto">
-        A risk-first TSLA operating system. Here&apos;s how it works — and why.
+        one system. every scenario covered.
       </p>
       <p className="text-sm md:text-base text-muted-foreground mt-6 max-w-2xl mx-auto leading-relaxed">
-        Most trading services give you picks. We give you a system. Every day,
-        Flacko AI tells you the market&apos;s current state, how much risk to
-        take, where to buy, where to trim, and when to get out. The goal
-        isn&apos;t to predict — it&apos;s to prepare.
+        we turn technicals, flow and catalysts into a daily playbook. wake up
+        with a plan already prepared for you — scenarios mapped, price alerts
+        activated, risk managed.
       </p>
     </div>
   );
@@ -45,19 +55,19 @@ const philosophyItems = [
     icon: Shield,
     title: "Risk First",
     description:
-      "Every decision starts with how much risk the market warrants. Mode determines position sizing before you look at any chart.",
+      "Every decision starts with how much risk the market warrants. You know your maximum exposure BEFORE you look at any chart. Mode sets the rules — you follow them.",
   },
   {
     icon: Layers,
     title: "Regime-Aware",
     description:
-      "The system reads momentum, structure, and trend context across four timeframes. It knows when to push and when to protect.",
+      "The system reads momentum, structure, and trend context across four timeframes — hourly, 4H, daily, and weekly. It adapts in real-time as conditions change.",
   },
   {
     icon: Target,
     title: "Rules-Based",
     description:
-      "No gut feelings. Every mode assignment, every cap, every trim level follows documented rules that have been backtested across multiple market cycles.",
+      "No gut feelings. Every mode assignment, every cap, every trim level follows documented rules — backtested across multiple market cycles and continuously validated with live grading, daily assessments, and weekly reviews.",
   },
 ];
 
@@ -159,55 +169,43 @@ const modeRows = [
     mode: "GREEN",
     color: "bg-green-500",
     textColor: "text-green-500",
-    dailyCap: "25%",
-    maxInvested: "85%",
-    trimCap: "10%",
-    slowZone: "Inactive",
+    stance: "Full deployment",
+    description: "Trend intact, momentum healthy. Lean in with conviction.",
   },
   {
     mode: "YELLOW (Improving)",
     color: "bg-yellow-500",
     textColor: "text-yellow-500",
-    dailyCap: "20%",
-    maxInvested: "70%",
-    trimCap: "15%",
-    slowZone: "Inactive",
+    stance: "Cautious optimism",
+    description: "Early signs of recovery. System is warming up — ease back in.",
   },
   {
     mode: "YELLOW",
     color: "bg-yellow-500",
     textColor: "text-yellow-500",
-    dailyCap: "17.5%",
-    maxInvested: "60%",
-    trimCap: "20%",
-    slowZone: "Halves cap",
+    stance: "Moderate caution",
+    description: "Warning signs present. Reduce exposure, tighten stops.",
   },
   {
     mode: "ORANGE",
     color: "bg-orange-500",
     textColor: "text-orange-500",
-    dailyCap: "10%",
-    maxInvested: "40%",
-    trimCap: "25%",
-    slowZone: "25% of cap",
+    stance: "Defensive posture",
+    description: "Structure weakening. Minimize new risk, protect capital.",
   },
   {
     mode: "RED",
     color: "bg-red-500",
     textColor: "text-red-500",
-    dailyCap: "5%",
-    maxInvested: "20%",
-    trimCap: "30%",
-    slowZone: "25% of cap",
+    stance: "Maximum defense",
+    description: "Structure broken. Preserve capital above all else.",
   },
   {
     mode: "EJECTED",
     color: "bg-zinc-600",
     textColor: "text-zinc-400",
-    dailyCap: "0%",
-    maxInvested: "50% core",
-    trimCap: "N/A",
-    slowZone: "N/A",
+    stance: "Sideline",
+    description: "Master Eject breached. Core position only — no new buys.",
   },
 ];
 
@@ -227,10 +225,73 @@ function ModeSystemCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Mode is not commentary — it&apos;s your position-sizing rule set. The
-          BX-Trender indicator reads momentum across daily and weekly timeframes
-          to classify market state. Each mode has exact caps.
+          Mode is not commentary — it&apos;s your position-sizing rule set.
+          Multiple inputs work together to classify market state and determine
+          how aggressively you should be positioned.
         </p>
+
+        {/* What drives modes */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold">What Determines Mode</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <Gauge className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">BX-Trender</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Reads momentum structure — higher highs, lower lows, and
+                transition patterns on both daily and weekly timeframes.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">EMA Structure</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                The 9, 13, and 21 EMAs on daily and weekly charts. When
+                they&apos;re stacked bullish (price above all three, in order),
+                it supports higher modes. When bearish, it supports lower modes.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">RSI + SMI</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Momentum oscillators that provide confirmation. They validate
+                whether the trend has real energy behind it or is losing steam.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Multi-Timeframe</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                No single timeframe tells the full story. The system reads
+                hourly, 4H, daily, and weekly to build a complete picture before
+                assigning mode.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Speed limit analogy */}
+        <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-primary" />
+            Think of it like a speed limit
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            GREEN is 65 mph on the highway — you can cruise. ORANGE is a 25 mph
+            school zone — slow down. RED is a stop sign. You don&apos;t decide
+            how fast to go — the road conditions do. The system reads the road
+            and sets the limit for you.
+          </p>
+        </div>
 
         {/* Mode Table */}
         <div className="overflow-x-auto -mx-6 px-6">
@@ -238,10 +299,8 @@ function ModeSystemCard() {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 pr-4 font-semibold">Mode</th>
-                <th className="text-left py-3 px-3 font-semibold">Daily Cap</th>
-                <th className="text-left py-3 px-3 font-semibold">Max Invested</th>
-                <th className="text-left py-3 px-3 font-semibold">Trim Cap</th>
-                <th className="text-left py-3 pl-3 font-semibold">Slow Zone</th>
+                <th className="text-left py-3 px-3 font-semibold">Stance</th>
+                <th className="text-left py-3 pl-3 font-semibold">What It Means</th>
               </tr>
             </thead>
             <tbody>
@@ -257,11 +316,11 @@ function ModeSystemCard() {
                       </span>
                     </span>
                   </td>
-                  <td className="py-3 px-3 font-mono">{row.dailyCap}</td>
-                  <td className="py-3 px-3 font-mono">{row.maxInvested}</td>
-                  <td className="py-3 px-3 font-mono">{row.trimCap}</td>
+                  <td className="py-3 px-3 font-medium whitespace-nowrap">
+                    {row.stance}
+                  </td>
                   <td className="py-3 pl-3 text-muted-foreground">
-                    {row.slowZone}
+                    {row.description}
                   </td>
                 </tr>
               ))}
@@ -280,6 +339,46 @@ function ModeSystemCard() {
             {spectrumColors.map((s) => (
               <span key={s.label}>{s.label}</span>
             ))}
+          </div>
+        </div>
+
+        {/* Early Warning + Uptrend/Downtrend behavior */}
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border p-4 space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-yellow-500" />
+              Early Warning System
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Mode downgrades happen BEFORE price crashes — not after. BX-Trender
+              transitions are leading signals. By the time mainstream indicators
+              confirm a downtrend, the system has already reduced your exposure.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 space-y-1">
+              <h4 className="text-sm font-medium text-green-500 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                In an Uptrend
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                BX-Trender confirms higher highs, EMAs stack bullish. Modes
+                upgrade progressively — GREEN lets you deploy with conviction
+                because the system has confirmed structural momentum.
+              </p>
+            </div>
+            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 space-y-1">
+              <h4 className="text-sm font-medium text-red-500 flex items-center gap-2">
+                <TrendingDown className="h-4 w-4" />
+                In a Downtrend
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                BX-Trender flags lower lows, EMAs roll bearish. Modes downgrade
+                and trim caps activate. The system doesn&apos;t try to catch the
+                bottom — it reduces exposure as evidence deteriorates.
+              </p>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -344,6 +443,65 @@ function WhatYouGetCard() {
   );
 }
 
+// ─── E2. Beyond the Report Card ──────────────────────────────────────────────
+
+const beyondItems = [
+  {
+    icon: MessageSquare,
+    title: "Discord Community",
+    description:
+      "Not just alerts. #tesla-research for curated news and earnings breakdowns. #fs-insight for daily Fundstrat macro + technical summaries (Tom Lee, Mark Newton). #alerts for real-time price notifications at every key level. Taylor — our trading bot that paper trades the system live for full transparency. Plus community discussion with other TSLA traders.",
+  },
+  {
+    icon: Calendar,
+    title: "Catalyst Calendar",
+    description:
+      "Upcoming events that could move the stock — earnings, robotaxi milestones, product launches, macro events. Not just dates — context on why each one matters and how it fits into the current regime.",
+  },
+  {
+    icon: Radar,
+    title: "Orb Signal Tracker",
+    description:
+      "17 backtested setups tracked in real-time. See what's active, what's on watch, and historical win rates for each signal. Quantified edge, not vibes.",
+  },
+  {
+    icon: BookOpen,
+    title: "Education Hub",
+    description:
+      "20+ articles explaining every concept in the system — modes, gamma, kill leverage, EMA structure, and more. Designed so you understand the why behind every call.",
+  },
+];
+
+function BeyondTheReportCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Beyond the Report</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4">
+          {beyondItems.map((item) => (
+            <div
+              key={item.title}
+              className="rounded-lg border border-border p-4 space-y-2"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <item.icon className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="font-semibold text-sm">{item.title}</h3>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── F. Key Levels Explained Card ────────────────────────────────────────────
 
 const levelTypes = [
@@ -358,12 +516,12 @@ const levelTypes = [
   {
     type: "Kill Leverage",
     description:
-      "The non-negotiable defense line (Weekly 21 EMA). All leverage must be cut if breached.",
+      "The non-negotiable defense line. All leverage must be cut if breached.",
   },
   {
     type: "Slow Zone",
     description:
-      "When price drops below Daily 21 EMA × 0.98, buying caps are reduced dramatically",
+      "When price drops into this zone, buying caps are reduced dramatically to prevent overexposure in weakening conditions",
   },
 ];
 
@@ -498,7 +656,7 @@ const qualityControls = [
   "12-point automated content validation",
   "Mode assignments cross-checked against live BX engine",
   "SMI values verified (daily, weekly, 4H)",
-  "Kill Leverage validated against exact Weekly 21 EMA",
+  "Kill Leverage level validated against live market data",
   "Paper trading bot (Taylor) runs the same rules in real-time for accountability",
 ];
 
@@ -620,6 +778,9 @@ export function OnboardingContent() {
 
       {/* E. What You Get */}
       <WhatYouGetCard />
+
+      {/* E2. Beyond the Report */}
+      <BeyondTheReportCard />
 
       {/* F. Key Levels */}
       <KeyLevelsCard />
