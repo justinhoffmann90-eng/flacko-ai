@@ -39,6 +39,29 @@ function renderBody(text: string) {
       return renderTable(lines, blockIdx);
     }
 
+    // H2 heading: ## text
+    if (trimmed.startsWith("## ")) {
+      return (
+        <h4 key={blockIdx} className="text-sm font-semibold text-foreground mt-2">
+          {trimmed.slice(3)}
+        </h4>
+      );
+    }
+
+    // H3 heading: ### text
+    if (trimmed.startsWith("### ")) {
+      return (
+        <h5 key={blockIdx} className="text-xs font-semibold text-foreground uppercase tracking-wide mt-2">
+          {trimmed.slice(4)}
+        </h5>
+      );
+    }
+
+    // Horizontal rule: ---
+    if (trimmed === "---") {
+      return <hr key={blockIdx} className="border-border/50 my-1" />;
+    }
+
     // Bullet list: lines starting with "- "
     if (lines.every((l) => l.trim().startsWith("- ") || l.trim() === "")) {
       const items = lines.filter((l) => l.trim().startsWith("- "));
