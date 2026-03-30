@@ -507,64 +507,118 @@ function KeyLevelsCard() {
 
 // ─── G. Backtested Results Card ──────────────────────────────────────────────
 
-const backtestRows = [
-  { ticker: "TSLA", sysReturn: "+53,307%", bh: "+23,937%", outperf: "+123%", maxDD: "-45.0%" },
-  { ticker: "QQQ",  sysReturn: "+500%",    bh: "+389%",    outperf: "+28%",  maxDD: "-14.3%" },
-  { ticker: "NVDA", sysReturn: "+5,985%",  bh: "+6,241%",  outperf: "-4%",   maxDD: "-43.3%" },
-  { ticker: "AMZN", sysReturn: "+437%",    bh: "+400%",    outperf: "+9%",   maxDD: "-28.5%" },
-  { ticker: "GOOGL", sysReturn: "+604%",   bh: "+569%",    outperf: "+6%",   maxDD: "-23.1%" },
-  { ticker: "META", sysReturn: "+748%",    bh: "+324%",    outperf: "+131%", maxDD: "-42.3%" },
+const leverageRows = [
+  { ticker: "TSLA", sysReturn: "+53,307%", bh: "+23,937%", sysDD: "-45.0%", bhDD: "-73.6%", sharpe: "1.24" },
+  { ticker: "QQQ",  sysReturn: "+500%",    bh: "+389%",    sysDD: "-14.3%", bhDD: "-35.1%", sharpe: "1.53" },
+  { ticker: "NVDA", sysReturn: "+5,985%",  bh: "+6,241%",  sysDD: "-43.3%", bhDD: "-66.3%", sharpe: "1.51" },
+  { ticker: "AMZN", sysReturn: "+437%",    bh: "+400%",    sysDD: "-28.5%", bhDD: "-56.1%", sharpe: "0.99" },
+  { ticker: "GOOGL", sysReturn: "+604%",   bh: "+569%",    sysDD: "-23.1%", bhDD: "-44.3%", sharpe: "1.23" },
+  { ticker: "META", sysReturn: "+748%",    bh: "+324%",    sysDD: "-42.3%", bhDD: "-76.7%", sharpe: "1.06" },
 ];
+
+const noLeverageRows = [
+  { ticker: "TSLA", sysReturn: "+9,640%", bh: "+23,937%", sysDD: "-41.3%", bhDD: "-73.6%", sharpe: "1.19" },
+  { ticker: "QQQ",  sysReturn: "+279%",   bh: "+389%",    sysDD: "-12.0%", bhDD: "-35.1%", sharpe: "1.48" },
+  { ticker: "NVDA", sysReturn: "+2,075%", bh: "+6,241%",  sysDD: "-39.7%", bhDD: "-66.3%", sharpe: "1.44" },
+  { ticker: "AMZN", sysReturn: "+264%",   bh: "+400%",    sysDD: "-25.8%", bhDD: "-56.1%", sharpe: "0.96" },
+  { ticker: "GOOGL", sysReturn: "+350%",  bh: "+569%",    sysDD: "-20.4%", bhDD: "-44.3%", sharpe: "1.21" },
+  { ticker: "META", sysReturn: "+386%",   bh: "+324%",    sysDD: "-41.6%", bhDD: "-76.7%", sharpe: "0.96" },
+];
+
+function BacktestTable({ rows, label }: { rows: typeof leverageRows; label: string }) {
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold">{label}</h3>
+      <div className="grid grid-cols-5 gap-1 px-3 py-1">
+        <span className="text-xs font-semibold text-muted-foreground">Ticker</span>
+        <span className="text-xs font-semibold text-muted-foreground text-right">System</span>
+        <span className="text-xs font-semibold text-muted-foreground text-right">Buy&Hold</span>
+        <span className="text-xs font-semibold text-muted-foreground text-right">Sys DD</span>
+        <span className="text-xs font-semibold text-muted-foreground text-right">B&H DD</span>
+      </div>
+      {rows.map((row) => {
+        const sysPct = parseFloat(row.sysReturn.replace(/[+,%]/g, ""));
+        const bhPct = parseFloat(row.bh.replace(/[+,%]/g, ""));
+        const beats = sysPct > bhPct;
+        return (
+          <div
+            key={row.ticker}
+            className="grid grid-cols-5 gap-1 rounded-lg border border-border/50 px-3 py-2.5 items-center"
+          >
+            <span className="text-sm font-bold">{row.ticker}</span>
+            <span className={`text-sm font-mono text-right ${beats ? "text-green-500" : "text-yellow-500"}`}>{row.sysReturn}</span>
+            <span className="text-sm font-mono text-muted-foreground text-right">{row.bh}</span>
+            <span className="text-sm font-mono text-green-400 text-right">{row.sysDD}</span>
+            <span className="text-sm font-mono text-red-400 text-right">{row.bhDD}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function BacktestCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Backtested Performance</CardTitle>
+        <CardTitle>Backtested Performance — v3 Engine</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          We don&apos;t just tell you what to do — we prove it works. The v3
-          engine has been tested across 905 daily bars (July 2022 – February
-          2026) on 6 major tickers.
+          We don&apos;t just tell you what to do — we prove it works. The <strong className="text-foreground">v3
+          engine</strong> has been backtested across <strong className="text-foreground">2,300–3,750 trading
+          days</strong> per ticker (2011–2026 for TSLA, 2017–2026 for others) on 6 major names.
         </p>
 
-        {/* Mobile-first: card layout instead of wide table */}
-        <div className="space-y-2">
-          {/* Header row */}
-          <div className="grid grid-cols-4 gap-1 px-3 py-1">
-            <span className="text-xs font-semibold text-muted-foreground">Ticker</span>
-            <span className="text-xs font-semibold text-muted-foreground text-right">System</span>
-            <span className="text-xs font-semibold text-muted-foreground text-right">Edge</span>
-            <span className="text-xs font-semibold text-muted-foreground text-right">Max DD</span>
-          </div>
-          {backtestRows.map((row) => (
-            <div
-              key={row.ticker}
-              className="grid grid-cols-4 gap-1 rounded-lg border border-border/50 px-3 py-2.5 items-center"
-            >
-              <span className="text-sm font-bold">{row.ticker}</span>
-              <span className="text-sm font-mono text-green-500 text-right">{row.sysReturn}</span>
-              <span className={`text-sm font-mono text-right ${row.outperf.startsWith("-") ? "text-red-400" : "text-green-400"}`}>
-                {row.outperf}
-              </span>
-              <span className="text-sm font-mono text-yellow-500 text-right">{row.maxDD}</span>
-            </div>
-          ))}
-          <p className="text-[11px] text-muted-foreground/60 text-center pt-1">
-            B&H returns: TSLA +23,937% / QQQ +389% / NVDA +6,241%
+        <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-2">
+          <h3 className="text-sm font-semibold">How to Read This</h3>
+          <ul className="text-xs text-muted-foreground space-y-1.5 leading-relaxed">
+            <li><strong className="text-foreground">System</strong> = v3 engine return (mode-managed entries, exits, and position sizing)</li>
+            <li><strong className="text-foreground">Buy&Hold</strong> = buying day one and never selling</li>
+            <li><strong className="text-foreground">Sys DD</strong> = worst peak-to-trough drawdown under the system</li>
+            <li><strong className="text-foreground">B&H DD</strong> = worst drawdown buying and holding — what you&apos;d actually live through</li>
+          </ul>
+        </div>
+
+        <BacktestTable rows={leverageRows} label="⚡ With Leverage (GREEN mode uses leveraged ETFs)" />
+
+        <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 space-y-1">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong className="text-green-400">With leverage</strong>, the system outperforms buy-and-hold on <strong className="text-foreground">5
+            of 6 tickers</strong> while cutting max drawdowns by <strong className="text-foreground">35–59%</strong>. Leverage
+            is deployed only in GREEN mode (40% of portfolio) — the system earns the right to use it by confirming
+            trend health first.
           </p>
         </div>
 
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          v3 outperforms buy-and-hold on 5 of 6 tickers while cutting maximum
-          drawdowns by 35–59%. The system&apos;s value is most apparent during
-          severe drawdowns — protecting capital when it matters most.
-        </p>
+        <BacktestTable rows={noLeverageRows} label="🛡️ Without Leverage (Shares Only)" />
+
+        <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 space-y-1">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong className="text-blue-400">Without leverage</strong>, total returns are lower — but <strong className="text-foreground">drawdowns
+            drop even further</strong>. QQQ max drawdown falls to just -12% vs -35% buy-and-hold. The system still
+            outperforms META and protects capital across all 6 tickers. This is the conservative path.
+          </p>
+        </div>
+
+        <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-2">
+          <h3 className="text-sm font-semibold">The Real Edge: Drawdown Protection</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The system&apos;s primary value isn&apos;t beating buy-and-hold on returns — it&apos;s
+            <strong className="text-foreground"> never making you sit through a -74% drawdown</strong>.
+            TSLA buy-and-hold suffered a -73.6% drawdown. The system&apos;s worst was -45% with leverage, -41% without.
+            That&apos;s the difference between a setback and a portfolio-ending event.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Mode downgrades and the Kill Leverage system trigger <em>before</em> the worst of a selloff.
+            By the time mainstream indicators confirm a downtrend, the system has already reduced exposure.
+          </p>
+        </div>
 
         <p className="text-xs text-muted-foreground/70 italic">
           Past performance is not indicative of future results. Backtested
           results are hypothetical and do not represent actual trading.
+          Engine: v3 (two-regime trim hierarchy, acceleration zones, core hold floor, ATR-scaled extensions).
         </p>
       </CardContent>
     </Card>
@@ -715,21 +769,7 @@ export function OnboardingContent() {
       {/* I. Getting Started */}
       <GettingStartedCard />
 
-      {/* J. Footer */}
-      <div className="text-center space-y-1 pt-4 pb-8">
-        <p className="text-xs text-muted-foreground">
-          Questions? Reach out in Discord or email{" "}
-          <a
-            href="mailto:flackoai@gmail.com"
-            className="text-primary hover:underline"
-          >
-            flackoai@gmail.com
-          </a>
-        </p>
-        <p className="text-xs text-muted-foreground/60">
-          This page is always available from your dashboard.
-        </p>
-      </div>
+
     </div>
   );
 }
