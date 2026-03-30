@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/orb/compute",
-      "schedule": "50 19 * * 1-5"
+      "schedule": "15 21 * * 1-5"
     },
     {
       "path": "/api/cron/refresh-live-prices",

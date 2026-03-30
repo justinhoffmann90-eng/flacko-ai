@@ -217,7 +217,7 @@ function evaluateSmiOversoldGauge(ind: Indicators, prev?: PreviousState): SetupR
         is_active: false,
         is_watching: false,
         conditions_met: { target_reached: true },
-        reason: `Target reached: SMI hit ${ind.smi.toFixed(1)} (>=+30)`,
+        reason: `Target reached: SMI (daily) hit ${ind.smi.toFixed(1)} (>=+30)`,
         gauge_entry_value: prev?.gauge_entry_value,
         gauge_current_value: ind.smi,
         gauge_target_value: 30,
@@ -229,7 +229,7 @@ function evaluateSmiOversoldGauge(ind: Indicators, prev?: PreviousState): SetupR
       is_active: true,
       is_watching: false,
       conditions_met: { smi_below_neg60: true, target_not_reached: true },
-      reason: `Active - SMI at ${ind.smi.toFixed(1)}, tracking to +30`,
+      reason: `Active - SMI (daily) at ${ind.smi.toFixed(1)}, tracking to +30`,
       gauge_entry_value: prev?.gauge_entry_value,
       gauge_current_value: ind.smi,
       gauge_target_value: 30,
@@ -242,7 +242,7 @@ function evaluateSmiOversoldGauge(ind: Indicators, prev?: PreviousState): SetupR
       is_active: true,
       is_watching: false,
       conditions_met: { smi_crossed_below_neg60: true },
-      reason: `NEW - SMI crossed below -60 (${ind.smi.toFixed(1)})`,
+      reason: `NEW - SMI (daily) crossed below -60 (${ind.smi.toFixed(1)})`,
       gauge_entry_value: ind.smi,
       gauge_current_value: ind.smi,
       gauge_target_value: 30,
@@ -256,7 +256,7 @@ function evaluateSmiOversoldGauge(ind: Indicators, prev?: PreviousState): SetupR
     is_watching: isWatching,
     conditions_met: { smi_approaching: isWatching },
     reason: isWatching
-      ? `SMI at ${ind.smi.toFixed(1)} - approaching -60 entry`
+      ? `SMI (daily) at ${ind.smi.toFixed(1)} - approaching -60 entry`
       : `SMI at ${ind.smi.toFixed(1)} - far from -60 trigger`,
   };
 }

@@ -219,12 +219,32 @@ export function makeTradeDecision(context: DecisionContext): TradeSignal {
  * Now considers Orb zone for instrument selection
  */
 function evaluateEntry(context: DecisionContext): TradeSignal {
-  const { quote, tsllQuote, hiro, report, orb, portfolio } = context;
+  const { quote, tsllQuote, hiro, report, orb, portfolio, multiPortfolio } = context;
   const reasoning: string[] = [];
   
   // Import TradeMode type for mode variable
   type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
-  
+
+  // ⛔ HARD GATE: Max invested cap check FIRST — before ANY other logic
+  if (report) {
+    const maxInvestedCap = MAX_INVESTED[report.mode] || 0.60;
+    const tslaVal = multiPortfolio.tsla?.value || 0;
+    const tsllVal = multiPortfolio.tsll?.value || 0;
+    const totalVal = multiPortfolio.totalValue || 1;
+    const currentExposure = (tslaVal + tsllVal) / totalVal;
+    if (currentExposure >= maxInvestedCap) {
+      return {
+        action: 'hold',
+        price: quote.price,
+        reasoning: [
+          `⛔ MAX INVESTED GATE: ${(currentExposure * 100).toFixed(1)}% exposure >= ${(maxInvestedCap * 100).toFixed(0)}% cap (${report.mode} mode)`,
+          'no new buys until exposure drops below cap.',
+        ],
+        confidence: 'high',
+      };
+    }
+  }
+
   // Check Orb zone
   const zoneConfig = ORB_ZONE_CONFIG[orb.zone];
   const isCautionZone = orb.zone === 'CAUTION';
@@ -404,22 +424,11 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
     };
   }
   
-  // Check max invested cap before entry
+  // Max invested cap already enforced by hard gate at top of evaluateEntry
   const maxInvestedCap = MAX_INVESTED[mode] || 0.60;
   const tslaValue = context.multiPortfolio.tsla?.value || 0;
   const tsllValue = context.multiPortfolio.tsll?.value || 0;
   const currentExposure = (tslaValue + tsllValue) / context.multiPortfolio.totalValue;
-  
-  if (currentExposure >= maxInvestedCap) {
-    reasoning.push(`at max invested cap for ${mode} mode (${(maxInvestedCap * 100).toFixed(0)}%)`);
-    reasoning.push(`current exposure: ${(currentExposure * 100).toFixed(0)}% — staying defensive`);
-    return {
-      action: 'hold',
-      price: price,
-      reasoning,
-      confidence: 'high',
-    };
-  }
   
   // Calculate position size based on mode and tier
   const modeConfig = MODE_CONFIGS[mode] || MODE_CONFIGS.YELLOW;
