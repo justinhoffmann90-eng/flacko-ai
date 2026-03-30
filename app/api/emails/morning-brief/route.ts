@@ -34,8 +34,22 @@ function buildEmailHtml(embed: DiscordEmbed): string {
   const divider = "#ddd3c6";
   const buttonText = "#fffaf3";
 
+  // Reorder sections: move Game Plan (⚡) right after the mode/pre-market header
+  let reordered = description;
+  const sections = reordered.split(/━+/);
+  if (sections.length > 1) {
+    // Find the Game Plan section (starts with ⚡)
+    const gpIndex = sections.findIndex(s => s.trim().startsWith("⚡"));
+    if (gpIndex > 1) {
+      const [gamePlan] = sections.splice(gpIndex, 1);
+      // Insert after the first section (pre-market header)
+      sections.splice(1, 0, gamePlan);
+      reordered = sections.join("━━━━━━━━━━━━━━━━━━━━━━");
+    }
+  }
+
   // Convert Discord markdown → email HTML
-  const parts = description.split(/\*\*(.*?)\*\*/g);
+  const parts = reordered.split(/\*\*(.*?)\*\*/g);
   let body = parts
     .map((p, i) =>
       i % 2 === 1
