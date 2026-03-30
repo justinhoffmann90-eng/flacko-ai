@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice, formatDateShort } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight, FileText, History, Wallet, Upload, Calendar, Radio, CalendarDays } from "lucide-react";
+import { ArrowRight, FileText, History, Wallet, Upload, Radio, CalendarDays } from "lucide-react";
 import { TierSignals, Positioning, LevelMapEntry } from "@/types";
 import { EducationHubCard } from "@/components/dashboard/education-hub-card";
 
@@ -137,12 +137,7 @@ interface UserData {
   discord_user_id: string | null;
 }
 
-interface Catalyst {
-  id: string;
-  event_date: string;
-  name: string;
-  status: 'confirmed' | 'projected' | 'speculative';
-}
+
 
 export default async function DashboardPage() {
   const devBypass = process.env.DEV_BYPASS_AUTH === "true";
@@ -187,16 +182,7 @@ export default async function DashboardPage() {
 
   const report = reportData as Report | null;
 
-  // Fetch upcoming catalysts (next 2)
-  const today = new Date().toISOString().split('T')[0];
-  const { data: catalystsData } = await supabase
-    .from("catalysts")
-    .select("id, event_date, name, status")
-    .gte("event_date", today)
-    .order("event_date", { ascending: true })
-    .limit(2);
-  
-  const upcomingCatalysts = (catalystsData || []) as Catalyst[];
+
 
   // Fetch user settings for position sizing
   let userSettings: UserSettings | null = null;
@@ -371,7 +357,7 @@ export default async function DashboardPage() {
         <OnboardingCard />
 
         {/* Quick Actions */}
-        <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-5`}>
+        <div className={`grid gap-3 md:gap-3 lg:gap-4 pt-2 grid-cols-2 md:grid-cols-4`}>
           <Link href="/report" className="block">
             <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <FileText className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
@@ -390,15 +376,7 @@ export default async function DashboardPage() {
               </p>
             </Card>
           </Link>
-          <Link href="/catalysts" className="block">
-            <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
-              <Calendar className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
-              <p className="font-medium md:text-xl lg:text-2xl">Catalysts</p>
-              <p className="text-xs md:text-sm lg:text-base text-muted-foreground mt-1 md:mt-2">
-                Upcoming events
-              </p>
-            </Card>
-          </Link>
+
           <Link href="/history" className="block">
             <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-all cursor-pointer h-full press-scale">
               <History className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-muted-foreground mb-2 md:mb-3 lg:mb-4" />
@@ -418,7 +396,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
           {isAdmin && (
-            <Link href="/admin/command-center" className="col-span-2 md:col-span-5 block">
+            <Link href="/admin/command-center" className="col-span-2 md:col-span-4 block">
               <Card className="p-4 md:p-6 lg:p-8 hover:bg-accent transition-colors cursor-pointer h-full border-primary/50 bg-primary/5">
                 <Radio className="h-5 w-5 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary mb-2 md:mb-3 lg:mb-4" />
                 <p className="font-medium md:text-xl lg:text-2xl">Command Center</p>

@@ -615,6 +615,37 @@ function BacktestCard() {
           </p>
         </div>
 
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold">What Drives the Edge</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Not all system components contribute equally. Here&apos;s what matters most:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 space-y-1.5">
+              <h4 className="text-xs font-semibold text-green-400 flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" />
+                Upside Drivers
+              </h4>
+              <ul className="text-xs text-muted-foreground space-y-1 leading-relaxed">
+                <li><strong className="text-foreground">Leverage in GREEN</strong> — the single biggest return multiplier. 40% allocation to leveraged ETFs when trend is confirmed.</li>
+                <li><strong className="text-foreground">Mode-based position sizing</strong> — deploying more capital when conditions are favorable (GREEN/YELLOW) vs restricting in hostile tape.</li>
+                <li><strong className="text-foreground">Core Hold floor</strong> — 20% of peak position is never trimmed, capturing the full extent of major moves.</li>
+              </ul>
+            </div>
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 space-y-1.5">
+              <h4 className="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 flex-shrink-0" />
+                Downside Protection
+              </h4>
+              <ul className="text-xs text-muted-foreground space-y-1 leading-relaxed">
+                <li><strong className="text-foreground">Kill Leverage (Eject)</strong> — cuts all leveraged positions when structure breaks. Single biggest drawdown reducer.</li>
+                <li><strong className="text-foreground">Mode downgrades</strong> — BX-Trender detects weakening momentum before price crashes. Exposure reduces automatically.</li>
+                <li><strong className="text-foreground">Two-regime trim hierarchy</strong> — aggressive trims during Regime B (negative gamma) vs patient trims in Regime A.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <p className="text-xs text-muted-foreground/70 italic">
           Past performance is not indicative of future results. Backtested
           results are hypothetical and do not represent actual trading.
