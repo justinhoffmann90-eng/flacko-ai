@@ -26,19 +26,30 @@ export interface TSLAQuote {
 }
 
 export interface HIROData {
-  reading: number; // in millions
-  percentile30Day: number; // 0-100
+  reading: number;
+  percentile30Day: number;
   character: string;
   timestamp: Date;
 }
 
 export type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED' | 'EJECTED';
-
-// v3: Trim regime — determines which trim levels fire
 export type TrimRegime = 'A' | 'B' | 'MIXED';
-
-// v3: BX-Trender states (daily)
 export type BxState = 'HH' | 'HL' | 'LH' | 'LL' | null;
+
+export interface AlertInstruction {
+  type: 'buy' | 'trim' | 'reduce' | 'eject' | 'hold' | 'unknown';
+  useDailyCap?: boolean;
+  stopPrice?: number;
+  trimPercent?: number;
+}
+
+export interface ActiveStop {
+  id: string;
+  sourceLevel: string;
+  stopPrice: number;
+  sharesAtRisk: number;
+  createdAt: string;
+}
 
 export interface DailyReport {
   date: string;
@@ -51,14 +62,13 @@ export interface DailyReport {
   callWall: number;
   levels: KeyLevel[];
   commentary?: string;
-  daily_21ema?: number; // D21 EMA for Slow Zone check
-  // v3 fields
-  daily_9ema?: number;  // D9 EMA — used for Regime B trim suppression
-  weekly_9ema?: number; // W9 EMA — used for regime detection + KGS proxy
-  weekly_13ema?: number; // W13 EMA — used for regime detection
-  weekly_21ema?: number; // W21 EMA — used for regime detection (= master eject)
-  sma_200?: number;     // 200 SMA — used for Deep Dip Bridge
-  bx_daily_state?: BxState; // Daily BX-Trender state — used for Recovery Acceleration
+  daily_21ema?: number;
+  daily_9ema?: number;
+  weekly_9ema?: number;
+  weekly_13ema?: number;
+  weekly_21ema?: number;
+  sma_200?: number;
+  bx_daily_state?: BxState;
 }
 
 export interface KeyLevel {
@@ -105,11 +115,9 @@ export interface Trade {
   unrealizedPnl?: number;
   portfolioValue: number;
   cashRemaining: number;
-  // Orb snapshot at trade time — cross-reference setup vs trade performance
   orbScore?: number;
   orbZone?: string;
   orbActiveSetups?: { setup_id: string; status: string }[];
-  // Override tracking
   isOverride?: boolean;
   overrideSetups?: string[];
 }
@@ -143,19 +151,19 @@ export interface PerformanceMetrics {
 }
 
 export interface WeeklyDayBreakdown {
-  date: string;         // YYYY-MM-DD
-  dayLabel: string;     // "Mon", "Tue", etc.
+  date: string;
+  dayLabel: string;
   trades: { action: string; instrument: string; shares: number; price: number; pnl?: number }[];
   portfolioValue: number | null;
-  dailyChange: number | null;  // % change from previous day
+  dailyChange: number | null;
 }
 
 export interface WeeklyPerformanceData {
-  weekRange: string;        // "3/10 - 3/14"
+  weekRange: string;
   startValue: number;
   endValue: number;
-  weeklyReturn: number;     // $ change
-  weeklyReturnPct: number;  // % change
+  weeklyReturn: number;
+  weeklyReturnPct: number;
   tradesCount: number;
   winCount: number;
   lossCount: number;
@@ -193,7 +201,6 @@ export interface TradeSignal {
   overrideSetups?: string[];
 }
 
-// Multi-instrument portfolio tracking
 export interface MultiPortfolio {
   cash: number;
   startingCapital: number;
@@ -220,15 +227,14 @@ export interface MultiPortfolio {
   unrealizedPnl: number;
 }
 
-// TODO: Phase 2 — Options support
 export interface OptionPosition {
   instrument: "TSLA";
   type: "call" | "put";
-  direction: "long" | "short"; // long = bought, short = sold
+  direction: "long" | "short";
   strike: number;
-  expiry: string; // YYYY-MM-DD
+  expiry: string;
   contracts: number;
-  premium: number; // per share
+  premium: number;
   delta: number;
   theta: number;
   gamma: number;
@@ -238,7 +244,7 @@ export interface OptionPosition {
 export interface BotConfig {
   startingCapital: number;
   maxPositionsPerDay: number;
-  noNewPositionsAfter: string; // HH:MM
+  noNewPositionsAfter: string;
   updateIntervalMs: number;
   hiroIntervalMs: number;
   discordChannelId: string;
@@ -265,7 +271,6 @@ export const TIER_MULTIPLIERS: Record<number, number> = {
   4: 0.5,
 };
 
-// Trim caps by mode (% of remaining per level)
 export const TRIM_CAPS: Record<string, number> = {
   GREEN: 0.10,
   YELLOW_IMPROVING: 0.15,
@@ -275,7 +280,6 @@ export const TRIM_CAPS: Record<string, number> = {
   EJECTED: 0.30,
 };
 
-// Max invested caps by mode (total portfolio exposure)
 export const MAX_INVESTED: Record<string, number> = {
   GREEN: 0.85,
   YELLOW_IMPROVING: 0.70,
@@ -285,7 +289,6 @@ export const MAX_INVESTED: Record<string, number> = {
   EJECTED: 0.50,
 };
 
-// v3: Daily trim cap — max fraction of holdings trimmed per day by mode
 export const DAILY_TRIM_CAPS: Record<string, number> = {
   GREEN: 0.10,
   YELLOW_IMPROVING: 0.15,
@@ -295,26 +298,22 @@ export const DAILY_TRIM_CAPS: Record<string, number> = {
   EJECTED: 0.30,
 };
 
-// v3: Core hold floor — 20% of peak position value never trimmed (shares only, not leverage)
 export const CORE_HOLD_FLOOR_PCT = 0.20;
-
-// v3: Recovery acceleration — double buy cap for N trading days after LL→HL flip
 export const RECOVERY_ACCEL_DAYS = 5;
-
-// v3: Deep Dip Bridge — boosted buying when 10-15% below 200 SMA
 export const DEEP_DIP_BRIDGE = {
-  MIN_PCT: -15,   // -15% below SMA200
-  MAX_PCT: -10,   // -10% below SMA200
-  CAP: 0.10,      // 10% daily cap for RED in bridge zone
+  MIN_PCT: -15,
+  MAX_PCT: -10,
+  CAP: 0.10,
 };
 
-// v3 state tracking interface
 export interface V3State {
-  peakPositionValue: number;     // highest total TSLA invested value (for core hold floor)
-  dailyTrimPercent: number;      // total trimmed today as fraction of holdings (resets daily)
-  dailyTrimDate: string;         // date of dailyTrimPercent tracking (for reset detection)
-  lastBxFlipDate: string | null; // date of most recent LL→HL BX flip
-  previousBxState: BxState;      // previous day's BX state (to detect LL→HL)
-  recoveryAccelRemaining: number; // trading days remaining of 2x buy cap
-  consecutive_below_w21: number; // consecutive daily closes below W21 EMA
+  peakPositionValue: number;
+  dailyTrimPercent: number;
+  dailyTrimDate: string;
+  lastBxFlipDate: string | null;
+  previousBxState: BxState;
+  recoveryAccelRemaining: number;
+  consecutive_below_w21: number;
+  activeStops: ActiveStop[];
+  firedLevelsToday?: string[];
 }

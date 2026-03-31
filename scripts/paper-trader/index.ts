@@ -105,6 +105,8 @@ let sessionState = {
     previousBxState: null,
     recoveryAccelRemaining: 0,
     consecutive_below_w21: 0,
+    activeStops: [],
+    firedLevelsToday: [],
   } as V3State,
 };
 
@@ -184,6 +186,7 @@ async function tradingLoop(): Promise<void> {
       sessionState.currentDate = today;
       sessionState.todayTradesCount = 0;
       sessionState.levelsHitToday = new Set<string>();
+      sessionState.v3.firedLevelsToday = [];
       await saveLevelsHitToday([]); // Reset in DB too
       marketOpenPosted = false;
       marketClosePosted = false;
@@ -566,6 +569,16 @@ async function executeBuy(
   
   sessionState.cash -= totalValue;
   sessionState.todayTradesCount++;
+
+  if (instrument === 'TSLA' && signal.stopPrice) {
+    sessionState.v3.activeStops.push({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      sourceLevel: signal.reasoning[0] || 'buy level',
+      stopPrice: signal.stopPrice,
+      sharesAtRisk: shares,
+      createdAt: new Date().toISOString(),
+    });
+  }
   
   // Record trade
   const trade: Trade = {
@@ -650,11 +663,25 @@ async function executeSell(
   sessionState.realizedPnl += realizedPnl;
   
   if (instrument === 'TSLA') {
-    sessionState.sharesHeld = 0;
-    sessionState.avgCost = 0;
+    sessionState.sharesHeld = Math.max(0, sessionState.sharesHeld - shares);
+    if (sessionState.sharesHeld === 0) {
+      sessionState.avgCost = 0;
+      sessionState.v3.peakPositionValue = 0;
+    }
+    let remainingToReduce = shares;
+    sessionState.v3.activeStops = (sessionState.v3.activeStops || [])
+      .map(stop => {
+        if (remainingToReduce <= 0) return stop;
+        const reduction = Math.min(stop.sharesAtRisk, remainingToReduce);
+        remainingToReduce -= reduction;
+        return { ...stop, sharesAtRisk: stop.sharesAtRisk - reduction };
+      })
+      .filter(stop => stop.sharesAtRisk > 0);
   } else if (instrument === 'TSLL') {
-    sessionState.tsllShares = 0;
-    sessionState.tsllAvgCost = 0;
+    sessionState.tsllShares = Math.max(0, sessionState.tsllShares - shares);
+    if (sessionState.tsllShares === 0) {
+      sessionState.tsllAvgCost = 0;
+    }
   }
   
   // Record trade

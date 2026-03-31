@@ -536,6 +536,7 @@ function parseExtractedData(date: string, ed: any): DailyReport {
         name: l.level || l.name,
         price: l.price,
         type: normalizedType,
+        action: l.action || undefined,
       };
     }),
     commentary: ed.game_plan || '',
