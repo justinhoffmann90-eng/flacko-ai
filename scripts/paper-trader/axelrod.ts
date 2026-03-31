@@ -30,14 +30,20 @@ Your personality:
 - You're entertaining but INFORMATIVE. Every comment teaches something.
 
 System knowledge for validation:
-- Modes: GREEN=30% daily cap (10% trim), YELLOW_IMPROVING=20% (15% trim), YELLOW=17.5% (20% trim), ORANGE=10% (25% trim), RED=5% (30% trim)
+- Max Portfolio Invested by mode: GREEN=85%, YELLOW_IMPROVING=70%, YELLOW=60%, ORANGE=40%, RED=20%. If exposure exceeds the mode cap, NO new buys allowed — must trim down.
+- Daily Trim Caps (max % of holdings trimmed per day): GREEN=10%, YELLOW_IMPROVING=15%, YELLOW=15%, ORANGE=25%, RED=30%.
 - Trim caps = % of REMAINING holdings per level, not original position. Compounding: 25% of 100 = 25, then 25% of 75 = 19, etc.
+- Daily Buy Caps by mode: GREEN=30%, YELLOW=17.5%, ORANGE=10%, RED=5%. Slow Zone halves these.
 - Orb zones: FULL_SEND=use TSLL, NEUTRAL=shares only (unless override fires → TSLL), CAUTION=no new buys, DEFENSIVE=exit all TSLL
 - Override setups: Deep Value, Capitulation, Oversold Extreme can trigger TSLL in NEUTRAL zone
-- Master Eject is ESCALATING defense (4 steps): Step 1=cut leverage at W21, Step 2=stop new buys, Step 3=assess at Put Wall, Step 4=trim to 50% below Put Wall. Never assume "exit all."
+- Kill Leverage (Master Eject) = W21 EMA × 0.99. It is ESCALATING defense (4 steps): Step 1=cut ALL leverage (exit all TSLL), Step 2=stop new buys above the kill level, Step 3=assess at Put Wall, Step 4=trim to 50% below Put Wall. Never assume "exit all shares."
+- Kill Leverage is ACTIVE when price is BELOW the Master Eject level. If Kill Leverage is active, mode constraints tighten further — daily caps halve again on top of Slow Zone.
+- Put Wall = SpotGamma level where dealer put hedging creates buying pressure (floor). NOT the same as Master Eject/Kill Leverage.
+- Hedge Wall = overhead resistance from dealer hedging. Key Gamma Strike = where positive gamma regime starts.
 - HIRO positive=bullish flow, negative=bearish. Quartile context matters. Direction intraday: up=trim later, down=nibble later.
 - Above gamma strike=positive gamma (stabilizing). Below=negative gamma (volatile).
 - Slow Zone = D21 EMA × 0.98. Halves daily cap. Inactive in GREEN/YELLOW_IMPROVING. In ORANGE/RED reduces to 25% of normal.
+- CRITICAL: Always check if Kill Leverage is active (price < masterEject). If active, state it explicitly. Do NOT say "if we're not in Kill Leverage" when the data shows price is below masterEject.
 
 Voice: First person. No emojis. No headers. Just prose, like talking across the desk. 3-5 sentences, around 400-500 characters. Substantive but tight. Don't repeat Taylor — validate, challenge, or confirm.`;
 
@@ -81,7 +87,8 @@ async function generateCommentary(context: AxelrodContext): Promise<string> {
   if (context.report) {
     contextMsg += `Mode: ${context.report.mode} | Tier: ${context.report.tier}\n`;
     contextMsg += `Levels: Gamma Strike $${context.report.gammaStrike}, Put Wall $${context.report.putWall}, Hedge Wall $${context.report.hedgeWall}, Call Wall $${context.report.callWall}\n`;
-    contextMsg += `Master Eject: $${context.report.masterEject}\n`;
+    const klActive = context.quote && context.report.masterEject > 0 && context.quote.price < context.report.masterEject;
+    contextMsg += `Master Eject (Kill Leverage): $${context.report.masterEject} — ${klActive ? '⛔ ACTIVE (price BELOW kill level)' : 'INACTIVE (price above kill level)'}\n`;
     if (context.report.levels?.length) {
       contextMsg += `Alert levels:\n`;
       for (const l of context.report.levels) contextMsg += `  ${l.name}: $${l.price} (${l.type})\n`;
