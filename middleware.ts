@@ -18,6 +18,6 @@ export const config = {
      * - api/backtest (public backtest engine)
      * - backtest (public backtest page)
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|api/price-cache|api/cron|api/backtest|api/reports/reparse|api/emails|api/updates|backtest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|api/price-cache|api/quote|api/cron|api/backtest|api/reports/reparse|api/emails|api/updates|backtest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)",
   ],
 };
