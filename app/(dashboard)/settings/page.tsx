@@ -523,15 +523,7 @@ export default function SettingsPage() {
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  Already in the server?{" "}
-                  <a
-                    href={DISCORD_INVITE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#5865F2] hover:underline"
-                  >
-                    Join via invite link
-                  </a>
+                  Connecting links your account and assigns the Subscriber role automatically.
                 </p>
               </div>
             )}
