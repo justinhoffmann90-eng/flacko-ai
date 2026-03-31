@@ -86,7 +86,7 @@ function v3(overrides: Partial<V3State> = {}): V3State {
     ...overrides,
   };
 }
-function context(opts: { price?: number; report?: DailyReport; multiPortfolio?: MultiPortfolio; v3State?: V3State; todayTradesCount?: number } = {}) {
+function context(opts: { price?: number; report?: DailyReport; multiPortfolio?: MultiPortfolio; v3State?: V3State; todayTradesCount?: number; orb?: any } = {}) {
   const q = quote(opts.price ?? 350);
   const mp = opts.multiPortfolio ?? multiPortfolio();
   if (mp.tsla) {
@@ -100,7 +100,7 @@ function context(opts: { price?: number; report?: DailyReport; multiPortfolio?: 
     tsllQuote: quote(20, 'TSLL'),
     hiro: hiro(),
     report: opts.report ?? report(),
-    orb: orb(),
+    orb: opts.orb ?? orb(),
     portfolio: portfolio(mp),
     multiPortfolio: mp,
     todayTradesCount: opts.todayTradesCount ?? 0,
@@ -244,12 +244,31 @@ test('16 leverage only in GREEN and YI', () => {
   assert.equal(redSignal.action, 'buy');
   assert.equal(redSignal.instrument, 'TSLA');
 
+  // GREEN + FULL_SEND orb → TSLL
   const greenSignal = makeTradeDecision(context({
     price: 350,
     report: report({ mode: 'GREEN', weekly_21ema: 300, levels: [{ name: 'S1', price: 350, type: 'nibble', action: 'Buy up to daily cap. Stop $340.' }] }),
+    orb: { score: 0.8, zone: 'FULL_SEND' as any, activeSetups: [], timestamp: new Date() },
   }));
   assert.equal(greenSignal.action, 'buy');
   assert.equal(greenSignal.instrument, 'TSLL');
+
+  // GREEN + NEUTRAL orb (no override) → TSLA
+  const greenNeutralSignal = makeTradeDecision(context({
+    price: 350,
+    report: report({ mode: 'GREEN', weekly_21ema: 300, levels: [{ name: 'S1', price: 350, type: 'nibble', action: 'Buy up to daily cap. Stop $340.' }] }),
+  }));
+  assert.equal(greenNeutralSignal.action, 'buy');
+  assert.equal(greenNeutralSignal.instrument, 'TSLA');
+
+  // GREEN + NEUTRAL orb + Deep Value override → TSLL
+  const greenOverrideSignal = makeTradeDecision(context({
+    price: 350,
+    report: report({ mode: 'GREEN', weekly_21ema: 300, levels: [{ name: 'S1', price: 350, type: 'nibble', action: 'Buy up to daily cap. Stop $340.' }] }),
+    orb: { score: 0, zone: 'NEUTRAL' as any, activeSetups: [{ setup_id: 'deep-value', status: 'active' }], timestamp: new Date() },
+  }));
+  assert.equal(greenOverrideSignal.action, 'buy');
+  assert.equal(greenOverrideSignal.instrument, 'TSLL');
 });
 
 test('17 time cutoff', () => {

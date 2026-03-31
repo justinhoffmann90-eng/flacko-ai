@@ -124,10 +124,42 @@ function getSlowZoneMultiplier(mode: TradeMode): number {
   return 0.5;
 }
 
-function activeInstrumentForMode(mode: TradeMode, report: DailyReport, price: number): Instrument {
-  const leverageAllowed = mode === 'GREEN' || mode === 'YELLOW_IMPROVING';
+/**
+ * Instrument selection — v3 system logic:
+ * 1. Below Kill Leverage → TSLA only (always)
+ * 2. RED/ORANGE/YELLOW/EJECTED → TSLA only
+ * 3. Orb DEFENSIVE → TSLA only (and exit TSLL handled in KL/EJECTED handler)
+ * 4. Orb CAUTION → TSLA only
+ * 5. Orb NEUTRAL + override setup (Deep Value/Capitulation/Oversold Extreme) → TSLL
+ * 6. Orb FULL_SEND + GREEN/YI → TSLL
+ * 7. Orb NEUTRAL + GREEN/YI (no override) → TSLA
+ * 8. 200 SMA Oversold Override Tier 2/3 → TSLL (handled separately)
+ */
+function activeInstrumentForMode(mode: TradeMode, report: DailyReport, price: number, orb?: OrbData): Instrument {
+  // Kill Leverage overrides everything
   const belowKillLeverage = !!report.weekly_21ema && price < report.weekly_21ema;
-  return leverageAllowed && !belowKillLeverage ? 'TSLL' : 'TSLA';
+  if (belowKillLeverage) return 'TSLA';
+
+  // Mode constraint: only GREEN and YI allow leverage
+  const leverageAllowed = mode === 'GREEN' || mode === 'YELLOW_IMPROVING';
+  if (!leverageAllowed) return 'TSLA';
+
+  // Orb zone constraint
+  if (orb) {
+    if (orb.zone === 'DEFENSIVE' || orb.zone === 'CAUTION') return 'TSLA';
+    if (orb.zone === 'FULL_SEND') return 'TSLL';
+    if (orb.zone === 'NEUTRAL') {
+      // Check for override setups: Deep Value, Capitulation, Oversold Extreme
+      const overrideSetups = ['deep-value', 'capitulation', 'oversold-extreme', 'deep_value', 'oversold_extreme'];
+      const hasOverride = orb.activeSetups.some(s =>
+        s.status === 'active' && overrideSetups.some(o => s.setup_id.toLowerCase().includes(o))
+      );
+      return hasOverride ? 'TSLL' : 'TSLA';
+    }
+  }
+
+  // Fallback: leverage allowed by mode but no Orb data → TSLA (conservative)
+  return 'TSLA';
 }
 
 function isNear(price: number, level: number, threshold = SUPPORT_THRESHOLD_PERCENT): boolean {
@@ -157,6 +189,25 @@ function ensureV3State(v3State: V3State): void {
 function trimModePercent(mode: TradeMode): number {
   if (mode === 'EJECTED') return 0.30;
   return TRIM_CAPS[mode] ?? 0.20;
+}
+
+/**
+ * Orb DEFENSIVE zone: exit ALL TSLL immediately.
+ * DEFENSIVE = sell signals dominating, no leverage should be held.
+ */
+function handleOrbDefensive(context: DecisionContext): TradeSignal | null {
+  const { orb, multiPortfolio, tsllQuote } = context;
+  if (orb.zone !== 'DEFENSIVE') return null;
+  if (!multiPortfolio.tsll || multiPortfolio.tsll.shares <= 0) return null;
+
+  return {
+    action: 'sell',
+    instrument: 'TSLL',
+    shares: multiPortfolio.tsll.shares,
+    price: tsllQuote.price,
+    reasoning: ['orb DEFENSIVE — exiting ALL TSLL (sell signals dominating)'],
+    confidence: 'high',
+  };
 }
 
 function handleStops(context: DecisionContext): TradeSignal | null {
@@ -265,9 +316,18 @@ function handleKillLeverageAndEjected(context: DecisionContext, mode: TradeMode)
 }
 
 function handleBuyLevels(context: DecisionContext, mode: TradeMode): TradeSignal | null {
-  const { quote, report, multiPortfolio, portfolio, todayTradesCount, v3State } = context;
+  const { quote, report, orb, multiPortfolio, portfolio, todayTradesCount, v3State } = context;
   if (!report) return null;
   ensureV3State(v3State);
+
+  // Orb DEFENSIVE = no new buys + exit TSLL (TSLL exit handled in KL handler)
+  // Orb CAUTION = no new buys at all (wait for better conditions)
+  if (orb.zone === 'DEFENSIVE') {
+    return null; // TSLL exit handled in handleOrbDefensive; no buys in DEFENSIVE
+  }
+  if (orb.zone === 'CAUTION') {
+    return null; // CAUTION = sit on hands, no new positions
+  }
 
   const hour = new Date().getHours();
   if (hour >= NO_NEW_POSITIONS_AFTER_HOUR) {
@@ -309,7 +369,7 @@ function handleBuyLevels(context: DecisionContext, mode: TradeMode): TradeSignal
     cap = Math.min(cap, remainingCap, remainingDailyCap);
     if (cap <= 0) continue;
 
-    const instrument = activeInstrumentForMode(mode, report, quote.price);
+    const instrument = activeInstrumentForMode(mode, report, quote.price, orb);
     const tradePrice = instrument === 'TSLL' ? context.tsllQuote.price : quote.price;
     const shares = Math.floor((portfolio.cash * cap) / tradePrice);
     if (shares <= 0) continue;
@@ -320,7 +380,12 @@ function handleBuyLevels(context: DecisionContext, mode: TradeMode): TradeSignal
       instrument,
       shares,
       price: tradePrice,
-      reasoning: [`buy level hit: ${level.name} ($${level.price.toFixed(2)})`, `using ${(cap * 100).toFixed(2)}% cap`, instruction.stopPrice ? `stop $${instruction.stopPrice}` : 'no stop'],
+      reasoning: [
+        `buy level hit: ${level.name} ($${level.price.toFixed(2)})`,
+        `orb ${orb.zone}${instrument === 'TSLL' ? ' → TSLL' : ' → TSLA'}`,
+        `using ${(cap * 100).toFixed(2)}% cap`,
+        instruction.stopPrice ? `stop $${instruction.stopPrice}` : 'no stop',
+      ],
       confidence: 'high',
       stopPrice: instruction.stopPrice,
     };
@@ -369,6 +434,7 @@ export function makeTradeDecision(context: DecisionContext): TradeSignal {
 
   return (
     handleStops(context) ||
+    handleOrbDefensive(context) ||
     handleTrimLevels(context, mode) ||
     handleKillLeverageAndEjected(context, mode) ||
     handleBuyLevels(context, mode) ||
