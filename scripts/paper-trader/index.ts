@@ -104,6 +104,7 @@ let sessionState = {
     lastBxFlipDate: null,
     previousBxState: null,
     recoveryAccelRemaining: 0,
+    consecutive_below_w21: 0,
   } as V3State,
 };
 
@@ -151,6 +152,9 @@ async function init(): Promise<boolean> {
     sessionState.tsllAvgCost = savedState.tsllAvgCost;
     sessionState.realizedPnl = savedState.realizedPnl;
     sessionState.previousOrbZone = savedState.currentOrbZone as OrbZone | undefined;
+    if (savedState.v3State) {
+      sessionState.v3 = { ...sessionState.v3, ...savedState.v3State };
+    }
     if (savedState.levelsHitToday?.length) {
       sessionState.levelsHitToday = new Set(savedState.levelsHitToday);
       console.log(`📍 restored ${sessionState.levelsHitToday.size} levels hit today: ${[...sessionState.levelsHitToday].join(', ')}`);
@@ -253,8 +257,22 @@ async function tradingLoop(): Promise<void> {
       
       await postMarketClose(multiPortfolio, sessionState.todayTradesCount, todayPnl, dayPnlByInstrument);
       
-      // Kill Leverage close check: 2 consecutive daily closes below KL = sell TSLL + options
+      // W21 close tracking for EJECTED mode
       const report = await fetchDailyReport();
+      if (report?.weekly_21ema && report.weekly_21ema > 0) {
+        if (quote.price < report.weekly_21ema) {
+          sessionState.v3.consecutive_below_w21++;
+          console.log(`⚠️ Close below W21 ($${report.weekly_21ema}): ${sessionState.v3.consecutive_below_w21} consecutive close(s)`);
+        } else {
+          const wasEjected = sessionState.v3.consecutive_below_w21 >= 2;
+          sessionState.v3.consecutive_below_w21 = 0;
+          if (wasEjected && report.mode !== 'ORANGE') {
+            console.log('🟠 W21 reclaimed — EJECTED recovered, forcing ORANGE posture on recovery');
+          }
+        }
+      }
+
+      // Kill Leverage close check: 2 consecutive daily closes below KL = sell TSLL + options
       if (report && report.masterEject > 0 && quote.price < report.masterEject) {
         sessionState.consecutiveClosesBelowKL++;
         console.log(`⚠️ Close below Kill Leverage ($${report.masterEject}): day ${sessionState.consecutiveClosesBelowKL} of 2`);
@@ -438,11 +456,17 @@ async function tradingLoop(): Promise<void> {
     // Taylor speaks when there's something to say: trades, zone changes, market open/close.
 
     // Make trading decision (multi-instrument + Orb + v3)
+    const effectiveReport = report && sessionState.v3.consecutive_below_w21 === 0 && report.mode === 'EJECTED'
+      ? { ...report, mode: 'ORANGE' as const }
+      : report && sessionState.v3.consecutive_below_w21 >= 2
+        ? { ...report, mode: 'EJECTED' as const }
+        : report;
+
     const signal = makeTradeDecision({
       quote,
       tsllQuote,
       hiro,
-      report,
+      report: effectiveReport,
       orb,
       portfolio,
       multiPortfolio,
@@ -462,7 +486,7 @@ async function tradingLoop(): Promise<void> {
     sessionState.previousPrice = quote.price;
     
     // Update state in database
-    await updateBotState(multiPortfolio, sessionState.todayTradesCount, orb.zone, orb.score);
+    await updateBotState(multiPortfolio, sessionState.todayTradesCount, orb.zone, orb.score, undefined, sessionState.v3);
     
     console.log(`✅ cycle complete at ${new Date().toLocaleTimeString()}`);
     

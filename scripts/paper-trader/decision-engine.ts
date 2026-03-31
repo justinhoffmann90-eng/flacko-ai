@@ -219,11 +219,29 @@ export function makeTradeDecision(context: DecisionContext): TradeSignal {
  * Now considers Orb zone for instrument selection
  */
 function evaluateEntry(context: DecisionContext): TradeSignal {
-  const { quote, tsllQuote, hiro, report, orb, portfolio, multiPortfolio } = context;
+  const { quote, tsllQuote, hiro, report, orb, portfolio, multiPortfolio, v3State } = context;
   const reasoning: string[] = [];
   
   // Import TradeMode type for mode variable
-  type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
+  type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED' | 'EJECTED';
+
+  // EJECTED mode blocks all new buys except 200 SMA oversold override
+  if (v3State.consecutive_below_w21 >= 2) {
+    const sma200 = report?.sma_200;
+    const isOversoldOverride = !!(sma200 && sma200 > 0 && quote.price <= sma200);
+    if (!isOversoldOverride) {
+      return {
+        action: 'hold',
+        price: quote.price,
+        reasoning: [
+          'EJECTED mode active — 2 consecutive closes below W21 EMA',
+          'all buys blocked except 200 SMA oversold override.',
+        ],
+        confidence: 'high',
+      };
+    }
+    reasoning.push('EJECTED mode active — allowing buy only via 200 SMA oversold override');
+  }
 
   // ⛔ HARD GATE: Max invested cap check FIRST — before ANY other logic
   if (report) {
@@ -448,7 +466,7 @@ function evaluateEntry(context: DecisionContext): TradeSignal {
   
   if (isSlowZoneActive && !isSlowZoneExempt) {
     // Slow Zone halves daily buy cap (all modes)
-    const slowZoneMultiplier = 0.5;
+    const slowZoneMultiplier = (mode === 'ORANGE' || mode === 'RED') ? 0.25 : 0.5;
     positionPercent *= slowZoneMultiplier;
     reasoning.push(`Slow Zone active ($${slowZoneLevel.toFixed(2)}) — cap halved to ${(positionPercent * 100).toFixed(1)}%`);
   }
@@ -573,8 +591,6 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     }
   }
 
-  // --- v3 LEVERAGE RULE: Explicit Kill Leverage check for TSLL ---
-  // (layers on top of existing Orb DEFENSIVE zone check)
   if (report && report.masterEject > 0 && tslaPrice < report.masterEject
       && multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
     reasoning.push(`⚠️ Kill Leverage: TSLA ($${tslaPrice.toFixed(2)}) below W21 ($${report.masterEject.toFixed(2)}) — selling ALL TSLL`);
@@ -588,14 +604,11 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     };
   }
 
-  // --- Determine which position to evaluate for trim logic ---
-  // v3 LEVERAGE RULE: Always trim TSLL before TSLA when both are held
   let instrument: Instrument;
   let shares: number;
   let avgCost: number;
   let currentPrice: number;
 
-  // In CAUTION/DEFENSIVE, prioritize TSLL exits (existing Orb logic)
   if ((orb.zone === 'CAUTION' || orb.zone === 'DEFENSIVE') && multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
     instrument = 'TSLL';
     shares = multiPortfolio.tsll.shares;
@@ -603,7 +616,6 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     currentPrice = tsllQuote.price;
     reasoning.push(`🟡 ${orb.zone} zone — exiting TSLL first (leveraged exit priority)`);
   } else if (multiPortfolio.tsll && multiPortfolio.tsll.shares > 0) {
-    // v3: TSLL trimmed before TSLA always
     instrument = 'TSLL';
     shares = multiPortfolio.tsll.shares;
     avgCost = multiPortfolio.tsll.avgCost;
@@ -630,46 +642,65 @@ function evaluateExit(context: DecisionContext): TradeSignal {
   const unrealizedPnl = (currentPrice - avgCost) * shares;
   const unrealizedPnlPercent = (currentPrice / avgCost - 1) * 100;
 
-  // --- MAX INVESTED NOTE ---
-  // MAX_INVESTED caps are ACCUMULATION ceilings — how much to BUILD UP TO in each mode.
-  // They are NOT "sell down to this" triggers. If someone accumulated 60% in GREEN and mode
-  // drops to RED (20% max), we DON'T force-sell to 20%. We stop new buys and trim at named levels only.
-  // The entry gate (top of evaluateEntry) prevents NEW buys above the cap.
-  // Trimming happens only at named report levels via the trim logic below.
+  if (report && instrument === 'TSLA') {
+    const tslaExposure = getTslaExposureFraction(multiPortfolio);
+    const totalExposure = getTotalExposureFraction(multiPortfolio);
+    const belowPutWall = report.putWall > 0 && tslaPrice < report.putWall;
+    const ejectTrimNeeded = v3State.consecutive_below_w21 >= 2 && tslaExposure > 0.50;
+    const klStep4Needed = belowPutWall && totalExposure > 0.50;
 
-  // --- v3: Trim logic with full Part 10 mirror framework ---
-  if (report && unrealizedPnlPercent > 0) {
+    if (ejectTrimNeeded || klStep4Needed) {
+      const currentTslaValue = (multiPortfolio.tsla?.value || (shares * currentPrice));
+      const targetValue = (multiPortfolio.totalValue || 0) * 0.50;
+      let trimShares = Math.floor(Math.max(0, currentTslaValue - targetValue) / currentPrice);
+      trimShares = computeCoreFloorTrimShares(shares, currentPrice, trimShares, v3State);
+
+      if (trimShares > 0) {
+        if (ejectTrimNeeded) {
+          reasoning.push(`EJECTED mode active — ${v3State.consecutive_below_w21} consecutive closes below W21 EMA`);
+          reasoning.push(`TSLA exposure ${(tslaExposure * 100).toFixed(1)}% > 50% core hold — trimming to 50%`);
+        } else {
+          reasoning.push(`Kill Leverage Step 4: TSLA below Put Wall ($${report.putWall.toFixed(2)})`);
+          reasoning.push(`total exposure ${(totalExposure * 100).toFixed(1)}% > 50% — trimming TSLA to 50% of portfolio`);
+        }
+        if (v3State.peakPositionValue > 0) {
+          const floor = v3State.peakPositionValue * CORE_HOLD_FLOOR_PCT;
+          reasoning.push(`core hold floor respected: $${floor.toFixed(0)}`);
+        }
+        return {
+          action: 'sell',
+          instrument: 'TSLA',
+          shares: trimShares,
+          price: currentPrice,
+          reasoning,
+          confidence: 'high',
+        };
+      }
+    }
+  }
+
+  if (report) {
     const mode = report.mode;
     const regime = detectRegime(report, tslaPrice);
-
-    // v3 Enhancement #4: Acceleration Zone — NO trimming below KGS proxy
     const accelerationZone = computeAccelerationZone(report);
+
     if (accelerationZone != null && tslaPrice < accelerationZone) {
       reasoning.push(`Acceleration Zone: TSLA ($${tslaPrice.toFixed(2)}) below KGS proxy ($${accelerationZone.toFixed(2)}) — no trims`);
-      // Skip all trim logic, fall through to hold
     } else {
-      // v3 Enhancement #7: Daily trim cap check
       const dailyTrimCap = DAILY_TRIM_CAPS[mode] || 0.15;
-      const totalHoldingsValue = (multiPortfolio.tsla?.value || 0) + (multiPortfolio.tsll?.value || 0);
 
       if (v3State.dailyTrimPercent >= dailyTrimCap) {
         reasoning.push(`daily trim cap reached (${(v3State.dailyTrimPercent * 100).toFixed(1)}% of ${(dailyTrimCap * 100).toFixed(0)}% max for ${mode})`);
-        // Skip trims, fall through to hold
       } else {
-        // Build regime-dependent trim levels from report
         const trimLevels = report.levels.filter(l => l.type === 'trim' && l.price > 0);
-        const crossedTrims = trimLevels.filter(t => tslaPrice >= t.price && avgCost < t.price);
+        const crossedTrims = trimLevels.filter(t => tslaPrice >= t.price);
 
         if (crossedTrims.length > 0) {
           const trimLevel = crossedTrims[0];
           const trimLevelName = (trimLevel.name || '').toLowerCase();
-
-          // v3 Enhancement #1: Two-Regime Trim Hierarchy
           let skipTrim = false;
 
           if (regime === 'B') {
-            // Regime B: only trim at swing highs + extension zones
-            // Skip trims at EMA reclaim levels (D9, D21, W9, W13, W21)
             const isEmaLevel = trimLevelName.includes('ema') || trimLevelName.includes('d9')
               || trimLevelName.includes('d21') || trimLevelName.includes('w9')
               || trimLevelName.includes('w13') || trimLevelName.includes('w21');
@@ -679,7 +710,6 @@ function evaluateExit(context: DecisionContext): TradeSignal {
             }
           }
 
-          // v3 Enhancement #2: D9 EMA Trim Suppression in Regime B
           if (!skipTrim && regime === 'B' && (mode === 'GREEN' || mode === 'YELLOW_IMPROVING')) {
             const d9 = report.daily_9ema;
             if (d9 != null && Math.abs(trimLevel.price - d9) / d9 < 0.01) {
@@ -687,7 +717,6 @@ function evaluateExit(context: DecisionContext): TradeSignal {
               reasoning.push(`Regime B + ${mode}: D9 trim suppressed ($${trimLevel.price.toFixed(2)} near D9 $${d9.toFixed(2)})`);
             }
           }
-          // Also suppress D9 in MIXED for GREEN/YELLOW_IMPROVING (matches backtest)
           if (!skipTrim && regime === 'MIXED' && (mode === 'GREEN' || mode === 'YELLOW_IMPROVING')) {
             const d9 = report.daily_9ema;
             if (d9 != null && Math.abs(trimLevel.price - d9) / d9 < 0.01) {
@@ -698,32 +727,19 @@ function evaluateExit(context: DecisionContext): TradeSignal {
 
           if (!skipTrim) {
             let trimCapPercent = TRIM_CAPS[mode] || 0.20;
-
-            // v3 Enhancement #7: Respect daily trim cap remaining
             const remainingDailyTrim = dailyTrimCap - v3State.dailyTrimPercent;
             trimCapPercent = Math.min(trimCapPercent, remainingDailyTrim);
-
-            // Calculate trim shares
             let trimShares = Math.floor(shares * trimCapPercent);
 
-            // v3 Enhancement #3: Core Hold Floor (TSLA shares only, NOT TSLL)
-            if (instrument === 'TSLA' && v3State.peakPositionValue > 0) {
-              const coreHoldFloor = v3State.peakPositionValue * CORE_HOLD_FLOOR_PCT;
-              const currentTslaValue = shares * currentPrice;
-              const afterTrimValue = (shares - trimShares) * currentPrice;
-              if (afterTrimValue < coreHoldFloor) {
-                // Reduce trim to maintain floor
-                const maxSellableValue = Math.max(0, currentTslaValue - coreHoldFloor);
-                trimShares = Math.min(trimShares, Math.floor(maxSellableValue / currentPrice));
-                if (trimShares <= 0) {
-                  reasoning.push(`Core Hold Floor: $${coreHoldFloor.toFixed(0)} protected — trim blocked`);
-                }
+            if (instrument === 'TSLA') {
+              trimShares = computeCoreFloorTrimShares(shares, currentPrice, trimShares, v3State);
+              if (trimShares <= 0 && v3State.peakPositionValue > 0) {
+                const floor = v3State.peakPositionValue * CORE_HOLD_FLOOR_PCT;
+                reasoning.push(`Core Hold Floor: $${floor.toFixed(0)} protected — trim blocked`);
               }
             }
-            // TSLL is NOT protected by core hold — leverage gets cut first always
 
             if (trimShares > 0) {
-              // Update v3 daily trim tracking
               const trimFraction = trimShares / shares;
               v3State.dailyTrimPercent += trimFraction;
 
@@ -745,22 +761,43 @@ function evaluateExit(context: DecisionContext): TradeSignal {
             }
           }
         }
+
+        if (instrument === 'TSLA') {
+          const w9 = report.weekly_9ema;
+          if (w9 && w9 > 0) {
+            const extensionPct = ((tslaPrice - w9) / w9) * 100;
+            if (extensionPct >= 8 && extensionPct < 12) {
+              reasoning.push(`EMA Extension warming: ${extensionPct.toFixed(1)}% above W9 EMA — no trim yet`);
+            }
+          }
+
+          const extensionTrim = evaluateExtensionTrim(report, mode, shares, currentPrice, v3State);
+          if (extensionTrim) {
+            v3State.dailyTrimPercent += extensionTrim.trimShares / shares;
+            reasoning.push(`EMA Extension ${extensionTrim.label}: ${extensionTrim.extensionPct.toFixed(1)}% above W9 EMA`);
+            reasoning.push(`trimming ${extensionTrim.trimShares} TSLA at ${(extensionTrim.trimRate * 100).toFixed(1)}% rate`);
+            if (v3State.peakPositionValue > 0) {
+              const floor = v3State.peakPositionValue * CORE_HOLD_FLOOR_PCT;
+              reasoning.push(`core hold floor: $${floor.toFixed(0)} | daily trim: ${(v3State.dailyTrimPercent * 100).toFixed(1)}%/${(dailyTrimCap * 100).toFixed(0)}%`);
+            }
+            return {
+              action: 'sell',
+              instrument: 'TSLA',
+              shares: extensionTrim.trimShares,
+              price: currentPrice,
+              reasoning,
+              confidence: 'high',
+            };
+          }
+        }
       }
     }
   }
 
-  // Kill Leverage check: requires 2 CONSECUTIVE DAILY CLOSES below the level
-  // During intraday, we do NOT sell just because price dipped below KL
-  // The actual KL trigger is handled at market close (see tradingLoop close logic)
-
-  // Check if mode flipped to RED (exit signal)
   const modeFlip = report && report.mode === 'RED';
-
-  // Check HIRO extreme negative (momentum shift)
   const hiroNegative = hiro.percentile30Day < 15;
 
   if (modeFlip) {
-    // RED mode = defensive, NOT liquidate. Cut leverage (TSLL), HOLD shares (TSLA).
     if (instrument === 'TSLL') {
       reasoning.push('mode flipped to RED — cutting ALL leverage (TSLL)');
       reasoning.push('defensive mode: leverage exits, shares hold');
@@ -789,7 +826,6 @@ function evaluateExit(context: DecisionContext): TradeSignal {
     reasoning.push('HIRO divergence noted — exits driven by levels and mode, not flow alone');
   }
 
-  // Hold position
   reasoning.push(`${instrument} position looking good`);
   reasoning.push(`unrealized: ${unrealizedPnl >= 0 ? '+' : ''}$${unrealizedPnl.toFixed(2)} (${unrealizedPnlPercent >= 0 ? '+' : ''}${unrealizedPnlPercent.toFixed(1)}%)`);
 
@@ -810,6 +846,70 @@ function evaluateExit(context: DecisionContext): TradeSignal {
 /**
  * Check if price is near a support level
  */
+function getTslaExposureFraction(multiPortfolio: MultiPortfolio): number {
+  const totalValue = multiPortfolio.totalValue || 1;
+  return (multiPortfolio.tsla?.value || 0) / totalValue;
+}
+
+function getTotalExposureFraction(multiPortfolio: MultiPortfolio): number {
+  const totalValue = multiPortfolio.totalValue || 1;
+  return ((multiPortfolio.tsla?.value || 0) + (multiPortfolio.tsll?.value || 0)) / totalValue;
+}
+
+function computeCoreFloorTrimShares(
+  shares: number,
+  currentPrice: number,
+  requestedTrimShares: number,
+  v3State: V3State
+): number {
+  let trimShares = requestedTrimShares;
+  if (v3State.peakPositionValue > 0) {
+    const coreHoldFloor = v3State.peakPositionValue * CORE_HOLD_FLOOR_PCT;
+    const currentTslaValue = shares * currentPrice;
+    const afterTrimValue = (shares - trimShares) * currentPrice;
+    if (afterTrimValue < coreHoldFloor) {
+      const maxSellableValue = Math.max(0, currentTslaValue - coreHoldFloor);
+      trimShares = Math.min(trimShares, Math.floor(maxSellableValue / currentPrice));
+    }
+  }
+  return trimShares;
+}
+
+function evaluateExtensionTrim(
+  report: DailyReport,
+  mode: string,
+  shares: number,
+  price: number,
+  v3State: V3State
+): { trimShares: number; extensionPct: number; trimRate: number; label: string } | null {
+  const w9 = report.weekly_9ema;
+  if (!w9 || w9 <= 0) return null;
+
+  const extensionPct = ((price - w9) / w9) * 100;
+  if (extensionPct < 0 || extensionPct < 12) return null;
+  if (mode === 'GREEN' && extensionPct === 12) return null;
+
+  const dailyTrimCap = DAILY_TRIM_CAPS[mode] || 0.15;
+  const remainingDailyTrim = dailyTrimCap - v3State.dailyTrimPercent;
+  if (remainingDailyTrim <= 0) return null;
+
+  let trimRate = TRIM_CAPS[mode] || 0.20;
+  let label = 'extended';
+  if (extensionPct >= 25) {
+    trimRate *= 1.5;
+    label = 'extreme';
+  } else if (extensionPct >= 18) {
+    label = 'stretched';
+  }
+
+  trimRate = Math.min(trimRate, remainingDailyTrim);
+  let trimShares = Math.floor(shares * trimRate);
+  trimShares = computeCoreFloorTrimShares(shares, price, trimShares, v3State);
+  if (trimShares <= 0) return null;
+
+  return { trimShares, extensionPct, trimRate, label };
+}
+
 function checkNearSupport(
   price: number,
   report: DailyReport,

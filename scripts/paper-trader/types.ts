@@ -32,7 +32,7 @@ export interface HIROData {
   timestamp: Date;
 }
 
-export type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED';
+export type TradeMode = 'GREEN' | 'YELLOW' | 'YELLOW_IMPROVING' | 'ORANGE' | 'RED' | 'EJECTED';
 
 // v3: Trim regime — determines which trim levels fire
 export type TrimRegime = 'A' | 'B' | 'MIXED';
@@ -64,7 +64,8 @@ export interface DailyReport {
 export interface KeyLevel {
   name: string;
   price: number;
-  type: 'support' | 'resistance' | 'neutral' | 'trim' | 'target' | 'eject';
+  type: 'support' | 'resistance' | 'neutral' | 'trim' | 'target' | 'eject' | 'nibble' | 'current' | 'slow_zone';
+  action?: string;
 }
 
 export interface Position {
@@ -254,6 +255,7 @@ export const MODE_CONFIGS: Record<string, ModeConfig> = {
   YELLOW: { maxPositionPercent: 0.175, description: 'warning signs — spread entries over 5-6 days' },
   ORANGE: { maxPositionPercent: 0.10, description: 'elevated caution — small nibbles only' },
   RED: { maxPositionPercent: 0.05, description: 'defensive — nibbles at extreme support only' },
+  EJECTED: { maxPositionPercent: 0.00, description: 'below W21 for 2 closes — hold 50% core, buys blocked except 200 SMA override' },
 };
 
 export const TIER_MULTIPLIERS: Record<number, number> = {
@@ -270,6 +272,7 @@ export const TRIM_CAPS: Record<string, number> = {
   YELLOW: 0.20,
   ORANGE: 0.25,
   RED: 0.30,
+  EJECTED: 0.30,
 };
 
 // Max invested caps by mode (total portfolio exposure)
@@ -279,6 +282,7 @@ export const MAX_INVESTED: Record<string, number> = {
   YELLOW: 0.60,
   ORANGE: 0.40,
   RED: 0.20,
+  EJECTED: 0.50,
 };
 
 // v3: Daily trim cap — max fraction of holdings trimmed per day by mode
@@ -288,6 +292,7 @@ export const DAILY_TRIM_CAPS: Record<string, number> = {
   YELLOW: 0.15,
   ORANGE: 0.25,
   RED: 0.30,
+  EJECTED: 0.30,
 };
 
 // v3: Core hold floor — 20% of peak position value never trimmed (shares only, not leverage)
@@ -311,4 +316,5 @@ export interface V3State {
   lastBxFlipDate: string | null; // date of most recent LL→HL BX flip
   previousBxState: BxState;      // previous day's BX state (to detect LL→HL)
   recoveryAccelRemaining: number; // trading days remaining of 2x buy cap
+  consecutive_below_w21: number; // consecutive daily closes below W21 EMA
 }

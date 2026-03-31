@@ -4,7 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Trade, DailyPerformance, PerformanceMetrics, Portfolio, Position, MultiPortfolio, Instrument, WeeklyPerformanceData, WeeklyDayBreakdown } from './types';
+import type { Trade, DailyPerformance, PerformanceMetrics, Portfolio, Position, MultiPortfolio, Instrument, WeeklyPerformanceData, WeeklyDayBreakdown, V3State } from './types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
@@ -51,7 +51,8 @@ export async function updateBotState(
   todayTradesCount: number,
   orbZone?: string,
   orbScore?: number,
-  levelsHitToday?: string[]
+  levelsHitToday?: string[],
+  v3State?: V3State
 ): Promise<void> {
   try {
     const isMulti = 'tsla' in portfolio;
@@ -71,6 +72,7 @@ export async function updateBotState(
       bot_date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }),
       current_orb_zone: orbZone || null,
       current_orb_score: orbScore || null,
+      v3_state: v3State || null,
     };
     // Only include levels_hit_today if explicitly provided and non-empty
     // This prevents the main loop from wiping levels on restart
@@ -100,6 +102,7 @@ export async function getBotState(): Promise<{
   currentOrbZone?: string;
   currentOrbScore?: number;
   levelsHitToday?: string[];
+  v3State?: V3State | null;
 } | null> {
   try {
     const { data, error } = await supabase
@@ -122,6 +125,7 @@ export async function getBotState(): Promise<{
       currentOrbZone: data.current_orb_zone,
       currentOrbScore: data.current_orb_score,
       levelsHitToday: data.levels_hit_today || [],
+      v3State: data.v3_state || null,
     };
   } catch (error) {
     console.error('Error fetching bot state:', error);
