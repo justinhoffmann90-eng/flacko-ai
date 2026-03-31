@@ -247,15 +247,16 @@ async function tradingLoop(): Promise<void> {
       
       const todayPnl = await calculateTodayPnl();
       
-      // Calculate P&L by instrument (realized + unrealized)
+      // Calculate TODAY'S P&L by instrument (day change, not total unrealized)
       const todayTrades = await getTodayTrades();
       const tslaRealized = todayTrades.filter(t => t.instrument === 'TSLA').reduce((sum, t) => sum + (t.realizedPnl || 0), 0);
       const tsllRealized = todayTrades.filter(t => t.instrument === 'TSLL').reduce((sum, t) => sum + (t.realizedPnl || 0), 0);
-      const tslaUnrealized = multiPortfolio.tsla?.unrealizedPnl || 0;
-      const tsllUnrealized = multiPortfolio.tsll?.unrealizedPnl || 0;
+      // Day's unrealized change = shares × (today_close - yesterday_close)
+      const tslaDayUnrealized = sessionState.sharesHeld * (quote.price - (quote.previousClose || quote.price));
+      const tsllDayUnrealized = sessionState.tsllShares * (tsllQuote.price - (tsllQuote.previousClose || tsllQuote.price));
       const dayPnlByInstrument = {
-        tsla: tslaRealized + tslaUnrealized,
-        tsll: tsllRealized + tsllUnrealized,
+        tsla: tslaRealized + tslaDayUnrealized,
+        tsll: tsllRealized + tsllDayUnrealized,
       };
       
       await postMarketClose(multiPortfolio, sessionState.todayTradesCount, todayPnl, dayPnlByInstrument);
