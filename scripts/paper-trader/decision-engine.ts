@@ -630,30 +630,12 @@ function evaluateExit(context: DecisionContext): TradeSignal {
   const unrealizedPnl = (currentPrice - avgCost) * shares;
   const unrealizedPnlPercent = (currentPrice / avgCost - 1) * 100;
 
-  // --- OVER-CAP TRIM: Force reduce when exposure exceeds mode max invested ---
-  if (report) {
-    const maxInvCap = MAX_INVESTED[report.mode] || 0.60;
-    const tslaVal = multiPortfolio.tsla?.value || 0;
-    const tsllVal = multiPortfolio.tsll?.value || 0;
-    const totalVal = multiPortfolio.totalValue || 1;
-    const curExposure = (tslaVal + tsllVal) / totalVal;
-    if (curExposure > maxInvCap) {
-      const excessPct = curExposure - maxInvCap;
-      const excessValue = excessPct * totalVal;
-      const sharesToTrim = Math.max(1, Math.ceil(excessValue / currentPrice));
-      const actualTrim = Math.min(sharesToTrim, shares);
-      reasoning.push(`⛔ OVER-CAP TRIM: ${(curExposure * 100).toFixed(1)}% exposure > ${(maxInvCap * 100).toFixed(0)}% max (${report.mode})`);
-      reasoning.push(`trimming ${actualTrim} ${instrument} shares to reduce exposure to cap`);
-      return {
-        action: 'sell',
-        instrument,
-        shares: actualTrim,
-        price: currentPrice,
-        reasoning,
-        confidence: 'high',
-      };
-    }
-  }
+  // --- MAX INVESTED NOTE ---
+  // MAX_INVESTED caps are ACCUMULATION ceilings — how much to BUILD UP TO in each mode.
+  // They are NOT "sell down to this" triggers. If someone accumulated 60% in GREEN and mode
+  // drops to RED (20% max), we DON'T force-sell to 20%. We stop new buys and trim at named levels only.
+  // The entry gate (top of evaluateEntry) prevents NEW buys above the cap.
+  // Trimming happens only at named report levels via the trim logic below.
 
   // --- v3: Trim logic with full Part 10 mirror framework ---
   if (report && unrealizedPnlPercent > 0) {
