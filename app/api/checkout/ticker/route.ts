@@ -38,8 +38,15 @@ export async function POST(request: Request) {
     }
 
     // Check if user is logged in (optional — supports both public and authenticated purchases)
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // If session lookup fails, continue as a public checkout instead of hard-failing.
+    let user: { id: string; email?: string | null } | null = null;
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    } catch (error) {
+      console.warn("Ticker checkout: continuing without authenticated user", error);
+    }
 
     // If user is logged in, check if they already have this ticker
     if (user) {
