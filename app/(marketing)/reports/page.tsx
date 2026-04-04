@@ -69,35 +69,36 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero */}
-        <div className="text-center space-y-5 mb-10 sm:mb-12 max-w-4xl mx-auto">
+        <div className="text-center space-y-5 mb-8 sm:mb-10 max-w-5xl mx-auto">
           <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs sm:text-sm text-muted-foreground">
-            Post-close reports for the tickers we cover
+            Daily reports for the tickers we cover
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight max-w-3xl mx-auto text-balance">
-            Know the trend, the levels, and the gameplan before the next session
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight max-w-4xl mx-auto text-balance">
+            Stop guessing what matters tomorrow.
+            <span className="block mt-2">Get the trend, the levels, and the exact gameplan in one report.</span>
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-7 sm:leading-8 text-balance">
-            Every report gives you the current posture, the key levels that matter, the bull vs bear scenarios, and a clear execution framework for the next trading day.
+          <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-7 sm:leading-8 text-balance">
+            Each report is built to help you prepare for the next session fast: what regime the ticker is in, where the most important support and resistance levels sit, what confirms upside or downside, and how to approach the trade without overthinking it.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto pt-2 text-left">
-            <div className="rounded-xl border bg-card/60 p-4">
-              <p className="text-sm font-semibold">Cut through the noise</p>
-              <p className="text-sm text-muted-foreground mt-1">Get the setup, the risk, and the inflection levels fast.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-5xl mx-auto pt-2 text-left">
+            <div className="rounded-xl border bg-card/60 p-4 sm:p-5">
+              <p className="text-sm font-semibold">Know the real posture fast</p>
+              <p className="text-sm text-muted-foreground mt-1">See whether the setup is bullish, bearish, improving, stretched, or not worth pressing.</p>
             </div>
-            <div className="rounded-xl border bg-card/60 p-4">
-              <p className="text-sm font-semibold">See both paths clearly</p>
-              <p className="text-sm text-muted-foreground mt-1">Know what confirms upside, what breaks the trade, and what changes the bias.</p>
+            <div className="rounded-xl border bg-card/60 p-4 sm:p-5">
+              <p className="text-sm font-semibold">Trade around the right levels</p>
+              <p className="text-sm text-muted-foreground mt-1">Get the inflection zones, kill-leverage level, and the price areas that actually change the trade.</p>
             </div>
-            <div className="rounded-xl border bg-card/60 p-4">
-              <p className="text-sm font-semibold">Show up prepared</p>
-              <p className="text-sm text-muted-foreground mt-1">Open the next session with a plan instead of reacting in real time.</p>
+            <div className="rounded-xl border bg-card/60 p-4 sm:p-5">
+              <p className="text-sm font-semibold">Walk in with a plan</p>
+              <p className="text-sm text-muted-foreground mt-1">Know what would improve the setup, what would weaken it, and what to do next session if price confirms.</p>
             </div>
           </div>
         </div>
 
         {/* What You Get */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 sm:mb-10 max-w-4xl mx-auto">
           <div className="text-center space-y-2">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <TrendingUp className="h-5 w-5 text-primary" />
@@ -134,6 +135,30 @@ export default function ReportsPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        {/* Included */}
+        <div className="rounded-2xl border bg-card/50 p-5 sm:p-6 mb-8 sm:mb-10 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-8 items-start">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">What&apos;s included</p>
+              <div className="space-y-3 text-sm sm:text-base text-muted-foreground">
+                <p><span className="text-foreground font-medium">Trend and posture:</span> know whether the tape is constructive, fragile, or outright broken.</p>
+                <p><span className="text-foreground font-medium">Key levels:</span> support, resistance, trigger zones, and the prices that change the trade.</p>
+                <p><span className="text-foreground font-medium">Scenario planning:</span> clear bull vs bear paths so you know what confirms and what invalidates.</p>
+                <p><span className="text-foreground font-medium">Execution framework:</span> a clean next-session gameplan instead of a wall of generic commentary.</p>
+              </div>
+            </div>
+            <div className="rounded-xl border bg-background/60 p-4 sm:p-5 space-y-3">
+              <p className="text-sm font-semibold">Best for traders who want:</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>• faster prep after the close</li>
+                <li>• clearer levels and cleaner decision-making</li>
+                <li>• less noise and more signal</li>
+                <li>• a daily framework they can actually trade around</li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
         {/* Ticker Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -173,10 +198,13 @@ export default function ReportsPage() {
           ))}
         </div>
 
-        {/* FAQ-ish footer */}
-        <div className="text-center mt-12 space-y-3">
-          <p className="text-sm text-muted-foreground">
+        {/* Footer CTA */}
+        <div className="text-center mt-12 space-y-3 max-w-3xl mx-auto">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Reports are published every trading day after market close and delivered by email with web access included. Cancel anytime.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Pick the names you actually trade. Skip the noise. Show up with a plan.
           </p>
           <p className="text-xs text-muted-foreground">
             Already subscribed?{" "}
