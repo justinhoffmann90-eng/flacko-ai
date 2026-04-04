@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, TrendingUp, BarChart3, Bell, Mail, Zap } from "lucide-react";
+import { AlertCircle, Loader2, TrendingUp, BarChart3, Zap, Layers3, Compass } from "lucide-react";
 
 interface TickerCard {
   symbol: string;
@@ -16,18 +16,19 @@ interface TickerCard {
   isFlagship?: boolean;
 }
 
-// Tickers listed here match lib/tickers/config.ts — enabled tickers only
 const AVAILABLE_TICKERS: TickerCard[] = [
-  { symbol: "TSLA", name: "Tesla", price: "$29.99", description: "Full access: daily report, Discord, price alerts, call options signal", isFlagship: true },
-  { symbol: "NVDA", name: "NVIDIA", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "AAPL", name: "Apple", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "AMZN", name: "Amazon", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "META", name: "Meta", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "MSFT", name: "Microsoft", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "GOOGL", name: "Alphabet", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "AMD", name: "AMD", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "PLTR", name: "Palantir", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "COIN", name: "Coinbase", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
+  { symbol: "TSLA", name: "Tesla", price: "$29.99", description: "Flagship coverage with the full daily report, scenario map, key levels, and execution gameplan.", isFlagship: true },
+  { symbol: "QQQ", name: "Invesco QQQ", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "SPY", name: "SPDR S&P 500", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "GOOGL", name: "Alphabet", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "META", name: "Meta", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "MU", name: "Micron", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "NVDA", name: "NVIDIA", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "MSFT", name: "Microsoft", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "PLTR", name: "Palantir", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "HOOD", name: "Robinhood", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "BABA", name: "Alibaba", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
+  { symbol: "SNDK", name: "Sandisk", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
 ];
 
 export default function ReportsPage() {
@@ -76,45 +77,51 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero */}
-        <div className="text-center space-y-4 mb-12">
+        <div className="text-center space-y-5 mb-12 max-w-4xl mx-auto">
           <h1 className="text-3xl sm:text-4xl font-bold">
-            AI-Powered Trading Reports
+            Daily reports for the names you actually trade
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Daily mode, levels, and gameplan for the tickers you trade.
-            Built by AI, reviewed by humans. Delivered after market close.
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-8">
+            Each report is built to answer the only questions that matter before the next session:
+            what trend you&apos;re in, where the most important levels are, what would confirm upside or downside,
+            and how to stay positioned without guessing. You get a clean post-close breakdown with market structure,
+            support and resistance, scenario planning, and a clear execution gameplan you can use the next day.
+          </p>
+          <p className="text-base text-muted-foreground max-w-3xl mx-auto leading-7">
+            This is not generic commentary. It&apos;s a focused daily operating sheet for each ticker — built to help you
+            frame risk, spot the inflection levels fast, and know what would make the setup better or worse before you put capital to work.
           </p>
         </div>
 
         {/* What You Get */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12 max-w-3xl mx-auto">
-          <div className="text-center space-y-2">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <BarChart3 className="h-5 w-5 text-primary" />
-            </div>
-            <p className="text-sm font-medium">Daily Report</p>
-            <p className="text-xs text-muted-foreground">Mode, tiers, levels</p>
-          </div>
-          <div className="text-center space-y-2">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Bell className="h-5 w-5 text-primary" />
-            </div>
-            <p className="text-sm font-medium">Price Alerts</p>
-            <p className="text-xs text-muted-foreground">Key level triggers</p>
-          </div>
-          <div className="text-center space-y-2">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Mail className="h-5 w-5 text-primary" />
-            </div>
-            <p className="text-sm font-medium">Email Delivery</p>
-            <p className="text-xs text-muted-foreground">Every trading day</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12 max-w-4xl mx-auto">
           <div className="text-center space-y-2">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
-            <p className="text-sm font-medium">Gameplan</p>
-            <p className="text-xs text-muted-foreground">What I&apos;d do today</p>
+            <p className="text-sm font-medium">Trend & Bias</p>
+            <p className="text-xs text-muted-foreground">The current posture and what it means</p>
+          </div>
+          <div className="text-center space-y-2">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <BarChart3 className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-sm font-medium">Key Levels</p>
+            <p className="text-xs text-muted-foreground">Support, resistance, and inflection zones</p>
+          </div>
+          <div className="text-center space-y-2">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Layers3 className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-sm font-medium">Scenario Map</p>
+            <p className="text-xs text-muted-foreground">What confirms upside vs downside</p>
+          </div>
+          <div className="text-center space-y-2">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Compass className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-sm font-medium">Execution Plan</p>
+            <p className="text-xs text-muted-foreground">A practical gameplan for the next session</p>
           </div>
         </div>
 
@@ -176,7 +183,7 @@ export default function ReportsPage() {
         {/* FAQ-ish footer */}
         <div className="text-center mt-12 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Reports published daily after market close. Cancel anytime.
+            Reports are published every trading day after market close and delivered by email with web access included. Cancel anytime.
           </p>
           <p className="text-xs text-muted-foreground">
             Already subscribed?{" "}
