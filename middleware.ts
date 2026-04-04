@@ -17,7 +17,9 @@ export const config = {
      * - api/cron (cron endpoints authenticated via CRON_SECRET)
      * - api/backtest (public backtest engine)
      * - backtest (public backtest page)
+     * - reports (public ticker reports purchase page)
+     * - api/checkout/ticker (public Stripe checkout for ticker subs)
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|api/price-cache|api/quote|api/cron|api/backtest|api/reports/reparse|api/emails|api/updates|backtest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|api/price-cache|api/quote|api/cron|api/backtest|api/reports/reparse|api/emails|api/updates|api/checkout/ticker|backtest|reports|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)",
   ],
 };
