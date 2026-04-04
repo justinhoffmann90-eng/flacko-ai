@@ -4,13 +4,14 @@ import { parseReport, PARSER_VERSION, validateReport } from "@/lib/parser";
 import { sendReportNotification } from "@/lib/discord/client";
 import { getNewReportDiscordMessage } from "@/lib/discord/templates";
 import { logReportGeneration, logApiError } from "@/lib/api-logger";
+import { validateTicker, DEFAULT_TICKER, getTickerConfig } from "@/lib/tickers/config";
 import fs from "fs";
 import path from "path";
 import os from "os";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const devBypass = process.env.DEV_BYPASS_AUTH === "true";
@@ -22,11 +23,19 @@ export async function GET() {
       }
     }
 
-    const { data: reports, error } = await supabase
+    // Support ?ticker=NVDA query param, default to TSLA for backwards compat
+    const url = new URL(request.url);
+    const tickerParam = url.searchParams.get('ticker');
+    const ticker = validateTicker(tickerParam) || DEFAULT_TICKER;
+
+    let query = supabase
       .from("reports")
       .select("*")
+      .eq("ticker", ticker)
       .order("report_date", { ascending: false })
       .limit(30);
+
+    const { data: reports, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -64,13 +73,17 @@ export async function POST(request: Request) {
       }
     }
 
-    const { markdown, report_type, report_date: requestedDate } = await request.json();
+    const { markdown, report_type, report_date: requestedDate, ticker: requestedTicker } = await request.json();
+
+    // Resolve ticker — default to TSLA for backwards compatibility
+    const ticker = validateTicker(requestedTicker) || DEFAULT_TICKER;
+    const tickerConfig = getTickerConfig(ticker);
 
     if (!markdown) {
       return NextResponse.json({ error: "Markdown content required" }, { status: 400 });
     }
 
-    const isWeekly = report_type === "weekly" || markdown.includes("# TSLA Weekly Review");
+    const isWeekly = report_type === "weekly" || markdown.includes("Weekly Review");
 
     // Parse the report
     const { parsed_data, extracted_data, warnings } = parseReport(markdown);
@@ -152,6 +165,7 @@ export async function POST(request: Request) {
         const { data: prevReport } = await serviceSupabase
           .from("reports")
           .select("price_close")
+          .eq("ticker", ticker)
           .lt("report_date", today)
           .not("price_close", "is", null)
           .gt("price_close", "0")
@@ -169,10 +183,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Insert report
+    // Insert report — upsert keyed on (ticker, report_date)
     const { data: report, error: insertError } = await serviceSupabase
       .from("reports")
       .upsert({
+        ticker,
         report_date: today,
         raw_markdown: markdown,
         parsed_data,
@@ -183,7 +198,7 @@ export async function POST(request: Request) {
         price_close: extracted_data?.price?.close || null,
         updated_at: new Date().toISOString(),
       }, {
-        onConflict: "report_date",
+        onConflict: "ticker,report_date",
       })
       .select()
       .single();
@@ -224,8 +239,8 @@ export async function POST(request: Request) {
         fs.mkdirSync(dailyReportsDir, { recursive: true });
       }
       
-      // Save file with standard naming
-      const filename = isWeekly ? `TSLA_Weekly_Review_${today}.md` : `TSLA_Daily_Report_${today}.md`;
+      // Save file with ticker-aware naming
+      const filename = isWeekly ? `${ticker}_Weekly_Review_${today}.md` : `${ticker}_Daily_Report_${today}.md`;
       const filepath = path.join(dailyReportsDir, filename);
       fs.writeFileSync(filepath, markdown, 'utf-8');
       
@@ -235,13 +250,44 @@ export async function POST(request: Request) {
       // Don't fail the whole request if local save fails
     }
 
-    // Create alerts for all active subscribers (daily reports only — weekly reports don't have actionable alerts)
-    const { data: subscribers, error: subsError } = !isWeekly
-      ? await serviceSupabase
+    // Create alerts for subscribers who have access to this ticker
+    // TSLA: legacy subscriptions table OR ticker_subscriptions
+    // Other tickers: ticker_subscriptions only
+    let subscribers: { user_id: string }[] | null = null;
+    let subsError: any = null;
+
+    if (!isWeekly) {
+      if (ticker === 'TSLA') {
+        // TSLA: use legacy subscriptions (backwards compat) + ticker_subscriptions
+        const { data: legacySubs, error: legacyErr } = await serviceSupabase
           .from("subscriptions")
           .select("user_id")
-          .in("status", ["active", "comped"])
-      : { data: null, error: null };
+          .in("status", ["active", "comped"]);
+        
+        const { data: tickerSubs } = await serviceSupabase
+          .from("ticker_subscriptions")
+          .select("user_id")
+          .eq("ticker", "TSLA")
+          .in("status", ["active", "comped"]);
+
+        // Merge and deduplicate
+        const allUserIds = new Set<string>();
+        legacySubs?.forEach(s => allUserIds.add(s.user_id));
+        tickerSubs?.forEach(s => allUserIds.add(s.user_id));
+        
+        subscribers = Array.from(allUserIds).map(id => ({ user_id: id }));
+        subsError = legacyErr;
+      } else {
+        // Non-TSLA tickers: ticker_subscriptions only
+        const { data, error } = await serviceSupabase
+          .from("ticker_subscriptions")
+          .select("user_id")
+          .eq("ticker", ticker)
+          .in("status", ["active", "comped"]);
+        subscribers = data;
+        subsError = error;
+      }
+    }
 
     if (subsError) {
       console.error("❌ Failed to fetch subscribers:", subsError);
@@ -311,6 +357,7 @@ export async function POST(request: Request) {
             alertInserts.push({
               report_id: report.id,
               user_id: sub.user_id,
+              ticker,
               price: alert.price,
               type: normalizedType,
               level_name: alert.level_name,
@@ -330,7 +377,7 @@ export async function POST(request: Request) {
         const { error: insertError } = await serviceSupabase
           .from("report_alerts")
           .upsert(alertInserts, {
-            onConflict: "report_id,user_id,price,type",
+            onConflict: "report_id,user_id,price,type,ticker",
             ignoreDuplicates: false // Update existing records on conflict
           });
         if (insertError) {

@@ -42,6 +42,8 @@ export async function POST(request: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         let userId = session.metadata?.user_id;
+        const productType = session.metadata?.product_type; // "ticker_report" for à la carte
+        const purchasedTicker = session.metadata?.ticker; // e.g., "NVDA"
         const priceTier = parseInt(session.metadata?.price_tier || "1");
         const customerEmail = session.customer_email || session.customer_details?.email;
         
@@ -125,7 +127,82 @@ export async function POST(request: Request) {
         }
 
         if (userId) {
-          // Create or update subscription
+          // Handle ticker report purchases (à la carte)
+          if (productType === "ticker_report" && purchasedTicker) {
+            console.log(`[TICKER PURCHASE] ${customerEmail} bought ${purchasedTicker} reports`);
+            
+            await supabase.from("ticker_subscriptions").upsert({
+              user_id: userId,
+              ticker: purchasedTicker.toUpperCase(),
+              stripe_subscription_id: session.subscription as string,
+              status: "active",
+              price_cents: 999,
+              current_period_start: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: "user_id,ticker",
+            });
+
+            // Create default user settings if not exists
+            await supabase.from("user_settings").upsert({
+              user_id: userId,
+            }, {
+              onConflict: "user_id",
+            });
+
+            // Send welcome email for ticker purchase
+            if (customerEmail) {
+              try {
+                await resend.emails.send({
+                  from: EMAIL_FROM,
+                  to: customerEmail,
+                  cc: ['hey@flacko.ai'],
+                  subject: `Welcome to Flacko AI — ${purchasedTicker} Reports`,
+                  html: `
+                    <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                      <h2>Welcome to Flacko AI 🚀</h2>
+                      <p>You now have access to <strong>${purchasedTicker}</strong> daily trading reports.</p>
+                      <p>Here's what you get:</p>
+                      <ul>
+                        <li>📊 Daily report with mode, levels, and gameplan</li>
+                        <li>🚨 Price alerts when key levels are hit</li>
+                        <li>📧 Email delivery each trading day</li>
+                      </ul>
+                      <p>Your first report will be delivered after market close on the next trading day.</p>
+                      <p style="margin-top: 24px;">
+                        <a href="https://www.flacko.ai/report/${purchasedTicker.toLowerCase()}" 
+                           style="background: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px;">
+                          View Your Reports →
+                        </a>
+                      </p>
+                      <p style="margin-top: 24px; color: #666; font-size: 14px;">Questions? Reply to this email.</p>
+                    </div>
+                  `,
+                });
+              } catch (emailErr) {
+                console.error("Failed to send ticker welcome email:", emailErr);
+              }
+            }
+
+            // Notify Justin via Telegram
+            const botToken = process.env.TELEGRAM_BOT_TOKEN;
+            const chatId = process.env.TELEGRAM_ALERT_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+            if (botToken && chatId) {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: `💰 <b>NEW TICKER PURCHASE</b>\n\n${customerEmail} bought <b>${purchasedTicker}</b> reports ($9.99/mo)`,
+                  parse_mode: 'HTML'
+                })
+              }).catch(console.error);
+            }
+
+            break; // Done — don't fall through to legacy subscription logic
+          }
+
+          // Legacy flow: Create or update subscription (TSLA / full access)
           await supabase.from("subscriptions").upsert({
             user_id: userId,
             stripe_customer_id: session.customer as string,
@@ -183,8 +260,7 @@ export async function POST(request: Request) {
           }
 
           // Send password setup email so user can set their password
-          // customer_email may be null after checkout; use customer_details.email as fallback
-          const customerEmail = session.customer_email || session.customer_details?.email;
+          // customer_email is already declared at top of this case block
           console.log("Checkout completed for user:", userId, "email:", customerEmail);
           if (customerEmail) {
             try {
@@ -442,9 +518,30 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.user_id;
+        const subId = subscription.id;
 
         if (userId) {
-          // Preserve current_period_end so user retains access until then
+          // Check if this is a ticker subscription cancellation
+          const { data: tickerSub } = await supabase
+            .from("ticker_subscriptions")
+            .select("id, ticker")
+            .eq("stripe_subscription_id", subId)
+            .maybeSingle();
+
+          if (tickerSub) {
+            // Ticker subscription cancellation
+            console.log(`[TICKER CANCEL] User ${userId} canceled ${tickerSub.ticker} subscription`);
+            await supabase
+              .from("ticker_subscriptions")
+              .update({
+                status: "canceled",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", tickerSub.id);
+            break; // Don't fall through to legacy subscription logic
+          }
+
+          // Legacy subscription cancellation
           const periodEnd = subscription.current_period_end 
             ? new Date(subscription.current_period_end * 1000).toISOString()
             : null;

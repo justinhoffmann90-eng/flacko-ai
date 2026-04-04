@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
 import { getNewReportEmailHtml } from "@/lib/resend/templates";
 import { TrafficLightMode, ParsedReportData } from "@/types";
+import { validateTicker, DEFAULT_TICKER, getTickerConfig } from "@/lib/tickers/config";
+import { getTickerSubscribers } from "@/lib/tickers/subscribers";
 
 // This endpoint is called after a new report is published to notify subscribers
 export async function POST(request: Request) {
@@ -16,11 +18,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reportId, todayGameplan, yesterdayRecap, dryRun } = await request.json() as {
+    const { reportId, todayGameplan, yesterdayRecap, dryRun, ticker: requestedTicker } = await request.json() as {
       reportId?: string;
       todayGameplan?: string;
       yesterdayRecap?: string;
       dryRun?: boolean;
+      ticker?: string;
     };
 
     if (!reportId) {
@@ -65,27 +68,45 @@ export async function POST(request: Request) {
     };
     const parsedData = (report.parsed_data || {}) as Partial<ParsedReportData>;
 
-    // Get all subscribers who want new report emails
-    // Include active, comped, and valid trial subscriptions
-    const { data: subscribers } = await supabase
-      .from("subscriptions")
-      .select(`
-        user_id,
-        status,
-        trial_ends_at,
-        users (email)
-      `)
-      .or(`status.in.(active,comped),and(status.eq.trial,trial_ends_at.gt.${new Date().toISOString()})`);
+    // Resolve ticker from report or request
+    const ticker = validateTicker(requestedTicker) || (report as any).ticker || DEFAULT_TICKER;
+    const tickerConfig = getTickerConfig(ticker);
 
-    if (!subscribers || subscribers.length === 0) {
-      return NextResponse.json({ message: "No subscribers to notify" });
+    // Get subscribers for this ticker
+    // TSLA: legacy subscriptions + ticker_subscriptions
+    // Other tickers: ticker_subscriptions only
+    let subscriberList: { user_id: string; email: string }[];
+
+    if (ticker === DEFAULT_TICKER) {
+      // Legacy path for TSLA — use existing subscriptions table
+      const { data: subscribers } = await supabase
+        .from("subscriptions")
+        .select(`
+          user_id,
+          status,
+          trial_ends_at,
+          users (email)
+        `)
+        .or(`status.in.(active,comped),and(status.eq.trial,trial_ends_at.gt.${new Date().toISOString()})`);
+
+      subscriberList = (subscribers || []).map(sub => ({
+        user_id: sub.user_id,
+        email: (sub.users as unknown as { email: string })?.email || '',
+      })).filter(s => s.email);
+    } else {
+      // Non-TSLA tickers: use ticker_subscriptions
+      subscriberList = await getTickerSubscribers(ticker);
     }
 
-    // Batch-fetch all user_settings in a single query instead of N sequential queries
+    if (subscriberList.length === 0) {
+      return NextResponse.json({ message: `No subscribers to notify for ${ticker}` });
+    }
+
+    // Batch-fetch all user_settings in a single query
     const { data: settingsRows } = await supabase
       .from("user_settings")
       .select("user_id, email_new_reports")
-      .in("user_id", subscribers.map(s => s.user_id));
+      .in("user_id", subscriberList.map(s => s.user_id));
 
     const settingsMap = new Map<string, boolean>();
     if (settingsRows) {
@@ -95,7 +116,7 @@ export async function POST(request: Request) {
     }
 
     // Filter subscribers who want email notifications (default true if no settings row)
-    const subscribersToNotify = subscribers.filter(sub => {
+    const subscribersToNotify = subscriberList.filter(sub => {
       const pref = settingsMap.get(sub.user_id);
       return pref !== false;
     });
@@ -108,12 +129,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build recipient list with emails
+    // Build recipient list
     const recipients = subscribersToNotify
-      .map(sub => {
-        const user = sub.users as unknown as { email: string } | null;
-        return { userId: sub.user_id, email: user?.email };
-      })
+      .map(sub => ({ userId: sub.user_id, email: sub.email }))
       .filter((r): r is { userId: string; email: string } => !!r.email);
 
     // Dry-run support: return recipient info without sending
@@ -139,12 +157,15 @@ export async function POST(request: Request) {
     const subjectDate = new Date().toLocaleDateString("en-US", {
       month: "short", day: "numeric", timeZone: "America/Chicago",
     });
-    const subject = `TSLA Morning Gameplan — ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE — ${subjectDate}`;
+    const subject = `${ticker} Morning Gameplan — ${extractedData?.mode?.current?.toUpperCase() || "NEW"} MODE — ${subjectDate}`;
+    const reportPageUrl = `https://www.flacko.ai/report/${ticker.toLowerCase()}/${report.report_date}`;
 
     // Build all emails for Resend batch send
+    // CC hey@flacko.ai on every report delivery email for monitoring
     const emailBatch = recipients.map(r => ({
       from: EMAIL_FROM,
       to: r.email,
+      cc: ['hey@flacko.ai'],
       subject,
       html: getNewReportEmailHtml({
         userName: r.email.split("@")[0],

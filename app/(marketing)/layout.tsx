@@ -15,6 +15,9 @@ export default function MarketingLayout({
             Flacko AI
           </Link>
           <nav className="flex items-center space-x-4">
+            <Link href="/reports">
+              <Button variant="ghost">Reports</Button>
+            </Link>
             <Link href="/pricing">
               <Button variant="ghost">Pricing</Button>
             </Link>

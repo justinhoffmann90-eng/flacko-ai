@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/server";
-import { fetchRealtimePrice } from "@/lib/price/fetcher";
+import { fetchRealtimePrice, fetchTickerPrice } from "@/lib/price/fetcher";
+import { DEFAULT_TICKER } from "@/lib/tickers/config";
 import { sendAlertMessage, DiscordSendResult } from "@/lib/discord/client";
 import { getAlertDiscordMessage } from "@/lib/discord/templates";
 import { resend, EMAIL_FROM } from "@/lib/resend/client";
@@ -160,8 +161,37 @@ export async function GET(request: Request) {
   try {
     const supabase = await createServiceClient();
 
-    // Fetch current TSLA price
-    const currentPrice = await fetchRealtimePrice();
+    // Determine which tickers have pending alerts
+    const { data: tickersWithAlerts } = await supabase
+      .from("report_alerts")
+      .select("ticker")
+      .is("triggered_at", null)
+      .limit(100);
+    
+    // Get unique tickers that need price checks (default to TSLA for backwards compat)
+    const tickersToCheck = new Set<string>();
+    if (tickersWithAlerts && tickersWithAlerts.length > 0) {
+      tickersWithAlerts.forEach(a => tickersToCheck.add(a.ticker || DEFAULT_TICKER));
+    } else {
+      tickersToCheck.add(DEFAULT_TICKER);
+    }
+
+    // Fetch prices for all tickers with pending alerts
+    const tickerPrices: Record<string, number> = {};
+    for (const ticker of tickersToCheck) {
+      try {
+        tickerPrices[ticker] = await fetchRealtimePrice(ticker);
+      } catch (err) {
+        console.error(`Failed to fetch price for ${ticker}:`, err);
+        // Continue with other tickers — don't let one failure block all
+      }
+    }
+
+    // Use TSLA price as the primary for system status (backwards compat)
+    const currentPrice = tickerPrices[DEFAULT_TICKER] || Object.values(tickerPrices)[0] || 0;
+    if (currentPrice === 0 && Object.keys(tickerPrices).length === 0) {
+      throw new Error("Failed to fetch price for any ticker");
+    }
 
     // Get previous price from last run (for crossing detection)
     const { data: prevConfig } = await supabase
@@ -190,16 +220,27 @@ export async function GET(request: Request) {
     await (supabase.from("system_config") as unknown as { upsert: (data: typeof configToSave) => Promise<unknown> })
       .upsert(configToSave);
 
-    // Get the LATEST report for context (not just today's - reports may be for next trading day)
-    const { data: report } = await supabase
-      .from("reports")
-      .select("id, extracted_data, report_date")
-      .or("report_type.is.null,report_type.eq.daily")
-      .order("report_date", { ascending: false })
-      .limit(1)
-      .single();
+    // Get the LATEST report per ticker for context
+    // For backwards compat, also get the TSLA report specifically
+    const reports: Record<string, any> = {};
+    for (const ticker of tickersToCheck) {
+      const { data: report } = await supabase
+        .from("reports")
+        .select("id, extracted_data, report_date, ticker")
+        .eq("ticker", ticker)
+        .or("report_type.is.null,report_type.eq.daily")
+        .order("report_date", { ascending: false })
+        .limit(1)
+        .single();
+      if (report) {
+        reports[ticker] = report;
+      }
+    }
 
-    if (!report) {
+    // Use TSLA report as primary for backwards compat
+    const report = reports[DEFAULT_TICKER] || Object.values(reports)[0];
+
+    if (!report && Object.keys(reports).length === 0) {
       return NextResponse.json({
         message: "No reports found",
         price: currentPrice,
@@ -231,14 +272,15 @@ export async function GET(request: Request) {
       }
     }
 
-    // Step 2: Get untriggered alerts for the latest report
+    // Step 2: Get untriggered alerts across ALL tickers (for their respective latest reports)
+    const reportIds = Object.values(reports).map((r: any) => r.id);
     const { data: pendingAlerts } = await supabase
       .from("report_alerts")
       .select(`
         *,
         users (email)
       `)
-      .eq("report_id", report.id)
+      .in("report_id", reportIds)
       .is("triggered_at", null);
 
     if (!pendingAlerts || pendingAlerts.length === 0) {
@@ -259,19 +301,29 @@ export async function GET(request: Request) {
 
     for (const alert of pendingAlerts) {
       let shouldTrigger = false;
+      
+      // Resolve which price to use for this alert's ticker
+      const alertTicker = alert.ticker || DEFAULT_TICKER;
+      const alertCurrentPrice = tickerPrices[alertTicker];
+      
+      // Skip if we don't have a price for this ticker
+      if (!alertCurrentPrice) {
+        continue;
+      }
 
-      if (previousPrice !== null) {
-        // CROSSING detection: price must have been on the opposite side last check
+      if (previousPrice !== null && alertTicker === DEFAULT_TICKER) {
+        // CROSSING detection for TSLA (has previous price history)
         if (alert.type === "upside") {
-          shouldTrigger = previousPrice < alert.price && currentPrice >= alert.price;
+          shouldTrigger = previousPrice < alert.price && alertCurrentPrice >= alert.price;
         } else if (alert.type === "downside") {
-          shouldTrigger = previousPrice > alert.price && currentPrice <= alert.price;
+          shouldTrigger = previousPrice > alert.price && alertCurrentPrice <= alert.price;
         }
       } else {
-        // First run ever (no previous price) — use simple threshold as fallback
+        // For non-TSLA tickers or first run: use simple threshold
+        // TODO: Add per-ticker previous price tracking for crossing detection
         shouldTrigger =
-          (alert.type === "upside" && currentPrice >= alert.price) ||
-          (alert.type === "downside" && currentPrice <= alert.price);
+          (alert.type === "upside" && alertCurrentPrice >= alert.price) ||
+          (alert.type === "downside" && alertCurrentPrice <= alert.price);
       }
 
       if (shouldTrigger) {
@@ -363,7 +415,7 @@ export async function GET(request: Request) {
       user_id: userId,
       type: "alert_triggered",
       title: `Alert Triggered`,
-      body: `TSLA hit $${currentPrice.toFixed(2)}`,
+      body: `${(triggeredAlerts.find(a => a.user_id === userId) as any)?.ticker || 'TSLA'} hit $${currentPrice.toFixed(2)}`,
       metadata: {
         price: currentPrice,
         alerts: triggeredAlerts

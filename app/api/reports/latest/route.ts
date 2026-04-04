@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { validateTicker, DEFAULT_TICKER } from "@/lib/tickers/config";
 
 // Force dynamic rendering — never cache this route
 export const dynamic = "force-dynamic";
@@ -15,10 +16,13 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const type = url.searchParams.get("type"); // "daily" | "weekly" | null (default: latest daily)
+    const tickerParam = url.searchParams.get("ticker");
+    const ticker = validateTicker(tickerParam) || DEFAULT_TICKER;
 
     let query = supabase
       .from("reports")
       .select("*")
+      .eq("ticker", ticker)
       .order("report_date", { ascending: false })
       .limit(1);
 
