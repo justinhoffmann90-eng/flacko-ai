@@ -408,10 +408,23 @@ async function verifyTicker(ticker: string, idx: number): Promise<VerificationRe
 
 async function main() {
   const tickers = process.argv.slice(2);
-  const targets = tickers.length > 0 ? tickers : ['QQQ', 'NVDA'];
+  const targets = tickers.length > 0 ? tickers : ['TSLA', 'QQQ', 'SPY', 'NVDA', 'AAPL', 'AMZN', 'META', 'MU', 'GOOGL', 'BABA'];
   const results: VerificationResult[] = [];
   for (const [idx, ticker] of targets.entries()) results.push(await verifyTicker(ticker, idx));
+
+  const failures = results.filter((row) => row.summary.failed > 0);
   console.log(JSON.stringify(results, null, 2));
+
+  if (failures.length > 0) {
+    console.error(`BACKTEST_VERIFY_FAIL ${failures.length} ticker(s) failed verification`);
+    for (const row of failures) {
+      const failedChecks = row.checks.filter((c) => !c.pass).map((c) => c.name);
+      console.error(` - ${row.ticker}: ${failedChecks.join('; ')}`);
+    }
+    process.exit(1);
+  }
+
+  console.error(`BACKTEST_VERIFY_OK ${results.length} ticker(s) passed verification`);
 }
 
 main().catch((e) => {
