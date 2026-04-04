@@ -10,6 +10,12 @@ function getStripe(): Stripe {
   return new Stripe(process.env.STRIPE_SECRET_KEY.trim());
 }
 
+function getAppUrl(): string {
+  const raw = (process.env.NEXT_PUBLIC_APP_URL || "https://www.flacko.ai").trim();
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  return withProtocol.replace(/\/$/, "");
+}
+
 /**
  * POST /api/checkout/ticker
  * Creates a Stripe checkout session for a ticker report subscription.
@@ -67,7 +73,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.flacko.ai";
+    const appUrl = getAppUrl();
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
