@@ -69,20 +69,31 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero */}
-        <div className="text-center space-y-5 mb-12 max-w-4xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold">
-            Daily reports for the names you actually trade
+        <div className="text-center space-y-5 mb-10 sm:mb-12 max-w-4xl mx-auto">
+          <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs sm:text-sm text-muted-foreground">
+            Post-close reports for the tickers we cover
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight max-w-3xl mx-auto text-balance">
+            Know the trend, the levels, and the gameplan before the next session
           </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-8">
-            Each report is built to answer the only questions that matter before the next session:
-            what trend you&apos;re in, where the most important levels are, what would confirm upside or downside,
-            and how to stay positioned without guessing. You get a clean post-close breakdown with market structure,
-            support and resistance, scenario planning, and a clear execution gameplan you can use the next day.
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-7 sm:leading-8 text-balance">
+            Every report gives you the current posture, the key levels that matter, the bull vs bear scenarios, and a clear execution framework for the next trading day.
           </p>
-          <p className="text-base text-muted-foreground max-w-3xl mx-auto leading-7">
-            This is not generic commentary. It&apos;s a focused daily operating sheet for each ticker — built to help you
-            frame risk, spot the inflection levels fast, and know what would make the setup better or worse before you put capital to work.
-          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto pt-2 text-left">
+            <div className="rounded-xl border bg-card/60 p-4">
+              <p className="text-sm font-semibold">Cut through the noise</p>
+              <p className="text-sm text-muted-foreground mt-1">Get the setup, the risk, and the inflection levels fast.</p>
+            </div>
+            <div className="rounded-xl border bg-card/60 p-4">
+              <p className="text-sm font-semibold">See both paths clearly</p>
+              <p className="text-sm text-muted-foreground mt-1">Know what confirms upside, what breaks the trade, and what changes the bias.</p>
+            </div>
+            <div className="rounded-xl border bg-card/60 p-4">
+              <p className="text-sm font-semibold">Show up prepared</p>
+              <p className="text-sm text-muted-foreground mt-1">Open the next session with a plan instead of reacting in real time.</p>
+            </div>
+          </div>
         </div>
 
         {/* What You Get */}
