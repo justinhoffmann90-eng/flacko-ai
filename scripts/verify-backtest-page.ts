@@ -17,6 +17,26 @@ type VerificationResult = {
   summary: { passed: number; failed: number };
 };
 
+type LiveScanResponse = {
+  ticker: string;
+  date: string;
+  indicators: {
+    close: number; rsi: number; smi: number;
+  };
+  right_now: {
+    suggestion: string;
+    reasoning: string[];
+    summary: string;
+  };
+  seasonality: {
+    monthly: Array<{ month: number; n: number; avg_return: number; median_return: number; win_rate: number }>;
+    forward: {
+      d30: { n: number; avg_return: number; median_return: number; win_rate: number } | null;
+    };
+  };
+  setups: Array<{ id: string; status: string }>;
+};
+
 const env = Object.fromEntries(
   fs.readFileSync('.env.local', 'utf8')
     .split(/\r?\n/)
@@ -214,10 +234,37 @@ async function computeSeasonality(ticker: string) {
   return { april: aprilStats, d5: stat(forwardResults[5]), d10: stat(forwardResults[10]), d30: stat(forwardResults[30]), d60: stat(forwardResults[60]) };
 }
 
-async function verifyTicker(ticker: string): Promise<VerificationResult> {
-  const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows] = await Promise.all([
+async function clearRateLimitTestRows() {
+  await supabase.from('rate_limits').delete().like('key', 'scan:%:2026-04-04');
+}
+
+async function fetchLiveScan(ticker: string, idx: number): Promise<LiveScanResponse> {
+  await clearRateLimitTestRows();
+  const ip = `198.51.100.${50 + idx}`;
+  const res = await fetch(`https://www.flacko.ai/api/backtest/scan?ticker=${ticker}`, {
+    headers: { 'x-forwarded-for': ip },
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Live scan failed for ${ticker}: ${res.status} ${text.slice(0, 200)}`);
+  }
+  return await res.json() as LiveScanResponse;
+}
+
+async function verifyTicker(ticker: string, idx: number): Promise<VerificationResult> {
+  const [dailyRows, weeklyRows, vixDailyRows, vixWeeklyRows, stateRes] = await Promise.all([
     fetchRows(ticker, 'daily', 450), fetchRows(ticker, 'weekly', 150), fetchRows('^VIX', 'daily', 120), fetchRows('^VIX', 'weekly', 30),
+    supabase.from('orb_setup_states').select('setup_id,status,active_since,active_day,entry_price,gauge_entry_value').eq('ticker', ticker),
   ]);
+  const prevMap = new Map(((stateRes.data as any[]) || []).map((row) => [row.setup_id, {
+    setup_id: row.setup_id,
+    status: row.status,
+    active_since: row.active_since ?? undefined,
+    active_day: row.active_day ?? undefined,
+    entry_price: row.entry_price ?? undefined,
+    gauge_entry_value: row.gauge_entry_value ?? undefined,
+  }]));
   const latest = dailyRows[dailyRows.length - 1];
   const prev = dailyRows[dailyRows.length - 2];
   const prev3 = dailyRows[Math.max(0, dailyRows.length - 4)];
@@ -232,6 +279,18 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
   const dailyInferredStates = inferBxtStates(dailyBxtSeries);
   const weeklyBxtSeries = weeklyRows.map((r) => toNumber(r.bxt) ?? Number.NaN);
   const weeklyInferredStates = inferBxtStates(weeklyBxtSeries);
+  let consecutiveDown = 0;
+  let consecutiveUp = 0;
+  for (let i = closes.length - 1; i > 0; i--) {
+    if (closes[i] < closes[i - 1]) consecutiveDown += 1; else break;
+  }
+  for (let i = closes.length - 1; i > 0; i--) {
+    if (closes[i] > closes[i - 1]) consecutiveUp += 1; else break;
+  }
+  let stabilizationDays = 0;
+  for (let i = lows.length - 1; i > 0; i--) {
+    if (lows[i] >= lows[i - 1]) stabilizationDays += 1; else break;
+  }
   let dailyHhStreak = 0;
   for (let i = dailyRows.length - 1; i >= 0; i--) {
     const state = normalizeBxtState(dailyRows[i].bxt_state) ?? dailyInferredStates[i] ?? 'LL';
@@ -279,7 +338,9 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
     bx_weekly_prev: toNumber(weeklyPrev?.bxt)!,
     bx_weekly_state: normalizeBxtState(weeklyLatest.bxt_state) ?? weeklyInferredStates[weeklyRows.length - 1] ?? 'LL',
     bx_weekly_state_prev: normalizeBxtState(weeklyPrev?.bxt_state ?? null) ?? weeklyInferredStates[weeklyRows.length - 2] ?? 'LL',
-    bx_weekly_transition: null,
+    bx_weekly_transition: (normalizeBxtState(weeklyPrev?.bxt_state ?? null) ?? weeklyInferredStates[weeklyRows.length - 2]) !== (normalizeBxtState(weeklyLatest.bxt_state) ?? weeklyInferredStates[weeklyRows.length - 1])
+      ? `${normalizeBxtState(weeklyPrev?.bxt_state ?? null) ?? weeklyInferredStates[weeklyRows.length - 2]}_to_${normalizeBxtState(weeklyLatest.bxt_state) ?? weeklyInferredStates[weeklyRows.length - 1]}`
+      : null,
     rsi: toNumber(latest.rsi)!,
     rsi_prev: toNumber(prev?.rsi)!,
     rsi_change_3d: toNumber(latest.rsi)! - (toNumber(prev3?.rsi) ?? toNumber(prev?.rsi)!),
@@ -296,9 +357,9 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
     sma200_dist: ((latest.close - toNumber(latest.sma_200)!) / toNumber(latest.sma_200)!) * 100,
     price_vs_ema9: ((latest.close - ema9) / ema9) * 100,
     price_vs_ema21: ((latest.close - toNumber(latest.ema_21)!) / toNumber(latest.ema_21)!) * 100,
-    consecutive_down: 0,
-    consecutive_up: 0,
-    stabilization_days: 0,
+    consecutive_down: consecutiveDown,
+    consecutive_up: consecutiveUp,
+    stabilization_days: stabilizationDays,
     weekly_ema9: toNumber(weeklyLatest.ema_9)!,
     weekly_ema13: toNumber(weeklyLatest.ema_13)!,
     weekly_ema21: toNumber(weeklyLatest.ema_21)!,
@@ -313,26 +374,33 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
     bx_weekly_consec_ll: bxWeeklyConsecLL,
   };
 
-  const setups = evaluateAllSetups(indicators, new Map());
-  const active = setups.filter((s) => s.is_active).map((s) => s.setup_id);
-  const watching = setups.filter((s) => s.is_watching).map((s) => s.setup_id);
+  const setups = evaluateAllSetups(indicators, prevMap as any);
+  const active = setups.filter((s) => s.is_active).map((s) => s.setup_id).sort();
+  const watching = setups.filter((s) => s.is_watching).map((s) => s.setup_id).sort();
   const mode = suggestMode(indicators, setups.filter((s) => s.is_active));
   const seasonality = await computeSeasonality(ticker);
+  const live = await fetchLiveScan(ticker, idx);
+  const liveActive = live.setups.filter((s) => s.status === 'active').map((s) => s.id).sort();
+  const liveWatching = live.setups.filter((s) => s.status === 'watching').map((s) => s.id).sort();
+  const liveApril = live.seasonality.monthly.find((m) => m.month === 4);
+  const liveD30 = live.seasonality.forward.d30;
+
+  const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((v, i) => v === b[i]);
+  const near = (a: number, b: number, tol = 0.02) => Math.abs(a - b) <= tol;
 
   const checks = [
     { name: 'close finite', pass: Number.isFinite(indicators.close), actual: round(indicators.close) },
     { name: 'RSI finite', pass: Number.isFinite(indicators.rsi), actual: round(indicators.rsi) },
     { name: 'SMI finite', pass: Number.isFinite(indicators.smi), actual: round(indicators.smi) },
     { name: 'below Weekly 21 EMA implies RED/EJECTED', pass: !indicators.price_above_weekly_21 ? mode.suggestion === 'RED / EJECTED' : true, actual: { price_above_weekly_21: indicators.price_above_weekly_21, mode: mode.suggestion } },
-    { name: `${ticker} expected active setup count`, pass: active.length === 0, actual: active, expected: [] },
-    { name: `${ticker} expected watching count`, pass: (() => {
-        const expected = ticker === 'QQQ'
-          ? ['trend-confirm', 'goldilocks', 'bxt-weekly-streak', 'dual-ll']
-          : ['trend-confirm', 'goldilocks', 'dual-ll'];
-        return watching.length === expected.length && expected.every((id) => watching.includes(id));
-      })(), actual: watching, expected: ticker === 'QQQ' ? ['trend-confirm', 'goldilocks', 'bxt-weekly-streak', 'dual-ll'] : ['trend-confirm', 'goldilocks', 'dual-ll'] },
-    { name: 'April seasonality sample size', pass: seasonality.april.n === 20, actual: seasonality.april.n, expected: 20 },
-    { name: 'Forward 30D sample size', pass: seasonality.d30.n === 20, actual: seasonality.d30.n, expected: 20 },
+    { name: 'live mode matches local mode', pass: live.right_now.suggestion === mode.suggestion, actual: live.right_now.suggestion, expected: mode.suggestion },
+    { name: 'live active setups match local engine', pass: sameList(liveActive, active), actual: liveActive, expected: active },
+    { name: 'live watching setups match local engine', pass: sameList(liveWatching, watching), actual: liveWatching, expected: watching },
+    { name: 'live close matches local value', pass: near(live.indicators.close, round(indicators.close)), actual: live.indicators.close, expected: round(indicators.close) },
+    { name: 'live RSI matches local value', pass: near(live.indicators.rsi, round(indicators.rsi)), actual: live.indicators.rsi, expected: round(indicators.rsi) },
+    { name: 'live SMI matches local value', pass: near(live.indicators.smi, round(indicators.smi)), actual: live.indicators.smi, expected: round(indicators.smi) },
+    { name: 'April seasonality matches local stats', pass: !!liveApril && liveApril.n === seasonality.april.n && near(liveApril.avg_return, seasonality.april.avg_return) && near(liveApril.median_return, seasonality.april.median_return) && near(liveApril.win_rate, seasonality.april.win_rate), actual: liveApril, expected: seasonality.april },
+    { name: 'Forward 30D seasonality matches local stats', pass: !!liveD30 && liveD30.n === seasonality.d30.n && near(liveD30.avg_return, seasonality.d30.avg_return) && near(liveD30.median_return, seasonality.d30.median_return) && near(liveD30.win_rate, seasonality.d30.win_rate), actual: liveD30, expected: seasonality.d30 },
   ];
   const passed = checks.filter((c) => c.pass).length;
   return { ticker, date: indicators.date, mode: mode.suggestion, checks, summary: { passed, failed: checks.length - passed } };
@@ -342,7 +410,7 @@ async function main() {
   const tickers = process.argv.slice(2);
   const targets = tickers.length > 0 ? tickers : ['QQQ', 'NVDA'];
   const results: VerificationResult[] = [];
-  for (const ticker of targets) results.push(await verifyTicker(ticker));
+  for (const [idx, ticker] of targets.entries()) results.push(await verifyTicker(ticker, idx));
   console.log(JSON.stringify(results, null, 2));
 }
 
