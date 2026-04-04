@@ -146,16 +146,18 @@ CREATE TABLE IF NOT EXISTS public.supported_tickers (
 );
 
 -- Seed with TSLA (enabled) and NVDA (enabled for testing)
-INSERT INTO supported_tickers (ticker, name, display_name, price_cents, has_spotgamma, has_hiro, enabled, sort_order)
+INSERT INTO supported_tickers (ticker, name, display_name, stripe_price_id, price_cents, has_spotgamma, has_hiro, enabled, sort_order)
 VALUES 
-  ('TSLA', 'Tesla, Inc.', 'TSLA', 2999, true, true, true, 1),
-  ('NVDA', 'NVIDIA Corporation', 'NVDA', 999, false, false, true, 2),
-  ('QQQ', 'Invesco QQQ Trust', 'QQQ', 999, true, false, false, 3),
-  ('AAPL', 'Apple Inc.', 'AAPL', 999, false, false, false, 4),
-  ('AMZN', 'Amazon.com, Inc.', 'AMZN', 999, false, false, false, 5),
-  ('META', 'Meta Platforms, Inc.', 'META', 999, false, false, false, 6),
-  ('MSFT', 'Microsoft Corporation', 'MSFT', 999, false, false, false, 7),
-  ('SPY', 'SPDR S&P 500 ETF', 'SPY', 999, true, false, false, 8),
-  ('AMD', 'Advanced Micro Devices', 'AMD', 999, false, false, false, 9),
-  ('GOOGL', 'Alphabet Inc.', 'GOOGL', 999, false, false, false, 10)
+  ('TSLA', 'Tesla, Inc.', 'TSLA', NULL, 2999, true, true, true, 1),
+  ('NVDA', 'NVIDIA Corporation', 'NVDA', 'price_1TIJN0RNdSDJbZblrx3q8Uro', 999, false, false, true, 2),
+  ('QQQ', 'Invesco QQQ Trust', 'QQQ', NULL, 999, true, false, false, 3),
+  ('AAPL', 'Apple Inc.', 'AAPL', 'price_1TIJN1RNdSDJbZblBJuVhpR5', 999, false, false, true, 4),
+  ('AMZN', 'Amazon.com, Inc.', 'AMZN', 'price_1TIJN2RNdSDJbZbll7N1oQfK', 999, false, false, true, 5),
+  ('META', 'Meta Platforms, Inc.', 'META', 'price_1TIJN4RNdSDJbZblWtPGlB21', 999, false, false, true, 6),
+  ('MSFT', 'Microsoft Corporation', 'MSFT', 'price_1TIJN6RNdSDJbZblrdWxujzD', 999, false, false, true, 7),
+  ('SPY', 'SPDR S&P 500 ETF', 'SPY', NULL, 999, true, false, false, 8),
+  ('AMD', 'Advanced Micro Devices', 'AMD', 'price_1TIJN7RNdSDJbZblg5cBQiF2', 999, false, false, true, 9),
+  ('GOOGL', 'Alphabet Inc.', 'GOOGL', 'price_1TIJN3RNdSDJbZbl5di31LUP', 999, false, false, true, 10),
+  ('PLTR', 'Palantir Technologies Inc.', 'PLTR', 'price_1TIJN8RNdSDJbZblGIO6M1jm', 999, false, false, true, 11),
+  ('COIN', 'Coinbase Global, Inc.', 'COIN', 'price_1TIJN9RNdSDJbZblj0UaOf1K', 999, false, false, true, 12)
 ON CONFLICT (ticker) DO NOTHING;

@@ -13,17 +13,18 @@ interface TickerCard {
   name: string;
   price: string;
   description: string;
-  popular?: boolean;
+  isFlagship?: boolean;
 }
 
+// Tickers listed here match lib/tickers/config.ts — enabled tickers only
 const AVAILABLE_TICKERS: TickerCard[] = [
-  { symbol: "TSLA", name: "Tesla", price: "$29.99", description: "Full access: daily report, Discord, price alerts, call options signal" },
+  { symbol: "TSLA", name: "Tesla", price: "$29.99", description: "Full access: daily report, Discord, price alerts, call options signal", isFlagship: true },
   { symbol: "NVDA", name: "NVIDIA", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "AAPL", name: "Apple", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "AMZN", name: "Amazon", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
-  { symbol: "GOOGL", name: "Alphabet", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "META", name: "Meta", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "MSFT", name: "Microsoft", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
+  { symbol: "GOOGL", name: "Alphabet", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "AMD", name: "AMD", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "PLTR", name: "Palantir", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
   { symbol: "COIN", name: "Coinbase", price: "$9.99", description: "Daily report with mode, levels, gameplan, and price alerts" },
@@ -128,9 +129,9 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {AVAILABLE_TICKERS.map((ticker) => (
             <Card key={ticker.symbol} className={`relative overflow-hidden transition-all hover:shadow-lg ${
-              ticker.symbol === "TSLA" ? "border-primary/50 shadow-md" : ""
+              ticker.isFlagship ? "border-primary/50 shadow-md" : ""
             }`}>
-              {ticker.symbol === "TSLA" && (
+              {ticker.isFlagship && (
                 <div className="absolute top-3 right-3">
                   <Badge variant="default" className="text-[10px]">
                     <Zap className="w-3 h-3 mr-1" />
@@ -158,7 +159,7 @@ export default function ReportsPage() {
                     onClick={() => handlePurchase(ticker.symbol)}
                     disabled={loadingTicker === ticker.symbol}
                     size="sm"
-                    variant={ticker.symbol === "TSLA" ? "default" : "outline"}
+                    variant={ticker.isFlagship ? "default" : "outline"}
                   >
                     {loadingTicker === ticker.symbol ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
