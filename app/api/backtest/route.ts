@@ -11,12 +11,18 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-// ─── Supabase client ──────────────────────────────────────────────────────────
+// ─── Supabase client (lazy-init to avoid build-time crash) ────────────────────
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _supabase: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return _supabase;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,7 +89,7 @@ async function fetchBarsFromDB(
   let offset = 0;
 
   while (true) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("ohlcv_bars")
       .select(
         "bar_date,open,high,low,close,volume,rsi,bxt,bxt_state,bxt_consecutive_ll,ema_9,ema_13,ema_21,sma_200"
