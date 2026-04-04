@@ -6,18 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, TrendingUp, BarChart3, Zap, Layers3, Compass } from "lucide-react";
+import { AlertCircle, Loader2, TrendingUp, BarChart3, Layers3, Compass } from "lucide-react";
 
 interface TickerCard {
   symbol: string;
   name: string;
   price: string;
   description: string;
-  isFlagship?: boolean;
 }
 
 const AVAILABLE_TICKERS: TickerCard[] = [
-  { symbol: "TSLA", name: "Tesla", price: "$29.99", description: "Flagship coverage with the full daily report, scenario map, key levels, and execution gameplan.", isFlagship: true },
   { symbol: "QQQ", name: "Invesco QQQ", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
   { symbol: "SPY", name: "SPDR S&P 500", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
   { symbol: "GOOGL", name: "Alphabet", price: "$9.99", description: "Daily report with trend, key levels, scenarios, and a clear post-close gameplan." },
@@ -36,12 +34,6 @@ export default function ReportsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handlePurchase = async (symbol: string) => {
-    // TSLA uses the existing signup flow
-    if (symbol === "TSLA") {
-      window.location.href = "/pricing";
-      return;
-    }
-
     setError(null);
     setLoadingTicker(symbol);
 
@@ -135,17 +127,7 @@ export default function ReportsPage() {
         {/* Ticker Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {AVAILABLE_TICKERS.map((ticker) => (
-            <Card key={ticker.symbol} className={`relative overflow-hidden transition-all hover:shadow-lg ${
-              ticker.isFlagship ? "border-primary/50 shadow-md" : ""
-            }`}>
-              {ticker.isFlagship && (
-                <div className="absolute top-3 right-3">
-                  <Badge variant="default" className="text-[10px]">
-                    <Zap className="w-3 h-3 mr-1" />
-                    FLAGSHIP
-                  </Badge>
-                </div>
-              )}
+            <Card key={ticker.symbol} className="relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
               <CardContent className="p-5 space-y-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -166,7 +148,7 @@ export default function ReportsPage() {
                     onClick={() => handlePurchase(ticker.symbol)}
                     disabled={loadingTicker === ticker.symbol}
                     size="sm"
-                    variant={ticker.isFlagship ? "default" : "outline"}
+                    variant="outline"
                   >
                     {loadingTicker === ticker.symbol ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

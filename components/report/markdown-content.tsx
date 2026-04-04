@@ -21,12 +21,12 @@ function cleanContent(raw: string): string {
     cleaned = cleaned.replace(/^---\n[\s\S]*?\n---\n*/, '');
   }
 
-  // Remove redundant "TSLA Daily Report" header (already in page title)
-  cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*\n/m, '');
+  // Remove redundant "<TICKER> Daily Report" header (already in page title)
+  cleaned = cleaned.replace(/^#\s*[A-Z]{1,5}\s+Daily Report\s*\n/gm, '');
   
-  // Remove "TSLA Daily Report — Supporting Analysis" header (mid-document redundant title)
+  // Remove "<TICKER> Daily Report — Supporting Analysis" header (mid-document redundant title)
   // Using regex that matches any dash variant (em-dash, en-dash, hyphen)
-  cleaned = cleaned.replace(/^#\s*TSLA Daily Report\s*[—–\-]+\s*Supporting Analysis\s*$/gm, '---');
+  cleaned = cleaned.replace(/^#\s*[A-Z]{1,5}\s+Daily Report\s*[—–\-]+\s*Supporting Analysis\s*$/gm, '---');
   
   // Remove ALL date headers (## Monday, February 2, 2026 format) - they're redundant
   cleaned = cleaned.replace(/^##\s*(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+\w+\s+\d{1,2},?\s+\d{4}\s*$/gm, '');

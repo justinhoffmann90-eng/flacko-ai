@@ -78,7 +78,7 @@ export default async function TickerDateReportPage({ params }: Props) {
               </div>
               <p className="text-lg font-medium">Subscribe to view {ticker} reports</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Get daily {ticker} trading intelligence for ${config.priceCents / 100}/month.
+                Get daily {ticker} trading intelligence — mode, key levels, scenarios, and a clear execution gameplan — for ${config.priceCents / 100}/month.
               </p>
               <a
                 href="/reports"
@@ -149,6 +149,16 @@ export default async function TickerDateReportPage({ params }: Props) {
   const dailyCapPct = dailyCapMatch ? parseInt(dailyCapMatch[1]) : (extractedData?.position?.daily_cap_pct || null);
   const dailyCap = dailyCapPct ? `${dailyCapPct}% of cash` : "—";
 
+  const posture = postureFullText;
+  const slowZone = extractedData?.slow_zone ?? extractedData?.pause_zone;
+  const slowZoneActive = extractedData?.slow_zone_active === true;
+  const slowZoneNear = !!(slowZone && closePrice && Math.abs(closePrice - slowZone) / closePrice <= 0.01);
+  const ejectStep = extractedData?.master_eject_step;
+  const putWall = extractedData?.key_levels?.put_wall;
+  const ejectLabel = ejectStep
+    ? `Step ${ejectStep}: ${formatPrice(masterEject)}${putWall && putWall !== masterEject ? `→${formatPrice(putWall)}` : ""}`
+    : formatPrice(masterEject);
+
   const reportDateObj = new Date(report.report_date + 'T12:00:00');
   const dayName = reportDateObj.toLocaleDateString('en-US', { weekday: 'long' });
   const monthDay = reportDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -178,6 +188,9 @@ export default async function TickerDateReportPage({ params }: Props) {
           <div className="bg-card border rounded-lg p-2.5 sm:p-3 md:p-4 lg:p-6 text-center">
             <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground uppercase tracking-wide">Daily Cap</p>
             <p className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1">{dailyCap}</p>
+            {(slowZoneActive || slowZoneNear) && slowZone && (
+              <p className="text-[10px] sm:text-[11px] md:text-xs text-yellow-500 mt-1">Slow Zone {formatPrice(slowZone)}</p>
+            )}
           </div>
 
           {masterEject > 0 && (
@@ -186,11 +199,20 @@ export default async function TickerDateReportPage({ params }: Props) {
               <p className={`text-sm sm:text-base md:text-lg lg:text-xl font-semibold mt-1 ${
                 closePrice && closePrice < masterEject ? 'text-red-500' : 'text-muted-foreground'
               }`}>
-                {formatPrice(masterEject)}
+                {ejectLabel}
               </p>
+              {ejectStep && ejectStep >= 2 && (
+                <p className="text-[10px] sm:text-[11px] md:text-xs text-red-500 mt-1">⚠️ ACTIVE</p>
+              )}
             </div>
           )}
         </div>
+
+        {posture && posture !== "—" && (
+          <p className="text-xs sm:text-sm text-muted-foreground text-center -mt-2 px-2">
+            {posture}
+          </p>
+        )}
 
         {/* Full Report Content */}
         <div className="bg-card border rounded-lg p-3 sm:p-4 md:p-6 lg:p-8 xl:p-10">
