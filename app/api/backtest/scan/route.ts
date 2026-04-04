@@ -1071,7 +1071,8 @@ function buildCurrentSummarySentence(params: {
     "GREEN": "confirmed uptrend — BX Trender is in HH mode on both daily and weekly, the strongest structural alignment for sustained long positioning",
     "GREEN (Recovering)": "recovering uptrend — BX Trender is turning back up after a pullback within a broader bullish structure, historically a high-probability re-entry zone",
   };
-  lines.push(`${ticker} is in a ${regimeLabel[mode] ?? "neutral regime"}.`);
+  const regimeSentence = regimeLabel[mode] ?? "neutral regime";
+  lines.push(`${ticker} is in a ${/[.!?]$/.test(regimeSentence) ? regimeSentence : `${regimeSentence}.`}`);
 
   // Add key technical levels for context — always cite the timeframe
   const techParts: string[] = [];

@@ -251,6 +251,14 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
   const ema9FiveDaysAgo = toNumber(dailyRows[Math.max(0, dailyRows.length - 6)]?.ema_9);
   const ema9Slope5d = ema9FiveDaysAgo != null && ema9FiveDaysAgo !== 0 ? ((ema9 - ema9FiveDaysAgo) / ema9FiveDaysAgo) * 100 : 0;
 
+  let bxWeeklyConsecLL = 0;
+  for (let i = weeklyBxtSeries.length - 1; i > 0; i--) {
+    const curr = weeklyBxtSeries[i];
+    const prev = weeklyBxtSeries[i - 1];
+    if (Number.isFinite(curr) && Number.isFinite(prev) && curr < 0 && curr < prev) bxWeeklyConsecLL += 1;
+    else break;
+  }
+
   const indicators: any = {
     date: latest.bar_date,
     close: latest.close,
@@ -302,7 +310,7 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
     ema9_slope_5d: ema9Slope5d,
     days_below_ema9: daysBelowEma9,
     was_full_bull_5d: wasFullBull5d,
-    bx_weekly_consec_ll: 0,
+    bx_weekly_consec_ll: bxWeeklyConsecLL,
   };
 
   const setups = evaluateAllSetups(indicators, new Map());
@@ -316,8 +324,13 @@ async function verifyTicker(ticker: string): Promise<VerificationResult> {
     { name: 'RSI finite', pass: Number.isFinite(indicators.rsi), actual: round(indicators.rsi) },
     { name: 'SMI finite', pass: Number.isFinite(indicators.smi), actual: round(indicators.smi) },
     { name: 'below Weekly 21 EMA implies RED/EJECTED', pass: !indicators.price_above_weekly_21 ? mode.suggestion === 'RED / EJECTED' : true, actual: { price_above_weekly_21: indicators.price_above_weekly_21, mode: mode.suggestion } },
-    { name: 'QQQ/NVDA expected active setup count', pass: active.length === 0, actual: active, expected: [] },
-    { name: 'QQQ/NVDA expected watching count', pass: watching.length === 3, actual: watching, expected: ['trend-confirm', 'goldilocks', 'dual-ll'] },
+    { name: `${ticker} expected active setup count`, pass: active.length === 0, actual: active, expected: [] },
+    { name: `${ticker} expected watching count`, pass: (() => {
+        const expected = ticker === 'QQQ'
+          ? ['trend-confirm', 'goldilocks', 'bxt-weekly-streak', 'dual-ll']
+          : ['trend-confirm', 'goldilocks', 'dual-ll'];
+        return watching.length === expected.length && expected.every((id) => watching.includes(id));
+      })(), actual: watching, expected: ticker === 'QQQ' ? ['trend-confirm', 'goldilocks', 'bxt-weekly-streak', 'dual-ll'] : ['trend-confirm', 'goldilocks', 'dual-ll'] },
     { name: 'April seasonality sample size', pass: seasonality.april.n === 20, actual: seasonality.april.n, expected: 20 },
     { name: 'Forward 30D sample size', pass: seasonality.d30.n === 20, actual: seasonality.d30.n, expected: 20 },
   ];
